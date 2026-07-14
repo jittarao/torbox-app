@@ -18,7 +18,9 @@ import {
   getActiveTagIds,
   getActiveTrackers,
   getActiveSources,
+  getTagCombineMode,
 } from '@/components/downloads/filters/filterHelpers';
+import { COMBINE_MODES } from '@/components/downloads/filters/sidebarCombineMode';
 
 describe('downloadsFilterUrlCodec tag params', () => {
   test('parseTagIdsFromParams reads single and multi tag params', () => {
@@ -43,6 +45,19 @@ describe('downloadsFilterUrlCodec tag params', () => {
     const filters = parseAppliedFiltersFromParams(params);
     expect(getActiveTagIds(filters)).toEqual([1, 2]);
   });
+
+  test('parseAppliedFiltersFromParams respects tagsOp=all', () => {
+    const params = new URLSearchParams({ tags: '1,2', tagsOp: 'all' });
+    const filters = parseAppliedFiltersFromParams(params);
+    expect(getTagCombineMode(filters)).toBe(COMBINE_MODES.ALL);
+  });
+
+  test('writeTagIdsToParams writes tagsOp for all mode', () => {
+    const multi = new URLSearchParams();
+    writeTagIdsToParams(multi, [1, 2], COMBINE_MODES.ALL);
+    expect(multi.get('tags')).toBe('1,2');
+    expect(multi.get('tagsOp')).toBe('all');
+  });
 });
 
 describe('downloadsFilterUrlCodec view params', () => {
@@ -63,6 +78,13 @@ describe('downloadsFilterUrlCodec view params', () => {
     writeViewIdsToParams(single, [9]);
     expect(single.get('view')).toBe('9');
     expect(single.get('views')).toBeNull();
+  });
+
+  test('writeViewIdsToParams writes viewsOp for all mode', () => {
+    const multi = new URLSearchParams();
+    writeViewIdsToParams(multi, [1, 2], COMBINE_MODES.ALL);
+    expect(multi.get('views')).toBe('1,2');
+    expect(multi.get('viewsOp')).toBe('all');
   });
 });
 

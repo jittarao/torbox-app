@@ -17,6 +17,11 @@ import {
   writeAppliedFiltersToParams,
 } from '@/utils/downloadsFilterUrlCodec';
 import {
+  parseSectionCombineModeFromParams,
+  writeSectionCombineModeToParams,
+  COMBINE_MODE_PARAM_KEYS,
+} from '@/components/downloads/filters/sidebarCombineMode';
+import {
   getDownloadsFilterSearchParamsSnapshot,
   notifyDownloadsFilterSearchParams,
   subscribeDownloadsFilterSearchParams,
@@ -44,6 +49,10 @@ export const DOWNLOADS_FILTER_PARAM_KEYS = [
   'sources',
   'view',
   'views',
+  COMBINE_MODE_PARAM_KEYS.views,
+  COMBINE_MODE_PARAM_KEYS.tags,
+  COMBINE_MODE_PARAM_KEYS.trackers,
+  COMBINE_MODE_PARAM_KEYS.sources,
 ];
 
 const DEFAULT_SORT = { sortField: 'created_at', sortDirection: 'desc' };
@@ -68,6 +77,10 @@ function filtersFromSearchParams(searchParams) {
     sortDirection,
     viewIds,
     viewId: viewIds?.[0] ?? null,
+    viewsOp: parseSectionCombineModeFromParams(searchParams, 'views'),
+    tagsOp: parseSectionCombineModeFromParams(searchParams, 'tags'),
+    trackersOp: parseSectionCombineModeFromParams(searchParams, 'trackers'),
+    sourcesOp: parseSectionCombineModeFromParams(searchParams, 'sources'),
     appliedFilters: parseAppliedFiltersFromParams(searchParams, filterStorage),
   };
 }
@@ -225,6 +238,10 @@ export function useDownloadsFilterParams() {
    *   tagIds?: number[]|null,
    *   trackerUrls?: string[]|null,
    *   sourceHosts?: string[]|null,
+   *   viewsOp?: 'any'|'all',
+   *   tagsOp?: 'any'|'all',
+   *   trackersOp?: 'any'|'all',
+   *   sourcesOp?: 'any'|'all',
    * }} patch
    */
   const patchFilterCriteria = useCallback(
@@ -246,10 +263,11 @@ export function useDownloadsFilterParams() {
         }
         if (patch.viewIds !== undefined) {
           if (patch.viewIds != null && patch.viewIds.length > 0) {
-            writeViewIdsToParams(params, patch.viewIds);
+            writeViewIdsToParams(params, patch.viewIds, patch.viewsOp);
           } else {
             params.delete('view');
             params.delete('views');
+            writeSectionCombineModeToParams(params, 'views', null);
           }
         } else if (patch.viewId !== undefined) {
           if (patch.viewId != null) {
@@ -257,31 +275,43 @@ export function useDownloadsFilterParams() {
           } else {
             params.delete('view');
             params.delete('views');
+            writeSectionCombineModeToParams(params, 'views', null);
           }
+        } else if (patch.viewsOp !== undefined) {
+          writeSectionCombineModeToParams(params, 'views', patch.viewsOp);
         }
         if (patch.tagIds !== undefined) {
           if (patch.tagIds != null && patch.tagIds.length > 0) {
-            writeTagIdsToParams(params, patch.tagIds);
+            writeTagIdsToParams(params, patch.tagIds, patch.tagsOp);
           } else {
             params.delete('tag');
             params.delete('tags');
+            writeSectionCombineModeToParams(params, 'tags', null);
           }
+        } else if (patch.tagsOp !== undefined) {
+          writeSectionCombineModeToParams(params, 'tags', patch.tagsOp);
         }
         if (patch.trackerUrls !== undefined) {
           if (patch.trackerUrls != null && patch.trackerUrls.length > 0) {
-            writeTrackersToParams(params, patch.trackerUrls);
+            writeTrackersToParams(params, patch.trackerUrls, patch.trackersOp);
           } else {
             params.delete('tracker');
             params.delete('trackers');
+            writeSectionCombineModeToParams(params, 'trackers', null);
           }
+        } else if (patch.trackersOp !== undefined) {
+          writeSectionCombineModeToParams(params, 'trackers', patch.trackersOp);
         }
         if (patch.sourceHosts !== undefined) {
           if (patch.sourceHosts != null && patch.sourceHosts.length > 0) {
-            writeSourcesToParams(params, patch.sourceHosts);
+            writeSourcesToParams(params, patch.sourceHosts, patch.sourcesOp);
           } else {
             params.delete('source');
             params.delete('sources');
+            writeSectionCombineModeToParams(params, 'sources', null);
           }
+        } else if (patch.sourcesOp !== undefined) {
+          writeSectionCombineModeToParams(params, 'sources', patch.sourcesOp);
         }
         if (shouldWriteAppliedFiltersInCriteriaPatch(patch)) {
           filtersWritten = writeAppliedFiltersToParams(params, patch.appliedFilters, filterStorage);

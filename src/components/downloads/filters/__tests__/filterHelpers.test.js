@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   LOGIC_OPERATORS,
   STRING_OPERATORS,
+  TAG_OPERATORS,
 } from '@/components/downloads/AutomationRules/constants';
 import {
   buildTagFilter,
@@ -10,10 +11,14 @@ import {
   getActiveTagIds,
   getActiveTrackers,
   getActiveSources,
+  getTagCombineMode,
+  getTrackerCombineMode,
+  getSourceCombineMode,
   isTagOnlyFilter,
   isTrackerOnlyFilter,
   isSourceOnlyFilter,
   itemMatchesAnyViewFilters,
+  itemMatchesAllViewFilters,
   mergeViewAssetTypeFilter,
   migrateCustomViewFilters,
   normalizeFilters,
@@ -21,12 +26,20 @@ import {
   EMPTY_FILTERS,
 } from '../filterHelpers';
 import { itemMatchesFilters } from '../filterEvaluation';
+import { COMBINE_MODES } from '../sidebarCombineMode';
 
 describe('tag filter helpers', () => {
   test('buildTagFilter and getActiveTagIds round-trip multiple ids', () => {
     const filters = buildTagFilter([1, 2, 3]);
     expect(isTagOnlyFilter(filters)).toBe(true);
     expect(getActiveTagIds(filters)).toEqual([1, 2, 3]);
+    expect(getTagCombineMode(filters)).toBe(COMBINE_MODES.ANY);
+  });
+
+  test('buildTagFilter supports all combine mode', () => {
+    const filters = buildTagFilter([1, 2], { combineMode: COMBINE_MODES.ALL });
+    expect(filters.groups[0].filters[0].operator).toBe(TAG_OPERATORS.IS_ALL_OF);
+    expect(getTagCombineMode(filters)).toBe(COMBINE_MODES.ALL);
   });
 });
 
@@ -54,6 +67,13 @@ describe('tracker filter helpers', () => {
     const filters = buildTrackerFilter([urlA, urlB]);
     expect(isTrackerOnlyFilter(filters)).toBe(true);
     expect(getActiveTrackers(filters)).toEqual([urlA, urlB]);
+    expect(getTrackerCombineMode(filters)).toBe(COMBINE_MODES.ANY);
+  });
+
+  test('buildTrackerFilter supports all combine mode', () => {
+    const filters = buildTrackerFilter([urlA, urlB], { combineMode: COMBINE_MODES.ALL });
+    expect(filters.groups[0].logicOperator).toBe(LOGIC_OPERATORS.AND);
+    expect(getTrackerCombineMode(filters)).toBe(COMBINE_MODES.ALL);
   });
 
   test('getActiveTrackers returns null for mixed filters', () => {
@@ -98,6 +118,13 @@ describe('source filter helpers', () => {
     const filters = buildSourceFilter([hostA, hostB]);
     expect(isSourceOnlyFilter(filters)).toBe(true);
     expect(getActiveSources(filters)).toEqual([hostA, hostB]);
+    expect(getSourceCombineMode(filters)).toBe(COMBINE_MODES.ANY);
+  });
+
+  test('buildSourceFilter supports all combine mode', () => {
+    const filters = buildSourceFilter([hostA, hostB], { combineMode: COMBINE_MODES.ALL });
+    expect(filters.groups[0].logicOperator).toBe(LOGIC_OPERATORS.AND);
+    expect(getSourceCombineMode(filters)).toBe(COMBINE_MODES.ALL);
   });
 
   test('getActiveSources returns null for mixed filters', () => {
@@ -158,6 +185,42 @@ describe('itemMatchesAnyViewFilters', () => {
     const item = { name: 'alpha release', asset_type: 'torrents' };
     const filters = mergeViewAssetTypeFilter(viewA.filters, viewA.asset_type);
     expect(itemMatchesAnyViewFilters(item, [viewA])).toBe(itemMatchesFilters(item, filters));
+  });
+});
+
+describe('itemMatchesAllViewFilters', () => {
+  const viewA = {
+    id: 1,
+    asset_type: 'torrents',
+    filters: {
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'name', operator: STRING_OPERATORS.CONTAINS, value: 'alpha' }],
+        },
+      ],
+    },
+  };
+  const viewB = {
+    id: 2,
+    asset_type: 'torrents',
+    filters: {
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'name', operator: STRING_OPERATORS.CONTAINS, value: 'release' }],
+        },
+      ],
+    },
+  };
+
+  test('matches item only when all view filters match', () => {
+    const bothItem = { name: 'alpha release', asset_type: 'torrents' };
+    const alphaOnly = { name: 'alpha build', asset_type: 'torrents' };
+
+    expect(itemMatchesAllViewFilters(bothItem, [viewA, viewB])).toBe(true);
+    expect(itemMatchesAllViewFilters(alphaOnly, [viewA, viewB])).toBe(false);
+    expect(itemMatchesAnyViewFilters(alphaOnly, [viewA, viewB])).toBe(true);
   });
 });
 
