@@ -22,6 +22,8 @@ import {
   mergeViewAssetTypeFilter,
   migrateCustomViewFilters,
   normalizeFilters,
+  normalizeFilterStructure,
+  stampFilterSchemaVersion,
   FILTER_SCHEMA_VERSION,
   EMPTY_FILTERS,
 } from '../filterHelpers';
@@ -281,5 +283,48 @@ describe('migrateCustomViewFilters', () => {
     };
     const migrated = migrateCustomViewFilters(current);
     expect(migrated.groups[0].filters[0].value).toBe(10);
+  });
+
+  test('does not convert GB-sized values without schema version', () => {
+    const legacy = {
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'size', operator: 'gt', value: 2 }],
+        },
+      ],
+    };
+    const migrated = migrateCustomViewFilters(legacy);
+    expect(migrated.groups[0].filters[0].value).toBe(2);
+  });
+});
+
+describe('stampFilterSchemaVersion', () => {
+  test('preserves editor GB values and stamps schema version', () => {
+    const editorFilters = {
+      logicOperator: LOGIC_OPERATORS.AND,
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'size', operator: 'gt', value: 2 }],
+        },
+      ],
+    };
+    const stamped = stampFilterSchemaVersion(editorFilters);
+    expect(stamped._filterSchemaVersion).toBe(FILTER_SCHEMA_VERSION);
+    expect(stamped.groups[0].filters[0].value).toBe(2);
+  });
+
+  test('normalizeFilterStructure does not migrate units', () => {
+    const structured = normalizeFilterStructure({
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'size', operator: 'gt', value: 2 }],
+        },
+      ],
+    });
+    expect(structured.groups[0].filters[0].value).toBe(2);
+    expect(structured._filterSchemaVersion).toBeUndefined();
   });
 });

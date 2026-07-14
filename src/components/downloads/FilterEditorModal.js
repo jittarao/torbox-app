@@ -14,7 +14,12 @@ import ModalSheet from '@/components/shared/ModalSheet';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
 import { Filter, Plus, X } from '@/components/icons';
 import { useTranslations } from 'next-intl';
-import { EMPTY_FILTERS, hasActiveFilters, normalizeFilters } from './filters/filterHelpers';
+import {
+  EMPTY_FILTERS,
+  hasActiveFilters,
+  normalizeFilters,
+  stampFilterSchemaVersion,
+} from './filters/filterHelpers';
 
 function SaveOptionToggle({ checked, disabled, onChange, label, hint }) {
   return (
@@ -45,6 +50,56 @@ function SaveOptionToggle({ checked, disabled, onChange, label, hint }) {
         </span>
       )}
     </label>
+  );
+}
+
+function SaveAsNewForm({
+  saveViewName,
+  setSaveViewName,
+  onSave,
+  onCancel,
+  isSaving,
+  customViewsT,
+  className = '',
+}) {
+  return (
+    <form
+      className={`flex flex-col gap-2 sm:flex-row sm:items-center ${className}`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave();
+      }}
+    >
+      <input
+        type="text"
+        value={saveViewName}
+        onChange={(e) => setSaveViewName(e.target.value)}
+        placeholder={customViewsT('viewNamePlaceholder')}
+        className="min-w-0 flex-1 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-dark dark:focus:ring-accent-dark/15"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            onCancel();
+          }
+        }}
+        autoFocus
+      />
+      <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
+        <button
+          type="submit"
+          disabled={isSaving || !saveViewName.trim()}
+          className="ui-btn-accent w-full !py-2 !text-xs sm:w-auto"
+        >
+          {isSaving ? customViewsT('saving') : customViewsT('save')}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="ui-btn-ghost w-full !py-2 !text-xs sm:w-auto"
+        >
+          {customViewsT('cancel')}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -157,7 +212,9 @@ export default function FilterEditorModal({
 
   const modeKey = isCreateMode ? 'create' : isEditMode ? `edit-${editingView?.id || ''}` : null;
   const prevModeKeyRef = useRef(null);
-  if (prevModeKeyRef.current !== modeKey) {
+
+  useEffect(() => {
+    if (!isOpen || prevModeKeyRef.current === modeKey) return;
     prevModeKeyRef.current = modeKey;
     setSaveViewName('');
     setShowSaveInput(isCreateMode);
@@ -166,7 +223,16 @@ export default function FilterEditorModal({
     setSaveSearch(
       isCreateMode ? !!search?.trim() : isEditMode ? !!editingView?.search_query : false
     );
-  }
+  }, [
+    isOpen,
+    modeKey,
+    isCreateMode,
+    isEditMode,
+    editingView?.sort_field,
+    editingView?.visible_columns,
+    editingView?.search_query,
+    search,
+  ]);
 
   useEffect(() => {
     if (!isOpen || !columnFilters?.groups) return;
@@ -327,7 +393,7 @@ export default function FilterEditorModal({
     setColumnFilters((prev) => ({ ...ensureStructure(prev), logicOperator: newLogic }));
   };
 
-  const filtersToSave = () => ensureStructure(columnFilters);
+  const filtersToSave = () => stampFilterSchemaVersion(ensureStructure(columnFilters));
 
   const handleApplyPreset = (preset) => {
     const filters = clonePresetFilters(preset);
@@ -417,6 +483,18 @@ export default function FilterEditorModal({
       alert(`Failed to update view: ${error.message}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCancelSaveAsNew = () => {
+    setShowSaveInput(false);
+    setSaveViewName('');
+  };
+
+  const handleStartSaveAsNew = () => {
+    setShowSaveInput(true);
+    if (isEditMode && editingView?.name) {
+      setSaveViewName(`${editingView.name} copy`);
     }
   };
 
@@ -652,61 +730,6 @@ export default function FilterEditorModal({
             )}
 
             {filterGroupsSection}
-
-            {apiKey && filtersActive && !isCreateMode && showSaveInput && (
-              <div className="rounded-xl border border-accent/25 bg-accent/5 p-4 dark:border-accent-dark/25 dark:bg-accent-dark/5">
-                <SaveOptionsPanel
-                  saveSort={saveSort}
-                  setSaveSort={setSaveSort}
-                  saveColumns={saveColumns}
-                  setSaveColumns={setSaveColumns}
-                  saveSearch={saveSearch}
-                  setSaveSearch={setSaveSearch}
-                  trimmedSearch={trimmedSearch}
-                  t={customViewsT}
-                />
-                <form
-                  className="mt-3 flex flex-col gap-2 sm:flex-row"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSaveAsView();
-                  }}
-                >
-                  <input
-                    type="text"
-                    value={saveViewName}
-                    onChange={(e) => setSaveViewName(e.target.value)}
-                    placeholder={customViewsT('viewNamePlaceholder')}
-                    className="min-w-0 flex-1 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-dark dark:focus:ring-accent-dark/15"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') {
-                        setShowSaveInput(false);
-                        setSaveViewName('');
-                      }
-                    }}
-                  />
-                  <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
-                    <button
-                      type="submit"
-                      disabled={isSaving || !saveViewName.trim()}
-                      className="ui-btn-accent w-full !py-2 !text-xs sm:w-auto"
-                    >
-                      {isSaving ? customViewsT('saving') : customViewsT('save')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSaveInput(false);
-                        setSaveViewName('');
-                      }}
-                      className="ui-btn-ghost w-full !py-2 !text-xs sm:w-auto"
-                    >
-                      {customViewsT('cancel')}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
           </div>
         )}
 
@@ -730,7 +753,7 @@ export default function FilterEditorModal({
               </div>
             )}
 
-            {filtersActive && !isCreateMode && !isEditMode && (
+            {filtersActive && !isCreateMode && !isEditMode && !showSaveInput && (
               <div className="flex flex-col gap-2 sm:contents">
                 <button
                   type="button"
@@ -746,10 +769,10 @@ export default function FilterEditorModal({
                 >
                   {downloadsFiltersT('clearAll')}
                 </button>
-                {!showSaveInput && (
+                {apiKey && (
                   <button
                     type="button"
-                    onClick={() => setShowSaveInput(true)}
+                    onClick={handleStartSaveAsNew}
                     className="ui-btn-ghost w-full justify-center !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
                   >
                     {customViewsT('saveAsNew')}
@@ -758,7 +781,30 @@ export default function FilterEditorModal({
               </div>
             )}
 
-            {isEditMode && filtersActive && (
+            {filtersActive && !isCreateMode && !isEditMode && showSaveInput && apiKey && (
+              <div className="w-full space-y-2 sm:ml-auto sm:max-w-xl">
+                <SaveOptionsPanel
+                  saveSort={saveSort}
+                  setSaveSort={setSaveSort}
+                  saveColumns={saveColumns}
+                  setSaveColumns={setSaveColumns}
+                  saveSearch={saveSearch}
+                  setSaveSearch={setSaveSearch}
+                  trimmedSearch={trimmedSearch}
+                  t={customViewsT}
+                />
+                <SaveAsNewForm
+                  saveViewName={saveViewName}
+                  setSaveViewName={setSaveViewName}
+                  onSave={handleSaveAsView}
+                  onCancel={handleCancelSaveAsNew}
+                  isSaving={isSaving}
+                  customViewsT={customViewsT}
+                />
+              </div>
+            )}
+
+            {isEditMode && filtersActive && !showSaveInput && (
               <div className="flex flex-col gap-2 sm:contents">
                 <button
                   type="button"
@@ -768,13 +814,28 @@ export default function FilterEditorModal({
                 >
                   {isSaving ? customViewsT('updating') : customViewsT('updateView')}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSaveInput(true)}
-                  className="ui-btn-ghost w-full justify-center !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
-                >
-                  {customViewsT('saveAsNew')}
-                </button>
+                {apiKey && (
+                  <button
+                    type="button"
+                    onClick={handleStartSaveAsNew}
+                    className="ui-btn-ghost w-full justify-center !text-xs border border-border/60 dark:border-border-dark/60 sm:w-auto"
+                  >
+                    {customViewsT('saveAsNew')}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {isEditMode && filtersActive && showSaveInput && apiKey && (
+              <div className="w-full space-y-2 sm:ml-auto sm:max-w-xl">
+                <SaveAsNewForm
+                  saveViewName={saveViewName}
+                  setSaveViewName={setSaveViewName}
+                  onSave={handleSaveAsView}
+                  onCancel={handleCancelSaveAsNew}
+                  isSaving={isSaving}
+                  customViewsT={customViewsT}
+                />
               </div>
             )}
           </div>
