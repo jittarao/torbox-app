@@ -7,12 +7,14 @@ import {
 } from './constants.js';
 import { findOrphanKeys, findRedundantKeys } from './delta.js';
 import { validateStringLeaf } from './icu.js';
+import { readInherited, pruneInherited } from './inherited.js';
 import { isSorted, loadAllLocales, readLocale } from './io.js';
 import { getValueAtPath, isPlainObject, walkLeaves } from './tree.js';
 
 export function verifyLocales({ locales = TARGET_LOCALES } = {}) {
   const errors = [];
   const en = readLocale(DEFAULT_LOCALE).data;
+  const { inherited } = pruneInherited(readInherited(), en);
 
   for (const locale of ALL_LOCALES) {
     let data;
@@ -64,6 +66,14 @@ export function verifyLocales({ locales = TARGET_LOCALES } = {}) {
     }
   }
 
+  for (const locale of TARGET_LOCALES) {
+    for (const keyPath of Object.keys(inherited[locale] || {})) {
+      if (getValueAtPath(en, keyPath) === undefined) {
+        errors.push(`inherited.json: orphan key "${locale}.${keyPath}" not in en.json`);
+      }
+    }
+  }
+
   const pending = {};
   for (const locale of locales) {
     const { data } = readLocale(locale);
@@ -72,6 +82,7 @@ export function verifyLocales({ locales = TARGET_LOCALES } = {}) {
     for (const [keyPath, english] of walkLeaves(en)) {
       if (isAdminKey(keyPath) || isCustomViewsPresetKey(keyPath)) continue;
       if (localeKeys.has(keyPath)) continue;
+      if (inherited[locale]?.[keyPath] === english) continue;
       missing.push(keyPath);
     }
     if (missing.length > 0) pending[locale] = missing.length;

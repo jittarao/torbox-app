@@ -1,6 +1,13 @@
 import { DEFAULT_LOCALE, TARGET_LOCALES, isExcludedTranslationKey } from './constants.js';
 import { findPendingKeys, normalizeDelta } from './delta.js';
 import { validateStringLeaf } from './icu.js';
+import {
+  acknowledgeInherited,
+  clearInherited,
+  pruneInherited,
+  readInherited,
+  writeInherited,
+} from './inherited.js';
 import { readLocale, writeLocale } from './io.js';
 import {
   deepMerge,
@@ -14,12 +21,21 @@ import { verifyLocales } from './verify.js';
 
 export function planTranslations({ locales = TARGET_LOCALES } = {}) {
   const en = readLocale(DEFAULT_LOCALE).data;
+  const { inherited, removed } = pruneInherited(readInherited(), en);
+  if (removed > 0) {
+    writeInherited(inherited);
+  }
+
   const pending = {};
   const styles = {};
 
   for (const locale of locales) {
     const { data } = readLocale(locale);
-    const keys = findPendingKeys(en, data, { exclude: isExcludedTranslationKey });
+    const keys = findPendingKeys(en, data, {
+      exclude: isExcludedTranslationKey,
+      inherited,
+      localeId: locale,
+    });
     if (keys.length === 0) continue;
 
     pending[locale] = {};
@@ -38,12 +54,13 @@ export function planTranslations({ locales = TARGET_LOCALES } = {}) {
     rules: GLOBAL_RULES,
     styles,
     instructions:
-      'Translate pending values per locale. Preserve ICU syntax and {placeholders}. Omit keys identical to English. Apply with: bun i18n:translate --apply <file>',
+      'Translate every pending key per locale. Preserve ICU syntax and {placeholders}. Return all keys in apply JSON — identical-to-English values are recorded in inherited.json and will not be re-queued. Apply with: bun i18n:translate --apply <file>',
   };
 }
 
 export function applyTranslations(input, { locales = TARGET_LOCALES } = {}) {
   const en = readLocale(DEFAULT_LOCALE).data;
+  const inherited = readInherited();
   const summaries = [];
   const validationErrors = [];
 
@@ -63,7 +80,7 @@ export function applyTranslations(input, { locales = TARGET_LOCALES } = {}) {
     const { data: current } = readLocale(locale);
     const merged = structuredClone(current);
     let added = 0;
-    let skippedIdentical = 0;
+    let inheritedIdentical = 0;
 
     for (const [keyPath, translated] of Object.entries(byLocale[locale])) {
       if (isExcludedTranslationKey(keyPath)) {
@@ -78,9 +95,12 @@ export function applyTranslations(input, { locales = TARGET_LOCALES } = {}) {
       }
 
       if (translated === english) {
-        skippedIdentical++;
+        acknowledgeInherited(inherited, locale, keyPath, english);
+        inheritedIdentical++;
         continue;
       }
+
+      clearInherited(inherited, locale, keyPath);
 
       if (typeof translated === 'string' && typeof english === 'string') {
         validationErrors.push(...validateStringLeaf(english, translated, `${locale}.${keyPath}`));
@@ -96,10 +116,12 @@ export function applyTranslations(input, { locales = TARGET_LOCALES } = {}) {
     summaries.push({
       locale,
       added,
-      skipped_identical: skippedIdentical,
+      inherited_identical: inheritedIdentical,
       leaves: Object.keys(flatFromNested(normalized)).length,
     });
   }
+
+  writeInherited(inherited);
 
   if (validationErrors.length > 0) {
     return { ok: false, summaries, errors: validationErrors };
