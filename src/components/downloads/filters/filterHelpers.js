@@ -24,6 +24,9 @@ const EMPTY_FILTERS_JSON = JSON.stringify(EMPTY_FILTERS);
 
 export const FILTER_SCHEMA_VERSION = 2;
 
+/** Legacy custom views stored file size in MB; values at or above this are converted to GB. */
+const LEGACY_SIZE_MB_THRESHOLD = 512;
+
 let migrationWarningLogged = false;
 
 /**
@@ -47,8 +50,10 @@ function migrateFilterRule(filter) {
   }
 
   if (filter.column === 'size' || filter.column === 'total_uploaded') {
-    const mb = typeof filter.value === 'number' ? filter.value : parseFloat(filter.value) || 0;
-    migrated.value = mb / 1024;
+    const raw = typeof filter.value === 'number' ? filter.value : parseFloat(filter.value) || 0;
+    if (raw >= LEGACY_SIZE_MB_THRESHOLD) {
+      migrated.value = raw / 1024;
+    }
   }
 
   if (filter.column === 'eta' && typeof filter.value === 'number' && filter.value > 180) {
@@ -87,9 +92,9 @@ export function migrateCustomViewFilters(filters) {
 }
 
 /**
- * Normalize raw filters (string JSON, flat array, or group structure) to standard group format.
+ * Normalize raw filters to the standard group structure without legacy unit migration.
  */
-export function normalizeFilters(raw) {
+export function normalizeFilterStructure(raw) {
   let filters = raw;
 
   if (typeof filters === 'string') {
@@ -105,11 +110,11 @@ export function normalizeFilters(raw) {
   }
 
   if (filters.groups && Array.isArray(filters.groups)) {
-    return migrateCustomViewFilters(JSON.parse(JSON.stringify(filters)));
+    return JSON.parse(JSON.stringify(filters));
   }
 
   if (Array.isArray(filters)) {
-    return migrateCustomViewFilters({
+    return {
       logicOperator: LOGIC_OPERATORS.AND,
       groups: [
         {
@@ -117,10 +122,28 @@ export function normalizeFilters(raw) {
           filters,
         },
       ],
-    });
+    };
   }
 
   return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+}
+
+/**
+ * Mark editor/saved filters as current schema so legacy MB→GB migration does not re-run.
+ */
+export function stampFilterSchemaVersion(raw) {
+  const structured = normalizeFilterStructure(raw);
+  return {
+    ...structured,
+    _filterSchemaVersion: FILTER_SCHEMA_VERSION,
+  };
+}
+
+/**
+ * Normalize raw filters (string JSON, flat array, or group structure) to standard group format.
+ */
+export function normalizeFilters(raw) {
+  return migrateCustomViewFilters(normalizeFilterStructure(raw));
 }
 
 /**

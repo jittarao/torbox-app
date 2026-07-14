@@ -13,6 +13,7 @@ import {
   buildTrackerFilter,
   buildSourceFilter,
   normalizeFilters,
+  stampFilterSchemaVersion,
   mergeViewAssetTypeFilter,
   getActiveTagIds,
   getActiveTrackers,
@@ -724,16 +725,16 @@ export function useDownloadsFilters({
   };
 
   const handleApplyFiltersFromModal = (filters) => {
-    const normalized = normalizeFilters(filters);
-    setColumnFilters(normalized);
-    setAppliedFilters(normalized);
+    const stamped = stampFilterSchemaVersion(filters);
+    setColumnFilters(stamped);
+    setAppliedFilters(stamped);
   };
 
   const handlePreviewFiltersFromModal = useCallback(
     (filters, { includeSort = false, includeSearch = false } = {}) => {
       const { search, sortField, sortDirection } = filterDepsRef.current;
-      const normalized = normalizeFilters(filters);
-      setColumnFilters(normalized);
+      const stamped = stampFilterSchemaVersion(filters);
+      setColumnFilters(stamped);
       clearView();
 
       const criteriaPatch = {
@@ -742,7 +743,7 @@ export function useDownloadsFilters({
         tagIds: null,
         trackerUrls: null,
         sourceHosts: null,
-        appliedFilters: normalized,
+        appliedFilters: stamped,
         search: includeSearch && search?.trim() ? search.trim() : '',
       };
       if (includeSort && sortField) {
