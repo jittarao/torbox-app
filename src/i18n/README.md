@@ -11,7 +11,7 @@ Supported locales: `en` (default), `de`, `es`, `fr`, `ja`, `pl`.
 3. Keys absent from a delta **inherit English** at runtime via deepmerge in [`request.ts`](request.ts).
 4. Never translate `Admin.*` keys — admin UI stays English.
 5. Preserve ICU MessageFormat syntax and `{placeholder}` names exactly (e.g. `{error}`, not `{erreur}`).
-6. Do not copy English-identical values into deltas — they are redundant.
+6. English-identical values belong in [`messages/inherited.json`](messages/inherited.json), not in locale deltas.
 
 ## Commands
 
@@ -36,9 +36,9 @@ After editing `en.json`:
 # 1. Get work queue
 bun i18n:translate --json > /tmp/i18n-work.json
 
-# 2. Translate pending values in-place (in your agent context)
+# 2. Translate every pending value in-place (in your agent context)
 #    - Follow per-locale style hints in the JSON output
-#    - Omit keys where the translation equals English
+#    - Return all pending keys in apply JSON (including English-identical values)
 #    - Never translate Admin.* keys
 
 # 3. Apply and validate
@@ -48,6 +48,12 @@ bun run format
 ```
 
 If `pending` is empty, skip steps 2–3.
+
+### English-identical translations
+
+When a translation matches English (proper nouns, loanwords, abbreviations), include it in apply output anyway. `--apply` records the key in `inherited.json` so it will not be re-queued. Locale deltas still omit redundant English copies — runtime merge inherits from `en.json`.
+
+If `en.json` changes for an inherited key, the stale entry is dropped automatically and the key reappears in `pending`.
 
 ## JSON schemas
 
@@ -113,12 +119,13 @@ Implemented in [`request.ts`](request.ts). Missing delta keys are not errors —
 - `{placeholders}` match English source names
 - No English-identical delta keys
 - No orphan keys outside `en.json`
+- `inherited.json` keys exist in `en.json`
 - Sorted key order
 
 ## Do not
 
 - Create `i18n-patches/` files or use removed scripts (`i18n:check-keys`, `i18n:prune-deltas`, etc.)
 - Add `Admin.*` or `CustomViews.presets.*` keys to non-English deltas
-- Copy English values into locale deltas
+- Copy English values into locale deltas (use `inherited.json` via `--apply` instead)
 - Rename placeholders (`{error}` must stay `{error}` in every locale)
 - Manually sort or prune — `translate --apply` and `sync` handle this

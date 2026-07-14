@@ -13,6 +13,7 @@ import {
   validatePlaceholders,
 } from '../i18n/lib/icu.js';
 import { planTranslations } from '../i18n/lib/translate.js';
+import { acknowledgeInherited, isInheritedKey } from '../i18n/lib/inherited.js';
 import { verifyLocales } from '../i18n/lib/verify.js';
 import { isAdminKey } from '../i18n/lib/constants.js';
 
@@ -42,6 +43,13 @@ describe('i18n delta', () => {
     const base = { Admin: { title: 'Admin' }, App: { title: 'App' } };
     const locale = {};
     expect(findPendingKeys(base, locale, { exclude: isAdminKey })).toEqual(['App.title']);
+  });
+
+  test('findPendingKeys excludes inherited English-identical keys', () => {
+    const base = { App: { title: 'App', name: 'TorBox' } };
+    const locale = {};
+    const inherited = { de: { 'App.name': 'TorBox' } };
+    expect(findPendingKeys(base, locale, { inherited, localeId: 'de' })).toEqual(['App.title']);
   });
 });
 
@@ -93,5 +101,16 @@ describe('i18n translate', () => {
     const keys = Object.keys(plan.pending.de || {});
     expect(keys.some((key) => key.startsWith('CustomViews.presets.'))).toBe(false);
     expect(plan.excluded).toContain('CustomViews.presets.*');
+  });
+
+  test('inherited keys are excluded from pending work', () => {
+    const inherited = { de: {} };
+    acknowledgeInherited(inherited, 'de', 'Index.title', 'TorBox Manager');
+    expect(isInheritedKey(inherited, 'de', 'Index.title', 'TorBox Manager')).toBe(true);
+
+    const en = JSON.parse(readFileSync(path.join(MESSAGES_DIR, 'en.json'), 'utf8'));
+    const de = JSON.parse(readFileSync(path.join(MESSAGES_DIR, 'de.json'), 'utf8'));
+    const pending = findPendingKeys(en, de, { inherited, localeId: 'de' });
+    expect(pending).not.toContain('Index.title');
   });
 });

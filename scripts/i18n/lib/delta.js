@@ -1,4 +1,4 @@
-import { isPlainObject } from './tree.js';
+import { getValueAtPath, isPlainObject } from './tree.js';
 
 export function pruneDelta(base, locale) {
   if (typeof base === 'string' && typeof locale === 'string') {
@@ -54,10 +54,21 @@ export function findRedundantKeys(base, locale, prefix = []) {
   return redundant;
 }
 
-export function findPendingKeys(reference, locale, { exclude = () => false } = {}) {
+export function findPendingKeys(
+  reference,
+  locale,
+  { exclude = () => false, inherited = {}, localeId } = {}
+) {
   const refKeys = collectKeyPaths(reference);
   const localeKeys = new Set(collectKeyPaths(locale));
-  return refKeys.filter((key) => !localeKeys.has(key) && !exclude(key)).sort();
+  return refKeys
+    .filter((key) => {
+      if (exclude(key) || localeKeys.has(key)) return false;
+      const english = getValueAtPath(reference, key);
+      if (localeId && inherited[localeId]?.[key] === english) return false;
+      return true;
+    })
+    .sort();
 }
 
 function collectKeyPaths(obj, prefix = []) {
