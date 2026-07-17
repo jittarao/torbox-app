@@ -11,6 +11,7 @@ use tauri::{
 
 use crate::constants::APP_DISPLAY_NAME;
 use crate::services::settings::SettingsService;
+use crate::services::window_state;
 use crate::state::AppState;
 
 const TRAY_OPEN_ID: &str = "tray-open";
@@ -95,6 +96,7 @@ pub fn register_window_behavior(
     let settings = Arc::clone(settings);
     window.on_window_event(move |event| {
         let tray_settings = settings.get_tray_settings();
+        window_state::handle_window_geometry_event(&app_handle, &settings, event);
         match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 if tray_settings.close_to_tray {
@@ -156,6 +158,7 @@ fn toggle_main_window(app: &AppHandle) {
 
 pub fn quit_app(app: &AppHandle) {
     if let Some(state) = app.try_state::<AppState>() {
+        window_state::persist_main_window_geometry(app, state.settings.as_ref());
         state.folder_watcher.shutdown();
     }
     app.exit(0);
@@ -165,6 +168,7 @@ pub fn handle_run_event(app: &AppHandle, event: &RunEvent) {
     if let RunEvent::ExitRequested { api, .. } = event {
         if let Some(state) = app.try_state::<AppState>() {
             if state.settings.get_tray_settings().close_to_tray {
+                window_state::persist_main_window_geometry(app, state.settings.as_ref());
                 api.prevent_exit();
                 hide_main_window(app);
             }
