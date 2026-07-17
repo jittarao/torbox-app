@@ -4,7 +4,6 @@ import { useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import ModalOverlay from '@/components/shared/ModalOverlay';
-import { USER_NAV_ITEM } from './navConfig';
 import SidebarUtilitiesFooter from './SidebarUtilitiesFooter';
 import { SidebarContext } from './SidebarContext';
 
@@ -36,9 +35,6 @@ export default function MobileMoreSheet({
 }) {
   const tFilters = useTranslations('DownloadsFilters');
   const sheetRef = useRef(null);
-  const userLabel = getLabel(USER_NAV_ITEM.labelKey);
-  const userActive = isActive(USER_NAV_ITEM.href);
-  const UserIcon = USER_NAV_ITEM.Icon;
 
   return (
     <ModalOverlay
@@ -99,13 +95,6 @@ export default function MobileMoreSheet({
                 onNavigate={onClose}
               />
             ))}
-            <MoreNavLink
-              href={USER_NAV_ITEM.href}
-              label={userLabel}
-              Icon={UserIcon}
-              active={userActive}
-              onNavigate={onClose}
-            />
           </ul>
         </div>
 

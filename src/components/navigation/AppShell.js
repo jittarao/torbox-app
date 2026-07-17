@@ -74,17 +74,17 @@ export default function AppShell({ apiKey, children, className = '' }) {
     setIsMoreOpen(false);
   }
 
-  const isMoreRouteActive = useMemo(() => {
-    if (isActive(USER_NAV_ITEM.href)) return true;
-    return mobileNav.moreItems.some((item) => isActive(item.href));
-  }, [isActive, mobileNav.moreItems]);
+  const isMoreRouteActive = useMemo(
+    () => mobileNav.moreItems.some((item) => isActive(item.href)),
+    [isActive, mobileNav.moreItems]
+  );
 
   const mobileTitle = useMemo(() => {
-    const allItems = [...nav.items, USER_NAV_ITEM];
+    const allItems = nav.sections.flatMap((section) => section.items);
     const match = allItems.find((item) => isActive(item.href));
     if (match) return getLabel(match.labelKey);
     return t('title');
-  }, [nav.items, isActive, getLabel, t]);
+  }, [nav.sections, isActive, getLabel, t]);
 
   const userLabel = getLabel(USER_NAV_ITEM.labelKey);
   const shellClass = ['min-h-screen', className].filter(Boolean).join(' ');
