@@ -26,10 +26,10 @@ export const desktopOptionDefault =
   'border-border/50 bg-white text-text hover:border-border hover:bg-surface-alt dark:border-border-dark/50 dark:bg-surface-dark dark:text-text-dark dark:hover:border-border-dark dark:hover:bg-surface-alt-hover-dark';
 
 export const desktopTabSelected =
-  'border-accent/35 bg-surface-alt-selected text-text shadow-sm dark:border-accent-dark/40 dark:bg-surface-alt-selected-dark dark:text-text-dark';
+  'bg-surface-alt-selected font-medium text-text dark:bg-surface-alt-selected-dark dark:text-text-dark';
 
 export const desktopTabDefault =
-  'border-border/60 bg-white text-text hover:border-border hover:bg-surface-alt dark:border-border-dark/60 dark:bg-surface-alt-dark dark:text-text-dark dark:hover:border-border-dark dark:hover:bg-surface-alt-hover-dark';
+  'text-muted hover:bg-surface-alt/80 hover:text-text dark:text-muted-dark dark:hover:bg-surface-dark/80 dark:hover:text-text-dark';
 
 export const desktopBtnDanger =
   'inline-flex items-center justify-center gap-2 rounded-lg border border-label-danger-text/25 bg-white px-4 py-2 text-sm font-medium text-label-danger-text shadow-sm transition-colors hover:bg-label-danger-bg focus:outline-none focus:ring-2 focus:ring-label-danger-text/20 disabled:pointer-events-none disabled:opacity-50 dark:border-label-danger-text-dark/30 dark:bg-surface-dark dark:text-label-danger-text-dark dark:hover:bg-label-danger-bg-dark dark:focus:ring-label-danger-text-dark/20';
@@ -234,5 +234,74 @@ export function DesktopPathDisplay({
     <p className="rounded-md border border-border/50 bg-white px-3 py-2 font-mono text-xs leading-relaxed text-text break-all dark:border-border-dark/50 dark:bg-surface-dark dark:text-text-dark">
       {value ?? emptyLabel}
     </p>
+  );
+}
+
+export function DesktopSettingGroup({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`divide-y divide-border/50 overflow-hidden rounded-lg border border-border/50 dark:divide-border-dark/50 dark:border-border-dark/50 ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function DesktopSettingGroupItem({
+  children,
+  className = '',
+  dimmed = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  dimmed?: boolean;
+}) {
+  return (
+    <div className={`px-4 py-4 sm:px-5 ${dimmed ? 'opacity-55' : ''} ${className}`}>{children}</div>
+  );
+}
+
+export function DesktopTabContentHeader({
+  title,
+  action,
+}: {
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-5 flex items-center justify-between gap-4">
+      <h2 className="text-lg font-semibold tracking-tight text-text dark:text-text-dark">
+        {title}
+      </h2>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+  );
+}
+
+export function DesktopMetaRow({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted dark:text-muted-dark">
+        {label}
+      </dt>
+      <dd className={`text-sm text-text dark:text-text-dark ${mono ? 'break-all font-mono' : ''}`}>
+        {value}
+      </dd>
+    </div>
   );
 }
