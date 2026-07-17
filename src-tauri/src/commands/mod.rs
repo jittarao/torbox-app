@@ -1,6 +1,7 @@
 pub mod autostart;
 pub mod credentials;
 pub mod hello;
+pub mod navigation;
 pub mod notifications;
 pub mod picker;
 pub mod settings;

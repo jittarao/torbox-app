@@ -13,4 +13,5 @@ pub mod upload_queue;
 pub mod url_validation;
 pub mod watcher_batch;
 pub mod watcher_paths;
+pub mod web_path;
 pub mod window_state;

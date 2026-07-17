@@ -158,7 +158,7 @@ fn toggle_main_window(app: &AppHandle) {
 
 pub fn quit_app(app: &AppHandle) {
     if let Some(state) = app.try_state::<AppState>() {
-        window_state::persist_main_window_geometry(app, state.settings.as_ref());
+        window_state::persist_main_window_state(app, state.settings.as_ref());
         state.folder_watcher.shutdown();
     }
     app.exit(0);
@@ -168,7 +168,7 @@ pub fn handle_run_event(app: &AppHandle, event: &RunEvent) {
     if let RunEvent::ExitRequested { api, .. } = event {
         if let Some(state) = app.try_state::<AppState>() {
             if state.settings.get_tray_settings().close_to_tray {
-                window_state::persist_main_window_geometry(app, state.settings.as_ref());
+                window_state::persist_main_window_state(app, state.settings.as_ref());
                 api.prevent_exit();
                 hide_main_window(app);
             }
