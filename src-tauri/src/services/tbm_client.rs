@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
@@ -9,7 +10,6 @@ use sha2::{Digest, Sha256};
 use crate::constants::{
     MAX_BATCH_UPLOADS_PER_REQUEST, MAX_TORRENT_FILE_BYTES, UPLOAD_RATE_LIMIT_DEFAULT_RETRY_SECS,
 };
-use crate::services::credentials::read_api_key;
 use crate::services::settings::TorrentUploadOptions;
 
 #[derive(Debug, Clone, Serialize)]
@@ -55,12 +55,24 @@ struct BatchData {
 struct BatchUploadRow {
     #[serde(default)]
     id: Option<i64>,
+    #[serde(default)]
+    name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BatchErrorUpload {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    filename: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct BatchItemError {
     #[serde(default)]
     error: Option<String>,
+    #[serde(default)]
+    upload: Option<BatchErrorUpload>,
 }
 
 #[derive(Debug, Clone)]
@@ -73,6 +85,12 @@ pub struct TorrentFileUpload {
 #[derive(Debug, Clone)]
 pub struct UploadSuccess {
     pub upload_id: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BatchItemResult {
+    pub success: Option<UploadSuccess>,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -97,14 +115,25 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", digest)
 }
 
+pub fn torrent_display_name(filename: &str) -> String {
+    filename
+        .strip_suffix(".torrent")
+        .or_else(|| filename.strip_suffix(".TORRENT"))
+        .unwrap_or(filename)
+        .to_string()
+}
+
+#[allow(dead_code)]
 pub async fn upload_torrent_file(
     instance_url: &str,
+    api_key: &str,
     file_bytes: &[u8],
     filename: &str,
     options: &TorrentUploadOptions,
 ) -> Result<UploadSuccess, UploadClientError> {
-    let results = upload_torrent_batch(
+    let results = upload_torrent_batch_detailed(
         instance_url,
+        api_key,
         vec![TorrentFileUpload {
             file_bytes: file_bytes.to_vec(),
             filename: filename.to_string(),
@@ -113,20 +142,62 @@ pub async fn upload_torrent_file(
     )
     .await?;
 
-    results
+    let first = results
         .into_iter()
         .next()
         .ok_or_else(|| UploadClientError {
             message: "Upload was not created".to_string(),
             rate_limited: false,
             retry_after_secs: None,
+        })?;
+
+    if let Some(success) = first.success {
+        Ok(success)
+    } else {
+        let error_message = first
+            .error
+            .clone()
+            .unwrap_or_else(|| "Upload was not created".to_string());
+        Err(UploadClientError {
+            message: error_message.clone(),
+            rate_limited: is_rate_limit_message(&error_message),
+            retry_after_secs: None,
         })
+    }
 }
 
+#[allow(dead_code)]
 pub async fn upload_torrent_batch(
     instance_url: &str,
+    api_key: &str,
     items: Vec<TorrentFileUpload>,
 ) -> Result<Vec<UploadSuccess>, UploadClientError> {
+    let detailed = upload_torrent_batch_detailed(instance_url, api_key, items).await?;
+    let successes: Vec<_> = detailed
+        .iter()
+        .filter_map(|row| row.success.clone())
+        .collect();
+
+    if successes.is_empty() && !detailed.is_empty() {
+        let message = detailed
+            .iter()
+            .find_map(|row| row.error.clone())
+            .unwrap_or_else(|| "Upload was not created".to_string());
+        return Err(UploadClientError {
+            message: message.clone(),
+            rate_limited: is_rate_limit_message(&message),
+            retry_after_secs: None,
+        });
+    }
+
+    Ok(successes)
+}
+
+pub async fn upload_torrent_batch_detailed(
+    instance_url: &str,
+    api_key: &str,
+    items: Vec<TorrentFileUpload>,
+) -> Result<Vec<BatchItemResult>, UploadClientError> {
     if items.is_empty() {
         return Err(UploadClientError {
             message: "No torrent files to upload".to_string(),
@@ -151,17 +222,18 @@ pub async fn upload_torrent_batch(
     let mut created = Vec::with_capacity(items.len());
 
     for chunk in items.chunks(MAX_BATCH_UPLOADS_PER_REQUEST) {
-        let chunk_results = post_batch_upload(instance_url, chunk).await?;
+        let chunk_results = post_batch_upload_detailed(instance_url, api_key, chunk).await?;
         created.extend(chunk_results);
     }
 
     Ok(created)
 }
 
-async fn post_batch_upload(
+async fn post_batch_upload_detailed(
     instance_url: &str,
+    api_key: &str,
     items: &[TorrentFileUpload],
-) -> Result<Vec<UploadSuccess>, UploadClientError> {
+) -> Result<Vec<BatchItemResult>, UploadClientError> {
     if items.is_empty() {
         return Ok(vec![]);
     }
@@ -178,36 +250,30 @@ async fn post_batch_upload(
         });
     }
 
-    let api_key = read_api_key().map_err(|message| UploadClientError {
-        message,
-        rate_limited: false,
-        retry_after_secs: None,
-    })?;
+    let api_key = api_key.trim();
+    if api_key.is_empty() {
+        return Err(UploadClientError {
+            message: "No API key stored on this device".to_string(),
+            rate_limited: false,
+            retry_after_secs: None,
+        });
+    }
 
     let base_url = instance_url.trim_end_matches('/');
     let endpoint = format!("{base_url}/api/uploads/batch");
 
     let uploads = items
         .iter()
-        .map(|item| {
-            let display_name = item
-                .filename
-                .strip_suffix(".torrent")
-                .or_else(|| item.filename.strip_suffix(".TORRENT"))
-                .unwrap_or(&item.filename)
-                .to_string();
-
-            BatchUploadItem {
-                asset_type: "torrent".to_string(),
-                upload_type: "file".to_string(),
-                name: display_name,
-                file_data: STANDARD.encode(&item.file_bytes),
-                filename: item.filename.clone(),
-                seed: item.options.seed,
-                allow_zip: item.options.allow_zip,
-                as_queued: item.options.as_queued,
-                add_only_if_cached: item.options.add_only_if_cached,
-            }
+        .map(|item| BatchUploadItem {
+            asset_type: "torrent".to_string(),
+            upload_type: "file".to_string(),
+            name: torrent_display_name(&item.filename),
+            file_data: STANDARD.encode(&item.file_bytes),
+            filename: item.filename.clone(),
+            seed: item.options.seed,
+            allow_zip: item.options.allow_zip,
+            as_queued: item.options.as_queued,
+            add_only_if_cached: item.options.add_only_if_cached,
         })
         .collect();
 
@@ -243,10 +309,13 @@ async fn post_batch_upload(
             retry_after_secs: None,
         })?;
 
-    parse_batch_response(response).await
+    parse_batch_response_detailed(response, items).await
 }
 
-async fn parse_batch_response(response: Response) -> Result<Vec<UploadSuccess>, UploadClientError> {
+async fn parse_batch_response_detailed(
+    response: Response,
+    items: &[TorrentFileUpload],
+) -> Result<Vec<BatchItemResult>, UploadClientError> {
     let status = response.status();
     let retry_after_secs = parse_retry_after(&response);
     let rate_limited = status.as_u16() == 429;
@@ -282,12 +351,9 @@ async fn parse_batch_response(response: Response) -> Result<Vec<UploadSuccess>, 
         retry_after_secs: None,
     })?;
 
-    if data.uploads.is_empty() {
-        let message = data
-            .errors
-            .first()
-            .and_then(|e| e.error.clone())
-            .or(payload.error)
+    if data.uploads.is_empty() && data.errors.is_empty() {
+        let message = payload
+            .error
             .unwrap_or_else(|| "Upload was not created".to_string());
 
         return Err(UploadClientError {
@@ -297,13 +363,67 @@ async fn parse_batch_response(response: Response) -> Result<Vec<UploadSuccess>, 
         });
     }
 
-    Ok(data
-        .uploads
-        .into_iter()
-        .map(|row| UploadSuccess {
-            upload_id: row.id.map(|id| id.to_string()),
+    Ok(map_batch_results(items, &data))
+}
+
+fn map_batch_results(items: &[TorrentFileUpload], data: &BatchData) -> Vec<BatchItemResult> {
+    let mut successes_by_name: HashMap<String, UploadSuccess> = HashMap::new();
+    for row in &data.uploads {
+        if let Some(name) = row.name.as_ref() {
+            successes_by_name.insert(
+                name.clone(),
+                UploadSuccess {
+                    upload_id: row.id.map(|id| id.to_string()),
+                },
+            );
+        }
+    }
+
+    let mut errors_by_name: HashMap<String, String> = HashMap::new();
+    let mut errors_by_filename: HashMap<String, String> = HashMap::new();
+    for item_error in &data.errors {
+        let message = item_error
+            .error
+            .clone()
+            .unwrap_or_else(|| "Upload failed".to_string());
+        if let Some(upload) = &item_error.upload {
+            if let Some(name) = &upload.name {
+                errors_by_name.insert(name.clone(), message.clone());
+            }
+            if let Some(filename) = &upload.filename {
+                errors_by_filename.insert(filename.clone(), message);
+            }
+        }
+    }
+
+    items
+        .iter()
+        .map(|item| {
+            let display_name = torrent_display_name(&item.filename);
+            if let Some(error) = errors_by_filename
+                .get(&item.filename)
+                .or_else(|| errors_by_name.get(&display_name))
+                .cloned()
+            {
+                return BatchItemResult {
+                    success: None,
+                    error: Some(error),
+                };
+            }
+
+            if let Some(success) = successes_by_name.remove(&display_name) {
+                return BatchItemResult {
+                    success: Some(success),
+                    error: None,
+                };
+            }
+
+            BatchItemResult {
+                success: None,
+                error: Some("Upload was not created".to_string()),
+            }
         })
-        .collect())
+        .collect()
 }
 
 fn format_batch_error(payload: &BatchResponse, status: reqwest::StatusCode) -> String {
@@ -449,5 +569,72 @@ mod tests {
         assert_eq!(MAX_BATCH_UPLOADS_PER_REQUEST, 1000);
         assert_eq!(UPLOAD_HTTP_RATE_LIMIT_MAX, 1000);
         assert_eq!(UPLOAD_HTTP_RATE_LIMIT_WINDOW_SECS, 15 * 60);
+    }
+
+    #[test]
+    fn map_batch_results_handles_mixed_success_and_error() {
+        let items = vec![
+            TorrentFileUpload {
+                file_bytes: b"a".to_vec(),
+                filename: "good.torrent".to_string(),
+                options: TorrentUploadOptions::default(),
+            },
+            TorrentFileUpload {
+                file_bytes: b"b".to_vec(),
+                filename: "bad.torrent".to_string(),
+                options: TorrentUploadOptions::default(),
+            },
+        ];
+
+        let data = BatchData {
+            uploads: vec![BatchUploadRow {
+                id: Some(42),
+                name: Some("good".to_string()),
+            }],
+            errors: vec![BatchItemError {
+                error: Some("Invalid type".to_string()),
+                upload: Some(BatchErrorUpload {
+                    name: Some("bad".to_string()),
+                    filename: None,
+                }),
+            }],
+        };
+
+        let results = map_batch_results(&items, &data);
+        assert_eq!(results.len(), 2);
+        assert!(results[0].success.is_some());
+        assert_eq!(results[0].success.as_ref().unwrap().upload_id, Some("42".to_string()));
+        assert!(results[0].error.is_none());
+        assert!(results[1].success.is_none());
+        assert_eq!(results[1].error.as_deref(), Some("Invalid type"));
+    }
+
+    #[test]
+    fn map_batch_results_matches_errors_by_filename() {
+        let items = vec![TorrentFileUpload {
+            file_bytes: b"x".to_vec(),
+            filename: "broken.torrent".to_string(),
+            options: TorrentUploadOptions::default(),
+        }];
+
+        let data = BatchData {
+            uploads: vec![],
+            errors: vec![BatchItemError {
+                error: Some("Failed to save file".to_string()),
+                upload: Some(BatchErrorUpload {
+                    name: None,
+                    filename: Some("broken.torrent".to_string()),
+                }),
+            }],
+        };
+
+        let results = map_batch_results(&items, &data);
+        assert_eq!(results[0].error.as_deref(), Some("Failed to save file"));
+    }
+
+    #[test]
+    fn torrent_display_name_strips_suffix() {
+        assert_eq!(torrent_display_name("foo.torrent"), "foo");
+        assert_eq!(torrent_display_name("FOO.TORRENT"), "FOO");
     }
 }

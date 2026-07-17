@@ -11,4 +11,5 @@ pub mod tray;
 pub mod updates;
 pub mod upload_queue;
 pub mod url_validation;
+pub mod watcher_batch;
 pub mod watcher_paths;
