@@ -31,5 +31,6 @@ pub fn clear_desktop_credential(
     state: State<AppState>,
 ) -> Result<(), String> {
     validate_window_origin(&window, &state)?;
+    let _ = state.folder_watcher.stop();
     clear_api_key(&state.settings)
 }

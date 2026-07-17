@@ -1,7 +1,6 @@
-/// macOS shows the Cargo binary name (`torbox-manager`) in the Dock and app menu
-/// during `tauri dev` because the process is not launched from a `.app` bundle.
-/// Set the process display name before Tauri initializes so Dock/About use the
-/// human-readable product name instead.
+/// macOS shows the Cargo binary name in the Dock and app menu during `tauri dev`
+/// when the process is not launched from a `.app` bundle. Set the process display
+/// name before Tauri initializes so Dock/About use the human-readable product name.
 #[cfg(target_os = "macos")]
 pub fn apply_process_display_name(name: &str) {
     use std::ffi::CString;

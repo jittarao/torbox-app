@@ -8,4 +8,13 @@ commands.allow = [
   "sync_api_key_to_desktop",
   "get_credential_status",
   "clear_desktop_credential",
+  "pick_folder",
+  "pick_move_destination_folder",
+  "get_folder_watcher_config",
+  "set_folder_watcher_config",
+  "start_folder_watcher",
+  "stop_folder_watcher",
+  "get_folder_watcher_status",
+  "get_launch_at_login",
+  "set_launch_at_login",
 ]

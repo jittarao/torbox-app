@@ -5,7 +5,9 @@ mod menu;
 mod services;
 mod state;
 
-use tauri::Manager;
+use std::sync::Arc;
+
+use tauri::{Manager, RunEvent};
 
 use state::AppState;
 
@@ -13,12 +15,37 @@ use state::AppState;
 pub fn run() {
     macos_display_name::apply_process_display_name(constants::APP_DISPLAY_NAME);
 
-    tauri::Builder::default()
+    let builder = {
+        #[cfg(not(target_os = "macos"))]
+        {
+            tauri::Builder::default().plugin(
+                tauri_plugin_autostart::Builder::new()
+                    .app_name(constants::APP_DISPLAY_NAME)
+                    .build(),
+            )
+        }
+        #[cfg(target_os = "macos")]
+        {
+            tauri::Builder::default()
+        }
+    };
+
+    builder
         .menu(|app| menu::build_app_menu(app))
         .setup(|app| {
-            let settings = services::settings::SettingsService::new(app.handle())?;
+            let settings = Arc::new(services::settings::SettingsService::new(app.handle())?);
             let instance_url = settings.get_instance_url();
-            app.manage(AppState { settings });
+            let folder_watcher = services::folder_watcher::FolderWatcherService::new(
+                app.handle().clone(),
+                Arc::clone(&settings),
+            )?;
+
+            app.manage(AppState {
+                settings: Arc::clone(&settings),
+                folder_watcher,
+            });
+
+            commands::autostart::sync_launch_at_login(app.handle(), &settings);
 
             services::capabilities::register_dev_capabilities(app.handle())?;
             services::capabilities::register_custom_instance_capability(
@@ -35,6 +62,10 @@ pub fn run() {
                 }
             }
 
+            if let Some(state) = app.try_state::<AppState>() {
+                let _ = state.folder_watcher.try_auto_start();
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -44,7 +75,23 @@ pub fn run() {
             commands::credentials::sync_api_key_to_desktop,
             commands::credentials::get_credential_status,
             commands::credentials::clear_desktop_credential,
+            commands::picker::pick_folder,
+            commands::picker::pick_move_destination_folder,
+            commands::watcher::get_folder_watcher_config,
+            commands::watcher::set_folder_watcher_config,
+            commands::watcher::start_folder_watcher,
+            commands::watcher::stop_folder_watcher,
+            commands::watcher::get_folder_watcher_status,
+            commands::autostart::get_launch_at_login,
+            commands::autostart::set_launch_at_login,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running TorBox Manager desktop app");
+        .build(tauri::generate_context!())
+        .expect("error while building TorBox Manager desktop app")
+        .run(|app, event| {
+            if matches!(event, RunEvent::Exit) {
+                if let Some(state) = app.try_state::<AppState>() {
+                    state.folder_watcher.shutdown();
+                }
+            }
+        });
 }

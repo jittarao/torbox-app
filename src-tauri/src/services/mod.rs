@@ -1,4 +1,11 @@
+pub mod atomic_json;
 pub mod capabilities;
 pub mod credentials;
+pub mod folder_watcher;
+#[cfg(target_os = "macos")]
+pub mod macos_autostart;
 pub mod settings;
+pub mod tbm_client;
+pub mod upload_queue;
 pub mod url_validation;
+pub mod watcher_paths;

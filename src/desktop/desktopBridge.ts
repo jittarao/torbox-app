@@ -1,4 +1,11 @@
-import type { HelloResponse, CredentialStatus, DesktopFeatureMap } from '@/desktop/capabilities';
+import type {
+  HelloResponse,
+  CredentialStatus,
+  DesktopFeatureMap,
+  FolderWatcherConfig,
+  LaunchAtLoginStatus,
+  WatcherStatus,
+} from '@/desktop/capabilities';
 import { WEB_BRIDGE_VERSION, hasFeature } from '@/desktop/capabilities';
 
 function isTauriRuntime(): boolean {
@@ -103,6 +110,74 @@ export async function clearDesktopCredential(): Promise<boolean> {
   return true;
 }
 
+export async function pickFolder(): Promise<string | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('folderPicker')) {
+    return null;
+  }
+  const picked = await invoke<string | null>('pick_folder');
+  return picked ?? null;
+}
+
+export async function pickMoveDestinationFolder(): Promise<string | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('folderPicker')) {
+    return null;
+  }
+  const picked = await invoke<string | null>('pick_move_destination_folder');
+  return picked ?? null;
+}
+
+export async function getFolderWatcherConfig(): Promise<FolderWatcherConfig | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('folderWatcher')) {
+    return null;
+  }
+  return invoke<FolderWatcherConfig>('get_folder_watcher_config');
+}
+
+export async function setFolderWatcherConfig(config: FolderWatcherConfig): Promise<boolean> {
+  if (!(await isAvailable()) || !hasBridgeFeature('folderWatcher')) {
+    return false;
+  }
+  await invoke('set_folder_watcher_config', { config });
+  return true;
+}
+
+export async function startFolderWatcher(scanExisting = false): Promise<boolean> {
+  if (!(await isAvailable()) || !hasBridgeFeature('folderWatcher')) {
+    return false;
+  }
+  await invoke('start_folder_watcher', { scanExisting });
+  return true;
+}
+
+export async function stopFolderWatcher(): Promise<boolean> {
+  if (!(await isAvailable()) || !hasBridgeFeature('folderWatcher')) {
+    return false;
+  }
+  await invoke('stop_folder_watcher');
+  return true;
+}
+
+export async function getFolderWatcherStatus(): Promise<WatcherStatus | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('folderWatcher')) {
+    return null;
+  }
+  return invoke<WatcherStatus>('get_folder_watcher_status');
+}
+
+export async function getLaunchAtLogin(): Promise<LaunchAtLoginStatus | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('launchAtLogin')) {
+    return null;
+  }
+  return invoke<LaunchAtLoginStatus>('get_launch_at_login');
+}
+
+export async function setLaunchAtLogin(enabled: boolean): Promise<LaunchAtLoginStatus | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('launchAtLogin')) {
+    return null;
+  }
+  return invoke<LaunchAtLoginStatus>('set_launch_at_login', { enabled });
+}
+
 export const desktop = {
   isTauriEnvironment,
   isAvailable,
@@ -112,4 +187,13 @@ export const desktop = {
   syncApiKeyToDesktop,
   getCredentialStatus,
   clearDesktopCredential,
+  pickFolder,
+  pickMoveDestinationFolder,
+  getFolderWatcherConfig,
+  setFolderWatcherConfig,
+  startFolderWatcher,
+  stopFolderWatcher,
+  getFolderWatcherStatus,
+  getLaunchAtLogin,
+  setLaunchAtLogin,
 };

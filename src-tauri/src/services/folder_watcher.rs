@@ -1,0 +1,642 @@
+use std::collections::{HashSet, VecDeque};
+use std::fs;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use serde::Serialize;
+use tauri::{async_runtime::JoinHandle, AppHandle, Emitter, Manager};
+use tokio::sync::mpsc;
+
+use crate::constants::{
+    WATCHER_ACTIVITY_LOG_LIMIT, WATCHER_MAX_RETRIES, WATCHER_RATE_LIMIT_MAX_RETRIES,
+};
+use crate::services::credentials::read_api_key;
+use crate::services::settings::SettingsService;
+use crate::services::tbm_client::{sha256_hex, upload_torrent_file};
+use crate::services::upload_queue::{
+    apply_post_upload_action, wait_for_stable_file, ProcessedFingerprintStore,
+};
+use crate::services::watcher_paths::{normalize_path, should_ignore_watched_file, uploaded_subdir};
+
+const EVENT_WATCHER_STATUS: &str = "desktop://watcher-status-changed";
+const EVENT_TORRENT_DETECTED: &str = "desktop://torrent-detected";
+const EVENT_UPLOAD_QUEUED: &str = "desktop://upload-queued";
+const EVENT_UPLOAD_SUCCEEDED: &str = "desktop://upload-succeeded";
+const EVENT_UPLOAD_FAILED: &str = "desktop://upload-failed";
+
+const SHUTDOWN_JOIN_TIMEOUT_SECS: u64 = 5;
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WatcherActivityEntry {
+    pub filename: String,
+    pub timestamp: String,
+    pub result: String,
+    pub detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WatcherStatus {
+    pub running: bool,
+    pub watch_path: Option<String>,
+    pub queue_depth: usize,
+    pub last_error: Option<String>,
+    pub uploads_today: u32,
+    pub activity: Vec<WatcherActivityEntry>,
+}
+
+struct WatcherRuntimeState {
+    running: bool,
+    session_generation: u64,
+    watch_path: Option<String>,
+    queue_depth: usize,
+    last_error: Option<String>,
+    uploads_today: u32,
+    uploads_today_date: Option<String>,
+    activity: VecDeque<WatcherActivityEntry>,
+    in_flight: HashSet<String>,
+    stop_tx: Option<mpsc::Sender<()>>,
+    task_handle: Option<JoinHandle<()>>,
+    watcher: Option<RecommendedWatcher>,
+}
+
+impl Default for WatcherRuntimeState {
+    fn default() -> Self {
+        Self {
+            running: false,
+            session_generation: 0,
+            watch_path: None,
+            queue_depth: 0,
+            last_error: None,
+            uploads_today: 0,
+            uploads_today_date: None,
+            activity: VecDeque::new(),
+            in_flight: HashSet::new(),
+            stop_tx: None,
+            task_handle: None,
+            watcher: None,
+        }
+    }
+}
+
+pub struct FolderWatcherService {
+    inner: Arc<FolderWatcherInner>,
+}
+
+struct FolderWatcherInner {
+    app: AppHandle,
+    settings: Arc<SettingsService>,
+    processed: Arc<ProcessedFingerprintStore>,
+    runtime: Mutex<WatcherRuntimeState>,
+}
+
+impl FolderWatcherService {
+    pub fn new(app: AppHandle, settings: Arc<SettingsService>) -> Result<Self, String> {
+        let app_data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
+        let processed = Arc::new(ProcessedFingerprintStore::new(&app_data_dir)?);
+
+        Ok(Self {
+            inner: Arc::new(FolderWatcherInner {
+                app,
+                settings,
+                processed,
+                runtime: Mutex::new(WatcherRuntimeState::default()),
+            }),
+        })
+    }
+
+    pub fn get_status(&self) -> WatcherStatus {
+        let runtime = self
+            .inner
+            .runtime
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        WatcherStatus {
+            running: runtime.running,
+            watch_path: runtime.watch_path.clone(),
+            queue_depth: runtime.queue_depth,
+            last_error: runtime.last_error.clone(),
+            uploads_today: runtime.uploads_today,
+            activity: runtime.activity.iter().cloned().collect(),
+        }
+    }
+
+    pub fn stop(&self) -> Result<(), String> {
+        self.stop_internal(SHUTDOWN_JOIN_TIMEOUT_SECS)
+    }
+
+    pub fn shutdown(&self) {
+        let _ = self.stop_internal(SHUTDOWN_JOIN_TIMEOUT_SECS);
+    }
+
+    fn stop_internal(&self, join_timeout_secs: u64) -> Result<(), String> {
+        let (stop_tx, task_handle, generation) = {
+            let mut runtime = self
+                .inner
+                .runtime
+                .lock()
+                .map_err(|_| "Watcher runtime lock poisoned".to_string())?;
+
+            runtime.session_generation = runtime.session_generation.saturating_add(1);
+            let generation = runtime.session_generation;
+            let stop_tx = runtime.stop_tx.take();
+            let task_handle = runtime.task_handle.take();
+            runtime.watcher = None;
+            runtime.running = false;
+            (stop_tx, task_handle, generation)
+        };
+
+        if let Some(tx) = stop_tx {
+            let _ = tx.try_send(());
+        }
+
+        if let Some(handle) = task_handle {
+            tauri::async_runtime::block_on(async {
+                let _ = tokio::time::timeout(
+                    Duration::from_secs(join_timeout_secs),
+                    handle,
+                )
+                .await;
+            });
+        }
+
+        if let Ok(mut runtime) = self.inner.runtime.lock() {
+            if runtime.session_generation == generation {
+                runtime.queue_depth = 0;
+                runtime.in_flight.clear();
+            }
+        }
+
+        self.emit_status();
+        Ok(())
+    }
+
+    pub fn start(&self, scan_existing: bool) -> Result<(), String> {
+        let config = self.inner.settings.get_folder_watcher_config();
+        if !config.enabled {
+            return Err("Folder watcher is disabled".into());
+        }
+
+        self.inner.settings.validate_folder_watcher_for_start(&config)?;
+
+        let watch_path = config
+            .watch_path
+            .as_ref()
+            .ok_or("Watch folder is not configured")?
+            .clone();
+
+        read_api_key().map_err(|_| {
+            "Store your TorBox API key via Enable background features before starting the watcher"
+                .to_string()
+        })?;
+
+        normalize_path(&watch_path)?;
+        self.stop_internal(SHUTDOWN_JOIN_TIMEOUT_SECS)?;
+
+        let session_generation = {
+            let mut runtime = self
+                .inner
+                .runtime
+                .lock()
+                .map_err(|_| "Watcher runtime lock poisoned".to_string())?;
+            runtime.session_generation = runtime.session_generation.saturating_add(1);
+            runtime.session_generation
+        };
+
+        let (event_tx, mut event_rx) = mpsc::channel::<PathBuf>(64);
+        let (stop_tx, mut stop_rx) = mpsc::channel::<()>(1);
+
+        let watch_root = PathBuf::from(&watch_path);
+        let notify_tx = event_tx.clone();
+        let mut watcher = RecommendedWatcher::new(
+            move |res: Result<Event, notify::Error>| {
+                if let Ok(event) = res {
+                    match event.kind {
+                        EventKind::Create(_) | EventKind::Modify(_) => {
+                            for path in event.paths {
+                                if notify_tx.try_send(path).is_err() {
+                                    eprintln!("[folder-watcher] Dropped file event: channel full");
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            },
+            Config::default(),
+        )
+        .map_err(|e| format!("Failed to create folder watcher: {e}"))?;
+
+        watcher
+            .watch(&watch_root, RecursiveMode::NonRecursive)
+            .map_err(|e| format!("Failed to watch folder: {e}"))?;
+
+        {
+            let mut runtime = self
+                .inner
+                .runtime
+                .lock()
+                .map_err(|_| "Watcher runtime lock poisoned".to_string())?;
+            runtime.running = true;
+            runtime.watch_path = Some(watch_path.clone());
+            runtime.last_error = None;
+            runtime.stop_tx = Some(stop_tx);
+            runtime.watcher = Some(watcher);
+            reset_uploads_today_if_needed(&mut runtime);
+        }
+
+        self.emit_status();
+
+        if scan_existing && config.scan_existing_on_enable {
+            let uploaded_dir = uploaded_subdir(&watch_root);
+            let custom_move = config.custom_move_path.as_ref().map(PathBuf::from);
+            if let Ok(entries) = fs::read_dir(&watch_root) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file()
+                        && !should_ignore_watched_file(
+                            &path,
+                            &watch_root,
+                            Some(&uploaded_dir),
+                            custom_move.as_deref(),
+                        )
+                    {
+                        let _ = event_tx.try_send(path);
+                    }
+                }
+            }
+        }
+
+        let inner = Arc::clone(&self.inner);
+        // Sequential single-file uploads; multi-file debounced batching is future work.
+        let handle = tauri::async_runtime::spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = stop_rx.recv() => break,
+                    maybe_path = event_rx.recv() => {
+                        if !is_session_active(&inner, session_generation) {
+                            break;
+                        }
+                        match maybe_path {
+                            Some(path) => {
+                                process_detected_path(inner.clone(), path, session_generation).await;
+                            }
+                            None => break,
+                        }
+                    }
+                }
+            }
+        });
+
+        if let Ok(mut runtime) = self.inner.runtime.lock() {
+            runtime.task_handle = Some(handle);
+        }
+
+        Ok(())
+    }
+
+    pub fn try_auto_start(&self) -> Result<(), String> {
+        let config = self.inner.settings.get_folder_watcher_config();
+        if !config.enabled {
+            return Ok(());
+        }
+        if config.watch_path.is_none() {
+            return Ok(());
+        }
+        if read_api_key().is_err() {
+            return Ok(());
+        }
+        if self.inner.settings.validate_folder_watcher_for_start(&config).is_err() {
+            return Ok(());
+        }
+        self.start(false)
+    }
+
+    fn emit_status(&self) {
+        let status = self.get_status();
+        let _ = self.inner.app.emit(EVENT_WATCHER_STATUS, status);
+    }
+}
+
+fn is_session_active(inner: &FolderWatcherInner, session_generation: u64) -> bool {
+    inner
+        .runtime
+        .lock()
+        .map(|runtime| runtime.session_generation == session_generation)
+        .unwrap_or(false)
+}
+
+fn reset_uploads_today_if_needed(runtime: &mut WatcherRuntimeState) {
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    if runtime.uploads_today_date.as_deref() != Some(today.as_str()) {
+        runtime.uploads_today = 0;
+        runtime.uploads_today_date = Some(today);
+    }
+}
+
+async fn process_detected_path(
+    inner: Arc<FolderWatcherInner>,
+    file_path: PathBuf,
+    session_generation: u64,
+) {
+    if !is_session_active(&inner, session_generation) {
+        return;
+    }
+
+    let config = inner.settings.get_folder_watcher_config();
+    let watch_path = match config.watch_path.as_ref() {
+        Some(path) => PathBuf::from(path),
+        None => return,
+    };
+
+    let uploaded_dir = uploaded_subdir(&watch_path);
+    let custom_move = config.custom_move_path.as_ref().map(PathBuf::from);
+
+    if should_ignore_watched_file(
+        &file_path,
+        &watch_path,
+        Some(&uploaded_dir),
+        custom_move.as_deref(),
+    ) {
+        return;
+    }
+
+    let filename = file_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown.torrent")
+        .to_string();
+
+    let _ = inner.app.emit(
+        EVENT_TORRENT_DETECTED,
+        serde_json::json!({
+            "filename": filename,
+            "path": file_path.to_string_lossy(),
+        }),
+    );
+
+    adjust_queue_depth(&inner, 1);
+
+    let stable_ms = config.stable_file_ms;
+    let bytes = match wait_for_stable_file(&file_path, stable_ms).await {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            if is_session_active(&inner, session_generation) {
+                record_failure(&inner, &filename, &error, false);
+            }
+            adjust_queue_depth(&inner, -1);
+            return;
+        }
+    };
+
+    if !is_session_active(&inner, session_generation) {
+        adjust_queue_depth(&inner, -1);
+        return;
+    }
+
+    let fingerprint = sha256_hex(&bytes);
+    if inner.processed.has_fingerprint(&fingerprint) || is_in_flight(&inner, &fingerprint) {
+        adjust_queue_depth(&inner, -1);
+        return;
+    }
+
+    set_in_flight(&inner, &fingerprint, true);
+    let _ = inner.app.emit(
+        EVENT_UPLOAD_QUEUED,
+        serde_json::json!({
+            "filename": filename,
+            "fingerprint": fingerprint,
+        }),
+    );
+
+    let instance_url = inner.settings.get_instance_url();
+    let mut attempt = 0u32;
+    let mut rate_limit_attempts = 0u32;
+    let mut last_error: Option<String> = None;
+
+    loop {
+        if !is_session_active(&inner, session_generation) {
+            set_in_flight(&inner, &fingerprint, false);
+            adjust_queue_depth(&inner, -1);
+            return;
+        }
+
+        match upload_torrent_file(
+            &instance_url,
+            &bytes,
+            &filename,
+            &config.torrent_options,
+        )
+        .await
+        {
+            Ok(success) => {
+                // Mark processed before post-upload action so a move/delete failure
+                // cannot cause a duplicate TorBox upload on the next watch event.
+                if let Err(error) = inner.processed.mark_processed(&fingerprint, &filename) {
+                    record_failure(&inner, &filename, &error, false);
+                    set_in_flight(&inner, &fingerprint, false);
+                    adjust_queue_depth(&inner, -1);
+                    return;
+                }
+
+                match apply_post_upload_action(&file_path, &config) {
+                    Ok(moved_to) => {
+                        record_success(&inner, &filename, moved_to.clone());
+                        let _ = inner.app.emit(
+                            EVENT_UPLOAD_SUCCEEDED,
+                            serde_json::json!({
+                                "filename": filename,
+                                "uploadId": success.upload_id,
+                                "movedTo": moved_to,
+                            }),
+                        );
+                    }
+                    Err(error) => {
+                        record_move_failed(&inner, &filename, &error);
+                        let _ = inner.app.emit(
+                            EVENT_UPLOAD_SUCCEEDED,
+                            serde_json::json!({
+                                "filename": filename,
+                                "uploadId": success.upload_id,
+                                "movedTo": null,
+                                "postActionWarning": error,
+                            }),
+                        );
+                    }
+                }
+
+                set_in_flight(&inner, &fingerprint, false);
+                adjust_queue_depth(&inner, -1);
+                return;
+            }
+            Err(error) => {
+                last_error = Some(error.message.clone());
+                if error.rate_limited && rate_limit_attempts < WATCHER_RATE_LIMIT_MAX_RETRIES {
+                    rate_limit_attempts += 1;
+                    record_failure(
+                        &inner,
+                        &filename,
+                        last_error.as_deref().unwrap_or("Upload failed"),
+                        true,
+                    );
+                    tokio::time::sleep(error.retry_delay()).await;
+                    continue;
+                }
+
+                attempt += 1;
+                if attempt < WATCHER_MAX_RETRIES {
+                    let backoff_secs = 2u64.pow(attempt);
+                    tokio::time::sleep(Duration::from_secs(backoff_secs)).await;
+                    continue;
+                }
+                break;
+            }
+        }
+    }
+
+    record_failure(
+        &inner,
+        &filename,
+        last_error.as_deref().unwrap_or("Upload failed"),
+        false,
+    );
+    set_in_flight(&inner, &fingerprint, false);
+    adjust_queue_depth(&inner, -1);
+
+    let _ = inner.app.emit(
+        EVENT_UPLOAD_FAILED,
+        serde_json::json!({
+            "filename": filename,
+            "error": last_error.unwrap_or_else(|| "Upload failed".to_string()),
+            "willRetry": false,
+        }),
+    );
+}
+
+fn adjust_queue_depth(inner: &FolderWatcherInner, delta: i32) {
+    if let Ok(mut runtime) = inner.runtime.lock() {
+        if delta.is_negative() {
+            runtime.queue_depth = runtime
+                .queue_depth
+                .saturating_sub(delta.unsigned_abs() as usize);
+        } else {
+            runtime.queue_depth = runtime.queue_depth.saturating_add(delta as usize);
+        }
+    }
+    emit_status_from_inner(inner);
+}
+
+fn is_in_flight(inner: &FolderWatcherInner, fingerprint: &str) -> bool {
+    inner
+        .runtime
+        .lock()
+        .map(|runtime| runtime.in_flight.contains(fingerprint))
+        .unwrap_or(false)
+}
+
+fn set_in_flight(inner: &FolderWatcherInner, fingerprint: &str, active: bool) {
+    if let Ok(mut runtime) = inner.runtime.lock() {
+        if active {
+            runtime.in_flight.insert(fingerprint.to_string());
+        } else {
+            runtime.in_flight.remove(fingerprint);
+        }
+    }
+}
+
+fn record_success(inner: &FolderWatcherInner, filename: &str, moved_to: Option<String>) {
+    if let Ok(mut runtime) = inner.runtime.lock() {
+        reset_uploads_today_if_needed(&mut runtime);
+        runtime.uploads_today = runtime.uploads_today.saturating_add(1);
+        runtime.last_error = None;
+        runtime.activity.push_front(WatcherActivityEntry {
+            filename: filename.to_string(),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            result: "success".to_string(),
+            detail: moved_to,
+        });
+        while runtime.activity.len() > WATCHER_ACTIVITY_LOG_LIMIT {
+            runtime.activity.pop_back();
+        }
+    }
+    emit_status_from_inner(inner);
+}
+
+fn record_move_failed(inner: &FolderWatcherInner, filename: &str, error: &str) {
+    if let Ok(mut runtime) = inner.runtime.lock() {
+        reset_uploads_today_if_needed(&mut runtime);
+        runtime.uploads_today = runtime.uploads_today.saturating_add(1);
+        runtime.last_error = Some(error.to_string());
+        runtime.activity.push_front(WatcherActivityEntry {
+            filename: filename.to_string(),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            result: "uploaded_move_failed".to_string(),
+            detail: Some(error.to_string()),
+        });
+        while runtime.activity.len() > WATCHER_ACTIVITY_LOG_LIMIT {
+            runtime.activity.pop_back();
+        }
+    }
+    emit_status_from_inner(inner);
+}
+
+fn record_failure(inner: &FolderWatcherInner, filename: &str, error: &str, will_retry: bool) {
+    if let Ok(mut runtime) = inner.runtime.lock() {
+        runtime.last_error = Some(error.to_string());
+        runtime.activity.push_front(WatcherActivityEntry {
+            filename: filename.to_string(),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            result: if will_retry {
+                "retry".to_string()
+            } else {
+                "failed".to_string()
+            },
+            detail: Some(error.to_string()),
+        });
+        while runtime.activity.len() > WATCHER_ACTIVITY_LOG_LIMIT {
+            runtime.activity.pop_back();
+        }
+    }
+    emit_status_from_inner(inner);
+}
+
+fn emit_status_from_inner(inner: &FolderWatcherInner) {
+    let status = {
+        let runtime = inner.runtime.lock().unwrap_or_else(|e| e.into_inner());
+        WatcherStatus {
+            running: runtime.running,
+            watch_path: runtime.watch_path.clone(),
+            queue_depth: runtime.queue_depth,
+            last_error: runtime.last_error.clone(),
+            uploads_today: runtime.uploads_today,
+            activity: runtime.activity.iter().cloned().collect(),
+        }
+    };
+    let _ = inner.app.emit(EVENT_WATCHER_STATUS, status);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reset_uploads_today_on_new_day() {
+        let mut runtime = WatcherRuntimeState {
+            uploads_today: 5,
+            uploads_today_date: Some("2000-01-01".to_string()),
+            ..Default::default()
+        };
+        reset_uploads_today_if_needed(&mut runtime);
+        assert_eq!(runtime.uploads_today, 0);
+        assert_eq!(
+            runtime.uploads_today_date,
+            Some(chrono::Utc::now().format("%Y-%m-%d").to_string())
+        );
+    }
+}

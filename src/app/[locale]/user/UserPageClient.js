@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import AppShell from '@/components/navigation/AppShell';
 import UserProfile from '@/components/user/UserProfile';
-import DesktopSettingsPanel from '@/components/desktop/DesktopSettingsPanel';
 import ReferralUpgradeCard from '@/components/referral/ReferralUpgradeCard';
 import Toast from '@/components/shared/Toast';
 import { useSession } from '@/components/shared/hooks/useSession';
@@ -52,7 +51,6 @@ export default function UserPageClient() {
           <ErrorBoundary>
             <ReferralUpgradeCard apiKey={apiKey} onToast={setToast} />
             <UserProfile apiKey={apiKey} setToast={setToast} />
-            <DesktopSettingsPanel apiKey={apiKey} setToast={setToast} />
           </ErrorBoundary>
         </div>
       </div>
