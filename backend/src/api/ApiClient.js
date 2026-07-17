@@ -1,6 +1,7 @@
 import axios from 'axios';
 import logger from '../utils/logger.js';
 import WeightedFairSemaphore from '../utils/WeightedFairSemaphore.js';
+import { fetchMyList, mergeMyListWithQueued } from './mylistPagination.js';
 import torboxApiOutageCoordinator from './TorboxApiOutageCoordinator.js';
 
 /**
@@ -431,36 +432,64 @@ class ApiClient {
   // Torrent Methods
   // ============================================================================
 
-  async getTorrents(bypassCache = false) {
+  /**
+   * Load mylist + queued rows for an asset type.
+   * @param {Object} options
+   * @param {boolean} options.bypassCache
+   * @param {string} options.mylistEndpoint
+   * @param {string} options.queuedType
+   * @param {string} options.logLabel
+   * @param {(item: object, options?: { queued?: boolean }) => object} options.normalizeItem
+   * @returns {Promise<object[]>}
+   */
+  async _fetchMyListWithQueued({
+    bypassCache,
+    mylistEndpoint,
+    queuedType,
+    logLabel,
+    normalizeItem,
+  }) {
     const fetchTimeout = Number.isFinite(DEFAULT_FETCH_TIMEOUT) ? DEFAULT_FETCH_TIMEOUT : 20000;
+    const [myListResult, queuedResponse] = await Promise.all([
+      fetchMyList({
+        client: this.client,
+        endpoint: mylistEndpoint,
+        bypassCache,
+        timeout: fetchTimeout,
+      }),
+      this.client.get('/api/queued/getqueued', {
+        params: { type: queuedType, bypass_cache: bypassCache },
+        timeout: fetchTimeout,
+      }),
+    ]);
+
+    if (myListResult.pageCount > 1) {
+      logger.debug(`Fetched paginated ${logLabel} mylist`, {
+        pageCount: myListResult.pageCount,
+        itemCount: myListResult.items.length,
+      });
+    }
+
+    return mergeMyListWithQueued(myListResult.items, queuedResponse.data.data || [], normalizeItem);
+  }
+
+  async getTorrents(bypassCache = false) {
     return this.handleApiCall(
       async () => {
-        const [torrentsResponse, queuedResponse] = await Promise.all([
-          this.client.get('/api/torrents/mylist', {
-            params: { bypass_cache: bypassCache },
-            timeout: fetchTimeout,
-          }),
-          this.client.get('/api/queued/getqueued', {
-            params: {
-              type: 'torrent',
-              bypass_cache: bypassCache,
-            },
-            timeout: fetchTimeout,
-          }),
-        ]);
+        const normalizeTorrent = (t, { queued = false } = {}) => ({
+          ...t,
+          active: normalizeActive(t.active),
+          assetType: 'torrent',
+          ...(queued ? { status: 'queued' } : {}),
+        });
 
-        const torrents = (torrentsResponse.data.data || []).map((t) => ({
-          ...t,
-          active: normalizeActive(t.active),
-          assetType: 'torrent',
-        }));
-        const queued = (queuedResponse.data.data || []).map((t) => ({
-          ...t,
-          active: normalizeActive(t.active),
-          assetType: 'torrent',
-          status: 'queued',
-        }));
-        return [...torrents, ...queued];
+        return this._fetchMyListWithQueued({
+          bypassCache,
+          mylistEndpoint: '/api/torrents/mylist',
+          queuedType: 'torrent',
+          logLabel: 'torrent',
+          normalizeItem: normalizeTorrent,
+        });
       },
       {
         endpoint: '/api/torrents/mylist',
@@ -566,29 +595,21 @@ class ApiClient {
   // ============================================================================
 
   async getUsenetDownloads(bypassCache = false) {
-    const fetchTimeout = Number.isFinite(DEFAULT_FETCH_TIMEOUT) ? DEFAULT_FETCH_TIMEOUT : 20000;
     return this.handleApiCall(
       async () => {
-        const [listResponse, queuedResponse] = await Promise.all([
-          this.client.get('/api/usenet/mylist', {
-            params: { bypass_cache: bypassCache },
-            timeout: fetchTimeout,
-          }),
-          this.client.get('/api/queued/getqueued', {
-            params: { type: 'usenet', bypass_cache: bypassCache },
-            timeout: fetchTimeout,
-          }),
-        ]);
-        const active = (listResponse.data.data || []).map((t) => ({
+        const normalizeUsenet = (t, { queued = false } = {}) => ({
           ...t,
           active: normalizeActive(t.active),
-        }));
-        const queued = (queuedResponse.data.data || []).map((t) => ({
-          ...t,
-          active: normalizeActive(t.active),
-          status: 'queued',
-        }));
-        return [...active, ...queued];
+          ...(queued ? { status: 'queued' } : {}),
+        });
+
+        return this._fetchMyListWithQueued({
+          bypassCache,
+          mylistEndpoint: '/api/usenet/mylist',
+          queuedType: 'usenet',
+          logLabel: 'usenet',
+          normalizeItem: normalizeUsenet,
+        });
       },
       {
         endpoint: '/api/usenet/mylist',
@@ -600,29 +621,21 @@ class ApiClient {
   }
 
   async getWebDownloads(bypassCache = false) {
-    const fetchTimeout = Number.isFinite(DEFAULT_FETCH_TIMEOUT) ? DEFAULT_FETCH_TIMEOUT : 20000;
     return this.handleApiCall(
       async () => {
-        const [listResponse, queuedResponse] = await Promise.all([
-          this.client.get('/api/webdl/mylist', {
-            params: { bypass_cache: bypassCache },
-            timeout: fetchTimeout,
-          }),
-          this.client.get('/api/queued/getqueued', {
-            params: { type: 'webdl', bypass_cache: bypassCache },
-            timeout: fetchTimeout,
-          }),
-        ]);
-        const active = (listResponse.data.data || []).map((t) => ({
+        const normalizeWebdl = (t, { queued = false } = {}) => ({
           ...t,
           active: normalizeActive(t.active),
-        }));
-        const queued = (queuedResponse.data.data || []).map((t) => ({
-          ...t,
-          active: normalizeActive(t.active),
-          status: 'queued',
-        }));
-        return [...active, ...queued];
+          ...(queued ? { status: 'queued' } : {}),
+        });
+
+        return this._fetchMyListWithQueued({
+          bypassCache,
+          mylistEndpoint: '/api/webdl/mylist',
+          queuedType: 'webdl',
+          logLabel: 'webdl',
+          normalizeItem: normalizeWebdl,
+        });
       },
       {
         endpoint: '/api/webdl/mylist',

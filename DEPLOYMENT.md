@@ -161,6 +161,7 @@ bun run dev
 | `NODE_ENV`                      | Node environment                                                                     | `production`             | No       |
 | `TORBOX_API_BASE`               | TorBox API base URL                                                                  | `https://api.torbox.app` | No       |
 | `TORBOX_API_VERSION`            | TorBox API version                                                                   | `v1`                     | No       |
+| `TORBOX_MYLIST_FULL_PAGINATION` | When `true`/`1`, automation fetches every TorBox mylist page (libraries >1000 items) | unset (`false`)          | No       |
 | `MASTER_DB_PATH`                | Directory for master database                                                        | `/app/data/master.db`    | No       |
 | `USER_DB_DIR`                   | Directory for user database files                                                    | `/app/data/users`        | No       |
 | `MAX_DB_CONNECTIONS`            | Maximum pooled database connections                                                  | `200`                    | No       |
