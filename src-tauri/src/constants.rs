@@ -21,6 +21,9 @@ pub const WATCHER_BATCH_DRAIN_MS: u64 = 100;
 pub const MIN_STABLE_FILE_MS: u64 = 500;
 pub const MAX_STABLE_FILE_MS: u64 = 60_000;
 
+pub const MIN_WINDOW_WIDTH: u32 = 900;
+pub const MIN_WINDOW_HEIGHT: u32 = 600;
+
 /// Matches `uploads.length > 1000` validation in Next.js and backend batch routes.
 pub const MAX_BATCH_UPLOADS_PER_REQUEST: usize = 1000;
 /// Matches backend `UPLOAD_RATE_LIMIT_MAX` default (requests per 15-minute window).

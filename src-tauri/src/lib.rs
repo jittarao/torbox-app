@@ -60,6 +60,11 @@ pub fn run() {
 
             services::tray::setup_tray(app.handle())?;
             services::tray::register_window_behavior(app.handle(), &settings)?;
+
+            if let Some(window) = app.get_webview_window("main") {
+                services::window_state::restore_window_geometry(&window, settings.as_ref());
+            }
+
             services::tray::apply_start_hidden_if_needed(app.handle(), settings.as_ref());
 
             #[cfg(not(debug_assertions))]
@@ -110,6 +115,10 @@ pub fn run() {
 
             if matches!(event, RunEvent::Exit) {
                 if let Some(state) = app.try_state::<AppState>() {
+                    services::window_state::persist_main_window_geometry(
+                        app,
+                        state.settings.as_ref(),
+                    );
                     state.folder_watcher.shutdown();
                 }
             }
