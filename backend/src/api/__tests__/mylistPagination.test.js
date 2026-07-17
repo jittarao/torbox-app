@@ -4,11 +4,11 @@ import {
   fetchAllMyListPages,
   fetchFirstMyListPage,
   fetchMyList,
-  isTorboxMylistFullPaginationEnabled,
+  isAutomationRulesMylistFullPaginationEnabled,
   mergeMyListWithQueued,
 } from '../mylistPagination.js';
 
-const ENV_KEY = 'TORBOX_MYLIST_FULL_PAGINATION';
+const ENV_KEY = 'AUTOMATION_RULES_MYLIST_FULL_PAGINATION';
 
 describe('mylistPagination', () => {
   let previousEnv;
@@ -26,15 +26,15 @@ describe('mylistPagination', () => {
     }
   });
 
-  it('isTorboxMylistFullPaginationEnabled defaults to false', () => {
-    expect(isTorboxMylistFullPaginationEnabled()).toBe(false);
+  it('isAutomationRulesMylistFullPaginationEnabled defaults to false', () => {
+    expect(isAutomationRulesMylistFullPaginationEnabled()).toBe(false);
   });
 
-  it('isTorboxMylistFullPaginationEnabled accepts true and 1', () => {
+  it('isAutomationRulesMylistFullPaginationEnabled accepts true and 1', () => {
     process.env[ENV_KEY] = 'true';
-    expect(isTorboxMylistFullPaginationEnabled()).toBe(true);
+    expect(isAutomationRulesMylistFullPaginationEnabled()).toBe(true);
     process.env[ENV_KEY] = '1';
-    expect(isTorboxMylistFullPaginationEnabled()).toBe(true);
+    expect(isAutomationRulesMylistFullPaginationEnabled()).toBe(true);
   });
 
   it('fetchFirstMyListPage requests only bypass_cache (legacy single page)', async () => {
@@ -71,7 +71,19 @@ describe('mylistPagination', () => {
     await fetchMyList({ client, endpoint: '/api/torrents/mylist' });
   });
 
-  it('fetchMyList paginates when TORBOX_MYLIST_FULL_PAGINATION is enabled', async () => {
+  it('fetchMyList ignores env when forAutomationRules is false', async () => {
+    process.env[ENV_KEY] = 'true';
+    const client = {
+      get: async (_endpoint, config) => {
+        expect(config.params.offset).toBeUndefined();
+        return { data: { data: [{ id: 1 }] } };
+      },
+    };
+
+    await fetchMyList({ client, endpoint: '/api/torrents/mylist', forAutomationRules: false });
+  });
+
+  it('fetchMyList paginates for automation rules when env is enabled', async () => {
     process.env[ENV_KEY] = 'true';
     const page0 = Array.from({ length: MYLIST_PAGE_LIMIT }, (_, i) => ({ id: i + 1 }));
     const page1 = [{ id: MYLIST_PAGE_LIMIT + 1 }];
@@ -84,7 +96,11 @@ describe('mylistPagination', () => {
       },
     };
 
-    const result = await fetchMyList({ client, endpoint: '/api/torrents/mylist' });
+    const result = await fetchMyList({
+      client,
+      endpoint: '/api/torrents/mylist',
+      forAutomationRules: true,
+    });
     expect(result.pageCount).toBe(2);
     expect(result.items).toHaveLength(MYLIST_PAGE_LIMIT + 1);
   });

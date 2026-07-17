@@ -1,15 +1,16 @@
 /** TorBox mylist max page size; matches frontend fetchTorboxDownloadList.js */
 export const MYLIST_PAGE_LIMIT = 1000;
 
-const FULL_PAGINATION_ENV = 'TORBOX_MYLIST_FULL_PAGINATION';
+const AUTOMATION_RULES_FULL_PAGINATION_ENV = 'AUTOMATION_RULES_MYLIST_FULL_PAGINATION';
 
 /**
- * When true, backend fetches every TorBox mylist page (required for automation on libraries >1000).
- * Default false: first API page only (~1000 newest items), matching legacy behavior.
+ * When true, automation rule evaluation fetches every TorBox mylist page (libraries >1000).
+ * Does not affect uploads, API key checks, or other backend mylist reads.
+ * Default false: first API page only (~1000 newest items).
  * @returns {boolean}
  */
-export function isTorboxMylistFullPaginationEnabled() {
-  const raw = process.env[FULL_PAGINATION_ENV];
+export function isAutomationRulesMylistFullPaginationEnabled() {
+  const raw = process.env[AUTOMATION_RULES_FULL_PAGINATION_ENV];
   if (raw == null || raw === '') return false;
   const normalized = String(raw).trim().toLowerCase();
   return normalized === 'true' || normalized === '1';
@@ -34,16 +35,20 @@ export async function fetchFirstMyListPage({ client, endpoint, bypassCache = fal
 }
 
 /**
- * Fetch mylist using full pagination when TORBOX_MYLIST_FULL_PAGINATION is enabled.
+ * Fetch mylist for automation or general backend use.
+ * Full pagination runs only when `forAutomationRules` is true and
+ * AUTOMATION_RULES_MYLIST_FULL_PAGINATION is enabled.
  * @param {Object} options
  * @param {import('axios').AxiosInstance} options.client
  * @param {string} options.endpoint
  * @param {boolean} [options.bypassCache]
  * @param {number} [options.timeout]
+ * @param {boolean} [options.forAutomationRules]
  * @returns {Promise<{ items: object[], pageCount: number }>}
  */
-export async function fetchMyList(options) {
-  if (isTorboxMylistFullPaginationEnabled()) {
+export async function fetchMyList({ forAutomationRules = false, ...options }) {
+  const useFullPagination = forAutomationRules && isAutomationRulesMylistFullPaginationEnabled();
+  if (useFullPagination) {
     return fetchAllMyListPages(options);
   }
   return fetchFirstMyListPage(options);
