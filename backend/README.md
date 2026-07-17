@@ -176,6 +176,7 @@ LIMITED tier users (default for all new users) have staged upload files capped b
 | `UPLOAD_LIMIT_MAX_STORAGE_MB`   | Max total staged upload storage per LIMITED user                                 | `100`   |
 | `UPLOAD_LIMIT_MAX_FILES`        | Max retained staged files per LIMITED user                                       | `500`   |
 | `AUTOMATION_INACTIVE_USER_DAYS` | Skip automation polling for users inactive N days (`last_seen_at`; `0` disables) | `30`    |
+| `TORBOX_MYLIST_FULL_PAGINATION` | When `true`/`1`, automation fetches every TorBox mylist page (libraries >1000)   | unset   |
 
 Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uploadQuota.js`. Counters are cached in the master DB; startup backfill reconciles usage from per-user SQLite + disk.
 

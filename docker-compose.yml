@@ -36,6 +36,8 @@ services:
       - UPLOAD_LIMIT_MAX_FILES=${UPLOAD_LIMIT_MAX_FILES:-500}
       # Automation inactivity filter (skip polling for users inactive N days; 0 disables)
       - AUTOMATION_INACTIVE_USER_DAYS=${AUTOMATION_INACTIVE_USER_DAYS:-30}
+      # TorBox mylist: set true to paginate all pages in automation (default: first page only)
+      - TORBOX_MYLIST_FULL_PAGINATION=${TORBOX_MYLIST_FULL_PAGINATION:-}
     # Persistent volume for backend data (databases, user files, etc.)
     volumes:
       - backend-data:/app/data
