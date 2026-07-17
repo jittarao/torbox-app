@@ -7,6 +7,7 @@ use std::time::Duration;
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, Position, Size, WebviewWindow};
 
 use crate::services::settings::{SettingsService, WindowGeometry};
+use crate::services::web_path::{extract_web_path_from_url, navigation_url_for_path};
 
 const GEOMETRY_SAVE_DEBOUNCE_MS: u64 = 500;
 
@@ -67,14 +68,62 @@ pub fn handle_window_geometry_event(
         tauri::WindowEvent::CloseRequested { .. } => {
             if let Some(window) = app.get_webview_window("main") {
                 persist_window_geometry(&window, settings);
+                persist_web_location(&window, settings);
             }
         }
         _ => {}
     }
 }
 
-pub fn persist_main_window_geometry(app: &AppHandle, settings: &SettingsService) {
+pub fn restore_web_location(window: &WebviewWindow, settings: &SettingsService) {
+    let Some(web_path) = settings.get_last_web_path() else {
+        return;
+    };
+
+    let base = resolve_navigation_base(window, settings);
+    let Ok(target) = navigation_url_for_path(&base, &web_path) else {
+        return;
+    };
+
+    if let Ok(current) = window.url() {
+        if current.path() == target.path() && current.query() == target.query() {
+            return;
+        }
+    }
+
+    let _ = window.navigate(target);
+}
+
+fn resolve_navigation_base(window: &WebviewWindow, settings: &SettingsService) -> String {
+    #[cfg(debug_assertions)]
+    {
+        let _ = settings;
+        if let Ok(url) = window.url() {
+            let origin = url.origin().ascii_serialization();
+            if origin.starts_with("http://localhost:") || origin.starts_with("http://127.0.0.1:") {
+                return origin;
+            }
+        }
+        return "http://localhost:3000".to_string();
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        settings.get_instance_url()
+    }
+}
+
+pub fn persist_web_location(window: &WebviewWindow, settings: &SettingsService) {
+    let Ok(current) = window.url() else {
+        return;
+    };
+    if let Some(path) = extract_web_path_from_url(&current) {
+        let _ = settings.set_last_web_path(Some(path));
+    }
+}
+
+pub fn persist_main_window_state(app: &AppHandle, settings: &SettingsService) {
     if let Some(window) = app.get_webview_window("main") {
         persist_window_geometry(&window, settings);
+        persist_web_location(&window, settings);
     }
 }

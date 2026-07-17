@@ -208,6 +208,8 @@ pub struct DesktopSettings {
     path_allowlist: PathAllowlist,
     #[serde(default)]
     pub window_geometry: WindowGeometry,
+    #[serde(default)]
+    pub last_web_path: Option<String>,
 }
 
 impl Default for DesktopSettings {
@@ -221,6 +223,7 @@ impl Default for DesktopSettings {
             notifications: NotificationSettings::default(),
             path_allowlist: PathAllowlist::default(),
             window_geometry: WindowGeometry::default(),
+            last_web_path: None,
         }
     }
 }
@@ -336,6 +339,34 @@ impl SettingsService {
             .lock()
             .map_err(|_| "Settings lock poisoned".to_string())?;
         settings.window_geometry = geometry;
+        self.persist(&settings)
+    }
+
+    pub fn get_last_web_path(&self) -> Option<String> {
+        self.settings
+            .lock()
+            .ok()
+            .and_then(|s| s.last_web_path.clone())
+    }
+
+    pub fn set_last_web_path(&self, path: Option<String>) -> Result<(), String> {
+        let normalized = match path {
+            None => None,
+            Some(path) => {
+                let validated = crate::services::web_path::validate_web_path(&path)?;
+                if crate::services::web_path::is_meaningful_web_path(validated) {
+                    Some(validated.to_string())
+                } else {
+                    None
+                }
+            }
+        };
+
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+        settings.last_web_path = normalized;
         self.persist(&settings)
     }
 

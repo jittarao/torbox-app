@@ -90,6 +90,14 @@ export async function setInstanceUrl(url: string): Promise<string | null> {
   return invoke<string>('set_instance_url', { url });
 }
 
+export async function setLastWebPath(path: string): Promise<boolean> {
+  if (!(await isAvailable())) {
+    return false;
+  }
+  await invoke('set_last_web_path', { path });
+  return true;
+}
+
 export async function syncApiKeyToDesktop(apiKey: string): Promise<boolean> {
   if (!(await isAvailable()) || !hasBridgeFeature('secureCredentials')) {
     return false;
@@ -240,6 +248,7 @@ export const desktop = {
   hello,
   getInstanceUrl,
   setInstanceUrl,
+  setLastWebPath,
   syncApiKeyToDesktop,
   getCredentialStatus,
   clearDesktopCredential,
