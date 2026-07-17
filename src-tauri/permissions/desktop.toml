@@ -1,0 +1,11 @@
+[[permission]]
+identifier = "allow-desktop-bridge"
+description = "Desktop bridge IPC commands for the hosted web app"
+commands.allow = [
+  "desktop_hello",
+  "get_instance_url",
+  "set_instance_url",
+  "sync_api_key_to_desktop",
+  "get_credential_status",
+  "clear_desktop_credential",
+]
