@@ -5,7 +5,10 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-use crate::constants::{DEFAULT_INSTANCE_URL, DEFAULT_STABLE_FILE_MS, MAX_STABLE_FILE_MS, MIN_STABLE_FILE_MS};
+use crate::constants::{
+    DEFAULT_INSTANCE_URL, DEFAULT_STABLE_FILE_MS, MAX_STABLE_FILE_MS, MIN_STABLE_FILE_MS,
+    MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH,
+};
 use crate::services::atomic_json::write_atomic;
 use crate::services::url_validation::{default_instance_url, validate_instance_url};
 use crate::services::watcher_paths::{normalize_path, paths_equal};
@@ -148,6 +151,44 @@ impl Default for NotificationSettings {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowGeometry {
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+    #[serde(default)]
+    pub x: Option<i32>,
+    #[serde(default)]
+    pub y: Option<i32>,
+}
+
+impl WindowGeometry {
+    pub fn clamped_size(&self) -> Option<(u32, u32)> {
+        let width = self.width?;
+        let height = self.height?;
+        Some((
+            width.max(MIN_WINDOW_WIDTH),
+            height.max(MIN_WINDOW_HEIGHT),
+        ))
+    }
+
+    pub fn from_physical(
+        width: u32,
+        height: u32,
+        x: i32,
+        y: i32,
+    ) -> Self {
+        Self {
+            width: Some(width.max(MIN_WINDOW_WIDTH)),
+            height: Some(height.max(MIN_WINDOW_HEIGHT)),
+            x: Some(x),
+            y: Some(y),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DesktopSettings {
@@ -165,6 +206,8 @@ pub struct DesktopSettings {
     pub notifications: NotificationSettings,
     #[serde(default)]
     path_allowlist: PathAllowlist,
+    #[serde(default)]
+    pub window_geometry: WindowGeometry,
 }
 
 impl Default for DesktopSettings {
@@ -177,6 +220,7 @@ impl Default for DesktopSettings {
             tray: TraySettings::default(),
             notifications: NotificationSettings::default(),
             path_allowlist: PathAllowlist::default(),
+            window_geometry: WindowGeometry::default(),
         }
     }
 }
@@ -276,6 +320,22 @@ impl SettingsService {
             .lock()
             .map_err(|_| "Settings lock poisoned".to_string())?;
         settings.tray = tray;
+        self.persist(&settings)
+    }
+
+    pub fn get_window_geometry(&self) -> WindowGeometry {
+        self.settings
+            .lock()
+            .map(|s| s.window_geometry.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn set_window_geometry(&self, geometry: WindowGeometry) -> Result<(), String> {
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+        settings.window_geometry = geometry;
         self.persist(&settings)
     }
 
@@ -470,6 +530,26 @@ mod tests {
         fs::create_dir_all(&dir).unwrap();
         let service = SettingsService::new_for_test(&dir);
         (service, dir)
+    }
+
+    #[test]
+    fn window_geometry_clamps_below_minimum_size() {
+        let geometry = WindowGeometry {
+            width: Some(400),
+            height: Some(300),
+            x: Some(10),
+            y: Some(20),
+        };
+        assert_eq!(geometry.clamped_size(), Some((MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)));
+    }
+
+    #[test]
+    fn window_geometry_from_physical_clamps_size() {
+        let geometry = WindowGeometry::from_physical(400, 300, 10, 20);
+        assert_eq!(geometry.width, Some(MIN_WINDOW_WIDTH));
+        assert_eq!(geometry.height, Some(MIN_WINDOW_HEIGHT));
+        assert_eq!(geometry.x, Some(10));
+        assert_eq!(geometry.y, Some(20));
     }
 
     #[test]
