@@ -4,6 +4,9 @@ import type {
   DesktopFeatureMap,
   FolderWatcherConfig,
   LaunchAtLoginStatus,
+  NotificationSettings,
+  TraySettings,
+  UpdateInfo,
   WatcherStatus,
 } from '@/desktop/capabilities';
 import { WEB_BRIDGE_VERSION, hasFeature } from '@/desktop/capabilities';
@@ -178,6 +181,59 @@ export async function setLaunchAtLogin(enabled: boolean): Promise<LaunchAtLoginS
   return invoke<LaunchAtLoginStatus>('set_launch_at_login', { enabled });
 }
 
+export async function getTraySettings(): Promise<TraySettings | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('tray')) {
+    return null;
+  }
+  return invoke<TraySettings>('get_tray_settings');
+}
+
+export async function setTraySettings(tray: TraySettings): Promise<TraySettings | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('tray')) {
+    return null;
+  }
+  return invoke<TraySettings>('set_tray_settings', { tray });
+}
+
+export async function getNotificationSettings(): Promise<NotificationSettings | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('nativeNotifications')) {
+    return null;
+  }
+  return invoke<NotificationSettings>('get_notification_settings');
+}
+
+export async function setNotificationSettings(
+  settings: NotificationSettings
+): Promise<NotificationSettings | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('nativeNotifications')) {
+    return null;
+  }
+  return invoke<NotificationSettings>('set_notification_settings', { settings });
+}
+
+export async function showTestNotification(): Promise<boolean> {
+  if (!(await isAvailable()) || !hasBridgeFeature('nativeNotifications')) {
+    return false;
+  }
+  await invoke('show_test_notification');
+  return true;
+}
+
+export async function checkForUpdate(): Promise<UpdateInfo | null> {
+  if (!(await isAvailable()) || !hasBridgeFeature('updater')) {
+    return null;
+  }
+  return invoke<UpdateInfo | null>('check_for_update_command');
+}
+
+export async function installUpdate(): Promise<boolean> {
+  if (!(await isAvailable()) || !hasBridgeFeature('updater')) {
+    return false;
+  }
+  await invoke('install_update_command');
+  return true;
+}
+
 export const desktop = {
   isTauriEnvironment,
   isAvailable,
@@ -196,4 +252,11 @@ export const desktop = {
   getFolderWatcherStatus,
   getLaunchAtLogin,
   setLaunchAtLogin,
+  getTraySettings,
+  setTraySettings,
+  getNotificationSettings,
+  setNotificationSettings,
+  showTestNotification,
+  checkForUpdate,
+  installUpdate,
 };

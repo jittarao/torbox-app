@@ -13,12 +13,16 @@ use crate::constants::{
     WATCHER_ACTIVITY_LOG_LIMIT, WATCHER_MAX_RETRIES, WATCHER_RATE_LIMIT_MAX_RETRIES,
 };
 use crate::services::credentials::read_api_key;
+use crate::services::notifications::UploadNotificationKind;
 use crate::services::settings::SettingsService;
 use crate::services::tbm_client::{sha256_hex, upload_torrent_file};
 use crate::services::upload_queue::{
     apply_post_upload_action, wait_for_stable_file, ProcessedFingerprintStore,
 };
-use crate::services::watcher_paths::{normalize_path, should_ignore_watched_file, uploaded_subdir};
+use crate::services::watcher_paths::{
+    normalize_path, should_ignore_watched_file, uploaded_subdir,
+};
+use crate::state::AppState;
 
 const EVENT_WATCHER_STATUS: &str = "desktop://watcher-status-changed";
 const EVENT_TORRENT_DETECTED: &str = "desktop://torrent-detected";
@@ -456,6 +460,12 @@ async fn process_detected_path(
                                 "movedTo": moved_to,
                             }),
                         );
+                        notify_upload_result(
+                            &inner.app,
+                            UploadNotificationKind::Success,
+                            &filename,
+                            None,
+                        );
                     }
                     Err(error) => {
                         record_move_failed(&inner, &filename, &error);
@@ -467,6 +477,12 @@ async fn process_detected_path(
                                 "movedTo": null,
                                 "postActionWarning": error,
                             }),
+                        );
+                        notify_upload_result(
+                            &inner.app,
+                            UploadNotificationKind::Success,
+                            &filename,
+                            None,
                         );
                     }
                 }
@@ -513,9 +529,15 @@ async fn process_detected_path(
         EVENT_UPLOAD_FAILED,
         serde_json::json!({
             "filename": filename,
-            "error": last_error.unwrap_or_else(|| "Upload failed".to_string()),
+            "error": last_error.clone().unwrap_or_else(|| "Upload failed".to_string()),
             "willRetry": false,
         }),
+    );
+    notify_upload_result(
+        &inner.app,
+        UploadNotificationKind::Failure,
+        &filename,
+        last_error.as_deref(),
     );
 }
 
@@ -619,6 +641,19 @@ fn emit_status_from_inner(inner: &FolderWatcherInner) {
         }
     };
     let _ = inner.app.emit(EVENT_WATCHER_STATUS, status);
+}
+
+fn notify_upload_result(
+    app: &AppHandle,
+    kind: UploadNotificationKind,
+    filename: &str,
+    error: Option<&str>,
+) {
+    if let Some(state) = app.try_state::<AppState>() {
+        state
+            .notifications
+            .show_upload_notification(app, kind, filename, error);
+    }
 }
 
 #[cfg(test)]

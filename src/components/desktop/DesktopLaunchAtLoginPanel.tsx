@@ -19,10 +19,14 @@ export default function DesktopLaunchAtLoginPanel({
   const t = useTranslations('Desktop.launchAtLogin');
   const { capabilities } = useDesktopCapabilities();
   const launchAtLogin = useDesktopStore((state) => state.launchAtLogin);
+  const traySettings = useDesktopStore((state) => state.traySettings);
   const setLaunchAtLoginEnabled = useDesktopStore((state) => state.setLaunchAtLoginEnabled);
+  const saveTraySettings = useDesktopStore((state) => state.saveTraySettings);
   const [saving, setSaving] = useState(false);
+  const [savingStartHidden, setSavingStartHidden] = useState(false);
 
   const canUseLaunchAtLogin = hasFeature(capabilities, 'launchAtLogin');
+  const canUseTray = hasFeature(capabilities, 'tray');
 
   const notify = (message: string, type: 'success' | 'error') => {
     setToast?.({ message, type });
@@ -49,7 +53,29 @@ export default function DesktopLaunchAtLoginPanel({
     }
   };
 
+  const handleStartHiddenToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!traySettings) {
+      return;
+    }
+
+    setSavingStartHidden(true);
+    try {
+      const saved = await saveTraySettings({
+        ...traySettings,
+        startHidden: event.target.checked,
+      });
+      if (!saved) {
+        notify(t('startHiddenSaveFailed'), 'error');
+      }
+    } catch (error) {
+      notify(error instanceof Error ? error.message : t('startHiddenSaveFailed'), 'error');
+    } finally {
+      setSavingStartHidden(false);
+    }
+  };
+
   const osMismatch = launchAtLogin != null && launchAtLogin.enabled !== launchAtLogin.osEnabled;
+  const requiresApproval = Boolean(launchAtLogin?.requiresApproval);
 
   return (
     <div className="space-y-3">
@@ -71,6 +97,24 @@ export default function DesktopLaunchAtLoginPanel({
           description={t('help')}
         />
       </div>
+
+      {launchAtLogin?.enabled && canUseTray && traySettings ? (
+        <div className="rounded-lg border border-border/50 bg-surface-alt/40 px-4 py-4 dark:border-border-dark/50 dark:bg-surface-dark/40">
+          <DesktopToggle
+            id="desktop-launch-start-hidden"
+            checked={traySettings.startHidden}
+            disabled={savingStartHidden}
+            busy={savingStartHidden}
+            onChange={handleStartHiddenToggle}
+            label={t('startHiddenLabel')}
+            description={t('startHiddenHelp')}
+          />
+        </div>
+      ) : null}
+
+      {requiresApproval ? (
+        <DesktopInfoCallout variant="warning">{t('requiresApproval')}</DesktopInfoCallout>
+      ) : null}
 
       {osMismatch ? (
         <DesktopInfoCallout variant="warning">{t('osMismatch')}</DesktopInfoCallout>

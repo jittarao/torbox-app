@@ -17,6 +17,18 @@ describe('hasFeature', () => {
   test('returns false when capabilities are null', () => {
     expect(hasFeature(null, 'secureCredentials')).toBe(false);
   });
+
+  test('returns false for null updater capability', () => {
+    expect(
+      hasFeature(
+        {
+          protocolVersion: 1,
+          features: { updater: null },
+        },
+        'updater'
+      )
+    ).toBe(false);
+  });
 });
 
 describe('desktopBridge browser fallback', () => {
@@ -69,5 +81,24 @@ describe('desktopBridge browser fallback', () => {
     const { getLaunchAtLogin, resetAvailabilityCache } = await import('@/desktop/desktopBridge');
     resetAvailabilityCache();
     await expect(getLaunchAtLogin()).resolves.toBeNull();
+  });
+
+  test('getTraySettings returns null outside Tauri', async () => {
+    const { getTraySettings, resetAvailabilityCache } = await import('@/desktop/desktopBridge');
+    resetAvailabilityCache();
+    await expect(getTraySettings()).resolves.toBeNull();
+  });
+
+  test('getNotificationSettings returns null outside Tauri', async () => {
+    const { getNotificationSettings, resetAvailabilityCache } =
+      await import('@/desktop/desktopBridge');
+    resetAvailabilityCache();
+    await expect(getNotificationSettings()).resolves.toBeNull();
+  });
+
+  test('checkForUpdate returns null outside Tauri', async () => {
+    const { checkForUpdate, resetAvailabilityCache } = await import('@/desktop/desktopBridge');
+    resetAvailabilityCache();
+    await expect(checkForUpdate()).resolves.toBeNull();
   });
 });

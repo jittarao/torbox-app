@@ -22,5 +22,6 @@ pub fn set_instance_url(
     validate_window_origin(&window, &state)?;
     let normalized = state.settings.set_instance_url(url)?;
     crate::services::capabilities::register_custom_instance_capability(&app, &normalized)?;
+    crate::services::capabilities::emit_capabilities_changed(&app);
     Ok(normalized)
 }

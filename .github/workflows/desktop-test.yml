@@ -1,0 +1,53 @@
+name: Desktop tests
+
+on:
+  pull_request:
+    paths:
+      - 'src-tauri/**'
+      - 'src/desktop/**'
+      - 'src/store/desktopStore.ts'
+      - 'src/components/desktop/**'
+      - '.github/workflows/desktop-test.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src-tauri/**'
+      - 'src/desktop/**'
+      - 'src/store/desktopStore.ts'
+      - 'src/components/desktop/**'
+      - '.github/workflows/desktop-test.yml'
+
+jobs:
+  desktop-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Frontend desktop bridge tests
+        run: bun test src/desktop/__tests__
+
+      - name: Frontend desktop store tests
+        run: bun test src/store/__tests__/desktopStore.test.js
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Rust unit tests
+        run: cargo test
+        working-directory: src-tauri
