@@ -5,7 +5,12 @@ import { useTranslations } from 'next-intl';
 import { useDesktopCapabilities } from '@/desktop/useDesktopCapabilities';
 import { useDesktopStore } from '@/store/desktopStore';
 import { hasFeature } from '@/desktop/capabilities';
-import { DesktopInfoCallout, DesktopToggle } from '@/components/desktop/DesktopUi';
+import {
+  DesktopInfoCallout,
+  DesktopSettingGroup,
+  DesktopSettingGroupItem,
+  DesktopToggle,
+} from '@/components/desktop/DesktopUi';
 
 type DesktopLaunchAtLoginPanelProps = {
   setToast?: (toast: { message: string; type: string }) => void;
@@ -86,31 +91,33 @@ export default function DesktopLaunchAtLoginPanel({
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-border/50 bg-surface-alt/40 px-4 py-4 dark:border-border-dark/50 dark:bg-surface-dark/40">
-        <DesktopToggle
-          id="desktop-launch-at-login"
-          checked={launchAtLogin?.enabled ?? false}
-          disabled={saving}
-          busy={saving}
-          onChange={handleToggle}
-          label={t('label')}
-          description={t('help')}
-        />
-      </div>
-
-      {launchAtLogin?.enabled && canUseTray && traySettings ? (
-        <div className="rounded-lg border border-border/50 bg-surface-alt/40 px-4 py-4 dark:border-border-dark/50 dark:bg-surface-dark/40">
+      <DesktopSettingGroup>
+        <DesktopSettingGroupItem>
           <DesktopToggle
-            id="desktop-launch-start-hidden"
-            checked={traySettings.startHidden}
-            disabled={savingStartHidden}
-            busy={savingStartHidden}
-            onChange={handleStartHiddenToggle}
-            label={t('startHiddenLabel')}
-            description={t('startHiddenHelp')}
+            id="desktop-launch-at-login"
+            checked={launchAtLogin?.enabled ?? false}
+            disabled={saving}
+            busy={saving}
+            onChange={handleToggle}
+            label={t('label')}
+            description={t('help')}
           />
-        </div>
-      ) : null}
+        </DesktopSettingGroupItem>
+
+        {launchAtLogin?.enabled && canUseTray && traySettings ? (
+          <DesktopSettingGroupItem>
+            <DesktopToggle
+              id="desktop-launch-start-hidden"
+              checked={traySettings.startHidden}
+              disabled={savingStartHidden}
+              busy={savingStartHidden}
+              onChange={handleStartHiddenToggle}
+              label={t('startHiddenLabel')}
+              description={t('startHiddenHelp')}
+            />
+          </DesktopSettingGroupItem>
+        ) : null}
+      </DesktopSettingGroup>
 
       {requiresApproval ? (
         <DesktopInfoCallout variant="warning">{t('requiresApproval')}</DesktopInfoCallout>

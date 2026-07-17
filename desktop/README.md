@@ -43,6 +43,8 @@ bun run desktop:dev
 
 Debug builds register runtime IPC capabilities for `localhost:3000`. Production builds load `https://tbm.tools` by default and honor a persisted custom HTTPS instance URL after restart.
 
+**macOS dev keychain prompts:** Debug builds store the API key in a local file (`dev-api-key` under the app data directory) instead of Keychain, because unsigned rebuilds change the binary signature and macOS would re-prompt on every `cargo` rebuild. Release builds still use Keychain. Re-save your API key once via **Enable background features** after switching to a debug build if it was previously stored only in Keychain.
+
 Set `TAURI_UPDATER_ACTIVE=true` to exercise updater commands in debug builds.
 
 ## Build
@@ -96,6 +98,8 @@ Tauri events: `desktop://watcher-status-changed`, `desktop://torrent-detected`, 
 ## Torrent folder watcher
 
 See Phase 5 docs in the original migration plan. Watcher auto-resumes on launch when enabled and a credential is stored.
+
+Detected `.torrent` files are **coalesced into batches** (~1.5s idle after the last file event, up to 1000 per request) and uploaded via `POST /api/uploads/batch`. Native notifications summarize each batch (e.g. “5 torrents were uploaded successfully”) instead of one notification per file. Per-file Tauri events and the activity log are unchanged.
 
 ## Tray and background operation
 

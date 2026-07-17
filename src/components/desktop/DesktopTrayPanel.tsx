@@ -5,7 +5,12 @@ import { useTranslations } from 'next-intl';
 import { useDesktopCapabilities } from '@/desktop/useDesktopCapabilities';
 import { useDesktopStore } from '@/store/desktopStore';
 import { hasFeature } from '@/desktop/capabilities';
-import { DesktopInfoCallout, DesktopToggle } from '@/components/desktop/DesktopUi';
+import {
+  DesktopInfoCallout,
+  DesktopSettingGroup,
+  DesktopSettingGroupItem,
+  DesktopToggle,
+} from '@/components/desktop/DesktopUi';
 
 type DesktopTrayPanelProps = {
   setToast?: (toast: { message: string; type: string }) => void;
@@ -17,7 +22,7 @@ export default function DesktopTrayPanel({ setToast, embedded = false }: Desktop
   const { capabilities } = useDesktopCapabilities();
   const traySettings = useDesktopStore((state) => state.traySettings);
   const saveTraySettings = useDesktopStore((state) => state.saveTraySettings);
-  const [saving, setSaving] = useState(false);
+  const [savingKey, setSavingKey] = useState<'closeToTray' | 'minimizeToTray' | null>(null);
 
   const canUseTray = hasFeature(capabilities, 'tray');
 
@@ -29,15 +34,12 @@ export default function DesktopTrayPanel({ setToast, embedded = false }: Desktop
     return <DesktopInfoCallout variant="warning">{t('updateDesktopApp')}</DesktopInfoCallout>;
   }
 
-  const updateSetting = async (
-    key: 'closeToTray' | 'minimizeToTray' | 'startHidden',
-    checked: boolean
-  ) => {
+  const updateSetting = async (key: 'closeToTray' | 'minimizeToTray', checked: boolean) => {
     if (!traySettings) {
       return;
     }
 
-    setSaving(true);
+    setSavingKey(key);
     try {
       const saved = await saveTraySettings({
         ...traySettings,
@@ -45,13 +47,11 @@ export default function DesktopTrayPanel({ setToast, embedded = false }: Desktop
       });
       if (!saved) {
         notify(t('saveFailed'), 'error');
-        return;
       }
-      notify(t('saveSuccess'), 'success');
     } catch (error) {
       notify(error instanceof Error ? error.message : t('saveFailed'), 'error');
     } finally {
-      setSaving(false);
+      setSavingKey(null);
     }
   };
 
@@ -64,35 +64,30 @@ export default function DesktopTrayPanel({ setToast, embedded = false }: Desktop
         </div>
       ) : null}
 
-      <div className="space-y-3 rounded-lg border border-border/50 bg-surface-alt/40 px-4 py-4 dark:border-border-dark/50 dark:bg-surface-dark/40">
-        <DesktopToggle
-          id="desktop-close-to-tray"
-          checked={traySettings?.closeToTray ?? true}
-          disabled={saving || !traySettings}
-          busy={saving}
-          onChange={(event) => updateSetting('closeToTray', event.target.checked)}
-          label={t('closeToTrayLabel')}
-          description={t('closeToTrayHelp')}
-        />
-        <DesktopToggle
-          id="desktop-minimize-to-tray"
-          checked={traySettings?.minimizeToTray ?? false}
-          disabled={saving || !traySettings}
-          busy={saving}
-          onChange={(event) => updateSetting('minimizeToTray', event.target.checked)}
-          label={t('minimizeToTrayLabel')}
-          description={t('minimizeToTrayHelp')}
-        />
-        <DesktopToggle
-          id="desktop-start-hidden"
-          checked={traySettings?.startHidden ?? false}
-          disabled={saving || !traySettings}
-          busy={saving}
-          onChange={(event) => updateSetting('startHidden', event.target.checked)}
-          label={t('startHiddenLabel')}
-          description={t('startHiddenHelp')}
-        />
-      </div>
+      <DesktopSettingGroup>
+        <DesktopSettingGroupItem>
+          <DesktopToggle
+            id="desktop-close-to-tray"
+            checked={traySettings?.closeToTray ?? true}
+            disabled={!traySettings || savingKey === 'closeToTray'}
+            busy={savingKey === 'closeToTray'}
+            onChange={(event) => updateSetting('closeToTray', event.target.checked)}
+            label={t('closeToTrayLabel')}
+            description={t('closeToTrayHelp')}
+          />
+        </DesktopSettingGroupItem>
+        <DesktopSettingGroupItem>
+          <DesktopToggle
+            id="desktop-minimize-to-tray"
+            checked={traySettings?.minimizeToTray ?? false}
+            disabled={!traySettings || savingKey === 'minimizeToTray'}
+            busy={savingKey === 'minimizeToTray'}
+            onChange={(event) => updateSetting('minimizeToTray', event.target.checked)}
+            label={t('minimizeToTrayLabel')}
+            description={t('minimizeToTrayHelp')}
+          />
+        </DesktopSettingGroupItem>
+      </DesktopSettingGroup>
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { hasFeature } from '@/desktop/capabilities';
 import Spinner from '@/components/shared/Spinner';
 import {
   DesktopInfoCallout,
+  DesktopSettingGroup,
+  DesktopSettingGroupItem,
   DesktopToggle,
   desktopBtnSecondary,
 } from '@/components/desktop/DesktopUi';
@@ -26,7 +28,9 @@ export default function DesktopNotificationsPanel({
   const notificationSettings = useDesktopStore((state) => state.notificationSettings);
   const saveNotificationSettings = useDesktopStore((state) => state.saveNotificationSettings);
   const sendTestNotification = useDesktopStore((state) => state.sendTestNotification);
-  const [saving, setSaving] = useState(false);
+  const [savingKey, setSavingKey] = useState<
+    'nativeNotifications' | 'notifyOnUploadSuccess' | 'notifyOnUploadFailure' | null
+  >(null);
   const [testing, setTesting] = useState(false);
 
   const canUseNotifications = hasFeature(capabilities, 'nativeNotifications');
@@ -47,7 +51,7 @@ export default function DesktopNotificationsPanel({
       return;
     }
 
-    setSaving(true);
+    setSavingKey(key);
     try {
       const saved = await saveNotificationSettings({
         ...notificationSettings,
@@ -55,13 +59,11 @@ export default function DesktopNotificationsPanel({
       });
       if (!saved) {
         notify(t('saveFailed'), 'error');
-        return;
       }
-      notify(t('saveSuccess'), 'success');
     } catch (error) {
       notify(error instanceof Error ? error.message : t('saveFailed'), 'error');
     } finally {
-      setSaving(false);
+      setSavingKey(null);
     }
   };
 
@@ -80,7 +82,7 @@ export default function DesktopNotificationsPanel({
   const masterEnabled = notificationSettings?.nativeNotifications ?? true;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {!embedded ? (
         <div>
           <h3 className="text-sm font-medium text-text dark:text-text-dark">{t('title')}</h3>
@@ -88,35 +90,45 @@ export default function DesktopNotificationsPanel({
         </div>
       ) : null}
 
-      <div className="space-y-3 rounded-lg border border-border/50 bg-surface-alt/40 px-4 py-4 dark:border-border-dark/50 dark:bg-surface-dark/40">
-        <DesktopToggle
-          id="desktop-native-notifications"
-          checked={masterEnabled}
-          disabled={saving || !notificationSettings}
-          busy={saving}
-          onChange={(event) => updateSetting('nativeNotifications', event.target.checked)}
-          label={t('enabledLabel')}
-          description={t('enabledHelp')}
-        />
-        <DesktopToggle
-          id="desktop-notify-upload-success"
-          checked={notificationSettings?.notifyOnUploadSuccess ?? true}
-          disabled={saving || !notificationSettings || !masterEnabled}
-          busy={saving}
-          onChange={(event) => updateSetting('notifyOnUploadSuccess', event.target.checked)}
-          label={t('uploadSuccessLabel')}
-          description={t('uploadSuccessHelp')}
-        />
-        <DesktopToggle
-          id="desktop-notify-upload-failure"
-          checked={notificationSettings?.notifyOnUploadFailure ?? true}
-          disabled={saving || !notificationSettings || !masterEnabled}
-          busy={saving}
-          onChange={(event) => updateSetting('notifyOnUploadFailure', event.target.checked)}
-          label={t('uploadFailureLabel')}
-          description={t('uploadFailureHelp')}
-        />
-      </div>
+      <DesktopSettingGroup>
+        <DesktopSettingGroupItem>
+          <DesktopToggle
+            id="desktop-native-notifications"
+            checked={masterEnabled}
+            disabled={!notificationSettings || savingKey === 'nativeNotifications'}
+            busy={savingKey === 'nativeNotifications'}
+            onChange={(event) => updateSetting('nativeNotifications', event.target.checked)}
+            label={t('enabledLabel')}
+            description={t('enabledHelp')}
+          />
+        </DesktopSettingGroupItem>
+        <DesktopSettingGroupItem dimmed={!masterEnabled}>
+          <DesktopToggle
+            id="desktop-notify-upload-success"
+            checked={notificationSettings?.notifyOnUploadSuccess ?? true}
+            disabled={
+              !notificationSettings || !masterEnabled || savingKey === 'notifyOnUploadSuccess'
+            }
+            busy={savingKey === 'notifyOnUploadSuccess'}
+            onChange={(event) => updateSetting('notifyOnUploadSuccess', event.target.checked)}
+            label={t('uploadSuccessLabel')}
+            description={t('uploadSuccessHelp')}
+          />
+        </DesktopSettingGroupItem>
+        <DesktopSettingGroupItem dimmed={!masterEnabled}>
+          <DesktopToggle
+            id="desktop-notify-upload-failure"
+            checked={notificationSettings?.notifyOnUploadFailure ?? true}
+            disabled={
+              !notificationSettings || !masterEnabled || savingKey === 'notifyOnUploadFailure'
+            }
+            busy={savingKey === 'notifyOnUploadFailure'}
+            onChange={(event) => updateSetting('notifyOnUploadFailure', event.target.checked)}
+            label={t('uploadFailureLabel')}
+            description={t('uploadFailureHelp')}
+          />
+        </DesktopSettingGroupItem>
+      </DesktopSettingGroup>
 
       <button
         type="button"

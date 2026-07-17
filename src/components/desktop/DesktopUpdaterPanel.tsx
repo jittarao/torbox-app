@@ -8,6 +8,7 @@ import { hasFeature } from '@/desktop/capabilities';
 import Spinner from '@/components/shared/Spinner';
 import {
   DesktopInfoCallout,
+  DesktopMetaRow,
   DesktopStatusBadge,
   desktopBtnPrimary,
   desktopBtnSecondary,
@@ -79,21 +80,31 @@ export default function DesktopUpdaterPanel({
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-border/50 bg-surface-alt/40 px-4 py-4 dark:border-border-dark/50 dark:bg-surface-dark/40">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted dark:text-muted-dark">
-          {t('currentVersion')}
-        </p>
-        <p className="mt-1 font-mono text-sm text-text dark:text-text-dark">{appVersion ?? '—'}</p>
+      <div
+        className={
+          embedded ? 'flex justify-start' : 'flex flex-wrap items-end justify-between gap-4'
+        }
+      >
+        {!embedded ? (
+          <DesktopMetaRow label={t('currentVersion')} value={appVersion ?? '—'} mono />
+        ) : null}
+        <button
+          type="button"
+          onClick={handleCheck}
+          disabled={checking}
+          className={desktopBtnSecondary}
+        >
+          {checking ? <Spinner className="size-4" /> : null}
+          {t('checkAction')}
+        </button>
       </div>
 
       {pendingUpdate ? (
         <DesktopInfoCallout variant="success">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <DesktopStatusBadge status="success">
-                {t('updateReady', { version: pendingUpdate.version })}
-              </DesktopStatusBadge>
-            </div>
+          <div className="space-y-3">
+            <DesktopStatusBadge status="success">
+              {t('updateReady', { version: pendingUpdate.version })}
+            </DesktopStatusBadge>
             {pendingUpdate.notes ? (
               <p className="text-xs leading-relaxed opacity-90">{pendingUpdate.notes}</p>
             ) : null}
@@ -109,18 +120,6 @@ export default function DesktopUpdaterPanel({
           </div>
         </DesktopInfoCallout>
       ) : null}
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={handleCheck}
-          disabled={checking}
-          className={desktopBtnSecondary}
-        >
-          {checking ? <Spinner className="size-4" /> : null}
-          {t('checkAction')}
-        </button>
-      </div>
     </div>
   );
 }
