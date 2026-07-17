@@ -37,13 +37,32 @@ fn build_capabilities() -> serde_json::Value {
             "instanceUrl": {
                 "version": 1,
                 "canCustomize": true
+            },
+            "folderPicker": {
+                "version": 1
+            },
+            "folderWatcher": {
+                "version": 1,
+                "recursive": false
+            },
+            "backgroundUploads": {
+                "version": 1,
+                "maxFileBytes": crate::constants::MAX_TORRENT_FILE_BYTES
+            },
+            "launchAtLogin": {
+                "version": 1
             }
         }
     })
 }
 
 #[tauri::command]
-pub fn desktop_hello(app: AppHandle, state: State<AppState>) -> Result<HelloResponse, String> {
+pub fn desktop_hello(
+    window: WebviewWindow,
+    app: AppHandle,
+    state: State<AppState>,
+) -> Result<HelloResponse, String> {
+    validate_window_origin(&window, &state)?;
     let instance_url = state.settings.get_instance_url();
     let app_version = app.package_info().version.to_string();
     let build_channel = if cfg!(debug_assertions) {

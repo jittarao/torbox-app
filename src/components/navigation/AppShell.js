@@ -18,6 +18,7 @@ import useSidebarCollapsed from './useSidebarCollapsed';
 import { useNotificationsPolling } from '@/components/shared/hooks/useNotificationsPolling';
 import { useSessionHydrate } from '@/components/shared/hooks/useSessionHydrate';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
+import { useDesktopStore } from '@/store/desktopStore';
 
 const SIDEBAR_EXPANDED = '16rem';
 const SIDEBAR_COLLAPSED = '4.5rem';
@@ -46,6 +47,7 @@ function DesktopSidebar({ apiKey, nav, isActive, getLabel, t, toggleDarkMode }) 
 
 export default function AppShell({ apiKey, children, className = '' }) {
   const { searchPageDisabled } = useFeatureFlags();
+  const desktopAvailable = useDesktopStore((state) => state.available);
   useNotificationsPolling(apiKey);
   useSessionHydrate(apiKey);
   const t = useTranslations('Header');
@@ -54,7 +56,10 @@ export default function AppShell({ apiKey, children, className = '' }) {
   const { collapsed, toggleCollapsed, hydrated } = useSidebarCollapsed();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
-  const navCtx = useMemo(() => ({ searchPageDisabled }), [searchPageDisabled]);
+  const navCtx = useMemo(
+    () => ({ searchPageDisabled, desktopAvailable }),
+    [searchPageDisabled, desktopAvailable]
+  );
   const nav = useMemo(() => buildNavItems(navCtx), [navCtx]);
   const mobileNav = useMemo(() => buildMobileNav(navCtx), [navCtx]);
 

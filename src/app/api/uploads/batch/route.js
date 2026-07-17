@@ -2,7 +2,27 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 import { sanitizeError } from '@/utils/sanitizeError';
+import {
+  extractRateLimitHeaders,
+  jsonWithRateLimitHeaders,
+  mergeRateLimitHeaders,
+} from '@/app/api/lib/forwardRateLimitHeaders';
+
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
+
+function rateLimitedUploadResponse(rateLimitHeaders, error, detail) {
+  return jsonWithRateLimitHeaders(
+    {
+      success: false,
+      error,
+      detail,
+    },
+    {
+      status: 429,
+      headers: rateLimitHeaders,
+    }
+  );
+}
 
 // POST /api/uploads/batch - Batch create uploads (efficient for large batches)
 export async function POST(request) {
@@ -54,6 +74,19 @@ export async function POST(request) {
               }),
             });
 
+            if (fileUploadResponse.status === 429) {
+              const errorData = await fileUploadResponse.json().catch(() => ({}));
+              return {
+                upload,
+                rateLimited: true,
+                rateLimitHeaders: extractRateLimitHeaders(fileUploadResponse),
+                error: errorData.error || 'Too many upload requests, please try again later.',
+                detail:
+                  errorData.detail ||
+                  'Upload rate limit exceeded. Please wait before making more requests.',
+              };
+            }
+
             if (!fileUploadResponse.ok) {
               const errorData = await fileUploadResponse.json().catch(() => ({}));
               return { upload, error: errorData.error || 'Failed to save file' };
@@ -68,6 +101,15 @@ export async function POST(request) {
     }, []);
 
     const fileUploadResults = await Promise.all(fileUploadPromises);
+
+    const rateLimitedFileResults = fileUploadResults.filter((result) => result.rateLimited);
+    if (rateLimitedFileResults.length > 0) {
+      const rateLimitHeaders = mergeRateLimitHeaders(
+        ...rateLimitedFileResults.map((result) => result.rateLimitHeaders)
+      );
+      const first = rateLimitedFileResults[0];
+      return rateLimitedUploadResponse(rateLimitHeaders, first.error, first.detail);
+    }
 
     // Map file paths back to uploads
     const filePathMap = new Map();
@@ -106,7 +148,16 @@ export async function POST(request) {
       body: JSON.stringify({ uploads: preparedUploads }),
     });
 
+    const rateLimitHeaders = extractRateLimitHeaders(response);
     const data = await response.json().catch(() => ({}));
+
+    if (response.status === 429) {
+      return rateLimitedUploadResponse(
+        rateLimitHeaders,
+        data.error || 'Too many upload requests, please try again later.',
+        data.detail || 'Upload rate limit exceeded. Please wait before making more requests.'
+      );
+    }
 
     if (!response.ok) {
       // Clean up all successfully uploaded files if batch creation failed
@@ -131,13 +182,16 @@ export async function POST(request) {
       // Wait for all cleanup operations to complete (but don't fail if they do)
       await Promise.allSettled(cleanupPromises);
 
-      return NextResponse.json(
+      return jsonWithRateLimitHeaders(
         {
           success: false,
           error: data.error || `Backend responded with status: ${response.status}`,
           detail: data.detail,
         },
-        { status: response.status }
+        {
+          status: response.status,
+          headers: rateLimitHeaders,
+        }
       );
     }
 
@@ -149,7 +203,7 @@ export async function POST(request) {
       data.data.errors = fileUploadErrors;
     }
 
-    return NextResponse.json(data);
+    return jsonWithRateLimitHeaders(data, { headers: rateLimitHeaders });
   } catch (error) {
     console.error('Error creating batch upload:', error);
     return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });

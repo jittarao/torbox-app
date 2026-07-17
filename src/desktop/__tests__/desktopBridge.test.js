@@ -45,4 +45,29 @@ describe('desktopBridge browser fallback', () => {
     resetAvailabilityCache();
     await expect(getCredentialStatus()).resolves.toBeNull();
   });
+
+  test('pickFolder returns null outside Tauri', async () => {
+    const { pickFolder, resetAvailabilityCache } = await import('@/desktop/desktopBridge');
+    resetAvailabilityCache();
+    await expect(pickFolder()).resolves.toBeNull();
+  });
+
+  test('getFolderWatcherConfig returns null outside Tauri', async () => {
+    const { getFolderWatcherConfig, resetAvailabilityCache } =
+      await import('@/desktop/desktopBridge');
+    resetAvailabilityCache();
+    await expect(getFolderWatcherConfig()).resolves.toBeNull();
+  });
+
+  test('startFolderWatcher returns false outside Tauri', async () => {
+    const { startFolderWatcher, resetAvailabilityCache } = await import('@/desktop/desktopBridge');
+    resetAvailabilityCache();
+    await expect(startFolderWatcher()).resolves.toBe(false);
+  });
+
+  test('getLaunchAtLogin returns null outside Tauri', async () => {
+    const { getLaunchAtLogin, resetAvailabilityCache } = await import('@/desktop/desktopBridge');
+    resetAvailabilityCache();
+    await expect(getLaunchAtLogin()).resolves.toBeNull();
+  });
 });
