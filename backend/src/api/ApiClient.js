@@ -448,6 +448,7 @@ class ApiClient {
     queuedType,
     logLabel,
     normalizeItem,
+    forAutomationRules = false,
   }) {
     const fetchTimeout = Number.isFinite(DEFAULT_FETCH_TIMEOUT) ? DEFAULT_FETCH_TIMEOUT : 20000;
     const [myListResult, queuedResponse] = await Promise.all([
@@ -456,6 +457,7 @@ class ApiClient {
         endpoint: mylistEndpoint,
         bypassCache,
         timeout: fetchTimeout,
+        forAutomationRules,
       }),
       this.client.get('/api/queued/getqueued', {
         params: { type: queuedType, bypass_cache: bypassCache },
@@ -473,7 +475,8 @@ class ApiClient {
     return mergeMyListWithQueued(myListResult.items, queuedResponse.data.data || [], normalizeItem);
   }
 
-  async getTorrents(bypassCache = false) {
+  async getTorrents(bypassCache = false, options = {}) {
+    const { forAutomationRules = false } = options;
     return this.handleApiCall(
       async () => {
         const normalizeTorrent = (t, { queued = false } = {}) => ({
@@ -489,6 +492,7 @@ class ApiClient {
           queuedType: 'torrent',
           logLabel: 'torrent',
           normalizeItem: normalizeTorrent,
+          forAutomationRules,
         });
       },
       {
@@ -594,7 +598,8 @@ class ApiClient {
   // Download Methods
   // ============================================================================
 
-  async getUsenetDownloads(bypassCache = false) {
+  async getUsenetDownloads(bypassCache = false, options = {}) {
+    const { forAutomationRules = false } = options;
     return this.handleApiCall(
       async () => {
         const normalizeUsenet = (t, { queued = false } = {}) => ({
@@ -609,6 +614,7 @@ class ApiClient {
           queuedType: 'usenet',
           logLabel: 'usenet',
           normalizeItem: normalizeUsenet,
+          forAutomationRules,
         });
       },
       {
@@ -620,7 +626,8 @@ class ApiClient {
     );
   }
 
-  async getWebDownloads(bypassCache = false) {
+  async getWebDownloads(bypassCache = false, options = {}) {
+    const { forAutomationRules = false } = options;
     return this.handleApiCall(
       async () => {
         const normalizeWebdl = (t, { queued = false } = {}) => ({
@@ -635,6 +642,7 @@ class ApiClient {
           queuedType: 'webdl',
           logLabel: 'webdl',
           normalizeItem: normalizeWebdl,
+          forAutomationRules,
         });
       },
       {
