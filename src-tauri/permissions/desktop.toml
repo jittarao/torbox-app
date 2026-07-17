@@ -17,4 +17,13 @@ commands.allow = [
   "get_folder_watcher_status",
   "get_launch_at_login",
   "set_launch_at_login",
+  "get_tray_settings",
+  "set_tray_settings",
+  "show_main_window_command",
+  "hide_main_window_command",
+  "get_notification_settings",
+  "set_notification_settings",
+  "show_test_notification",
+  "check_for_update_command",
+  "install_update_command",
 ]

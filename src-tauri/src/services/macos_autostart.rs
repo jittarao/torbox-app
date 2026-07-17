@@ -306,6 +306,13 @@ pub fn migrate_if_needed() -> Result<(), String> {
     Ok(())
 }
 
+pub fn requires_approval() -> bool {
+    use smappservice_rs::{AppService, ServiceStatus, ServiceType};
+
+    let service = AppService::new(ServiceType::MainApp);
+    matches!(service.status(), ServiceStatus::RequiresApproval)
+}
+
 pub fn is_enabled() -> Result<bool, String> {
     if running_in_app_bundle() {
         return Ok(smappservice_enabled() || launch_agent_enabled());

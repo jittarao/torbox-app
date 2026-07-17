@@ -50,6 +50,44 @@ const nextConfig = {
     minimumCacheTTL: 60,
   },
 
+  async headers() {
+    if (process.env.NODE_ENV !== 'production') {
+      return [];
+    }
+
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'self'",
+      "img-src 'self' https: data: blob:",
+      "font-src 'self' https: data:",
+      "style-src 'self' 'unsafe-inline' https:",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+      "connect-src 'self' https: wss:",
+    ].join('; ');
+
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: csp,
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+    ];
+  },
+
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
     // Exclude runtime-written directories from the file watcher to prevent

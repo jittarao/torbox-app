@@ -31,10 +31,14 @@ pub fn run() {
     };
 
     builder
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .menu(|app| menu::build_app_menu(app))
         .setup(|app| {
             let settings = Arc::new(services::settings::SettingsService::new(app.handle())?);
-            let instance_url = settings.get_instance_url();
+            let notifications = services::notifications::NotificationService::new(Arc::clone(
+                &settings,
+            ));
             let folder_watcher = services::folder_watcher::FolderWatcherService::new(
                 app.handle().clone(),
                 Arc::clone(&settings),
@@ -43,6 +47,7 @@ pub fn run() {
             app.manage(AppState {
                 settings: Arc::clone(&settings),
                 folder_watcher,
+                notifications,
             });
 
             commands::autostart::sync_launch_at_login(app.handle(), &settings);
@@ -50,13 +55,17 @@ pub fn run() {
             services::capabilities::register_dev_capabilities(app.handle())?;
             services::capabilities::register_custom_instance_capability(
                 app.handle(),
-                &instance_url,
+                &settings.get_instance_url(),
             )?;
+
+            services::tray::setup_tray(app.handle())?;
+            services::tray::register_window_behavior(app.handle(), &settings)?;
+            services::tray::apply_start_hidden_if_needed(app.handle(), settings.as_ref());
 
             #[cfg(not(debug_assertions))]
             {
                 if let Some(window) = app.get_webview_window("main") {
-                    if let Ok(target) = url::Url::parse(&instance_url) {
+                    if let Ok(target) = url::Url::parse(&settings.get_instance_url()) {
                         let _ = window.navigate(target);
                     }
                 }
@@ -84,10 +93,21 @@ pub fn run() {
             commands::watcher::get_folder_watcher_status,
             commands::autostart::get_launch_at_login,
             commands::autostart::set_launch_at_login,
+            commands::tray::get_tray_settings,
+            commands::tray::set_tray_settings,
+            commands::tray::show_main_window_command,
+            commands::tray::hide_main_window_command,
+            commands::notifications::get_notification_settings,
+            commands::notifications::set_notification_settings,
+            commands::notifications::show_test_notification,
+            commands::updates::check_for_update_command,
+            commands::updates::install_update_command,
         ])
         .build(tauri::generate_context!())
         .expect("error while building TorBox Manager desktop app")
         .run(|app, event| {
+            services::tray::handle_run_event(app, &event);
+
             if matches!(event, RunEvent::Exit) {
                 if let Some(state) = app.try_state::<AppState>() {
                     state.folder_watcher.shutdown();

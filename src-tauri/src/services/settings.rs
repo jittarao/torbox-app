@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-use crate::constants::{DEFAULT_INSTANCE_URL, DEFAULT_STABLE_FILE_MS};
+use crate::constants::{DEFAULT_INSTANCE_URL, DEFAULT_STABLE_FILE_MS, MAX_STABLE_FILE_MS, MIN_STABLE_FILE_MS};
 use crate::services::atomic_json::write_atomic;
 use crate::services::url_validation::{default_instance_url, validate_instance_url};
 use crate::services::watcher_paths::{normalize_path, paths_equal};
@@ -104,6 +104,52 @@ struct PathAllowlist {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TraySettings {
+    #[serde(default = "default_close_to_tray")]
+    pub close_to_tray: bool,
+    #[serde(default)]
+    pub minimize_to_tray: bool,
+    #[serde(default)]
+    pub start_hidden: bool,
+}
+
+fn default_close_to_tray() -> bool {
+    true
+}
+
+impl Default for TraySettings {
+    fn default() -> Self {
+        Self {
+            close_to_tray: true,
+            minimize_to_tray: false,
+            start_hidden: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationSettings {
+    #[serde(default = "default_true")]
+    pub native_notifications: bool,
+    #[serde(default = "default_true")]
+    pub notify_on_upload_success: bool,
+    #[serde(default = "default_true")]
+    pub notify_on_upload_failure: bool,
+}
+
+impl Default for NotificationSettings {
+    fn default() -> Self {
+        Self {
+            native_notifications: true,
+            notify_on_upload_success: true,
+            notify_on_upload_failure: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DesktopSettings {
     #[serde(default = "default_instance_url")]
     pub instance_url: String,
@@ -113,6 +159,10 @@ pub struct DesktopSettings {
     pub folder_watcher: FolderWatcherConfig,
     #[serde(default)]
     pub launch_at_login: bool,
+    #[serde(default)]
+    pub tray: TraySettings,
+    #[serde(default)]
+    pub notifications: NotificationSettings,
     #[serde(default)]
     path_allowlist: PathAllowlist,
 }
@@ -124,6 +174,8 @@ impl Default for DesktopSettings {
             credential_last_updated_at: None,
             folder_watcher: FolderWatcherConfig::default(),
             launch_at_login: false,
+            tray: TraySettings::default(),
+            notifications: NotificationSettings::default(),
             path_allowlist: PathAllowlist::default(),
         }
     }
@@ -205,6 +257,48 @@ impl SettingsService {
         self.persist(&settings)
     }
 
+    pub fn get_tray_settings(&self) -> TraySettings {
+        self.settings
+            .lock()
+            .map(|s| s.tray.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn set_tray_settings(&self, tray: TraySettings) -> Result<(), String> {
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+        settings.tray = tray;
+        self.persist(&settings)
+    }
+
+    pub fn get_notification_settings(&self) -> NotificationSettings {
+        self.settings
+            .lock()
+            .map(|s| s.notifications.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn set_notification_settings(
+        &self,
+        notifications: NotificationSettings,
+    ) -> Result<(), String> {
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+        settings.notifications = notifications;
+        self.persist(&settings)
+    }
+
+    pub fn should_start_hidden(&self) -> bool {
+        let settings = self.settings.lock().ok();
+        settings
+            .map(|s| s.launch_at_login && s.tray.start_hidden)
+            .unwrap_or(false)
+    }
+
     pub fn get_folder_watcher_config(&self) -> FolderWatcherConfig {
         self.settings
             .lock()
@@ -253,6 +347,16 @@ impl SettingsService {
                 .as_ref()
                 .ok_or("Custom move path is required for moveToCustom action")?;
             self.ensure_move_path_allowed(&settings.path_allowlist, custom)?;
+        }
+
+        if config.stable_file_ms < MIN_STABLE_FILE_MS || config.stable_file_ms > MAX_STABLE_FILE_MS {
+            return Err(format!(
+                "stableFileMs must be between {MIN_STABLE_FILE_MS} and {MAX_STABLE_FILE_MS}"
+            ));
+        }
+
+        if config.torrent_options.seed > 2 {
+            return Err("seed must be 0, 1, or 2".into());
         }
 
         Ok(())
@@ -380,6 +484,22 @@ mod tests {
         service
             .validate_folder_watcher_for_start(&config)
             .unwrap();
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn validate_rejects_invalid_stable_file_ms() {
+        let (service, dir) = temp_settings_service();
+        let registered = service.register_watch_path_from_picker(&dir.to_string_lossy()).unwrap();
+        let config = FolderWatcherConfig {
+            watch_path: Some(registered),
+            stable_file_ms: 100,
+            ..Default::default()
+        };
+        let error = service
+            .validate_folder_watcher_for_start(&config)
+            .unwrap_err();
+        assert!(error.contains("stableFileMs"));
         let _ = fs::remove_dir_all(dir);
     }
 }

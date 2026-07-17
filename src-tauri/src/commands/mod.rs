@@ -1,6 +1,9 @@
 pub mod autostart;
 pub mod credentials;
 pub mod hello;
+pub mod notifications;
 pub mod picker;
 pub mod settings;
+pub mod tray;
+pub mod updates;
 pub mod watcher;

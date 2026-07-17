@@ -6,6 +6,10 @@ const TORRENT_DETECTED = 'desktop://torrent-detected';
 const UPLOAD_QUEUED = 'desktop://upload-queued';
 const UPLOAD_SUCCEEDED = 'desktop://upload-succeeded';
 const UPLOAD_FAILED = 'desktop://upload-failed';
+const NOTIFICATION_CLICKED = 'desktop://notification-clicked';
+const TRAY_OPEN_SETTINGS = 'desktop://tray-open-settings';
+const UPDATE_AVAILABLE = 'desktop://update-available';
+const UPDATE_PROGRESS = 'desktop://update-progress';
 
 export async function onCapabilitiesChanged(handler: () => void): Promise<UnlistenFn | null> {
   if (typeof window === 'undefined') {
@@ -76,6 +80,28 @@ export async function onUploadFailed(
   return listenEvent(UPLOAD_FAILED, handler);
 }
 
+export async function onNotificationClicked(
+  handler: (payload: { type: string; filename: string }) => void
+): Promise<UnlistenFn | null> {
+  return listenEvent(NOTIFICATION_CLICKED, handler);
+}
+
+export async function onTrayOpenSettings(handler: () => void): Promise<UnlistenFn | null> {
+  return listenEvent(TRAY_OPEN_SETTINGS, handler);
+}
+
+export async function onUpdateAvailable(
+  handler: (payload: import('@/desktop/capabilities').UpdateInfo) => void
+): Promise<UnlistenFn | null> {
+  return listenEvent(UPDATE_AVAILABLE, handler);
+}
+
+export async function onUpdateProgress(
+  handler: (payload: import('@/desktop/capabilities').UpdateProgress) => void
+): Promise<UnlistenFn | null> {
+  return listenEvent(UPDATE_PROGRESS, handler);
+}
+
 export {
   CAPABILITIES_CHANGED,
   WATCHER_STATUS_CHANGED,
@@ -83,4 +109,8 @@ export {
   UPLOAD_QUEUED,
   UPLOAD_SUCCEEDED,
   UPLOAD_FAILED,
+  NOTIFICATION_CLICKED,
+  TRAY_OPEN_SETTINGS,
+  UPDATE_AVAILABLE,
+  UPDATE_PROGRESS,
 };
