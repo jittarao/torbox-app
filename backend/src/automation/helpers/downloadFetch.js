@@ -45,20 +45,22 @@ export async function fetchDownloadsForAssetTypes(apiClient, assetTypes, bypassC
 
   if (types.has('torrent')) {
     fetches.push(
-      apiClient.getTorrents(bypassCache).then((list) => tagDownloadsWithAssetType(list, 'torrent'))
+      apiClient
+        .getTorrents(bypassCache, { forAutomationRules: true })
+        .then((list) => tagDownloadsWithAssetType(list, 'torrent'))
     );
   }
   if (types.has('usenet')) {
     fetches.push(
       apiClient
-        .getUsenetDownloads(bypassCache)
+        .getUsenetDownloads(bypassCache, { forAutomationRules: true })
         .then((list) => tagDownloadsWithAssetType(list, 'usenet'))
     );
   }
   if (types.has('webdl')) {
     fetches.push(
       apiClient
-        .getWebDownloads(bypassCache)
+        .getWebDownloads(bypassCache, { forAutomationRules: true })
         .then((list) => tagDownloadsWithAssetType(list, 'webdl'))
     );
   }
