@@ -10,6 +10,8 @@ type DesktopSettingsSectionProps = {
   children: ReactNode;
   className?: string;
   action?: ReactNode;
+  /** Tighter padding for dense setting groups */
+  compact?: boolean;
 };
 
 export default function DesktopSettingsSection({
@@ -19,34 +21,43 @@ export default function DesktopSettingsSection({
   children,
   className = '',
   action,
+  compact = false,
 }: DesktopSettingsSectionProps) {
   const hasHeader = Boolean(title || description || action);
+  const bodyPadding = compact ? 'p-4 sm:p-5' : desktopCardPadding;
+  const headerAlign = description ? 'items-start' : 'items-center';
 
   return (
     <section className={`${desktopCardClass} overflow-hidden ${className}`}>
       {hasHeader ? (
-        <header className="flex items-start justify-between gap-4 border-b border-border/50 px-5 py-4 dark:border-border-dark/50 sm:px-6">
-          <div className="flex min-w-0 items-start gap-3">
+        <header
+          className={`flex ${headerAlign} justify-between gap-4 border-b border-border/50 px-5 py-3.5 dark:border-border-dark/50 sm:px-6`}
+        >
+          <div className={`flex min-w-0 gap-3 ${headerAlign}`}>
             {Icon ? (
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-surface-alt text-accent dark:border-border-dark/60 dark:bg-surface-dark dark:text-accent-dark">
+              <span
+                className={`flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-surface-alt text-accent dark:border-border-dark/60 dark:bg-surface-dark dark:text-accent-dark ${description ? 'mt-0.5' : ''}`}
+              >
                 <Icon className="size-4" />
               </span>
             ) : null}
             <div className="min-w-0">
               {title ? (
-                <h2 className="text-base font-semibold text-text dark:text-text-dark">{title}</h2>
+                <h3 className="text-sm font-semibold text-text dark:text-text-dark">{title}</h3>
               ) : null}
               {description ? (
-                <p className="mt-1 text-sm leading-relaxed text-muted dark:text-muted-dark">
+                <p className="mt-0.5 text-xs leading-relaxed text-muted dark:text-muted-dark">
                   {description}
                 </p>
               ) : null}
             </div>
           </div>
-          {action ? <div className="shrink-0">{action}</div> : null}
+          {action ? (
+            <div className={`shrink-0 ${description ? 'pt-0.5' : ''}`}>{action}</div>
+          ) : null}
         </header>
       ) : null}
-      <div className={desktopCardPadding}>{children}</div>
+      <div className={bodyPadding}>{children}</div>
     </section>
   );
 }

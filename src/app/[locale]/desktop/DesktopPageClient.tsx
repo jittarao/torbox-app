@@ -11,7 +11,19 @@ import { useSession } from '@/components/shared/hooks/useSession';
 import { useDesktopCapabilities } from '@/desktop/useDesktopCapabilities';
 import { WEB_BRIDGE_VERSION } from '@/desktop/capabilities';
 import { useDesktopStore } from '@/store/desktopStore';
-import { DesktopInfoCallout, DesktopStatusBadge } from '@/components/desktop/DesktopUi';
+import { DesktopInfoCallout } from '@/components/desktop/DesktopUi';
+
+function formatPlatformLabel(platform: string | null | undefined): string | null {
+  if (!platform) {
+    return null;
+  }
+  const labels: Record<string, string> = {
+    macos: 'macOS',
+    windows: 'Windows',
+    linux: 'Linux',
+  };
+  return labels[platform.toLowerCase()] ?? platform.charAt(0).toUpperCase() + platform.slice(1);
+}
 
 function MetaBadge({ label, value }: { label: string; value?: string | null }) {
   if (!value) {
@@ -40,7 +52,7 @@ export default function DesktopPageClient() {
   }
 
   const version = appVersion ?? hello?.appVersion;
-  const platformLabel = platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : null;
+  const platformLabel = formatPlatformLabel(platform);
   const bridgeOutdated =
     hello?.minimumSupportedWebBridgeVersion != null &&
     hello.minimumSupportedWebBridgeVersion > WEB_BRIDGE_VERSION;
@@ -66,11 +78,10 @@ export default function DesktopPageClient() {
               </div>
             </div>
 
-            {available ? (
+            {available && (version || platformLabel) ? (
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <DesktopStatusBadge status="success">{t('desktopAppActive')}</DesktopStatusBadge>
-                <MetaBadge label={t('appVersion')} value={version} />
-                <MetaBadge label={t('platform')} value={platformLabel} />
+                {version ? <MetaBadge label={t('appVersion')} value={version} /> : null}
+                {platformLabel ? <MetaBadge label={t('platform')} value={platformLabel} /> : null}
               </div>
             ) : null}
           </div>

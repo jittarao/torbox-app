@@ -8,7 +8,6 @@ import { useDesktopStore } from '@/store/desktopStore';
 import { hasFeature } from '@/desktop/capabilities';
 import type { FolderWatcherConfig, PostUploadAction } from '@/desktop/capabilities';
 import Spinner from '@/components/shared/Spinner';
-import DesktopSettingsSection from '@/components/desktop/DesktopSettingsSection';
 import {
   desktopBtnPrimary,
   desktopBtnSecondary,
@@ -18,11 +17,10 @@ import {
   desktopOptionDefault,
   desktopOptionSelected,
   DesktopPathDisplay,
-  DesktopStatusBadge,
   DesktopSubsection,
   DesktopToggle,
 } from '@/components/desktop/DesktopUi';
-import { Activity, Torrent } from '@/components/icons';
+import { Activity } from '@/components/icons';
 
 const DEFAULT_WATCHER_CONFIG: FolderWatcherConfig = {
   enabled: false,
@@ -256,14 +254,8 @@ export default function DesktopFolderWatcherPanel({
 
   const isRunning = Boolean(watcherStatus?.running);
 
-  const statusBadge = (
-    <DesktopStatusBadge status={isRunning ? 'success' : 'neutral'} pulse={isRunning}>
-      {isRunning ? t('statusRunning') : t('statusStopped')}
-    </DesktopStatusBadge>
-  );
-
   const content = (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {!embedded ? (
         <div>
           <h3 className="text-sm font-medium text-text dark:text-text-dark">{t('title')}</h3>
@@ -274,25 +266,22 @@ export default function DesktopFolderWatcherPanel({
       <div
         className={`rounded-xl border px-4 py-4 sm:px-5 ${
           isRunning
-            ? 'border-label-success-text/25 bg-label-success-bg/50 dark:border-label-success-text-dark/30 dark:bg-label-success-bg-dark/30'
-            : 'border-border/60 bg-surface-alt/50 dark:border-border-dark/60 dark:bg-surface-dark/50'
+            ? 'border-label-success-text/25 bg-label-success-bg/40 dark:border-label-success-text-dark/30 dark:bg-label-success-bg-dark/25'
+            : 'border-border/60 bg-surface-alt/40 dark:border-border-dark/60 dark:bg-surface-dark/40'
         }`}
       >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Activity
-                className={`size-4 shrink-0 ${isRunning ? 'text-label-success-text dark:text-label-success-text-dark' : 'text-muted dark:text-muted-dark'}`}
-              />
-              <p className="text-sm font-semibold text-text dark:text-text-dark">
-                {isRunning ? t('statusRunning') : t('statusStopped')}
-              </p>
-            </div>
-            <p className="mt-1 text-xs leading-relaxed text-muted dark:text-muted-dark">
-              {isRunning ? t('statusRunningHint') : t('statusStoppedHint')}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Activity
+              className={`size-4 shrink-0 ${isRunning ? 'text-label-success-text dark:text-label-success-text-dark' : 'text-muted dark:text-muted-dark'}`}
+            />
+            <p className="text-sm font-semibold text-text dark:text-text-dark">
+              {isRunning ? t('statusRunning') : t('statusStopped')}
             </p>
           </div>
-          {statusBadge}
+          <p className="mt-1 text-xs leading-relaxed text-muted dark:text-muted-dark">
+            {isRunning ? t('statusRunningHint') : t('statusStoppedHint')}
+          </p>
         </div>
 
         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -319,12 +308,6 @@ export default function DesktopFolderWatcherPanel({
 
       {!hasCredential ? (
         <DesktopInfoCallout variant="warning">{t('credentialRequired')}</DesktopInfoCallout>
-      ) : null}
-
-      {instanceUrl ? (
-        <DesktopInfoCallout variant="info">
-          {t('uploadTarget', { url: instanceUrl })}
-        </DesktopInfoCallout>
       ) : null}
 
       {hasUnsavedChanges ? (
@@ -659,9 +642,9 @@ export default function DesktopFolderWatcherPanel({
 
   if (embedded) {
     return (
-      <DesktopSettingsSection title={t('title')} description={t('description')} icon={Torrent}>
-        {content}
-      </DesktopSettingsSection>
+      <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark">
+        <div className="space-y-4 p-4 sm:p-5">{content}</div>
+      </div>
     );
   }
 
