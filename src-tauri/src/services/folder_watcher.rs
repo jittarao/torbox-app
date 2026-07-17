@@ -9,26 +9,19 @@ use serde::Serialize;
 use tauri::{async_runtime::JoinHandle, AppHandle, Emitter, Manager};
 use tokio::sync::mpsc;
 
-use crate::constants::{
-    WATCHER_ACTIVITY_LOG_LIMIT, WATCHER_MAX_RETRIES, WATCHER_RATE_LIMIT_MAX_RETRIES,
-};
 use crate::services::credentials::read_api_key;
-use crate::services::notifications::UploadNotificationKind;
 use crate::services::settings::SettingsService;
-use crate::services::tbm_client::{sha256_hex, upload_torrent_file};
-use crate::services::upload_queue::{
-    apply_post_upload_action, wait_for_stable_file, ProcessedFingerprintStore,
-};
+use crate::services::upload_queue::ProcessedFingerprintStore;
+use crate::services::watcher_batch::run_watcher_event_loop;
 use crate::services::watcher_paths::{
     normalize_path, should_ignore_watched_file, uploaded_subdir,
 };
-use crate::state::AppState;
 
-const EVENT_WATCHER_STATUS: &str = "desktop://watcher-status-changed";
-const EVENT_TORRENT_DETECTED: &str = "desktop://torrent-detected";
-const EVENT_UPLOAD_QUEUED: &str = "desktop://upload-queued";
-const EVENT_UPLOAD_SUCCEEDED: &str = "desktop://upload-succeeded";
-const EVENT_UPLOAD_FAILED: &str = "desktop://upload-failed";
+pub(crate) const EVENT_WATCHER_STATUS: &str = "desktop://watcher-status-changed";
+pub(crate) const EVENT_TORRENT_DETECTED: &str = "desktop://torrent-detected";
+pub(crate) const EVENT_UPLOAD_QUEUED: &str = "desktop://upload-queued";
+pub(crate) const EVENT_UPLOAD_SUCCEEDED: &str = "desktop://upload-succeeded";
+pub(crate) const EVENT_UPLOAD_FAILED: &str = "desktop://upload-failed";
 
 const SHUTDOWN_JOIN_TIMEOUT_SECS: u64 = 5;
 
@@ -90,10 +83,10 @@ pub struct FolderWatcherService {
     inner: Arc<FolderWatcherInner>,
 }
 
-struct FolderWatcherInner {
-    app: AppHandle,
-    settings: Arc<SettingsService>,
-    processed: Arc<ProcessedFingerprintStore>,
+pub(crate) struct FolderWatcherInner {
+    pub(crate) app: AppHandle,
+    pub(crate) settings: Arc<SettingsService>,
+    pub(crate) processed: Arc<ProcessedFingerprintStore>,
     runtime: Mutex<WatcherRuntimeState>,
 }
 
@@ -195,7 +188,7 @@ impl FolderWatcherService {
             .ok_or("Watch folder is not configured")?
             .clone();
 
-        read_api_key().map_err(|_| {
+        read_api_key(&self.inner.settings).map_err(|_| {
             "Store your TorBox API key via Enable background features before starting the watcher"
                 .to_string()
         })?;
@@ -213,8 +206,8 @@ impl FolderWatcherService {
             runtime.session_generation
         };
 
-        let (event_tx, mut event_rx) = mpsc::channel::<PathBuf>(64);
-        let (stop_tx, mut stop_rx) = mpsc::channel::<()>(1);
+        let (event_tx, event_rx) = mpsc::channel::<PathBuf>(64);
+        let (stop_tx, stop_rx) = mpsc::channel::<()>(1);
 
         let watch_root = PathBuf::from(&watch_path);
         let notify_tx = event_tx.clone();
@@ -278,24 +271,8 @@ impl FolderWatcherService {
         }
 
         let inner = Arc::clone(&self.inner);
-        // Sequential single-file uploads; multi-file debounced batching is future work.
         let handle = tauri::async_runtime::spawn(async move {
-            loop {
-                tokio::select! {
-                    _ = stop_rx.recv() => break,
-                    maybe_path = event_rx.recv() => {
-                        if !is_session_active(&inner, session_generation) {
-                            break;
-                        }
-                        match maybe_path {
-                            Some(path) => {
-                                process_detected_path(inner.clone(), path, session_generation).await;
-                            }
-                            None => break,
-                        }
-                    }
-                }
-            }
+            run_watcher_event_loop(inner, session_generation, event_rx, stop_rx).await;
         });
 
         if let Ok(mut runtime) = self.inner.runtime.lock() {
@@ -313,7 +290,7 @@ impl FolderWatcherService {
         if config.watch_path.is_none() {
             return Ok(());
         }
-        if read_api_key().is_err() {
+        if read_api_key(&self.inner.settings).is_err() {
             return Ok(());
         }
         if self.inner.settings.validate_folder_watcher_for_start(&config).is_err() {
@@ -328,7 +305,7 @@ impl FolderWatcherService {
     }
 }
 
-fn is_session_active(inner: &FolderWatcherInner, session_generation: u64) -> bool {
+pub(crate) fn is_session_active(inner: &FolderWatcherInner, session_generation: u64) -> bool {
     inner
         .runtime
         .lock()
@@ -344,204 +321,7 @@ fn reset_uploads_today_if_needed(runtime: &mut WatcherRuntimeState) {
     }
 }
 
-async fn process_detected_path(
-    inner: Arc<FolderWatcherInner>,
-    file_path: PathBuf,
-    session_generation: u64,
-) {
-    if !is_session_active(&inner, session_generation) {
-        return;
-    }
-
-    let config = inner.settings.get_folder_watcher_config();
-    let watch_path = match config.watch_path.as_ref() {
-        Some(path) => PathBuf::from(path),
-        None => return,
-    };
-
-    let uploaded_dir = uploaded_subdir(&watch_path);
-    let custom_move = config.custom_move_path.as_ref().map(PathBuf::from);
-
-    if should_ignore_watched_file(
-        &file_path,
-        &watch_path,
-        Some(&uploaded_dir),
-        custom_move.as_deref(),
-    ) {
-        return;
-    }
-
-    let filename = file_path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("unknown.torrent")
-        .to_string();
-
-    let _ = inner.app.emit(
-        EVENT_TORRENT_DETECTED,
-        serde_json::json!({
-            "filename": filename,
-            "path": file_path.to_string_lossy(),
-        }),
-    );
-
-    adjust_queue_depth(&inner, 1);
-
-    let stable_ms = config.stable_file_ms;
-    let bytes = match wait_for_stable_file(&file_path, stable_ms).await {
-        Ok(bytes) => bytes,
-        Err(error) => {
-            if is_session_active(&inner, session_generation) {
-                record_failure(&inner, &filename, &error, false);
-            }
-            adjust_queue_depth(&inner, -1);
-            return;
-        }
-    };
-
-    if !is_session_active(&inner, session_generation) {
-        adjust_queue_depth(&inner, -1);
-        return;
-    }
-
-    let fingerprint = sha256_hex(&bytes);
-    if inner.processed.has_fingerprint(&fingerprint) || is_in_flight(&inner, &fingerprint) {
-        adjust_queue_depth(&inner, -1);
-        return;
-    }
-
-    set_in_flight(&inner, &fingerprint, true);
-    let _ = inner.app.emit(
-        EVENT_UPLOAD_QUEUED,
-        serde_json::json!({
-            "filename": filename,
-            "fingerprint": fingerprint,
-        }),
-    );
-
-    let instance_url = inner.settings.get_instance_url();
-    let mut attempt = 0u32;
-    let mut rate_limit_attempts = 0u32;
-    let mut last_error: Option<String> = None;
-
-    loop {
-        if !is_session_active(&inner, session_generation) {
-            set_in_flight(&inner, &fingerprint, false);
-            adjust_queue_depth(&inner, -1);
-            return;
-        }
-
-        match upload_torrent_file(
-            &instance_url,
-            &bytes,
-            &filename,
-            &config.torrent_options,
-        )
-        .await
-        {
-            Ok(success) => {
-                // Mark processed before post-upload action so a move/delete failure
-                // cannot cause a duplicate TorBox upload on the next watch event.
-                if let Err(error) = inner.processed.mark_processed(&fingerprint, &filename) {
-                    record_failure(&inner, &filename, &error, false);
-                    set_in_flight(&inner, &fingerprint, false);
-                    adjust_queue_depth(&inner, -1);
-                    return;
-                }
-
-                match apply_post_upload_action(&file_path, &config) {
-                    Ok(moved_to) => {
-                        record_success(&inner, &filename, moved_to.clone());
-                        let _ = inner.app.emit(
-                            EVENT_UPLOAD_SUCCEEDED,
-                            serde_json::json!({
-                                "filename": filename,
-                                "uploadId": success.upload_id,
-                                "movedTo": moved_to,
-                            }),
-                        );
-                        notify_upload_result(
-                            &inner.app,
-                            UploadNotificationKind::Success,
-                            &filename,
-                            None,
-                        );
-                    }
-                    Err(error) => {
-                        record_move_failed(&inner, &filename, &error);
-                        let _ = inner.app.emit(
-                            EVENT_UPLOAD_SUCCEEDED,
-                            serde_json::json!({
-                                "filename": filename,
-                                "uploadId": success.upload_id,
-                                "movedTo": null,
-                                "postActionWarning": error,
-                            }),
-                        );
-                        notify_upload_result(
-                            &inner.app,
-                            UploadNotificationKind::Success,
-                            &filename,
-                            None,
-                        );
-                    }
-                }
-
-                set_in_flight(&inner, &fingerprint, false);
-                adjust_queue_depth(&inner, -1);
-                return;
-            }
-            Err(error) => {
-                last_error = Some(error.message.clone());
-                if error.rate_limited && rate_limit_attempts < WATCHER_RATE_LIMIT_MAX_RETRIES {
-                    rate_limit_attempts += 1;
-                    record_failure(
-                        &inner,
-                        &filename,
-                        last_error.as_deref().unwrap_or("Upload failed"),
-                        true,
-                    );
-                    tokio::time::sleep(error.retry_delay()).await;
-                    continue;
-                }
-
-                attempt += 1;
-                if attempt < WATCHER_MAX_RETRIES {
-                    let backoff_secs = 2u64.pow(attempt);
-                    tokio::time::sleep(Duration::from_secs(backoff_secs)).await;
-                    continue;
-                }
-                break;
-            }
-        }
-    }
-
-    record_failure(
-        &inner,
-        &filename,
-        last_error.as_deref().unwrap_or("Upload failed"),
-        false,
-    );
-    set_in_flight(&inner, &fingerprint, false);
-    adjust_queue_depth(&inner, -1);
-
-    let _ = inner.app.emit(
-        EVENT_UPLOAD_FAILED,
-        serde_json::json!({
-            "filename": filename,
-            "error": last_error.clone().unwrap_or_else(|| "Upload failed".to_string()),
-            "willRetry": false,
-        }),
-    );
-    notify_upload_result(
-        &inner.app,
-        UploadNotificationKind::Failure,
-        &filename,
-        last_error.as_deref(),
-    );
-}
-
-fn adjust_queue_depth(inner: &FolderWatcherInner, delta: i32) {
+pub(crate) fn adjust_queue_depth(inner: &FolderWatcherInner, delta: i32) {
     if let Ok(mut runtime) = inner.runtime.lock() {
         if delta.is_negative() {
             runtime.queue_depth = runtime
@@ -554,7 +334,7 @@ fn adjust_queue_depth(inner: &FolderWatcherInner, delta: i32) {
     emit_status_from_inner(inner);
 }
 
-fn is_in_flight(inner: &FolderWatcherInner, fingerprint: &str) -> bool {
+pub(crate) fn is_in_flight(inner: &FolderWatcherInner, fingerprint: &str) -> bool {
     inner
         .runtime
         .lock()
@@ -562,7 +342,7 @@ fn is_in_flight(inner: &FolderWatcherInner, fingerprint: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn set_in_flight(inner: &FolderWatcherInner, fingerprint: &str, active: bool) {
+pub(crate) fn set_in_flight(inner: &FolderWatcherInner, fingerprint: &str, active: bool) {
     if let Ok(mut runtime) = inner.runtime.lock() {
         if active {
             runtime.in_flight.insert(fingerprint.to_string());
@@ -572,7 +352,7 @@ fn set_in_flight(inner: &FolderWatcherInner, fingerprint: &str, active: bool) {
     }
 }
 
-fn record_success(inner: &FolderWatcherInner, filename: &str, moved_to: Option<String>) {
+pub(crate) fn record_success(inner: &FolderWatcherInner, filename: &str, moved_to: Option<String>) {
     if let Ok(mut runtime) = inner.runtime.lock() {
         reset_uploads_today_if_needed(&mut runtime);
         runtime.uploads_today = runtime.uploads_today.saturating_add(1);
@@ -583,14 +363,14 @@ fn record_success(inner: &FolderWatcherInner, filename: &str, moved_to: Option<S
             result: "success".to_string(),
             detail: moved_to,
         });
-        while runtime.activity.len() > WATCHER_ACTIVITY_LOG_LIMIT {
+        while runtime.activity.len() > crate::constants::WATCHER_ACTIVITY_LOG_LIMIT {
             runtime.activity.pop_back();
         }
     }
     emit_status_from_inner(inner);
 }
 
-fn record_move_failed(inner: &FolderWatcherInner, filename: &str, error: &str) {
+pub(crate) fn record_move_failed(inner: &FolderWatcherInner, filename: &str, error: &str) {
     if let Ok(mut runtime) = inner.runtime.lock() {
         reset_uploads_today_if_needed(&mut runtime);
         runtime.uploads_today = runtime.uploads_today.saturating_add(1);
@@ -601,14 +381,14 @@ fn record_move_failed(inner: &FolderWatcherInner, filename: &str, error: &str) {
             result: "uploaded_move_failed".to_string(),
             detail: Some(error.to_string()),
         });
-        while runtime.activity.len() > WATCHER_ACTIVITY_LOG_LIMIT {
+        while runtime.activity.len() > crate::constants::WATCHER_ACTIVITY_LOG_LIMIT {
             runtime.activity.pop_back();
         }
     }
     emit_status_from_inner(inner);
 }
 
-fn record_failure(inner: &FolderWatcherInner, filename: &str, error: &str, will_retry: bool) {
+pub(crate) fn record_failure(inner: &FolderWatcherInner, filename: &str, error: &str, will_retry: bool) {
     if let Ok(mut runtime) = inner.runtime.lock() {
         runtime.last_error = Some(error.to_string());
         runtime.activity.push_front(WatcherActivityEntry {
@@ -621,14 +401,14 @@ fn record_failure(inner: &FolderWatcherInner, filename: &str, error: &str, will_
             },
             detail: Some(error.to_string()),
         });
-        while runtime.activity.len() > WATCHER_ACTIVITY_LOG_LIMIT {
+        while runtime.activity.len() > crate::constants::WATCHER_ACTIVITY_LOG_LIMIT {
             runtime.activity.pop_back();
         }
     }
     emit_status_from_inner(inner);
 }
 
-fn emit_status_from_inner(inner: &FolderWatcherInner) {
+pub(crate) fn emit_status_from_inner(inner: &FolderWatcherInner) {
     let status = {
         let runtime = inner.runtime.lock().unwrap_or_else(|e| e.into_inner());
         WatcherStatus {
@@ -641,19 +421,6 @@ fn emit_status_from_inner(inner: &FolderWatcherInner) {
         }
     };
     let _ = inner.app.emit(EVENT_WATCHER_STATUS, status);
-}
-
-fn notify_upload_result(
-    app: &AppHandle,
-    kind: UploadNotificationKind,
-    filename: &str,
-    error: Option<&str>,
-) {
-    if let Some(state) = app.try_state::<AppState>() {
-        state
-            .notifications
-            .show_upload_notification(app, kind, filename, error);
-    }
 }
 
 #[cfg(test)]

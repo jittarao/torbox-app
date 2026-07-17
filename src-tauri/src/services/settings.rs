@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
@@ -205,6 +205,12 @@ impl SettingsService {
             path,
             settings: Mutex::new(settings),
         })
+    }
+
+    pub fn app_data_dir(&self) -> &Path {
+        self.path
+            .parent()
+            .expect("desktop settings path must have a parent directory")
     }
 
     pub fn get_instance_url(&self) -> String {
@@ -440,6 +446,17 @@ impl SettingsService {
 }
 
 #[cfg(test)]
+impl SettingsService {
+    pub(crate) fn new_for_test(dir: &Path) -> Self {
+        let path = dir.join("desktop-settings.json");
+        Self {
+            path,
+            settings: Mutex::new(DesktopSettings::default()),
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -451,11 +468,7 @@ mod tests {
             .as_nanos();
         let dir = std::env::temp_dir().join(format!("tbm-settings-{nanos}"));
         fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("desktop-settings.json");
-        let service = SettingsService {
-            path: path.clone(),
-            settings: Mutex::new(DesktopSettings::default()),
-        };
+        let service = SettingsService::new_for_test(&dir);
         (service, dir)
     }
 
