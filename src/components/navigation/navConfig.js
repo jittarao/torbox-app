@@ -10,14 +10,7 @@ import {
   User,
 } from '@/components/icons';
 
-/** Profile link — rendered after main nav items with a separator */
-export const USER_NAV_ITEM = {
-  href: '/user',
-  labelKey: 'user',
-  Icon: User,
-};
-
-const NAV_ITEMS = [
+const MAIN_NAV_ITEMS = [
   { href: '/', labelKey: 'downloads', Icon: Download },
   {
     href: '/search',
@@ -30,6 +23,10 @@ const NAV_ITEMS = [
   { href: '/link-history', labelKey: 'linkHistory', Icon: History },
   { href: '/uploads', labelKey: 'uploads', Icon: Upload },
   { href: '/archived', labelKey: 'archived', Icon: Archive },
+];
+
+const ACCOUNT_NAV_ITEMS = [
+  { href: '/user', labelKey: 'user', Icon: User },
   {
     href: '/desktop',
     labelKey: 'settings',
@@ -38,13 +35,23 @@ const NAV_ITEMS = [
   },
 ];
 
+/** Profile link — quick access from mobile header */
+export const USER_NAV_ITEM = ACCOUNT_NAV_ITEMS[0];
+
 function filterVisible(items, ctx) {
   return items.filter((item) => (item.visible ? item.visible(ctx) : true));
 }
 
+function flattenNavSections(sections) {
+  return sections.flatMap((section) => section.items);
+}
+
 export function buildNavItems(ctx = {}) {
   return {
-    items: filterVisible(NAV_ITEMS, ctx),
+    sections: [
+      { items: filterVisible(MAIN_NAV_ITEMS, ctx) },
+      { items: filterVisible(ACCOUNT_NAV_ITEMS, ctx) },
+    ],
   };
 }
 
@@ -57,7 +64,7 @@ function getMobileTabHrefs(ctx) {
 }
 
 export function buildMobileNav(ctx = {}) {
-  const items = filterVisible(NAV_ITEMS, ctx);
+  const items = flattenNavSections(buildNavItems(ctx).sections);
   const tabHrefs = new Set(getMobileTabHrefs(ctx));
   const tabs = getMobileTabHrefs(ctx).flatMap((href) => {
     const found = items.find((item) => item.href === href);
