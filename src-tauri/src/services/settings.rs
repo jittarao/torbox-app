@@ -5,8 +5,102 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-use crate::constants::DEFAULT_INSTANCE_URL;
+use crate::constants::{DEFAULT_INSTANCE_URL, DEFAULT_STABLE_FILE_MS};
+use crate::services::atomic_json::write_atomic;
 use crate::services::url_validation::{default_instance_url, validate_instance_url};
+use crate::services::watcher_paths::{normalize_path, paths_equal};
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum PostUploadAction {
+    Delete,
+    MoveToUploaded,
+    MoveToCustom,
+}
+
+impl Default for PostUploadAction {
+    fn default() -> Self {
+        Self::MoveToUploaded
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TorrentUploadOptions {
+    #[serde(default = "default_seed")]
+    pub seed: u8,
+    #[serde(default = "default_true")]
+    pub allow_zip: bool,
+    #[serde(default)]
+    pub as_queued: bool,
+    #[serde(default)]
+    pub add_only_if_cached: bool,
+}
+
+fn default_seed() -> u8 {
+    1
+}
+
+fn default_true() -> bool {
+    true
+}
+
+impl Default for TorrentUploadOptions {
+    fn default() -> Self {
+        Self {
+            seed: 1,
+            allow_zip: true,
+            as_queued: false,
+            add_only_if_cached: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FolderWatcherConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub watch_path: Option<String>,
+    #[serde(default)]
+    pub post_upload_action: PostUploadAction,
+    #[serde(default)]
+    pub custom_move_path: Option<String>,
+    #[serde(default)]
+    pub torrent_options: TorrentUploadOptions,
+    #[serde(default)]
+    pub scan_existing_on_enable: bool,
+    #[serde(default = "default_stable_file_ms")]
+    pub stable_file_ms: u64,
+}
+
+fn default_stable_file_ms() -> u64 {
+    DEFAULT_STABLE_FILE_MS
+}
+
+impl Default for FolderWatcherConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            watch_path: None,
+            post_upload_action: PostUploadAction::MoveToUploaded,
+            custom_move_path: None,
+            torrent_options: TorrentUploadOptions::default(),
+            scan_existing_on_enable: false,
+            stable_file_ms: DEFAULT_STABLE_FILE_MS,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct PathAllowlist {
+    #[serde(default)]
+    watch_paths: Vec<String>,
+    #[serde(default)]
+    move_paths: Vec<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,6 +109,12 @@ pub struct DesktopSettings {
     pub instance_url: String,
     #[serde(default)]
     pub credential_last_updated_at: Option<String>,
+    #[serde(default)]
+    pub folder_watcher: FolderWatcherConfig,
+    #[serde(default)]
+    pub launch_at_login: bool,
+    #[serde(default)]
+    path_allowlist: PathAllowlist,
 }
 
 impl Default for DesktopSettings {
@@ -22,6 +122,9 @@ impl Default for DesktopSettings {
         Self {
             instance_url: default_instance_url(),
             credential_last_updated_at: None,
+            folder_watcher: FolderWatcherConfig::default(),
+            launch_at_login: false,
+            path_allowlist: PathAllowlist::default(),
         }
     }
 }
@@ -40,7 +143,8 @@ impl SettingsService {
         fs::create_dir_all(&dir).map_err(|e| format!("Failed to create app data dir: {e}"))?;
         let path = dir.join("desktop-settings.json");
         let settings = if path.exists() {
-            let raw = fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {e}"))?;
+            let raw =
+                fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {e}"))?;
             serde_json::from_str(&raw).unwrap_or_default()
         } else {
             DesktopSettings::default()
@@ -85,9 +189,197 @@ impl SettingsService {
         self.persist(&settings)
     }
 
+    pub fn get_launch_at_login(&self) -> bool {
+        self.settings
+            .lock()
+            .map(|s| s.launch_at_login)
+            .unwrap_or(false)
+    }
+
+    pub fn set_launch_at_login(&self, enabled: bool) -> Result<(), String> {
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+        settings.launch_at_login = enabled;
+        self.persist(&settings)
+    }
+
+    pub fn get_folder_watcher_config(&self) -> FolderWatcherConfig {
+        self.settings
+            .lock()
+            .map(|s| s.folder_watcher.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn set_folder_watcher_config(&self, config: FolderWatcherConfig) -> Result<(), String> {
+        self.validate_folder_watcher_for_start(&config)?;
+
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+
+        settings.folder_watcher = config;
+        self.persist(&settings)
+    }
+
+    pub fn disable_folder_watcher(&self) -> Result<(), String> {
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+        settings.folder_watcher.enabled = false;
+        self.persist(&settings)
+    }
+
+    pub fn validate_folder_watcher_for_start(
+        &self,
+        config: &FolderWatcherConfig,
+    ) -> Result<(), String> {
+        let settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+
+        if let Some(ref watch_path) = config.watch_path {
+            self.ensure_watch_path_allowed(&settings.path_allowlist, watch_path)?;
+            normalize_path(watch_path)?;
+        }
+
+        if config.post_upload_action == PostUploadAction::MoveToCustom {
+            let custom = config
+                .custom_move_path
+                .as_ref()
+                .ok_or("Custom move path is required for moveToCustom action")?;
+            self.ensure_move_path_allowed(&settings.path_allowlist, custom)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn register_watch_path_from_picker(&self, path: &str) -> Result<String, String> {
+        let normalized = normalize_path(path)?;
+        let normalized_str = normalized.to_string_lossy().to_string();
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+
+        if !settings
+            .path_allowlist
+            .watch_paths
+            .iter()
+            .any(|existing| paths_equal(existing, &normalized_str))
+        {
+            settings.path_allowlist.watch_paths.push(normalized_str.clone());
+            self.persist(&settings)?;
+        }
+
+        Ok(normalized_str)
+    }
+
+    pub fn register_move_path_from_picker(&self, path: &str) -> Result<String, String> {
+        let normalized = normalize_path(path)?;
+        let normalized_str = normalized.to_string_lossy().to_string();
+        let mut settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+
+        if !settings
+            .path_allowlist
+            .move_paths
+            .iter()
+            .any(|existing| paths_equal(existing, &normalized_str))
+        {
+            settings.path_allowlist.move_paths.push(normalized_str.clone());
+            self.persist(&settings)?;
+        }
+
+        Ok(normalized_str)
+    }
+
+    fn ensure_watch_path_allowed(
+        &self,
+        allowlist: &PathAllowlist,
+        path: &str,
+    ) -> Result<(), String> {
+        if allowlist
+            .watch_paths
+            .iter()
+            .any(|allowed| paths_equal(allowed, path))
+        {
+            Ok(())
+        } else {
+            Err("Watch folder must be selected through the native folder picker".into())
+        }
+    }
+
+    fn ensure_move_path_allowed(&self, allowlist: &PathAllowlist, path: &str) -> Result<(), String> {
+        if allowlist
+            .move_paths
+            .iter()
+            .any(|allowed| paths_equal(allowed, path))
+        {
+            Ok(())
+        } else {
+            Err("Move destination must be selected through the native folder picker".into())
+        }
+    }
+
     fn persist(&self, settings: &DesktopSettings) -> Result<(), String> {
-        let raw =
-            serde_json::to_string_pretty(settings).map_err(|e| format!("Failed to encode settings: {e}"))?;
-        fs::write(&self.path, raw).map_err(|e| format!("Failed to write settings: {e}"))
+        let raw = serde_json::to_string_pretty(settings)
+            .map_err(|e| format!("Failed to encode settings: {e}"))?;
+        write_atomic(&self.path, &raw)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_settings_service() -> (SettingsService, PathBuf) {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("tbm-settings-{nanos}"));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("desktop-settings.json");
+        let service = SettingsService {
+            path: path.clone(),
+            settings: Mutex::new(DesktopSettings::default()),
+        };
+        (service, dir)
+    }
+
+    #[test]
+    fn validate_rejects_unallowlisted_watch_path() {
+        let (service, dir) = temp_settings_service();
+        let config = FolderWatcherConfig {
+            watch_path: Some("/tmp/not-allowlisted".to_string()),
+            ..Default::default()
+        };
+        let error = service
+            .validate_folder_watcher_for_start(&config)
+            .unwrap_err();
+        assert!(error.contains("native folder picker"));
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn validate_accepts_allowlisted_watch_path() {
+        let (service, dir) = temp_settings_service();
+        let registered = service.register_watch_path_from_picker(&dir.to_string_lossy()).unwrap();
+        let config = FolderWatcherConfig {
+            watch_path: Some(registered),
+            ..Default::default()
+        };
+        service
+            .validate_folder_watcher_for_start(&config)
+            .unwrap();
+        let _ = fs::remove_dir_all(dir);
     }
 }

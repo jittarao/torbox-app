@@ -6,7 +6,7 @@ Native macOS and Windows desktop shell for TorBox Manager using [Tauri v2](https
 
 - **UI**: Remote WebView → default `https://tbm.tools` (or a custom self-hosted HTTPS URL)
 - **No bundled Next.js** and **no local backend sidecar** in MVP
-- **Rust IPC**: `desktop_hello`, instance URL settings, secure API key storage
+- **Rust IPC**: `desktop_hello`, instance URL settings, secure API key storage, torrent folder watcher
 - **Web bridge**: `src/desktop/*` with browser-safe fallbacks
 
 ## Prerequisites
@@ -69,37 +69,85 @@ This only updates `src-tauri/icons/` — web/PWA icons under `public/icons/` are
 
 ## Instance URL
 
-| Mode        | URL                                                       |
-| ----------- | --------------------------------------------------------- |
-| Default     | `https://tbm.tools`                                       |
-| Self-hosted | User-configured `https://host` via **User → Desktop App** |
-| Dev         | `http://localhost:3000` (`tauri dev` only)                |
+| Mode        | URL                                                            |
+| ----------- | -------------------------------------------------------------- |
+| Default     | `https://tbm.tools`                                            |
+| Self-hosted | User-configured `https://host` via **Settings** in the sidebar |
+| Dev         | `http://localhost:3000` (`tauri dev` only)                     |
 
 Custom URLs must be HTTPS origins without paths, credentials, or query strings. Changing the instance URL requires an **app restart** in MVP.
 
 ## IPC commands (MVP)
 
-| Command                    | Purpose                                                |
-| -------------------------- | ------------------------------------------------------ |
-| `desktop_hello`            | Handshake + capability manifest                        |
-| `get_instance_url`         | Read persisted instance URL                            |
-| `set_instance_url`         | Validate and persist custom HTTPS origin               |
-| `sync_api_key_to_desktop`  | Store TorBox API key in OS keychain (consent required) |
-| `get_credential_status`    | Metadata only — never returns the raw key              |
-| `clear_desktop_credential` | Remove stored key                                      |
+| Command                        | Purpose                                                |
+| ------------------------------ | ------------------------------------------------------ |
+| `desktop_hello`                | Handshake + capability manifest                        |
+| `get_instance_url`             | Read persisted instance URL                            |
+| `set_instance_url`             | Validate and persist custom HTTPS origin               |
+| `sync_api_key_to_desktop`      | Store TorBox API key in OS keychain (consent required) |
+| `get_credential_status`        | Metadata only — never returns the raw key              |
+| `clear_desktop_credential`     | Remove stored key                                      |
+| `pick_folder`                  | Native folder picker for watch directory (allowlisted) |
+| `pick_move_destination_folder` | Native folder picker for post-upload move target       |
+| `get_folder_watcher_config`    | Read folder watcher settings                           |
+| `set_folder_watcher_config`    | Save settings and restart watcher if enabled           |
+| `start_folder_watcher`         | Start watching (optional `scanExisting`)               |
+| `stop_folder_watcher`          | Stop watching                                          |
+| `get_folder_watcher_status`    | Queue depth, activity log, last error                  |
+| `get_launch_at_login`          | Read launch-at-login preference and OS state           |
+| `set_launch_at_login`          | Enable or disable launch at login                      |
+
+## Torrent folder watcher
+
+qBittorrent-style background watching for `.torrent` files:
+
+1. Open **Settings** in the sidebar (desktop shell only).
+2. **Enable background features** to store your TorBox API key in the OS keychain.
+3. Configure **Torrent folder watcher**: choose a watch folder, post-upload action, and torrent options.
+4. Enable or start the watcher.
+
+The Rust layer watches the selected folder (non-recursive), waits until each file is stable, uploads via `POST {instanceUrl}/api/uploads/batch` using the stored API key, then deletes or moves the `.torrent` file based on your setting:
+
+- **Delete** — remove the file after a successful upload
+- **Move to uploaded/** — move into `{watchFolder}/uploaded/`
+- **Move to custom folder** — move into a separately chosen directory
+
+**Requirements:**
+
+- Backend must be enabled on the target TorBox Manager instance (`BACKEND_DISABLED` blocks uploads).
+- Watch and move destinations must be chosen through the native folder picker (paths are allowlisted in `desktop-settings.json`).
+- Optional **Scan existing files** uploads `.torrent` files already in the folder when the watcher starts (confirmation required in the UI).
+
+Watcher state persists across app restarts. If the watcher was enabled and a credential is stored, it auto-starts on launch.
+
+Tauri events (for live UI updates): `desktop://watcher-status-changed`, `desktop://torrent-detected`, `desktop://upload-queued`, `desktop://upload-succeeded`, `desktop://upload-failed`.
+
+## Launch at login
+
+Launch at login ships early (Phase 6 scope) so background folder watching can resume after sign-in without manual app launch.
+
+In **Settings → General**, enable **Open TorBox Manager at login** to register the app with the OS autostart service (macOS Launch Agent, Windows Run key, Linux autostart entry). The preference is stored in `desktop-settings.json` and synced on each app launch.
 
 ## Manual QA checklist
 
 - [ ] `bun run desktop:dev` opens `localhost:3000` with the Next.js dev server running
 - [ ] Release build opens `https://tbm.tools` on first launch
-- [ ] **User → Desktop App** panel shows version, platform, protocol version
+- [ ] **Settings** page shows version, platform, and protocol
 - [ ] Saving a valid custom `https://` instance URL persists across restarts
 - [ ] Invalid URLs (`http://`, paths, credentials) are rejected
 - [ ] **Enable background features** stores credential; status shows `hasApiKey: true`
 - [ ] **Clear secure credential** removes keychain entry
 - [ ] Normal browser session shows no Desktop panel and no console errors
 - [ ] `bun test src/desktop/__tests__` passes
-- [ ] `cd src-tauri && cargo test` passes (URL validation)
+- [ ] `cd src-tauri && cargo test` passes (URL validation, watcher paths)
+- [ ] Folder watcher: pick folder, enable watcher, drop a `.torrent` file, verify upload in **Uploads**
+- [ ] Post-upload move/delete behaves per selected action
+- [ ] Watcher auto-resumes after app restart when enabled
+- [ ] Launch at login toggle persists across app restarts
+- [ ] Launch at login: enable, sign out/in (or reboot), verify app starts
+- [ ] Change watch folder while watcher is running: confirm modal stops watcher, saves disabled state, and persists new folder
+- [ ] Desktop bridge init failure shows retry UI instead of infinite spinner
+- [ ] Upload succeeds but move/delete fails: torrent is not re-uploaded on next watch event
 
 ## Security notes
 

@@ -5,6 +5,7 @@ import {
   History,
   MagnifyingGlass,
   Rss,
+  Settings,
   Upload,
   User,
 } from '@/components/icons';
@@ -29,6 +30,12 @@ const NAV_ITEMS = [
   { href: '/link-history', labelKey: 'linkHistory', Icon: History },
   { href: '/uploads', labelKey: 'uploads', Icon: Upload },
   { href: '/archived', labelKey: 'archived', Icon: Archive },
+  {
+    href: '/desktop',
+    labelKey: 'settings',
+    Icon: Settings,
+    visible: ({ desktopAvailable }) => desktopAvailable,
+  },
 ];
 
 function filterVisible(items, ctx) {
