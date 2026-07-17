@@ -6,6 +6,9 @@ import type {
   FolderWatcherConfig,
   HelloResponse,
   LaunchAtLoginStatus,
+  NotificationSettings,
+  TraySettings,
+  UpdateInfo,
   WatcherStatus,
 } from '@/desktop/capabilities';
 
@@ -18,6 +21,9 @@ type DesktopStoreState = {
   watcherConfig: FolderWatcherConfig | null;
   watcherStatus: WatcherStatus | null;
   launchAtLogin: LaunchAtLoginStatus | null;
+  traySettings: TraySettings | null;
+  notificationSettings: NotificationSettings | null;
+  pendingUpdate: UpdateInfo | null;
   initialize: () => Promise<void>;
   retryInitialize: () => Promise<void>;
   refreshHello: () => Promise<void>;
@@ -25,6 +31,8 @@ type DesktopStoreState = {
   refreshWatcherConfig: () => Promise<void>;
   refreshWatcherStatus: () => Promise<void>;
   refreshLaunchAtLogin: () => Promise<void>;
+  refreshTraySettings: () => Promise<void>;
+  refreshNotificationSettings: () => Promise<void>;
   setInstanceUrl: (url: string) => Promise<string | null>;
   syncApiKey: (apiKey: string) => Promise<boolean>;
   clearCredential: () => Promise<boolean>;
@@ -34,6 +42,13 @@ type DesktopStoreState = {
   startWatcher: (scanExisting?: boolean) => Promise<boolean>;
   stopWatcher: () => Promise<boolean>;
   setLaunchAtLoginEnabled: (enabled: boolean) => Promise<LaunchAtLoginStatus | null>;
+  saveTraySettings: (settings: TraySettings) => Promise<TraySettings | null>;
+  saveNotificationSettings: (
+    settings: NotificationSettings
+  ) => Promise<NotificationSettings | null>;
+  sendTestNotification: () => Promise<boolean>;
+  checkForUpdate: () => Promise<UpdateInfo | null>;
+  installUpdate: () => Promise<boolean>;
 };
 
 let eventCleanup: (() => void) | null = null;
@@ -54,6 +69,8 @@ async function subscribeDesktopEvents(
         get().refreshWatcherConfig(),
         get().refreshWatcherStatus(),
         get().refreshLaunchAtLogin(),
+        get().refreshTraySettings(),
+        get().refreshNotificationSettings(),
       ]);
     }),
     desktopEvents.onWatcherStatusChanged((status) => {
@@ -73,6 +90,9 @@ async function subscribeDesktopEvents(
         }
       });
     }),
+    desktopEvents.onUpdateAvailable((info) => {
+      set({ pendingUpdate: info });
+    }),
   ]);
 
   eventCleanup = () => {
@@ -91,6 +111,8 @@ async function loadDesktopState(
   const watcherConfig = await desktopBridge.getFolderWatcherConfig();
   const watcherStatus = await desktopBridge.getFolderWatcherStatus();
   const launchAtLogin = await desktopBridge.getLaunchAtLogin();
+  const traySettings = await desktopBridge.getTraySettings();
+  const notificationSettings = await desktopBridge.getNotificationSettings();
 
   await subscribeDesktopEvents(set, get);
 
@@ -103,6 +125,9 @@ async function loadDesktopState(
     watcherConfig,
     watcherStatus,
     launchAtLogin,
+    traySettings,
+    notificationSettings,
+    pendingUpdate: null,
   });
 }
 
@@ -115,6 +140,9 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
   watcherConfig: null,
   watcherStatus: null,
   launchAtLogin: null,
+  traySettings: null,
+  notificationSettings: null,
+  pendingUpdate: null,
 
   initialize: async () => {
     if (get().initialized) {
@@ -133,6 +161,9 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
           watcherConfig: null,
           watcherStatus: null,
           launchAtLogin: null,
+          traySettings: null,
+          notificationSettings: null,
+          pendingUpdate: null,
         });
         return;
       }
@@ -148,6 +179,9 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
         watcherConfig: null,
         watcherStatus: null,
         launchAtLogin: null,
+        traySettings: null,
+        notificationSettings: null,
+        pendingUpdate: null,
       });
     }
   },
@@ -163,6 +197,9 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
       watcherConfig: null,
       watcherStatus: null,
       launchAtLogin: null,
+      traySettings: null,
+      notificationSettings: null,
+      pendingUpdate: null,
     });
     await get().initialize();
   },
@@ -198,6 +235,16 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
   refreshLaunchAtLogin: async () => {
     const launchAtLogin = await desktopBridge.getLaunchAtLogin();
     set({ launchAtLogin });
+  },
+
+  refreshTraySettings: async () => {
+    const traySettings = await desktopBridge.getTraySettings();
+    set({ traySettings });
+  },
+
+  refreshNotificationSettings: async () => {
+    const notificationSettings = await desktopBridge.getNotificationSettings();
+    set({ notificationSettings });
   },
 
   setInstanceUrl: async (url: string) => {
@@ -262,6 +309,7 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
       launchAtLogin: {
         enabled,
         osEnabled: previous?.osEnabled ?? false,
+        requiresApproval: previous?.requiresApproval,
       },
     });
 
@@ -277,5 +325,55 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
       set({ launchAtLogin: previous });
       throw error;
     }
+  },
+
+  saveTraySettings: async (settings: TraySettings) => {
+    const previous = get().traySettings;
+    set({ traySettings: settings });
+    try {
+      const saved = await desktopBridge.setTraySettings(settings);
+      if (saved) {
+        set({ traySettings: saved });
+      } else {
+        set({ traySettings: previous });
+      }
+      return saved;
+    } catch (error) {
+      set({ traySettings: previous });
+      throw error;
+    }
+  },
+
+  saveNotificationSettings: async (settings: NotificationSettings) => {
+    const previous = get().notificationSettings;
+    set({ notificationSettings: settings });
+    try {
+      const saved = await desktopBridge.setNotificationSettings(settings);
+      if (saved) {
+        set({ notificationSettings: saved });
+      } else {
+        set({ notificationSettings: previous });
+      }
+      return saved;
+    } catch (error) {
+      set({ notificationSettings: previous });
+      throw error;
+    }
+  },
+
+  sendTestNotification: async () => {
+    return desktopBridge.showTestNotification();
+  },
+
+  checkForUpdate: async () => {
+    const update = await desktopBridge.checkForUpdate();
+    if (update) {
+      set({ pendingUpdate: update });
+    }
+    return update;
+  },
+
+  installUpdate: async () => {
+    return desktopBridge.installUpdate();
   },
 }));

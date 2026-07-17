@@ -1,4 +1,4 @@
-use tauri::{AppHandle, ipc::CapabilityBuilder, Manager};
+use tauri::{AppHandle, ipc::CapabilityBuilder, Manager, Emitter};
 
 use crate::constants::DEFAULT_INSTANCE_URL;
 
@@ -48,4 +48,9 @@ pub fn register_custom_instance_capability(
     }
 
     register_remote_origin(app, "custom-instance", instance_url)
+}
+
+/// Notifies the hosted web app that native capabilities may have changed.
+pub fn emit_capabilities_changed(app: &AppHandle) {
+    let _ = app.emit("desktop://capabilities-changed", ());
 }

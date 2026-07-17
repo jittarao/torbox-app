@@ -8,6 +8,9 @@ import { hasFeature } from '@/desktop/capabilities';
 import Spinner from '@/components/shared/Spinner';
 import DesktopFolderWatcherPanel from '@/components/desktop/DesktopFolderWatcherPanel';
 import DesktopLaunchAtLoginPanel from '@/components/desktop/DesktopLaunchAtLoginPanel';
+import DesktopNotificationsPanel from '@/components/desktop/DesktopNotificationsPanel';
+import DesktopTrayPanel from '@/components/desktop/DesktopTrayPanel';
+import DesktopUpdaterPanel from '@/components/desktop/DesktopUpdaterPanel';
 import DesktopSettingsSection from '@/components/desktop/DesktopSettingsSection';
 import {
   desktopBtnDanger,
@@ -19,10 +22,10 @@ import {
   desktopTabDefault,
   desktopTabSelected,
 } from '@/components/desktop/DesktopUi';
-import { Bolt, Cloud, Key, Settings, Torrent } from '@/components/icons';
+import { Bolt, Cloud, HardDrive, Key, Settings, Torrent } from '@/components/icons';
 import { formatDate } from '@/components/uploads/utils';
 
-type SettingsTab = 'general' | 'watcher';
+type SettingsTab = 'general' | 'background' | 'watcher';
 
 type DesktopSettingsPanelProps = {
   apiKey: string;
@@ -51,6 +54,9 @@ export default function DesktopSettingsPanel({ apiKey, setToast }: DesktopSettin
   const canCustomizeUrl = hasFeature(capabilities, 'instanceUrl');
   const canStoreApiKey = hasFeature(capabilities, 'secureCredentials');
   const canUseWatcher = hasFeature(capabilities, 'folderWatcher');
+  const canUseTray = hasFeature(capabilities, 'tray');
+  const canUseNotifications = hasFeature(capabilities, 'nativeNotifications');
+  const canUseUpdater = hasFeature(capabilities, 'updater');
 
   const notify = (message: string, type: 'success' | 'error') => {
     setToast?.({ message, type });
@@ -119,6 +125,12 @@ export default function DesktopSettingsPanel({ apiKey, setToast }: DesktopSettin
       label: t('tabs.general'),
       description: t('tabs.generalDescription'),
       icon: Settings,
+    },
+    {
+      id: 'background',
+      label: t('tabs.background'),
+      description: t('tabs.backgroundDescription'),
+      icon: HardDrive,
     },
     {
       id: 'watcher',
@@ -212,6 +224,16 @@ export default function DesktopSettingsPanel({ apiKey, setToast }: DesktopSettin
             >
               <DesktopLaunchAtLoginPanel embedded setToast={setToast} />
             </DesktopSettingsSection>
+
+            {canUseUpdater ? (
+              <DesktopSettingsSection
+                title={t('updater.title')}
+                description={t('updater.description')}
+                icon={HardDrive}
+              >
+                <DesktopUpdaterPanel embedded setToast={setToast} />
+              </DesktopSettingsSection>
+            ) : null}
 
             {canStoreApiKey ? (
               <DesktopSettingsSection
@@ -331,6 +353,36 @@ export default function DesktopSettingsPanel({ apiKey, setToast }: DesktopSettin
                 </div>
               </DesktopSettingsSection>
             )}
+          </div>
+        )}
+
+        {activeTab === 'background' && (
+          <div className="space-y-5">
+            {canUseTray ? (
+              <DesktopSettingsSection
+                title={t('tray.title')}
+                description={t('tray.description')}
+                icon={HardDrive}
+              >
+                <DesktopTrayPanel embedded setToast={setToast} />
+              </DesktopSettingsSection>
+            ) : null}
+
+            {canUseNotifications ? (
+              <DesktopSettingsSection
+                title={t('nativeNotifications.title')}
+                description={t('nativeNotifications.description')}
+                icon={Bolt}
+              >
+                <DesktopNotificationsPanel embedded setToast={setToast} />
+              </DesktopSettingsSection>
+            ) : null}
+
+            {!canUseTray && !canUseNotifications ? (
+              <DesktopSettingsSection title={t('tabs.background')} icon={HardDrive}>
+                <DesktopInfoCallout variant="warning">{t('updateDesktopApp')}</DesktopInfoCallout>
+              </DesktopSettingsSection>
+            ) : null}
           </div>
         )}
 

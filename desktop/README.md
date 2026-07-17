@@ -1,12 +1,12 @@
 # TorBox Manager Desktop
 
-Native macOS and Windows desktop shell for TorBox Manager using [Tauri v2](https://v2.tauri.app/). The app loads the hosted web UI in a WebView and exposes a small, capability-gated IPC bridge for secure credentials and future native features.
+Native macOS and Windows desktop shell for TorBox Manager using [Tauri v2](https://v2.tauri.app/). The app loads the hosted web UI in a WebView and exposes a small, capability-gated IPC bridge for secure credentials, folder watching, tray background operation, and native notifications.
 
 ## Architecture
 
 - **UI**: Remote WebView → default `https://tbm.tools` (or a custom self-hosted HTTPS URL)
-- **No bundled Next.js** and **no local backend sidecar** in MVP
-- **Rust IPC**: `desktop_hello`, instance URL settings, secure API key storage, torrent folder watcher
+- **No bundled Next.js** and **no local backend sidecar**
+- **Rust IPC**: handshake, instance URL, credentials, folder watcher, tray, notifications, launch at login, updater (staging)
 - **Web bridge**: `src/desktop/*` with browser-safe fallbacks
 
 ## Prerequisites
@@ -19,13 +19,13 @@ Native macOS and Windows desktop shell for TorBox Manager using [Tauri v2](https
 ### macOS
 
 - Xcode Command Line Tools: `xcode-select --install`
-- For distribution: Apple Developer ID + notarization credentials (post-MVP)
+- For distribution: Apple Developer ID + notarization credentials (see [`desktop/release/signing-checklist.md`](release/signing-checklist.md))
 
 ### Windows
 
 - [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 - WebView2 (usually preinstalled on Windows 10/11)
-- For distribution: Authenticode signing certificate (post-MVP)
+- For distribution: Authenticode signing certificate (see signing checklist)
 
 ## Development
 
@@ -43,10 +43,12 @@ bun run desktop:dev
 
 Debug builds register runtime IPC capabilities for `localhost:3000`. Production builds load `https://tbm.tools` by default and honor a persisted custom HTTPS instance URL after restart.
 
+Set `TAURI_UPDATER_ACTIVE=true` to exercise updater commands in debug builds.
+
 ## Build
 
 ```bash
-# Release installers (macOS .dmg/.app, Windows .msi/.exe)
+# Release installers (macOS .dmg, Windows NSIS .exe)
 bun run desktop:build
 
 # Debug build
@@ -55,17 +57,15 @@ bun run desktop:build:debug
 
 Artifacts are written under `src-tauri/target/release/bundle/`.
 
+Release pipeline details: [`desktop/release/README.md`](release/README.md)
+
 ### Icons
 
-Source: [src-tauri/icons/icon-source.png](../src-tauri/icons/icon-source.png) (1024×1024, artwork inset to Apple's macOS safe zone).
-
-Regenerate platform bundle icons after changing the source:
+Source: [src-tauri/icons/icon-source.png](../src-tauri/icons/icon-source.png) (1024×1024).
 
 ```bash
 bun run desktop:icon
 ```
-
-This only updates `src-tauri/icons/` — web/PWA icons under `public/icons/` are separate.
 
 ## Instance URL
 
@@ -75,99 +75,128 @@ This only updates `src-tauri/icons/` — web/PWA icons under `public/icons/` are
 | Self-hosted | User-configured `https://host` via **Settings** in the sidebar |
 | Dev         | `http://localhost:3000` (`tauri dev` only)                     |
 
-Custom URLs must be HTTPS origins without paths, credentials, or query strings. Changing the instance URL requires an **app restart** in MVP.
+Custom URLs must be HTTPS origins without paths, credentials, or query strings. Changing the instance URL requires an **app restart**.
 
-## IPC commands (MVP)
+## IPC commands
 
-| Command                        | Purpose                                                |
-| ------------------------------ | ------------------------------------------------------ |
-| `desktop_hello`                | Handshake + capability manifest                        |
-| `get_instance_url`             | Read persisted instance URL                            |
-| `set_instance_url`             | Validate and persist custom HTTPS origin               |
-| `sync_api_key_to_desktop`      | Store TorBox API key in OS keychain (consent required) |
-| `get_credential_status`        | Metadata only — never returns the raw key              |
-| `clear_desktop_credential`     | Remove stored key                                      |
-| `pick_folder`                  | Native folder picker for watch directory (allowlisted) |
-| `pick_move_destination_folder` | Native folder picker for post-upload move target       |
-| `get_folder_watcher_config`    | Read folder watcher settings                           |
-| `set_folder_watcher_config`    | Save settings and restart watcher if enabled           |
-| `start_folder_watcher`         | Start watching (optional `scanExisting`)               |
-| `stop_folder_watcher`          | Stop watching                                          |
-| `get_folder_watcher_status`    | Queue depth, activity log, last error                  |
-| `get_launch_at_login`          | Read launch-at-login preference and OS state           |
-| `set_launch_at_login`          | Enable or disable launch at login                      |
+| Command                                                                              | Purpose                              |
+| ------------------------------------------------------------------------------------ | ------------------------------------ |
+| `desktop_hello`                                                                      | Handshake + capability manifest      |
+| `get_instance_url` / `set_instance_url`                                              | Custom HTTPS origin                  |
+| `sync_api_key_to_desktop` / `get_credential_status` / `clear_desktop_credential`     | OS keychain credential               |
+| `pick_folder` / `pick_move_destination_folder`                                       | Native folder pickers                |
+| `get/set/start/stop/get_folder_watcher_status`                                       | Folder watcher                       |
+| `get_launch_at_login` / `set_launch_at_login`                                        | Launch at login                      |
+| `get_tray_settings` / `set_tray_settings`                                            | Close/minimize/start-hidden behavior |
+| `get_notification_settings` / `set_notification_settings` / `show_test_notification` | Native notifications                 |
+| `check_for_update_command` / `install_update_command`                                | Auto-updater (staging)               |
+
+Tauri events: `desktop://watcher-status-changed`, `desktop://torrent-detected`, `desktop://upload-queued`, `desktop://upload-succeeded`, `desktop://upload-failed`, `desktop://capabilities-changed`, `desktop://tray-open-settings`, `desktop://update-available`, `desktop://update-progress`.
 
 ## Torrent folder watcher
 
-qBittorrent-style background watching for `.torrent` files:
+See Phase 5 docs in the original migration plan. Watcher auto-resumes on launch when enabled and a credential is stored.
 
-1. Open **Settings** in the sidebar (desktop shell only).
-2. **Enable background features** to store your TorBox API key in the OS keychain.
-3. Configure **Torrent folder watcher**: choose a watch folder, post-upload action, and torrent options.
-4. Enable or start the watcher.
+## Tray and background operation
 
-The Rust layer watches the selected folder (non-recursive), waits until each file is stable, uploads via `POST {instanceUrl}/api/uploads/batch` using the stored API key, then deletes or moves the `.torrent` file based on your setting:
-
-- **Delete** — remove the file after a successful upload
-- **Move to uploaded/** — move into `{watchFolder}/uploaded/`
-- **Move to custom folder** — move into a separately chosen directory
-
-**Requirements:**
-
-- Backend must be enabled on the target TorBox Manager instance (`BACKEND_DISABLED` blocks uploads).
-- Watch and move destinations must be chosen through the native folder picker (paths are allowlisted in `desktop-settings.json`).
-- Optional **Scan existing files** uploads `.torrent` files already in the folder when the watcher starts (confirmation required in the UI).
-
-Watcher state persists across app restarts. If the watcher was enabled and a credential is stored, it auto-starts on launch.
-
-Tauri events (for live UI updates): `desktop://watcher-status-changed`, `desktop://torrent-detected`, `desktop://upload-queued`, `desktop://upload-succeeded`, `desktop://upload-failed`.
+- **Close to tray** — closing the window hides it; use the tray icon or **Open** menu item to restore
+- **Minimize to tray** — minimizing hides the window (Windows/Linux)
+- **Start hidden** — with launch at login, boots to tray only
+- **Quit** — tray menu exits and stops the watcher
 
 ## Launch at login
 
-Launch at login ships early (Phase 6 scope) so background folder watching can resume after sign-in without manual app launch.
+Configured under **Settings → General**. macOS bundled builds use `SMAppService`; dev builds use a Launch Agent wrapper. If macOS reports **Requires approval**, allow TorBox Manager in **System Settings → General → Login Items**.
 
-In **Settings → General**, enable **Open TorBox Manager at login** to register the app with the OS autostart service (macOS Launch Agent, Windows Run key, Linux autostart entry). The preference is stored in `desktop-settings.json` and synced on each app launch.
+## Native notifications
+
+Configured under **Settings → Background**. Upload success/failure notifications are emitted from Rust when the folder watcher runs, even if the window is hidden.
+
+## Compatibility matrix
+
+| Scenario              | Expected behavior                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| Old desktop + new web | Missing capabilities hide tray/notification/updater UI; watcher still works if supported |
+| New desktop + old web | Site loads; desktop settings nav hidden until web bridge is deployed                     |
+| Custom instance URL   | Runtime capability registration + `desktop://capabilities-changed`                       |
+| Browser               | No desktop settings; bridge methods no-op                                                |
+
+Deploy hosted `src/desktop/*` changes **before** shipping desktop builds that depend on new capabilities.
+
+## Linux support
+
+Linux builds are **best-effort** and not part of the MVP release gate.
+
+| Feature       | Notes                                            |
+| ------------- | ------------------------------------------------ |
+| Tray          | Depends on desktop environment (GNOME/KDE/etc.)  |
+| Notifications | Requires freedesktop notification portal         |
+| Autostart     | XDG autostart entry via `tauri-plugin-autostart` |
+| Keychain      | Uses `keyring` linux-native backend              |
+
+Use Windows or macOS for production validation.
 
 ## Manual QA checklist
+
+### Core
 
 - [ ] `bun run desktop:dev` opens `localhost:3000` with the Next.js dev server running
 - [ ] Release build opens `https://tbm.tools` on first launch
 - [ ] **Settings** page shows version, platform, and protocol
-- [ ] Saving a valid custom `https://` instance URL persists across restarts
-- [ ] Invalid URLs (`http://`, paths, credentials) are rejected
-- [ ] **Enable background features** stores credential; status shows `hasApiKey: true`
-- [ ] **Clear secure credential** removes keychain entry
 - [ ] Normal browser session shows no Desktop panel and no console errors
 - [ ] `bun test src/desktop/__tests__` passes
-- [ ] `cd src-tauri && cargo test` passes (URL validation, watcher paths)
-- [ ] Folder watcher: pick folder, enable watcher, drop a `.torrent` file, verify upload in **Uploads**
-- [ ] Post-upload move/delete behaves per selected action
+- [ ] `cd src-tauri && cargo test` passes
+
+### Credentials and watcher
+
+- [ ] **Enable background features** stores credential; status shows `hasApiKey: true`
+- [ ] Folder watcher uploads a dropped `.torrent` file
 - [ ] Watcher auto-resumes after app restart when enabled
-- [ ] Launch at login toggle persists across app restarts
-- [ ] Launch at login: enable, sign out/in (or reboot), verify app starts
-- [ ] Change watch folder while watcher is running: confirm modal stops watcher, saves disabled state, and persists new folder
-- [ ] Desktop bridge init failure shows retry UI instead of infinite spinner
-- [ ] Upload succeeds but move/delete fails: torrent is not re-uploaded on next watch event
+
+### Tray and notifications
+
+- [ ] Tray icon visible; **Open** restores the window
+- [ ] Close with **Close to tray** enabled hides instead of exiting
+- [ ] **Quit** from tray exits and stops the watcher
+- [ ] Launch at login + **Start hidden** boots to tray without window flash
+- [ ] Upload success/failure shows a native notification when enabled
+- [ ] **Send test notification** works
+
+### Launch at login
+
+- [ ] Toggle persists across restarts
+- [ ] Reboot/sign-in test on Windows and macOS
+- [ ] macOS **Requires approval** message appears when applicable
+
+### Updater (staging)
+
+- [ ] With `TAURI_UPDATER_ACTIVE=true`, **Check for updates** runs without error
+- [ ] Unsigned release builds show updater as unavailable in production channel
+
+### Windows VM (clean install)
+
+- [ ] Unsigned installer shows SmartScreen warning (expected until signing)
+- [ ] WebView2 bootstrap succeeds
+- [ ] Tray + watcher + notifications end-to-end
+
+### macOS bundled `.app`
+
+- [ ] Gatekeeper warning for unsigned builds (expected until notarization)
+- [ ] Login item + Requires approval flow
+- [ ] Folder picker + watcher on a user-selected directory
 
 ## Security notes
 
-- Remote IPC is restricted by Tauri capability URL patterns (`https://tbm.tools` in production; custom self-hosted origins are registered at runtime from saved settings)
-- Debug builds additionally allow `http://localhost:3000` IPC via runtime capabilities (not shipped in release builds)
+- Remote IPC is restricted by Tauri capability URL patterns
 - Sensitive commands validate the WebView origin against the stored instance URL
 - Only explicit user action syncs the API key to the OS credential store
-- Keep the hosted site CSP tight — XSS on the loaded origin could invoke allowed desktop commands
-
-## Signing and release (post-MVP)
-
-MVP builds are unsigned local artifacts. Phase 7 adds:
-
-- GitHub Actions matrix (`macos-latest`, `windows-latest`)
-- Apple Developer ID + notarization
-- Windows Authenticode signing
-- Tauri auto-updater configuration
+- Notification commands do not accept arbitrary title/body from the web page
+- Production CSP headers are set in `next.config.mjs`; residual `unsafe-inline` / `unsafe-eval` remain for Next.js runtime needs
+- XSS on the hosted origin could invoke allowed desktop commands — keep the IPC surface narrow
 
 ## Related docs
 
-- Deploy the hosted web bridge (`src/desktop/*`) to production **before** shipping desktop builds that depend on `desktop_hello`.
-- [prompts/tauri-migration.md](../prompts/tauri-migration.md) — full phased roadmap
+- [prompts/tauri-migration.md](../prompts/tauri-migration.md) — phased roadmap
+- [desktop/release/README.md](release/README.md) — CI and updater
+- [desktop/release/signing-checklist.md](release/signing-checklist.md) — signing when ready
 - [Tauri v2 capabilities](https://v2.tauri.app/security/capabilities/)

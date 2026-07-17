@@ -74,6 +74,30 @@ export type WatcherStatus = {
 export type LaunchAtLoginStatus = {
   enabled: boolean;
   osEnabled: boolean;
+  requiresApproval?: boolean;
+};
+
+export type TraySettings = {
+  closeToTray: boolean;
+  minimizeToTray: boolean;
+  startHidden: boolean;
+};
+
+export type NotificationSettings = {
+  nativeNotifications: boolean;
+  notifyOnUploadSuccess: boolean;
+  notifyOnUploadFailure: boolean;
+};
+
+export type UpdateInfo = {
+  version: string;
+  currentVersion: string;
+  notes?: string | null;
+};
+
+export type UpdateProgress = {
+  downloaded: number;
+  total?: number | null;
 };
 
 export function hasFeature(

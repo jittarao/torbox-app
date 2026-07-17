@@ -21,9 +21,22 @@ bun i18n:verify
 
 ## Version
 
-| Script              | Purpose                                                    |
-| ------------------- | ---------------------------------------------------------- |
-| `update-version.js` | Update version across package.json and other config files. |
+| Script                            | Purpose                                                                          |
+| --------------------------------- | -------------------------------------------------------------------------------- |
+| `update-version.js`               | Bump or set **web** and/or **desktop** semver (see scopes below).                |
+| `generate-desktop-latest-json.js` | Build Tauri updater `latest.json` from staged `.tar.gz` / `.nsis.zip` artifacts. |
+
+Scopes (flags: `--web` default, `--desktop`, `--all`):
+
+- **Web** — `package.json`, `backend/package.json` (hosted deploys)
+- **Desktop** — `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json` (installer releases)
+
+```bash
+bun run version:show              # web + desktop
+bun run version:patch             # web only
+bun run version:desktop:patch     # desktop shell only
+bun run version:all:patch         # both tracks together
+```
 
 ## Build / CI
 

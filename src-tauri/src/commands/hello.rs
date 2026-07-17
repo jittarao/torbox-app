@@ -51,9 +51,24 @@ fn build_capabilities() -> serde_json::Value {
             },
             "launchAtLogin": {
                 "version": 1
-            }
+            },
+            "tray": {
+                "version": 1
+            },
+            "nativeNotifications": {
+                "version": 1
+            },
+            "updater": updater_capability()
         }
     })
+}
+
+fn updater_capability() -> serde_json::Value {
+    if crate::services::updates::is_updater_active() {
+        serde_json::json!({ "version": 1 })
+    } else {
+        serde_json::Value::Null
+    }
 }
 
 #[tauri::command]

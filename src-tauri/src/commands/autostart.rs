@@ -13,6 +13,8 @@ use tauri_plugin_autostart::ManagerExt;
 pub struct LaunchAtLoginStatus {
     pub enabled: bool,
     pub os_enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requires_approval: Option<bool>,
 }
 
 fn is_os_launch_at_login_enabled(app: &AppHandle) -> bool {
@@ -25,6 +27,24 @@ fn is_os_launch_at_login_enabled(app: &AppHandle) -> bool {
     #[cfg(not(target_os = "macos"))]
     {
         app.autolaunch().is_enabled().unwrap_or(false)
+    }
+}
+
+fn launch_at_login_status(app: &AppHandle, pref: bool) -> LaunchAtLoginStatus {
+    let os_enabled = is_os_launch_at_login_enabled(app);
+    #[cfg(target_os = "macos")]
+    let requires_approval = if pref && os_enabled {
+        Some(crate::services::macos_autostart::requires_approval())
+    } else {
+        None
+    };
+    #[cfg(not(target_os = "macos"))]
+    let requires_approval = None;
+
+    LaunchAtLoginStatus {
+        enabled: pref,
+        os_enabled,
+        requires_approval,
     }
 }
 
@@ -79,12 +99,7 @@ pub fn get_launch_at_login(
 ) -> Result<LaunchAtLoginStatus, String> {
     validate_window_origin(&window, &state)?;
     let pref = state.settings.get_launch_at_login();
-    let os_enabled = is_os_launch_at_login_enabled(&app);
-
-    Ok(LaunchAtLoginStatus {
-        enabled: pref,
-        os_enabled,
-    })
+    Ok(launch_at_login_status(&app, pref))
 }
 
 #[tauri::command]
@@ -108,8 +123,21 @@ pub async fn set_launch_at_login(
     let persisted = if enabled { os_enabled } else { false };
     state.settings.set_launch_at_login(persisted)?;
 
-    Ok(LaunchAtLoginStatus {
-        enabled: persisted,
-        os_enabled,
-    })
+    Ok(launch_at_login_status(&app, persisted))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn launch_status_prefers_stored_enabled_flag() {
+        let status = LaunchAtLoginStatus {
+            enabled: true,
+            os_enabled: false,
+            requires_approval: None,
+        };
+        assert!(status.enabled);
+        assert!(!status.os_enabled);
+    }
 }

@@ -711,14 +711,36 @@
       "help": "Useful if you rely on the folder watcher or other background features.",
       "label": "Open TorBox Manager at login",
       "osMismatch": "The system setting may be out of sync. Toggle again to repair.",
+      "requiresApproval": "macOS needs your approval before TorBox Manager can start at login. Open System Settings → General → Login Items and allow TorBox Manager.",
       "saveFailed": "Failed to update launch at login",
+      "startHiddenHelp": "When enabled with launch at login, TorBox Manager stays in the menu bar until you open it.",
+      "startHiddenLabel": "Start hidden at login",
+      "startHiddenSaveFailed": "Failed to update start-hidden preference",
       "title": "Startup",
       "updateDesktopApp": "Update the desktop app to enable launch at login"
+    },
+    "nativeNotifications": {
+      "description": "Show system notifications for background folder watcher uploads.",
+      "enabledHelp": "Master switch for native desktop notifications.",
+      "enabledLabel": "Enable native notifications",
+      "saveFailed": "Failed to save notification settings",
+      "saveSuccess": "Notification settings saved",
+      "testAction": "Send test notification",
+      "testFailed": "Could not show a test notification",
+      "testSuccess": "Test notification sent",
+      "title": "Notifications",
+      "updateDesktopApp": "Update the desktop app to enable native notifications",
+      "uploadFailureHelp": "Alert when a watched torrent upload fails.",
+      "uploadFailureLabel": "Notify on upload failure",
+      "uploadSuccessHelp": "Alert when a watched torrent upload succeeds.",
+      "uploadSuccessLabel": "Notify on upload success"
     },
     "platform": "Platform",
     "restartRequired": "Restart the desktop app after changing the instance URL.",
     "tabs": {
       "ariaLabel": "Settings sections",
+      "background": "Background",
+      "backgroundDescription": "Tray behavior and native notifications",
       "general": "General",
       "generalDescription": "Startup, sign-in, and connection options",
       "watcher": "Folder watcher",
@@ -726,7 +748,33 @@
       "watcherDescription": "Automatic torrent uploads from a watch folder"
     },
     "title": "Settings",
-    "updateDesktopApp": "Update the desktop app to use this feature"
+    "tray": {
+      "closeToTrayHelp": "Closing the window keeps TorBox Manager running in the menu bar or system tray.",
+      "closeToTrayLabel": "Close to tray",
+      "description": "Control how TorBox Manager behaves when the window is closed or minimized.",
+      "minimizeToTrayHelp": "Minimizing hides the window to the tray instead of the taskbar or dock.",
+      "minimizeToTrayLabel": "Minimize to tray",
+      "saveFailed": "Failed to save tray settings",
+      "saveSuccess": "Tray settings saved",
+      "startHiddenHelp": "When combined with launch at login, the app starts in the tray without opening a window.",
+      "startHiddenLabel": "Start hidden",
+      "title": "Tray and background",
+      "updateDesktopApp": "Update the desktop app to enable tray features"
+    },
+    "updateDesktopApp": "Update the desktop app to use this feature",
+    "updater": {
+      "checkAction": "Check for updates",
+      "checkFailed": "Could not check for updates",
+      "currentVersion": "Installed version",
+      "description": "Check for a newer desktop app release.",
+      "installAction": "Install update and restart",
+      "installFailed": "Could not install the update",
+      "title": "Desktop updates",
+      "unavailable": "Desktop updates are not enabled in this build yet.",
+      "upToDate": "TorBox Manager is up to date",
+      "updateAvailable": "Version {version} is available",
+      "updateReady": "Update {version} ready"
+    }
   },
   "DownloadPanel": {
     "actions": {

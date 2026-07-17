@@ -6,5 +6,10 @@
   "remote": {
     "urls": ["https://tbm.tools", "https://tbm.tools/*"]
   },
-  "permissions": ["core:default", "core:event:default", "allow-desktop-bridge"]
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "allow-desktop-bridge",
+    "notification:default"
+  ]
 }

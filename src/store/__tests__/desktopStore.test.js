@@ -9,6 +9,13 @@ function mockDesktopBridge(overrides = {}) {
     getFolderWatcherStatus: async () => null,
     getLaunchAtLogin: async () => null,
     setLaunchAtLogin: async () => null,
+    getTraySettings: async () => null,
+    setTraySettings: async () => null,
+    getNotificationSettings: async () => null,
+    setNotificationSettings: async () => null,
+    showTestNotification: async () => false,
+    checkForUpdate: async () => null,
+    installUpdate: async () => false,
     resetAvailabilityCache: () => {},
     ...overrides,
   };
@@ -20,6 +27,8 @@ function mockDesktopEvents() {
     onWatcherStatusChanged: async () => null,
     onUploadSucceeded: async () => null,
     onUploadFailed: async () => null,
+    onTrayOpenSettings: async () => null,
+    onUpdateAvailable: async () => null,
   };
 }
 

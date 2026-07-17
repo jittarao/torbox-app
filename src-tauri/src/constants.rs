@@ -12,6 +12,8 @@ pub const WATCHER_PROCESSED_RETENTION_DAYS: i64 = 30;
 pub const WATCHER_MAX_RETRIES: u32 = 3;
 pub const WATCHER_RATE_LIMIT_MAX_RETRIES: u32 = 10;
 pub const WATCHER_ACTIVITY_LOG_LIMIT: usize = 10;
+pub const MIN_STABLE_FILE_MS: u64 = 500;
+pub const MAX_STABLE_FILE_MS: u64 = 60_000;
 
 /// Matches `uploads.length > 1000` validation in Next.js and backend batch routes.
 pub const MAX_BATCH_UPLOADS_PER_REQUEST: usize = 1000;

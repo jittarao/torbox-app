@@ -1,17 +1,24 @@
 #!/usr/bin/env bun
 /**
- * Bump or set the app version across package.json files.
+ * Bump or set app versions for the hosted web app and/or the Tauri desktop shell.
+ *
+ * The web app (Next.js + backend) and desktop shell version independently:
+ * - Web: frequent deploys to tbm.tools; drives User-Agent and NEXT_PUBLIC_TORBOX_MANAGER_VERSION.
+ * - Desktop: bump only when shipping new installers (Rust IPC, tray, updater, etc.).
  *
  * Usage:
- *   bun scripts/update-version.js              # print current version
- *   bun scripts/update-version.js patch        # 0.1.9 -> 0.1.10
- *   bun scripts/update-version.js minor        # 0.1.9 -> 0.2.0
- *   bun scripts/update-version.js major        # 0.1.9 -> 1.0.0
- *   bun scripts/update-version.js 0.1.9        # set exact version
- *   bun scripts/update-version.js set 0.1.9    # set exact version
+ *   bun scripts/update-version.js                         # print web + desktop versions
+ *   bun scripts/update-version.js patch                   # bump web patch
+ *   bun scripts/update-version.js patch --desktop         # bump desktop patch
+ *   bun scripts/update-version.js patch --all             # bump both
+ *   bun scripts/update-version.js minor|major [--scope]   # same scopes as patch
+ *   bun scripts/update-version.js set 0.1.9 [--scope]     # set exact version
+ *   bun scripts/update-version.js 0.1.9 [--scope]         # set exact version
  *
- * Updates: package.json and backend/package.json (Bun lockfiles do not store app version).
- * NEXT_PUBLIC_TORBOX_MANAGER_VERSION is injected from root package.json at build time.
+ * Scopes: default = web only; --desktop = Tauri only; --all = web + desktop together.
+ *
+ * Web updates: package.json, backend/package.json.
+ * Desktop updates: src-tauri/Cargo.toml, src-tauri/tauri.conf.json.
  */
 
 import { readFileSync, writeFileSync } from 'fs';
@@ -19,9 +26,13 @@ import { join } from 'path';
 
 const ROOT = join(import.meta.dir, '..');
 
-const PACKAGE_FILES = [join(ROOT, 'package.json'), join(ROOT, 'backend', 'package.json')];
+const WEB_PACKAGE_FILES = [join(ROOT, 'package.json'), join(ROOT, 'backend', 'package.json')];
+const TAURI_CARGO = join(ROOT, 'src-tauri', 'Cargo.toml');
+const TAURI_CONF = join(ROOT, 'src-tauri', 'tauri.conf.json');
 
 const SEMVER_RE = /^\d+\.\d+\.\d+$/;
+const BUMP_TYPES = new Set(['patch', 'minor', 'major']);
+const SCOPES = new Set(['web', 'desktop', 'all']);
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -56,8 +67,12 @@ function bumpVersion(current, type) {
   }
 }
 
-function getCurrentVersion() {
-  return readJson(PACKAGE_FILES[0]).version;
+function getWebVersion() {
+  return readJson(WEB_PACKAGE_FILES[0]).version;
+}
+
+function getDesktopVersion() {
+  return readJson(TAURI_CONF).version;
 }
 
 function updatePackageVersion(filePath, version) {
@@ -66,39 +81,117 @@ function updatePackageVersion(filePath, version) {
   writeJson(filePath, pkg);
 }
 
-function resolveTargetVersion(args) {
-  const [first, second] = args;
+function updateWebVersion(version) {
+  for (const file of WEB_PACKAGE_FILES) {
+    updatePackageVersion(file, version);
+  }
+}
+
+function updateTauriCargo(version) {
+  const raw = readFileSync(TAURI_CARGO, 'utf8');
+  const next = raw.replace(/^version = ".*"$/m, `version = "${version}"`);
+  writeFileSync(TAURI_CARGO, next);
+}
+
+function updateTauriConf(version) {
+  const conf = readJson(TAURI_CONF);
+  conf.version = version;
+  writeJson(TAURI_CONF, conf);
+}
+
+function updateDesktopVersion(version) {
+  updateTauriCargo(version);
+  updateTauriConf(version);
+}
+
+function parseArgs(argv) {
+  const flags = new Set();
+  const positional = [];
+
+  for (const arg of argv) {
+    if (arg === '--desktop') {
+      flags.add('desktop');
+    } else if (arg === '--all') {
+      flags.add('all');
+    } else if (arg === '--web') {
+      flags.add('web');
+    } else {
+      positional.push(arg);
+    }
+  }
+
+  let scope = 'web';
+  if (flags.has('all')) {
+    scope = 'all';
+  } else if (flags.has('desktop')) {
+    scope = 'desktop';
+  } else if (flags.has('web')) {
+    scope = 'web';
+  }
+
+  if (!SCOPES.has(scope)) {
+    throw new Error(`Unknown scope: ${scope}`);
+  }
+
+  return { positional, scope };
+}
+
+function resolveTargetVersion(positional, scope) {
+  const [first, second] = positional;
 
   if (!first) {
     return null;
   }
 
-  if (['patch', 'minor', 'major'].includes(first)) {
-    return bumpVersion(getCurrentVersion(), first);
+  if (BUMP_TYPES.has(first)) {
+    const current = scope === 'desktop' ? getDesktopVersion() : getWebVersion();
+    return bumpVersion(current, first);
   }
 
-  if (first === 'set' && second) {
-    parseVersion(second);
-    return second;
+  const explicit = first === 'set' ? second : first;
+  if (!explicit) {
+    throw new Error('Missing version. Example: bun scripts/update-version.js set 0.1.9');
   }
 
-  parseVersion(first);
-  return first;
+  parseVersion(explicit);
+  return explicit;
 }
 
-function applyVersion(version) {
-  for (const file of PACKAGE_FILES) {
-    updatePackageVersion(file, version);
-  }
+function printVersions() {
+  console.log(`web: ${getWebVersion()}`);
+  console.log(`desktop: ${getDesktopVersion()}`);
 }
 
-const target = resolveTargetVersion(process.argv.slice(2));
+function applyScopedVersion(scope, version) {
+  const previous = {
+    web: getWebVersion(),
+    desktop: getDesktopVersion(),
+  };
+
+  if (scope === 'web' || scope === 'all') {
+    updateWebVersion(version);
+  }
+  if (scope === 'desktop' || scope === 'all') {
+    updateDesktopVersion(version);
+  }
+
+  const lines = [];
+  if (scope === 'web' || scope === 'all') {
+    lines.push(`web: ${previous.web} -> ${getWebVersion()}`);
+  }
+  if (scope === 'desktop' || scope === 'all') {
+    lines.push(`desktop: ${previous.desktop} -> ${getDesktopVersion()}`);
+  }
+
+  console.log(`Version updated (${scope}):\n${lines.map((line) => `  ${line}`).join('\n')}`);
+}
+
+const { positional, scope } = parseArgs(process.argv.slice(2));
+const target = resolveTargetVersion(positional, scope);
 
 if (!target) {
-  console.log(getCurrentVersion());
+  printVersions();
   process.exit(0);
 }
 
-const previous = getCurrentVersion();
-applyVersion(target);
-console.log(`Version updated: ${previous} -> ${target}`);
+applyScopedVersion(scope, target);
