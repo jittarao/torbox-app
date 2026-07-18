@@ -16,9 +16,12 @@ import MobileMoreSheet from './MobileMoreSheet';
 import { SidebarContext, useSidebar } from './SidebarContext';
 import useSidebarCollapsed from './useSidebarCollapsed';
 import { useNotificationsPolling } from '@/components/shared/hooks/useNotificationsPolling';
+import { useHealthPolling } from '@/components/shared/hooks/useHealthPolling';
+import { useGlobalUserPresence } from '@/components/shared/hooks/useGlobalUserPresence';
 import { useSessionHydrate } from '@/components/shared/hooks/useSessionHydrate';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { useDesktopStore } from '@/store/desktopStore';
+import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 
 const SIDEBAR_EXPANDED = '16rem';
 const SIDEBAR_COLLAPSED = '4.5rem';
@@ -48,6 +51,9 @@ function DesktopSidebar({ apiKey, nav, isActive, getLabel, t, toggleDarkMode }) 
 export default function AppShell({ apiKey, children, className = '' }) {
   const { searchPageDisabled } = useFeatureFlags();
   const desktopAvailable = useDesktopStore((state) => state.available);
+  const pollingPaused = usePollingPauseStore(selectIsPaused);
+  useGlobalUserPresence(pollingPaused);
+  useHealthPolling(apiKey);
   useNotificationsPolling(apiKey);
   useSessionHydrate(apiKey);
   const t = useTranslations('Header');

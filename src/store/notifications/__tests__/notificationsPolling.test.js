@@ -1,42 +1,45 @@
-import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
-import { useNotificationsStore } from '@/store/notificationsStore';
+import { describe, expect, test } from 'bun:test';
+import { getUserPresenceSnapshot, useUserPresenceStore } from '@/store/userPresenceStore';
 
-describe('notifications polling ref-count', () => {
-  beforeEach(() => {
-    const { pollTimerId } = useNotificationsStore.getState();
-    if (pollTimerId) clearInterval(pollTimerId);
-    useNotificationsStore.setState({
-      pollSubscribers: 0,
-      pollTimerId: null,
-      currentApiKey: null,
+describe('userPresenceStore snapshot', () => {
+  test('isDisengaged reflects visibility, idle, and desktop state', () => {
+    useUserPresenceStore.setState({
+      isVisible: true,
+      isUserIdle: false,
+      desktopDisengaged: false,
+      awaySince: null,
+      wasDisengaged: false,
     });
+
+    expect(getUserPresenceSnapshot().isDisengaged()).toBe(false);
+
+    useUserPresenceStore.setState({ isVisible: false });
+    expect(getUserPresenceSnapshot().isDisengaged()).toBe(true);
+
+    useUserPresenceStore.setState({ isVisible: true, isUserIdle: true });
+    expect(getUserPresenceSnapshot().isDisengaged()).toBe(true);
+
+    useUserPresenceStore.setState({ isUserIdle: false, desktopDisengaged: true });
+    expect(getUserPresenceSnapshot().isDisengaged()).toBe(true);
   });
 
-  afterEach(() => {
-    const { pollTimerId } = useNotificationsStore.getState();
-    if (pollTimerId) clearInterval(pollTimerId);
-    useNotificationsStore.setState({ pollSubscribers: 0, pollTimerId: null });
-  });
+  test('notifyReEngaged and notifyDisengaged invoke subscribers', () => {
+    let reEngaged = 0;
+    let disengaged = 0;
+    const unsubRe = useUserPresenceStore.getState().subscribeReEngaged(() => {
+      reEngaged += 1;
+    });
+    const unsubDis = useUserPresenceStore.getState().subscribeDisengaged(() => {
+      disengaged += 1;
+    });
 
-  test('two subscribers share one timer; stop clears when last unsubscribes', () => {
-    const store = useNotificationsStore.getState();
-    store.startNotificationsPolling('key-a');
-    const afterFirst = useNotificationsStore.getState();
-    expect(afterFirst.pollSubscribers).toBe(1);
-    expect(afterFirst.pollTimerId).not.toBeNull();
+    useUserPresenceStore.getState().notifyReEngaged(true);
+    useUserPresenceStore.getState().notifyDisengaged();
 
-    store.startNotificationsPolling('key-a');
-    const afterSecond = useNotificationsStore.getState();
-    expect(afterSecond.pollSubscribers).toBe(2);
-    expect(afterSecond.pollTimerId).toBe(afterFirst.pollTimerId);
+    expect(reEngaged).toBe(1);
+    expect(disengaged).toBe(1);
 
-    useNotificationsStore.getState().stopNotificationsPolling();
-    expect(useNotificationsStore.getState().pollSubscribers).toBe(1);
-    expect(useNotificationsStore.getState().pollTimerId).not.toBeNull();
-
-    useNotificationsStore.getState().stopNotificationsPolling();
-    const afterStop = useNotificationsStore.getState();
-    expect(afterStop.pollSubscribers).toBe(0);
-    expect(afterStop.pollTimerId).toBeNull();
+    unsubRe();
+    unsubDis();
   });
 });

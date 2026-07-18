@@ -37,4 +37,12 @@ export const POLLING_CONFIG = {
   forceStartReconcileDelayMs: 4_000,
   /** Coalesce rapid manual/bulk force starts into one refetch (ms) */
   forceStartReconcileDebounceMs: 2_000,
+  /** Health checks while engaged (platform + TorBox + backend) */
+  healthActiveIntervalMs: 3 * 60_000,
+  /** Health checks while disengaged or media playing */
+  healthBackgroundIntervalMs: BACKGROUND_INTERVAL_MS,
+  /** Notification fetches while engaged */
+  notificationsActiveIntervalMs: 2 * 60_000,
+  /** Notification fetches while disengaged or media playing */
+  notificationsBackgroundIntervalMs: BACKGROUND_INTERVAL_MS,
 };
