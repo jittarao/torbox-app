@@ -39,9 +39,12 @@ Tag desktop releases with the **desktop** version: `v0.1.6` must match `src-taur
 bun run version:desktop:patch
 git add src-tauri/Cargo.toml src-tauri/tauri.conf.json
 git commit -m "chore(desktop): release 0.1.6"
+git push origin main
 git tag v0.1.6
-git push origin main --tags
+git push origin v0.1.6
 ```
+
+Push the commit first, then create and push the tag. The tag must point at a commit that already includes the version bump.
 
 On tag push, `.github/workflows/desktop-release.yml`:
 
@@ -53,6 +56,20 @@ On tag push, `.github/workflows/desktop-release.yml`:
    - `latest.json` (only when signed updater artifacts exist)
 
 `workflow_dispatch` still builds and uploads CI artifacts for testing, but **does not** create a GitHub Release (releases require a tag).
+
+### Retag after a failed release
+
+If CI failed on a tag but you fixed the issue on a newer commit, move the tag instead of creating a new one. Git refuses `git tag v0.1.0` when that name already exists.
+
+```bash
+# After fixes are committed and pushed to main
+git tag -f v0.1.0 HEAD
+git push origin v0.1.0 --force
+```
+
+This re-triggers `desktop-release.yml` from the updated commit. `softprops/action-gh-release` updates the existing GitHub Release when the tag is force-pushed.
+
+**Only retag** when no users have downloaded that version yet. If the broken release may already be installed, bump the desktop patch version and tag a new release instead (`bun run version:desktop:patch` → new `v0.1.1`).
 
 ## Local build (optional)
 
@@ -96,5 +113,5 @@ Until signing is enabled:
 ## Deploy order
 
 1. Deploy hosted web bridge (`src/desktop/*`) and UI to production.
-2. When native capabilities change: `version:desktop:patch` → commit → `git tag v{desktop}` → `git push --tags`.
+2. When native capabilities change: `version:desktop:patch` → commit → push main → `git tag v{desktop}` → `git push origin v{desktop}`.
 3. Enable signing + updater when credentials are ready.
