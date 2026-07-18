@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 import Database from './database/Database.js';
 import UserDatabaseManager from './database/UserDatabaseManager.js';
@@ -197,7 +197,7 @@ class TorBoxBackend {
       legacyHeaders: false,
       keyGenerator: (req) => {
         // Use validated authId if available, otherwise fall back to IP
-        return req.validatedAuthId || req.ip;
+        return req.validatedAuthId || ipKeyGenerator(req.ip);
       },
       handler: (req, res) => {
         res.status(429).json({
@@ -272,8 +272,8 @@ class TorBoxBackend {
       res.status(500).json(serverErrorPayload(error));
     });
 
-    // 404 handler
-    this.app.use('*', (req, res) => {
+    // 404 handler (pathless — Express 5 no longer supports '*' wildcard paths)
+    this.app.use((req, res) => {
       res.status(404).json({
         success: false,
         error: 'Endpoint not found',
