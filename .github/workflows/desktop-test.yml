@@ -40,6 +40,16 @@ jobs:
       - name: Frontend desktop store tests
         run: bun test src/store/__tests__/desktopStore.test.js
 
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
