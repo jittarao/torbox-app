@@ -6,8 +6,11 @@ use std::sync::{
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    ActivationPolicy, AppHandle, Emitter, Manager, RunEvent, WebviewWindow,
+    AppHandle, Emitter, Manager, RunEvent, WebviewWindow,
 };
+
+#[cfg(target_os = "macos")]
+use tauri::ActivationPolicy;
 
 use crate::constants::APP_DISPLAY_NAME;
 use crate::services::settings::{BackgroundPresence, SettingsService};
