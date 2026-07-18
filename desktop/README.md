@@ -43,8 +43,6 @@ bun run desktop:dev
 
 Debug builds register runtime IPC capabilities for `localhost:3000`. Production builds load `https://tbm.tools` by default and honor a persisted custom HTTPS instance URL after restart.
 
-**macOS dev keychain prompts:** Debug builds store the API key in a local file (`dev-api-key` under the app data directory) instead of Keychain, because unsigned rebuilds change the binary signature and macOS would re-prompt on every `cargo` rebuild. Release builds still use Keychain. Re-save your API key once via **Enable background features** after switching to a debug build if it was previously stored only in Keychain.
-
 Set `TAURI_UPDATER_ACTIVE=true` to exercise updater commands in debug builds.
 
 ## Build
@@ -85,7 +83,7 @@ Custom URLs must be HTTPS origins without paths, credentials, or query strings. 
 | ------------------------------------------------------------------------------------ | ------------------------------------ |
 | `desktop_hello`                                                                      | Handshake + capability manifest      |
 | `get_instance_url` / `set_instance_url`                                              | Custom HTTPS origin                  |
-| `sync_api_key_to_desktop` / `get_credential_status` / `clear_desktop_credential`     | OS keychain credential               |
+| `sync_api_key_to_desktop` / `get_credential_status` / `clear_desktop_credential`     | API key in `desktop-settings.json`   |
 | `pick_folder` / `pick_move_destination_folder`                                       | Native folder pickers                |
 | `get/set/start/stop/get_folder_watcher_status`                                       | Folder watcher                       |
 | `get_launch_at_login` / `set_launch_at_login`                                        | Launch at login                      |
@@ -136,7 +134,7 @@ Linux builds are **best-effort** and not part of the MVP release gate.
 | Tray          | Depends on desktop environment (GNOME/KDE/etc.)  |
 | Notifications | Requires freedesktop notification portal         |
 | Autostart     | XDG autostart entry via `tauri-plugin-autostart` |
-| Keychain      | Uses `keyring` linux-native backend              |
+| Credentials   | Stored in `desktop-settings.json` app data       |
 
 Use Windows or macOS for production validation.
 
@@ -193,7 +191,7 @@ Use Windows or macOS for production validation.
 
 - Remote IPC is restricted by Tauri capability URL patterns
 - Sensitive commands validate the WebView origin against the stored instance URL
-- Only explicit user action syncs the API key to the OS credential store
+- Only explicit user action syncs the API key into `desktop-settings.json`
 - Notification commands do not accept arbitrary title/body from the web page
 - Production CSP headers are set in `next.config.mjs`; residual `unsafe-inline` / `unsafe-eval` remain for Next.js runtime needs
 - XSS on the hosted origin could invoke allowed desktop commands — keep the IPC surface narrow
