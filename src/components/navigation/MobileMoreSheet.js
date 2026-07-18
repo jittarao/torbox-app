@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import ModalOverlay from '@/components/shared/ModalOverlay';
@@ -35,6 +35,24 @@ export default function MobileMoreSheet({
 }) {
   const tFilters = useTranslations('DownloadsFilters');
   const sheetRef = useRef(null);
+  const sidebarFooterContext = useMemo(() => ({ collapsed: false, toggleCollapsed: () => {} }), []);
+
+  useEffect(() => {
+    const dialog = sheetRef.current;
+    if (!dialog || !open) {
+      return undefined;
+    }
+
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+
+    return () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+    };
+  }, [open]);
 
   return (
     <ModalOverlay
@@ -43,10 +61,8 @@ export default function MobileMoreSheet({
       closeLabel={tFilters('close')}
       className="md:hidden"
     >
-      <div
+      <dialog
         ref={sheetRef}
-        role="dialog"
-        aria-modal="true"
         aria-label={t('menu.more')}
         className="ui-bottom-sheet fixed inset-x-0 bottom-0 z-[1] flex max-h-[min(85dvh,32rem)] flex-col rounded-t-2xl border border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
@@ -99,7 +115,7 @@ export default function MobileMoreSheet({
         </div>
 
         <div className="shrink-0 border-t border-border/60 dark:border-border-dark/60">
-          <SidebarContext.Provider value={{ collapsed: false, toggleCollapsed: () => {} }}>
+          <SidebarContext.Provider value={sidebarFooterContext}>
             <SidebarUtilitiesFooter
               apiKey={apiKey}
               t={t}
@@ -108,7 +124,7 @@ export default function MobileMoreSheet({
             />
           </SidebarContext.Provider>
         </div>
-      </div>
+      </dialog>
     </ModalOverlay>
   );
 }

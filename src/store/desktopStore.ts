@@ -106,13 +106,23 @@ async function loadDesktopState(
   set: (partial: Partial<DesktopStoreState>) => void,
   get: () => DesktopStoreState
 ): Promise<void> {
-  const hello = await desktopBridge.hello();
-  const credentialStatus = await desktopBridge.getCredentialStatus();
-  const watcherConfig = await desktopBridge.getFolderWatcherConfig();
-  const watcherStatus = await desktopBridge.getFolderWatcherStatus();
-  const launchAtLogin = await desktopBridge.getLaunchAtLogin();
-  const traySettings = await desktopBridge.getTraySettings();
-  const notificationSettings = await desktopBridge.getNotificationSettings();
+  const [
+    hello,
+    credentialStatus,
+    watcherConfig,
+    watcherStatus,
+    launchAtLogin,
+    traySettings,
+    notificationSettings,
+  ] = await Promise.all([
+    desktopBridge.hello(),
+    desktopBridge.getCredentialStatus(),
+    desktopBridge.getFolderWatcherConfig(),
+    desktopBridge.getFolderWatcherStatus(),
+    desktopBridge.getLaunchAtLogin(),
+    desktopBridge.getTraySettings(),
+    desktopBridge.getNotificationSettings(),
+  ]);
 
   await subscribeDesktopEvents(set, get);
 
