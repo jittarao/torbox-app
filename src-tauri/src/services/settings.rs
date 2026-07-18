@@ -429,7 +429,13 @@ impl SettingsService {
     pub fn should_start_hidden(&self) -> bool {
         let settings = self.settings.lock().ok();
         settings
-            .map(|s| s.launch_at_login && s.tray.start_hidden)
+            .map(|s| {
+                crate::launch_args::login_launch_should_hide(
+                    s.launch_at_login,
+                    s.tray.start_hidden,
+                    crate::launch_args::launched_with_start_hidden_arg(),
+                )
+            })
             .unwrap_or(false)
     }
 

@@ -48,12 +48,16 @@ fn launch_at_login_status(app: &AppHandle, pref: bool) -> LaunchAtLoginStatus {
     }
 }
 
-fn set_os_launch_at_login(app: &AppHandle, enabled: bool) -> Result<(), String> {
+fn set_os_launch_at_login(
+    app: &AppHandle,
+    enabled: bool,
+    start_hidden: bool,
+) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
         let _ = app;
         if enabled {
-            crate::services::macos_autostart::enable()
+            crate::services::macos_autostart::enable(start_hidden)
         } else {
             crate::services::macos_autostart::disable()
         }
@@ -61,6 +65,7 @@ fn set_os_launch_at_login(app: &AppHandle, enabled: bool) -> Result<(), String> 
 
     #[cfg(not(target_os = "macos"))]
     {
+        let _ = start_hidden;
         let manager = app.autolaunch();
         if enabled {
             manager
@@ -76,18 +81,17 @@ fn set_os_launch_at_login(app: &AppHandle, enabled: bool) -> Result<(), String> 
 
 pub fn sync_launch_at_login(app: &AppHandle, settings: &crate::services::settings::SettingsService) {
     let desired = settings.get_launch_at_login();
+    let start_hidden = settings.get_tray_settings().start_hidden;
 
     #[cfg(target_os = "macos")]
     if desired {
-        let _ = crate::services::macos_autostart::migrate_if_needed();
+        let _ = crate::services::macos_autostart::migrate_if_needed(start_hidden);
     }
 
-    let os_enabled = is_os_launch_at_login_enabled(app);
-
-    if desired && !os_enabled {
-        let _ = set_os_launch_at_login(app, true);
-    } else if !desired && os_enabled {
-        let _ = set_os_launch_at_login(app, false);
+    if desired {
+        let _ = set_os_launch_at_login(app, true, start_hidden);
+    } else if is_os_launch_at_login_enabled(app) {
+        let _ = set_os_launch_at_login(app, false, false);
     }
 }
 
@@ -111,7 +115,8 @@ pub async fn set_launch_at_login(
 ) -> Result<LaunchAtLoginStatus, String> {
     validate_window_origin(&window, &state)?;
 
-    set_os_launch_at_login(&app, enabled)?;
+    let start_hidden = state.settings.get_tray_settings().start_hidden;
+    set_os_launch_at_login(&app, enabled, start_hidden)?;
 
     let os_enabled = is_os_launch_at_login_enabled(&app);
     if enabled && !os_enabled {
