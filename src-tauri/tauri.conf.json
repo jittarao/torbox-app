@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TorBox Manager",
+  "mainBinaryName": "TorBox Manager",
+  "version": "0.1.0",
+  "identifier": "tools.tbm.desktop",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "https://tbm.tools"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "TorBox Manager",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' https: http://localhost:3000; connect-src 'self' https: http://localhost:3000 ipc: http://ipc.localhost; img-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http://localhost:3000; font-src 'self' https: data:",
+      "capabilities": ["default"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "nsis"],
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "bundleName": "TorBox Manager",
+      "infoPlist": "./Info.plist"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": false,
+      "endpoints": ["https://github.com/jittarao/torbox-app/releases/latest/download/latest.json"],
+      "dialog": false,
+      "pubkey": "dW5zZW5lZC1wbGFjZWhvbGRlci1rZXk="
+    }
+  }
+}

@@ -1,0 +1,168 @@
+name: Desktop release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Verify tag matches desktop version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          DESKTOP_VERSION=$(bun -e "console.log(JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')).version)")
+          if [ "$TAG_VERSION" != "$DESKTOP_VERSION" ]; then
+            echo "Tag v$TAG_VERSION does not match desktop version $DESKTOP_VERSION in src-tauri/tauri.conf.json"
+            exit 1
+          fi
+
+      - name: Build desktop app (unsigned)
+        run: bun run desktop:build
+        env:
+          TAURI_UPDATER_ACTIVE: 'false'
+
+      - name: Upload macOS release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.tar.gz
+            src-tauri/target/release/bundle/macos/*.sig
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Verify tag matches desktop version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          DESKTOP_VERSION=$(bun -e "console.log(JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')).version)")
+          if [ "$TAG_VERSION" != "$DESKTOP_VERSION" ]; then
+            echo "Tag v$TAG_VERSION does not match desktop version $DESKTOP_VERSION in src-tauri/tauri.conf.json"
+            exit 1
+          fi
+
+      - name: Build desktop app (unsigned)
+        run: bun run desktop:build
+        env:
+          TAURI_UPDATER_ACTIVE: 'false'
+
+      - name: Upload Windows release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*.nsis.zip
+            src-tauri/target/release/bundle/nsis/*.sig
+          if-no-files-found: error
+
+  publish-release:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Stage release files
+        shell: bash
+        run: |
+          mkdir -p dist
+          find release-assets -type f \( \
+            -name '*.dmg' -o \
+            -name '*-setup.exe' -o \
+            -name '*.tar.gz' -o \
+            -name '*.nsis.zip' -o \
+            -name '*.sig' \
+          \) -exec cp {} dist/ \;
+          ls -la dist
+
+      # Unsigned builds have no .sig files, so latest.json generation is skipped
+      # intentionally until signing is enabled (see signing-checklist.md).
+      - name: Generate latest.json
+        continue-on-error: true
+        shell: bash
+        run: bun scripts/generate-desktop-latest-json.js dist > dist/latest.json
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: TorBox Manager ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/*
+
+  # Signing steps are documented in desktop/release/signing-checklist.md.
+  # Once secrets are configured, add TAURI_SIGNING_PRIVATE_KEY and platform
+  # code-signing steps before artifact upload to enable updater signatures.

@@ -58,6 +58,7 @@ import RssIcon from './Rss';
 import AutomationIcon from './Automation';
 import ExternalLinkIcon from './ExternalLink';
 import CogIcon from './Cog';
+import SettingsIcon from './Settings';
 import FilterIcon from './Filter';
 import GiftIcon from './Gift';
 import UserIcon from './User';
@@ -148,6 +149,7 @@ const Icons = {
   Automation: AutomationIcon,
   ExternalLink: ExternalLinkIcon,
   Cog: CogIcon,
+  Settings: SettingsIcon,
   Filter: FilterIcon,
   Gift: GiftIcon,
   User: UserIcon,
@@ -239,6 +241,7 @@ export { default as Rss } from './Rss';
 export { default as Automation } from './Automation';
 export { default as ExternalLink } from './ExternalLink';
 export { default as Cog } from './Cog';
+export { default as Settings } from './Settings';
 export { default as Filter } from './Filter';
 export { default as Gift } from './Gift';
 export { default as User } from './User';
