@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ReferralHeaderBanner from '@/components/referral/ReferralHeaderBanner';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -18,6 +18,7 @@ import useSidebarCollapsed from './useSidebarCollapsed';
 import { useNotificationsPolling } from '@/components/shared/hooks/useNotificationsPolling';
 import { useSessionHydrate } from '@/components/shared/hooks/useSessionHydrate';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
+import { useDesktopStore } from '@/store/desktopStore';
 
 const SIDEBAR_EXPANDED = '16rem';
 const SIDEBAR_COLLAPSED = '4.5rem';
@@ -46,6 +47,7 @@ function DesktopSidebar({ apiKey, nav, isActive, getLabel, t, toggleDarkMode }) 
 
 export default function AppShell({ apiKey, children, className = '' }) {
   const { searchPageDisabled } = useFeatureFlags();
+  const desktopAvailable = useDesktopStore((state) => state.available);
   useNotificationsPolling(apiKey);
   useSessionHydrate(apiKey);
   const t = useTranslations('Header');
@@ -54,7 +56,10 @@ export default function AppShell({ apiKey, children, className = '' }) {
   const { collapsed, toggleCollapsed, hydrated } = useSidebarCollapsed();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
-  const navCtx = useMemo(() => ({ searchPageDisabled }), [searchPageDisabled]);
+  const navCtx = useMemo(
+    () => ({ searchPageDisabled, desktopAvailable }),
+    [searchPageDisabled, desktopAvailable]
+  );
   const nav = useMemo(() => buildNavItems(navCtx), [navCtx]);
   const mobileNav = useMemo(() => buildMobileNav(navCtx), [navCtx]);
 
@@ -63,23 +68,21 @@ export default function AppShell({ apiKey, children, className = '' }) {
   const closeMore = useCallback(() => setIsMoreOpen(false), []);
   const toggleMore = useCallback(() => setIsMoreOpen((open) => !open), []);
 
-  const prevPathnameRef = useRef(pathname);
-  if (pathname !== prevPathnameRef.current) {
-    prevPathnameRef.current = pathname;
+  useEffect(() => {
     setIsMoreOpen(false);
-  }
+  }, [pathname]);
 
-  const isMoreRouteActive = useMemo(() => {
-    if (isActive(USER_NAV_ITEM.href)) return true;
-    return mobileNav.moreItems.some((item) => isActive(item.href));
-  }, [isActive, mobileNav.moreItems]);
+  const isMoreRouteActive = useMemo(
+    () => mobileNav.moreItems.some((item) => isActive(item.href)),
+    [isActive, mobileNav.moreItems]
+  );
 
   const mobileTitle = useMemo(() => {
-    const allItems = [...nav.items, USER_NAV_ITEM];
+    const allItems = nav.sections.flatMap((section) => section.items);
     const match = allItems.find((item) => isActive(item.href));
     if (match) return getLabel(match.labelKey);
     return t('title');
-  }, [nav.items, isActive, getLabel, t]);
+  }, [nav.sections, isActive, getLabel, t]);
 
   const userLabel = getLabel(USER_NAV_ITEM.labelKey);
   const shellClass = ['min-h-screen', className].filter(Boolean).join(' ');

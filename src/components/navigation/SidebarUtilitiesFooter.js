@@ -28,7 +28,7 @@ function CollapsedUtilities({ apiKey, t, toggleDarkMode }) {
       <UtilityFlyout>
         <SystemStatusIndicator apiKey={apiKey} />
       </UtilityFlyout>
-      <div className="my-1 h-px w-8 bg-border/60 dark:bg-border-dark/60" />
+      <div className="my-1 h-px w-8 bg-zinc-200 dark:bg-zinc-700" />
       <UtilityFlyout>
         <ReferralDropdown apiKey={apiKey} iconOnly />
       </UtilityFlyout>

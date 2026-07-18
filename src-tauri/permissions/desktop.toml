@@ -1,0 +1,30 @@
+[[permission]]
+identifier = "allow-desktop-bridge"
+description = "Desktop bridge IPC commands for the hosted web app"
+commands.allow = [
+  "desktop_hello",
+  "get_instance_url",
+  "set_instance_url",
+  "set_last_web_path",
+  "sync_api_key_to_desktop",
+  "get_credential_status",
+  "clear_desktop_credential",
+  "pick_folder",
+  "pick_move_destination_folder",
+  "get_folder_watcher_config",
+  "set_folder_watcher_config",
+  "start_folder_watcher",
+  "stop_folder_watcher",
+  "get_folder_watcher_status",
+  "get_launch_at_login",
+  "set_launch_at_login",
+  "get_tray_settings",
+  "set_tray_settings",
+  "show_main_window_command",
+  "hide_main_window_command",
+  "get_notification_settings",
+  "set_notification_settings",
+  "show_test_notification",
+  "check_for_update_command",
+  "install_update_command",
+]
