@@ -263,7 +263,7 @@ jobs:
       # Only comments on PRs from the same repository (not forks) to avoid permission issues
       - name: Comment on PR
         if: github.event_name == 'pull_request' && matrix.suffix == 'amd64'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         continue-on-error: true
         with:
           script: |
