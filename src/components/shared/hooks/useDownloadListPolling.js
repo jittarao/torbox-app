@@ -1,10 +1,10 @@
-import { useRef, useCallback } from 'react';
-import { useUserPresence } from './useUserPresence';
+import { useEffect, useRef, useCallback } from 'react';
+import { getUserPresenceSnapshot, useUserPresenceStore } from '@/store/userPresenceStore';
 import { usePollTimer } from './usePollTimer';
 
 /**
  * Visibility- and idle-aware polling for download lists.
- * Composed from useUserPresence (visibility/idle) + usePollTimer (polling schedule).
+ * Reads global presence from userPresenceStore (mounted in AppShell).
  *
  * @param {Object} options
  * @param {string} options.type - Active view type: torrents | usenet | webdl | all
@@ -24,19 +24,19 @@ export function useDownloadListPolling({
 }) {
   const onReEngagedRef = useRef(() => {});
   const onDisengagedRef = useRef(() => {});
-  const getUserPresenceRef = useRef(null);
 
-  const userPresence = useUserPresence({
-    pollingPaused,
-    onReEngaged: useCallback((immediateRefresh) => {
+  useEffect(() => {
+    const unsubRe = useUserPresenceStore.getState().subscribeReEngaged((immediateRefresh) => {
       onReEngagedRef.current?.(immediateRefresh);
-    }, []),
-    onDisengaged: useCallback(() => {
+    });
+    const unsubDis = useUserPresenceStore.getState().subscribeDisengaged(() => {
       onDisengagedRef.current?.();
-    }, []),
-  });
-
-  getUserPresenceRef.current = userPresence;
+    });
+    return () => {
+      unsubRe();
+      unsubDis();
+    };
+  }, []);
 
   usePollTimer({
     type,
@@ -45,7 +45,7 @@ export function useDownloadListPolling({
     isRateLimited,
     onPollSkipped,
     onScheduleUpdate,
-    getUserPresence: useCallback(() => getUserPresenceRef.current, []),
+    getUserPresence: useCallback(() => getUserPresenceSnapshot(), []),
     onReEngagedRef,
     onDisengagedRef,
   });

@@ -56,6 +56,30 @@ export function resolvePollInterval({
   };
 }
 
+/**
+ * Resolve active vs background interval for auxiliary pollers (health, notifications).
+ *
+ * @param {Object} input
+ * @param {boolean} input.pollingPaused
+ * @param {boolean} input.isDisengaged
+ * @param {boolean} input.isWithinEngagementGrace
+ * @param {number} input.activeIntervalMs
+ * @param {number} input.backgroundIntervalMs
+ */
+export function resolveAuxPollInterval({
+  pollingPaused,
+  isDisengaged,
+  isWithinEngagementGrace,
+  activeIntervalMs,
+  backgroundIntervalMs,
+}) {
+  const fastPoll = wantsFastPoll({ pollingPaused, isDisengaged, isWithinEngagementGrace });
+  return {
+    intervalMs: fastPoll ? activeIntervalMs : backgroundIntervalMs,
+    shouldPoll: true,
+  };
+}
+
 /** Background auto-start only needs torrent list updates (saves usenet/webdl calls on All tab). */
 export function shouldPollTorrentsOnly({
   pollingPaused,

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { useUserPresenceStore } from '@/store/userPresenceStore';
 import { POLLING_CONFIG } from './pollingConfig';
 import { shouldReEngageOnMediaUnpause } from './userPresenceTransitions';
 
@@ -6,22 +7,14 @@ const USER_ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
 
 /**
  * Tracks tab visibility, desktop window presence, and user idle state.
- * Calls onReEngaged when the user returns (optional immediate refresh).
- * Calls onDisengaged when the tab is hidden, the user goes idle, or the desktop window is unfocused/hidden.
+ * Publishes state to userPresenceStore and calls optional re-engage/disengage callbacks.
  *
  * @param {Object} options
  * @param {boolean} options.pollingPaused
- * @param {(immediateRefresh?: boolean) => void} options.onReEngaged
- * @param {() => void} options.onDisengaged
+ * @param {(immediateRefresh?: boolean) => void} [options.onReEngaged]
+ * @param {() => void} [options.onDisengaged]
  */
 export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
-  const awaySinceRef = useRef(null);
-  const isVisibleRef = useRef(
-    typeof document !== 'undefined' && document.visibilityState === 'visible'
-  );
-  const desktopDisengagedRef = useRef(false);
-  const userIdleRef = useRef(false);
-  const wasDisengagedRef = useRef(false);
   const lastImmediateRefreshAtRef = useRef(0);
   const idleTimeoutIdRef = useRef(null);
   const onReEngagedRef = useRef(onReEngaged);
@@ -35,6 +28,10 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
     onDisengagedRef.current = onDisengaged;
   }, [onDisengaged]);
 
+  const setPresence = useCallback((partial) => {
+    useUserPresenceStore.getState().setPresence(partial);
+  }, []);
+
   const clearIdleTimeout = useCallback(() => {
     if (idleTimeoutIdRef.current) {
       clearTimeout(idleTimeoutIdRef.current);
@@ -43,16 +40,23 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
   }, []);
 
   const isEffectivelyPresent = useCallback(() => {
-    return isVisibleRef.current && !desktopDisengagedRef.current;
+    const { isVisible, desktopDisengaged } = useUserPresenceStore.getState();
+    return isVisible && !desktopDisengaged;
   }, []);
 
-  const notifyReEngaged = useCallback((immediateRefresh) => {
-    awaySinceRef.current = null;
-    wasDisengagedRef.current = false;
-    if (immediateRefresh) {
-      lastImmediateRefreshAtRef.current = Date.now();
-    }
-    onReEngagedRef.current?.(immediateRefresh);
+  const notifyReEngaged = useCallback(
+    (immediateRefresh) => {
+      setPresence({ awaySince: null, wasDisengaged: false });
+      if (immediateRefresh) {
+        lastImmediateRefreshAtRef.current = Date.now();
+      }
+      onReEngagedRef.current?.(immediateRefresh);
+    },
+    [setPresence]
+  );
+
+  const notifyDisengaged = useCallback(() => {
+    onDisengagedRef.current?.();
   }, []);
 
   const resetIdleTimer = useCallback(() => {
@@ -61,36 +65,38 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
     idleTimeoutIdRef.current = setTimeout(() => {
       idleTimeoutIdRef.current = null;
       if (!isEffectivelyPresent() || pollingPaused) return;
-      userIdleRef.current = true;
-      if (awaySinceRef.current == null) {
-        awaySinceRef.current = Date.now();
-      }
-      wasDisengagedRef.current = true;
-      onDisengagedRef.current?.();
+      const { awaySince } = useUserPresenceStore.getState();
+      setPresence({
+        isUserIdle: true,
+        awaySince: awaySince ?? Date.now(),
+        wasDisengaged: true,
+      });
+      notifyDisengaged();
     }, POLLING_CONFIG.userIdleThresholdMs);
-  }, [pollingPaused, clearIdleTimeout, isEffectivelyPresent]);
+  }, [pollingPaused, clearIdleTimeout, isEffectivelyPresent, setPresence, notifyDisengaged]);
 
   const applyDesktopEngaged = useCallback(
     (engaged) => {
-      desktopDisengagedRef.current = !engaged;
+      const { awaySince, wasDisengaged } = useUserPresenceStore.getState();
 
       if (!engaged) {
-        if (awaySinceRef.current == null) {
-          awaySinceRef.current = Date.now();
-        }
-        wasDisengagedRef.current = true;
-        userIdleRef.current = false;
+        setPresence({
+          desktopDisengaged: true,
+          isUserIdle: false,
+          awaySince: awaySince ?? Date.now(),
+          wasDisengaged: true,
+        });
         clearIdleTimeout();
-        onDisengagedRef.current?.();
+        notifyDisengaged();
         return;
       }
 
-      userIdleRef.current = false;
-      const immediateRefresh = wasDisengagedRef.current;
+      setPresence({ desktopDisengaged: false, isUserIdle: false });
+      const immediateRefresh = wasDisengaged;
       notifyReEngaged(immediateRefresh);
       resetIdleTimer();
     },
-    [clearIdleTimeout, notifyReEngaged, resetIdleTimer]
+    [clearIdleTimeout, notifyReEngaged, resetIdleTimer, setPresence, notifyDisengaged]
   );
 
   useEffect(() => {
@@ -130,7 +136,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
         wasPaused,
         pollingPaused,
         isEffectivelyPresent: isEffectivelyPresent(),
-        isUserIdle: userIdleRef.current,
+        isUserIdle: useUserPresenceStore.getState().isUserIdle,
       })
     ) {
       notifyReEngaged(true);
@@ -139,15 +145,19 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
   }, [pollingPaused, isEffectivelyPresent, notifyReEngaged, resetIdleTimer]);
 
   useEffect(() => {
-    if (!isVisibleRef.current) {
-      awaySinceRef.current = Date.now();
-      wasDisengagedRef.current = true;
+    const { isVisible } = useUserPresenceStore.getState();
+    if (!isVisible) {
+      setPresence({
+        awaySince: Date.now(),
+        wasDisengaged: true,
+      });
     }
 
     const markUserActive = () => {
       if (!isEffectivelyPresent() || pollingPaused) return;
-      const wasIdle = userIdleRef.current;
-      userIdleRef.current = false;
+      const { isUserIdle } = useUserPresenceStore.getState();
+      const wasIdle = isUserIdle;
+      setPresence({ isUserIdle: false });
       resetIdleTimer();
       if (wasIdle) {
         const refreshedRecently = Date.now() - lastImmediateRefreshAtRef.current < 2_000;
@@ -157,37 +167,42 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
 
     const handlePageShow = (event) => {
       if (!event.persisted) return;
-      isVisibleRef.current = document.visibilityState === 'visible';
-      if (!isEffectivelyPresent()) return;
-      userIdleRef.current = false;
-      const immediateRefresh = wasDisengagedRef.current;
-      notifyReEngaged(immediateRefresh);
+      const visible = document.visibilityState === 'visible';
+      setPresence({ isVisible: visible });
+      if (!visible || !isEffectivelyPresent()) return;
+      setPresence({ isUserIdle: false });
+      const { wasDisengaged } = useUserPresenceStore.getState();
+      notifyReEngaged(wasDisengaged);
       resetIdleTimer();
     };
 
     const handleVisibilityChange = () => {
-      isVisibleRef.current = document.visibilityState === 'visible';
-      if (!isVisibleRef.current) {
-        awaySinceRef.current = Date.now();
-        wasDisengagedRef.current = true;
-        userIdleRef.current = false;
+      const visible = document.visibilityState === 'visible';
+      setPresence({ isVisible: visible });
+      if (!visible) {
+        setPresence({
+          awaySince: Date.now(),
+          wasDisengaged: true,
+          isUserIdle: false,
+        });
         clearIdleTimeout();
-        onDisengagedRef.current?.();
+        notifyDisengaged();
         return;
       }
 
       if (!isEffectivelyPresent()) return;
 
-      userIdleRef.current = false;
-      const immediateRefresh = wasDisengagedRef.current;
-      notifyReEngaged(immediateRefresh);
+      setPresence({ isUserIdle: false });
+      const { wasDisengaged } = useUserPresenceStore.getState();
+      notifyReEngaged(wasDisengaged);
       resetIdleTimer();
     };
 
     const handleWindowFocus = () => {
       if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
       if (!isEffectivelyPresent() || pollingPaused) return;
-      if (wasDisengagedRef.current) {
+      const { wasDisengaged } = useUserPresenceStore.getState();
+      if (wasDisengaged) {
         notifyReEngaged(true);
       }
       markUserActive();
@@ -215,17 +230,13 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
       window.removeEventListener('focus', handleWindowFocus);
       USER_ACTIVITY_EVENTS.forEach((name) => document.removeEventListener(name, onUserActivity));
     };
-  }, [pollingPaused, resetIdleTimer, clearIdleTimeout, notifyReEngaged, isEffectivelyPresent]);
-
-  return useMemo(
-    () => ({
-      isVisible: () => isVisibleRef.current,
-      isUserIdle: () => userIdleRef.current,
-      wasDisengaged: () => wasDisengagedRef.current,
-      awaySince: () => awaySinceRef.current,
-      isDisengaged: () =>
-        !isVisibleRef.current || userIdleRef.current || desktopDisengagedRef.current,
-    }),
-    []
-  );
+  }, [
+    pollingPaused,
+    resetIdleTimer,
+    clearIdleTimeout,
+    notifyReEngaged,
+    isEffectivelyPresent,
+    setPresence,
+    notifyDisengaged,
+  ]);
 }
