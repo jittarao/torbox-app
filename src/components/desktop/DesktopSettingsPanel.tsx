@@ -10,7 +10,6 @@ import DesktopFolderWatcherPanel from '@/components/desktop/DesktopFolderWatcher
 import DesktopLaunchAtLoginPanel from '@/components/desktop/DesktopLaunchAtLoginPanel';
 import DesktopNotificationsPanel from '@/components/desktop/DesktopNotificationsPanel';
 import DesktopTrayPanel from '@/components/desktop/DesktopTrayPanel';
-import DesktopUpdaterPanel from '@/components/desktop/DesktopUpdaterPanel';
 import DesktopSettingsSection from '@/components/desktop/DesktopSettingsSection';
 import {
   desktopBtnDanger,
@@ -24,7 +23,7 @@ import {
   desktopTabDefault,
   desktopTabSelected,
 } from '@/components/desktop/DesktopUi';
-import { Bell, Bolt, Cloud, Key, Layers, Refresh, Settings, Torrent } from '@/components/icons';
+import { Bell, Bolt, Cloud, Key, Layers, Settings, Torrent } from '@/components/icons';
 import { formatDate } from '@/components/uploads/utils';
 
 type SettingsTab = 'general' | 'notifications' | 'watcher';
@@ -59,7 +58,6 @@ export default function DesktopSettingsPanel({ apiKey, setToast }: DesktopSettin
   const canUseWatcher = hasFeature(capabilities, 'folderWatcher');
   const canUseTray = hasFeature(capabilities, 'tray');
   const canUseNotifications = hasFeature(capabilities, 'nativeNotifications');
-  const canUseUpdater = hasFeature(capabilities, 'updater');
 
   const notify = (message: string, type: 'success' | 'error') => {
     setToast?.({ message, type });
@@ -295,11 +293,7 @@ export default function DesktopSettingsPanel({ apiKey, setToast }: DesktopSettin
               </DesktopSettingsSection>
             ) : null}
 
-            {canUseUpdater ? (
-              <DesktopSettingsSection title={t('updater.title')} icon={Refresh} compact>
-                <DesktopUpdaterPanel embedded setToast={setToast} />
-              </DesktopSettingsSection>
-            ) : null}
+            {/* Desktop updates hidden until the app is code-signed for auto-update. */}
 
             {(canCustomizeUrl || instanceUrl) && (
               <DesktopSettingsSection
