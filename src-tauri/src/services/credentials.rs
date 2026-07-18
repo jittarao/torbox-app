@@ -1,4 +1,6 @@
+#[cfg(debug_assertions)]
 use std::fs;
+#[cfg(debug_assertions)]
 use std::path::{Path, PathBuf};
 
 use chrono::Utc;
@@ -8,6 +10,7 @@ use keyring::Entry;
 
 #[cfg(not(debug_assertions))]
 use crate::constants::{KEYRING_SERVICE, KEYRING_USER};
+#[cfg(debug_assertions)]
 use crate::services::atomic_json::write_atomic;
 use crate::services::settings::SettingsService;
 
