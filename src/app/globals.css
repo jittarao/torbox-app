@@ -167,6 +167,15 @@ select option {
       dark:text-amber-400 dark:bg-amber-500/10;
   }
 
+  /* Native confirm dialogs (showModal) */
+  .ui-confirm-dialog {
+    @apply m-auto w-[calc(100vw-2rem)] max-w-md rounded-xl border border-border/60 bg-white p-6 shadow-2xl dark:border-border-dark/60 dark:bg-surface-alt-dark;
+  }
+
+  .ui-confirm-dialog::backdrop {
+    @apply bg-black/50 backdrop-blur-[1px];
+  }
+
   /* Reset UA dialog sizing so mobile bottom sheets span the viewport */
   .ui-bottom-sheet {
     @apply m-0 box-border w-full max-w-[100vw] p-0;

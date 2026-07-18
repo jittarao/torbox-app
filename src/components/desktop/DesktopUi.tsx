@@ -195,28 +195,30 @@ export function DesktopActionBar({
   );
 }
 
+type DesktopInfoCalloutVariant = 'info' | 'warning' | 'success' | 'neutral';
+
+const CALLOUT_STYLES: Record<DesktopInfoCalloutVariant, string> = {
+  info: 'border-label-active-text/20 bg-label-active-bg/70 text-label-active-text dark:border-accent-dark/25 dark:bg-accent-dark/10 dark:text-text-dark',
+  neutral:
+    'border-border/60 bg-surface-alt/70 text-muted dark:border-border-dark/60 dark:bg-surface-dark/70 dark:text-muted-dark',
+  warning:
+    'border-label-warning-text/20 bg-label-warning-bg/70 text-label-warning-text dark:border-label-warning-text-dark/25 dark:bg-label-warning-bg-dark/50 dark:text-label-warning-text-dark',
+  success:
+    'border-label-success-text/20 bg-label-success-bg/70 text-label-success-text dark:border-label-success-text-dark/25 dark:bg-label-success-bg-dark/50 dark:text-label-success-text-dark',
+};
+
 export function DesktopInfoCallout({
   variant = 'info',
   children,
   className = '',
 }: {
-  variant?: 'info' | 'warning' | 'success' | 'neutral';
+  variant?: DesktopInfoCalloutVariant;
   children: ReactNode;
   className?: string;
 }) {
-  const styles = {
-    info: 'border-label-active-text/20 bg-label-active-bg/70 text-label-active-text dark:border-accent-dark/25 dark:bg-accent-dark/10 dark:text-text-dark',
-    neutral:
-      'border-border/60 bg-surface-alt/70 text-muted dark:border-border-dark/60 dark:bg-surface-dark/70 dark:text-muted-dark',
-    warning:
-      'border-label-warning-text/20 bg-label-warning-bg/70 text-label-warning-text dark:border-label-warning-text-dark/25 dark:bg-label-warning-bg-dark/50 dark:text-label-warning-text-dark',
-    success:
-      'border-label-success-text/20 bg-label-success-bg/70 text-label-success-text dark:border-label-success-text-dark/25 dark:bg-label-success-bg-dark/50 dark:text-label-success-text-dark',
-  };
-
   return (
     <div
-      className={`rounded-lg border px-4 py-3 text-sm leading-relaxed ${styles[variant]} ${className}`}
+      className={`rounded-lg border px-4 py-3 text-sm leading-relaxed ${CALLOUT_STYLES[variant]} ${className}`}
     >
       {children}
     </div>
