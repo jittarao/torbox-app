@@ -619,7 +619,7 @@
     "credentialStoredShort": "Saved",
     "credentialSyncAction": "Save API key to this device",
     "credentialSyncFailed": "Could not save your API key on this device",
-    "credentialSyncHelp": "Save your TorBox API key in the system keychain so background uploads and the folder watcher can run while the app is closed. The key is never shown again after saving.",
+    "credentialSyncHelp": "Save your TorBox API key in the desktop app settings so background uploads and the folder watcher can run while the app is closed. The key is never shown again after saving.",
     "credentialSyncNoKey": "Add your TorBox API key in the app before saving it to this device",
     "credentialSyncSuccess": "API key saved securely on this device",
     "credentialSyncTitle": "Device sign-in",

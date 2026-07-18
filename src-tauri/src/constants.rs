@@ -4,10 +4,6 @@ pub const LEGACY_LAUNCH_AGENT_LABEL: &str = "torbox-manager";
 pub const DEFAULT_INSTANCE_URL: &str = "https://tbm.tools";
 pub const PROTOCOL_VERSION: u32 = 1;
 pub const MINIMUM_SUPPORTED_WEB_BRIDGE_VERSION: u32 = 1;
-#[cfg_attr(debug_assertions, allow(dead_code))]
-pub const KEYRING_SERVICE: &str = "tools.tbm.desktop";
-#[cfg_attr(debug_assertions, allow(dead_code))]
-pub const KEYRING_USER: &str = "api-key";
 pub const MAX_TORRENT_FILE_BYTES: u64 = 10_485_760;
 pub const DEFAULT_STABLE_FILE_MS: u64 = 2000;
 pub const WATCHER_PROCESSED_RETENTION_DAYS: i64 = 30;

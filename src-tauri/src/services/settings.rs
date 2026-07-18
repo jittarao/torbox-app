@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
-#[cfg(any(debug_assertions, test))]
+#[cfg(test)]
 use std::path::Path;
 use std::sync::Mutex;
 
@@ -233,7 +233,9 @@ impl WindowGeometry {
 pub struct DesktopSettings {
     #[serde(default = "default_instance_url")]
     pub instance_url: String,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stored_api_key: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub credential_last_updated_at: Option<String>,
     #[serde(default)]
     pub folder_watcher: FolderWatcherConfig,
@@ -255,6 +257,7 @@ impl Default for DesktopSettings {
     fn default() -> Self {
         Self {
             instance_url: default_instance_url(),
+            stored_api_key: None,
             credential_last_updated_at: None,
             folder_watcher: FolderWatcherConfig::default(),
             launch_at_login: false,
@@ -293,13 +296,6 @@ impl SettingsService {
         })
     }
 
-    #[cfg(debug_assertions)]
-    pub fn app_data_dir(&self) -> &Path {
-        self.path
-            .parent()
-            .expect("desktop settings path must have a parent directory")
-    }
-
     pub fn get_instance_url(&self) -> String {
         self.settings
             .lock()
@@ -318,6 +314,13 @@ impl SettingsService {
         Ok(normalized)
     }
 
+    pub fn get_stored_api_key(&self) -> Option<String> {
+        self.settings
+            .lock()
+            .ok()
+            .and_then(|s| s.stored_api_key.clone())
+    }
+
     pub fn get_credential_last_updated_at(&self) -> Option<String> {
         self.settings
             .lock()
@@ -325,13 +328,22 @@ impl SettingsService {
             .and_then(|s| s.credential_last_updated_at.clone())
     }
 
-    pub fn set_credential_last_updated_at(&self, value: Option<String>) -> Result<(), String> {
+    pub fn set_stored_api_key(
+        &self,
+        api_key: Option<String>,
+        last_updated_at: Option<String>,
+    ) -> Result<(), String> {
         let mut settings = self
             .settings
             .lock()
             .map_err(|_| "Settings lock poisoned".to_string())?;
-        settings.credential_last_updated_at = value;
+        settings.stored_api_key = api_key;
+        settings.credential_last_updated_at = last_updated_at;
         self.persist(&settings)
+    }
+
+    pub fn clear_stored_api_key(&self) -> Result<(), String> {
+        self.set_stored_api_key(None, None)
     }
 
     pub fn get_launch_at_login(&self) -> bool {
