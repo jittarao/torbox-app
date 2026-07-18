@@ -6,11 +6,11 @@ use std::sync::{
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager, RunEvent, WebviewWindow,
+    ActivationPolicy, AppHandle, Emitter, Manager, RunEvent, WebviewWindow,
 };
 
 use crate::constants::APP_DISPLAY_NAME;
-use crate::services::settings::SettingsService;
+use crate::services::settings::{BackgroundPresence, SettingsService};
 use crate::services::window_state;
 use crate::state::AppState;
 
@@ -99,16 +99,17 @@ pub fn register_window_behavior(
         window_state::handle_window_geometry_event(&app_handle, &settings, event);
         match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
-                if tray_settings.close_to_tray {
-                    api.prevent_close();
-                    hide_main_window(&app_handle);
-                }
+                api.prevent_close();
+                dismiss_main_window(&app_handle, tray_settings.background_presence);
             }
             tauri::WindowEvent::Resized(_) => {
-                if tray_settings.minimize_to_tray {
+                if tray_settings.background_presence == BackgroundPresence::Tray {
                     if let Some(window) = app_handle.get_webview_window("main") {
                         if window.is_minimized().unwrap_or(false) {
                             let _ = window.hide();
+                            let _ = window.unminimize();
+                            #[cfg(target_os = "macos")]
+                            sync_macos_dock_visible(&app_handle, false);
                         }
                     }
                 }
@@ -127,7 +128,28 @@ pub fn apply_start_hidden_if_needed(app: &AppHandle, settings: &SettingsService)
     }
 }
 
+#[cfg(target_os = "macos")]
+fn sync_macos_dock_visible(app: &AppHandle, visible: bool) {
+    use crate::macos_app_icon;
+
+    let policy = if visible {
+        ActivationPolicy::Regular
+    } else {
+        ActivationPolicy::Accessory
+    };
+    let _ = app.set_activation_policy(policy);
+    if visible {
+        macos_app_icon::apply_dock_icon();
+    }
+}
+
 pub fn show_main_window(app: &AppHandle, open_settings: bool) {
+    #[cfg(target_os = "macos")]
+    {
+        sync_macos_dock_visible(app, true);
+        let _ = app.show();
+    }
+
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
@@ -142,6 +164,29 @@ pub fn show_main_window(app: &AppHandle, open_settings: bool) {
 pub fn hide_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
+    }
+
+    #[cfg(target_os = "macos")]
+    if let Some(state) = app.try_state::<AppState>() {
+        if state.settings.get_tray_settings().background_presence == BackgroundPresence::Tray {
+            sync_macos_dock_visible(app, false);
+        }
+    }
+}
+
+pub fn dismiss_main_window(app: &AppHandle, presence: BackgroundPresence) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    match presence {
+        BackgroundPresence::Dock => {
+            let _ = window.minimize();
+        }
+        BackgroundPresence::Tray => {
+            let _ = window.hide();
+            #[cfg(target_os = "macos")]
+            sync_macos_dock_visible(app, false);
+        }
     }
 }
 
@@ -165,14 +210,41 @@ pub fn quit_app(app: &AppHandle) {
 }
 
 pub fn handle_run_event(app: &AppHandle, event: &RunEvent) {
-    if let RunEvent::ExitRequested { api, .. } = event {
-        if let Some(state) = app.try_state::<AppState>() {
-            if state.settings.get_tray_settings().close_to_tray {
+    #[cfg(target_os = "macos")]
+    if let RunEvent::Reopen { .. } = event {
+        restore_main_window_on_macos_reopen(app);
+        return;
+    }
+
+    #[cfg(target_os = "macos")]
+    if matches!(event, RunEvent::Ready) {
+        crate::macos_app_icon::apply_dock_icon();
+    }
+
+    if let RunEvent::ExitRequested { api, code, .. } = event {
+        if code.is_none() {
+            if let Some(state) = app.try_state::<AppState>() {
                 window_state::persist_main_window_state(app, state.settings.as_ref());
                 api.prevent_exit();
-                hide_main_window(app);
+                dismiss_main_window(app, state.settings.get_tray_settings().background_presence);
             }
         }
+    }
+}
+
+/// macOS fires `RunEvent::Reopen` when the Dock icon is clicked. Minimized or hidden
+/// windows are not automatically restored without this handler.
+#[cfg(target_os = "macos")]
+pub fn restore_main_window_on_macos_reopen(app: &AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+
+    let needs_restore = !window.is_visible().unwrap_or(true)
+        || window.is_minimized().unwrap_or(false);
+
+    if needs_restore {
+        show_main_window(app, false);
     }
 }
 

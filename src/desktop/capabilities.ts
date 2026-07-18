@@ -77,9 +77,10 @@ export type LaunchAtLoginStatus = {
   requiresApproval?: boolean;
 };
 
+export type BackgroundPresence = 'dock' | 'tray';
+
 export type TraySettings = {
-  closeToTray: boolean;
-  minimizeToTray: boolean;
+  backgroundPresence: BackgroundPresence;
   startHidden: boolean;
 };
 
