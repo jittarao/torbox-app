@@ -87,6 +87,7 @@ See [`signing-checklist.md`](./signing-checklist.md) for Apple and Windows crede
 
 Until signing is enabled:
 
+- `bundle.createUpdaterArtifacts` is `false` (no updater `.sig` / zip bundles)
 - macOS Gatekeeper may block unsigned `.dmg`
 - Windows SmartScreen may warn on unsigned `-setup.exe`
 - Auto-update install is disabled (`tauri.conf.json` → `plugins.updater.active: false`)
