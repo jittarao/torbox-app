@@ -1,5 +1,6 @@
 mod commands;
 mod constants;
+mod macos_app_icon;
 mod macos_display_name;
 mod menu;
 mod services;
@@ -60,6 +61,9 @@ pub fn run() {
 
             services::tray::setup_tray(app.handle())?;
             services::tray::register_window_behavior(app.handle(), &settings)?;
+
+            #[cfg(target_os = "macos")]
+            macos_app_icon::apply_dock_icon();
 
             if let Some(window) = app.get_webview_window("main") {
                 services::window_state::restore_window_geometry(&window, settings.as_ref());
