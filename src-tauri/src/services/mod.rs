@@ -14,4 +14,5 @@ pub mod url_validation;
 pub mod watcher_batch;
 pub mod watcher_paths;
 pub mod web_path;
+pub mod window_presence;
 pub mod window_state;

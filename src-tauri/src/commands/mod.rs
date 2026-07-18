@@ -8,3 +8,4 @@ pub mod settings;
 pub mod tray;
 pub mod updates;
 pub mod watcher;
+pub mod window_presence;

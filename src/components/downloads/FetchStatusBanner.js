@@ -13,7 +13,6 @@ export default function FetchStatusBanner({
   onRetry,
   lastSuccessfulFetchAt,
   refreshBlockedReason,
-  pollingPaused,
 }) {
   const t = useTranslations('FetchStatus');
   const [agoLabel, setAgoLabel] = useState(null);
@@ -38,7 +37,7 @@ export default function FetchStatusBanner({
     return () => clearInterval(id);
   }, [lastSuccessfulFetchAt, t]);
 
-  const showStaleHint = !error && (refreshBlockedReason === 'rate_limited' || pollingPaused);
+  const showStaleHint = !error && refreshBlockedReason === 'rate_limited';
 
   if (!error && !showStaleHint) return null;
 
@@ -82,11 +81,7 @@ export default function FetchStatusBanner({
   }
 
   const staleMessage =
-    refreshBlockedReason === 'rate_limited'
-      ? t('refreshDelayedRateLimit')
-      : pollingPaused
-        ? t('refreshPaused')
-        : null;
+    refreshBlockedReason === 'rate_limited' ? t('refreshDelayedRateLimit') : null;
 
   const statusText =
     staleMessage && agoLabel

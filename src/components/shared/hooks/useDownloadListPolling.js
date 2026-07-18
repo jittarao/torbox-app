@@ -12,13 +12,11 @@ import { usePollTimer } from './usePollTimer';
  * @param {(assetType: string) => void | Promise<void>} options.onPoll - Per-type fetch
  * @param {(assetType?: string) => boolean} options.isRateLimited
  * @param {() => void} [options.onPollSkipped] - Called when a tick is skipped due to rate limiting
- * @param {boolean} [options.workerBackedAutoStart] - SharedWorker owns background auto-start
  * @param {(schedule: import('./pollSchedule').PollSchedule) => void} [options.onScheduleUpdate] - Poll timer state for UI
  */
 export function useDownloadListPolling({
   type,
   pollingPaused,
-  workerBackedAutoStart = false,
   onPoll,
   isRateLimited,
   onPollSkipped,
@@ -43,7 +41,6 @@ export function useDownloadListPolling({
   usePollTimer({
     type,
     pollingPaused,
-    workerBackedAutoStart,
     onPoll,
     isRateLimited,
     onPollSkipped,
