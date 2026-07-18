@@ -3,7 +3,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::constants::{APP_DISPLAY_NAME, BUNDLE_IDENTIFIER, LEGACY_LAUNCH_AGENT_LABEL};
+use crate::constants::{APP_DISPLAY_NAME, BUNDLE_IDENTIFIER, LEGACY_LAUNCH_AGENT_LABEL, START_HIDDEN_LAUNCH_ARG};
 
 const LAUNCH_AGENT_LABEL: &str = BUNDLE_IDENTIFIER;
 const LSREGISTER_PATH: &str = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
@@ -235,22 +235,34 @@ fn resolve_app_bundle_path() -> Result<String, String> {
     Ok(app_path.display().to_string())
 }
 
-fn launch_agent_program_arguments_xml(app_bundle_path: &str) -> String {
-    format!(
-        r#"    <string>/usr/bin/open</string>
+fn launch_agent_program_arguments_xml(app_bundle_path: &str, start_hidden: bool) -> String {
+    if start_hidden {
+        format!(
+            r#"    <string>/usr/bin/open</string>
+        <string>-a</string>
+        <string>{}</string>
+        <string>--args</string>
+        <string>{}</string>"#,
+            escape_xml(app_bundle_path),
+            escape_xml(START_HIDDEN_LAUNCH_ARG)
+        )
+    } else {
+        format!(
+            r#"    <string>/usr/bin/open</string>
         <string>-a</string>
         <string>{}</string>"#,
-        escape_xml(app_bundle_path)
-    )
+            escape_xml(app_bundle_path)
+        )
+    }
 }
 
-fn enable_launch_agent() -> Result<(), String> {
+fn enable_launch_agent(start_hidden: bool) -> Result<(), String> {
     let app_bundle_path = resolve_app_bundle_path()?;
     let dir = launch_agents_dir().ok_or("Failed to resolve LaunchAgents directory")?;
     fs::create_dir_all(&dir)
         .map_err(|e| format!("Failed to create LaunchAgents directory: {e}"))?;
 
-    let program_arguments = launch_agent_program_arguments_xml(&app_bundle_path);
+    let program_arguments = launch_agent_program_arguments_xml(&app_bundle_path, start_hidden);
 
     let plist = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -290,15 +302,16 @@ fn remove_legacy_login_items() {
     }
 }
 
-pub fn migrate_if_needed() -> Result<(), String> {
+pub fn migrate_if_needed(start_hidden: bool) -> Result<(), String> {
     remove_legacy_login_items();
 
     if legacy_launch_agent_enabled() || launch_agent_points_at_legacy_launcher() {
         remove_launch_agent_plists();
-        return enable();
+        return enable(start_hidden);
     }
 
-    if running_in_app_bundle() && launch_agent_enabled() && !smappservice_enabled() {
+    if running_in_app_bundle() && launch_agent_enabled() && !smappservice_enabled() && !start_hidden
+    {
         remove_launch_agent_plist(LAUNCH_AGENT_LABEL);
         return enable_smappservice();
     }
@@ -321,11 +334,21 @@ pub fn is_enabled() -> Result<bool, String> {
     Ok(launch_agent_enabled() || legacy_launch_agent_enabled())
 }
 
-pub fn enable() -> Result<(), String> {
+pub fn enable(start_hidden: bool) -> Result<(), String> {
     remove_legacy_login_items();
 
     if legacy_launch_agent_enabled() {
         remove_launch_agent_plists();
+    }
+
+    if start_hidden {
+        if running_in_app_bundle() && smappservice_enabled() {
+            disable_smappservice();
+        }
+        if launch_agent_points_at_legacy_launcher() {
+            remove_launch_agent_plist(LAUNCH_AGENT_LABEL);
+        }
+        return enable_launch_agent(true);
     }
 
     if running_in_app_bundle() {
@@ -342,7 +365,7 @@ pub fn enable() -> Result<(), String> {
         remove_launch_agent_plist(LAUNCH_AGENT_LABEL);
     }
 
-    enable_launch_agent()
+    enable_launch_agent(false)
 }
 
 pub fn disable() -> Result<(), String> {

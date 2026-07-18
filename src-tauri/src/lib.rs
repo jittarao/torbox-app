@@ -1,5 +1,6 @@
 mod commands;
 mod constants;
+mod launch_args;
 mod macos_app_icon;
 mod macos_display_name;
 mod menu;
@@ -22,6 +23,7 @@ pub fn run() {
             tauri::Builder::default().plugin(
                 tauri_plugin_autostart::Builder::new()
                     .app_name(constants::APP_DISPLAY_NAME)
+                    .args([constants::START_HIDDEN_LAUNCH_ARG])
                     .build(),
             )
         }
