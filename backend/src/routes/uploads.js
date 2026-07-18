@@ -8,7 +8,7 @@ import {
   validateFilePathOwnership,
   fileExists,
 } from '../utils/fileStorage.js';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { readFile, stat } from 'fs/promises';
 import path from 'path';
 import {
@@ -219,7 +219,7 @@ export function setupUploadsRoutes(app, backend) {
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => {
-      return req.validatedAuthId || req.ip;
+      return req.validatedAuthId || ipKeyGenerator(req.ip);
     },
     handler: (req, res) => {
       res.status(429).json({
