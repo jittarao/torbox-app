@@ -106,6 +106,7 @@ pub fn run() {
             commands::notifications::show_test_notification,
             commands::updates::check_for_update_command,
             commands::updates::install_update_command,
+            commands::window_presence::get_window_engaged,
         ])
         .build(tauri::generate_context!())
         .expect("error while building TorBox Manager desktop app")

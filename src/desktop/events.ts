@@ -10,6 +10,7 @@ const NOTIFICATION_CLICKED = 'desktop://notification-clicked';
 const TRAY_OPEN_SETTINGS = 'desktop://tray-open-settings';
 const UPDATE_AVAILABLE = 'desktop://update-available';
 const UPDATE_PROGRESS = 'desktop://update-progress';
+const WINDOW_PRESENCE_CHANGED = 'desktop://window-presence-changed';
 
 export async function onCapabilitiesChanged(handler: () => void): Promise<UnlistenFn | null> {
   if (typeof window === 'undefined') {
@@ -102,6 +103,12 @@ export async function onUpdateProgress(
   return listenEvent(UPDATE_PROGRESS, handler);
 }
 
+export async function onWindowPresenceChanged(
+  handler: (payload: { engaged: boolean }) => void
+): Promise<UnlistenFn | null> {
+  return listenEvent(WINDOW_PRESENCE_CHANGED, handler);
+}
+
 export {
   CAPABILITIES_CHANGED,
   WATCHER_STATUS_CHANGED,
@@ -113,4 +120,5 @@ export {
   TRAY_OPEN_SETTINGS,
   UPDATE_AVAILABLE,
   UPDATE_PROGRESS,
+  WINDOW_PRESENCE_CHANGED,
 };

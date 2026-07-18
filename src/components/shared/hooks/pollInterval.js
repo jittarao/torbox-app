@@ -1,14 +1,24 @@
 import { POLLING_CONFIG } from './pollingConfig';
 
 /**
+ * @param {Object} input
+ * @param {boolean} input.pollingPaused — media playing (video/audio)
+ * @param {boolean} input.isDisengaged — tab hidden, user idle, or desktop unfocused
+ * @param {boolean} input.isWithinEngagementGrace
+ */
+export function wantsFastPoll({ pollingPaused, isDisengaged, isWithinEngagementGrace }) {
+  return !pollingPaused && (!isDisengaged || isWithinEngagementGrace);
+}
+
+/**
  * Resolve poll interval and UI mode from presence + auto-start + queue state.
  *
- * Active tab (visible, not idle) or engagement grace → 15s always.
- * Hidden/idle with auto-start: 60s when filling queue, 15min when watching for new queue items.
+ * Priority: engaged (15s) → auto-start queued (60s) → background (15min).
+ * Media playback uses background unless auto-start has queued torrents.
  *
  * @param {Object} input
  * @param {boolean} input.pollingPaused
- * @param {boolean} input.isDisengaged — tab hidden or user idle
+ * @param {boolean} input.isDisengaged
  * @param {boolean} input.isWithinEngagementGrace
  * @param {boolean} input.autoStartEnabled — user setting + torrents/all tab (caller)
  * @param {boolean} input.hasQueuedTorrents — from store after last fetch
@@ -21,11 +31,9 @@ export function resolvePollInterval({
   autoStartEnabled,
   hasQueuedTorrents,
 }) {
-  if (pollingPaused) {
-    return { intervalMs: 0, mode: 'paused', shouldPoll: false };
-  }
+  const fastPoll = wantsFastPoll({ pollingPaused, isDisengaged, isWithinEngagementGrace });
 
-  if (!isDisengaged || isWithinEngagementGrace) {
+  if (fastPoll) {
     return {
       intervalMs: POLLING_CONFIG.activeIntervalMs,
       mode: 'active',
@@ -33,11 +41,7 @@ export function resolvePollInterval({
     };
   }
 
-  if (!autoStartEnabled) {
-    return { intervalMs: 0, mode: 'inactive', shouldPoll: false };
-  }
-
-  if (hasQueuedTorrents) {
+  if (autoStartEnabled && hasQueuedTorrents) {
     return {
       intervalMs: POLLING_CONFIG.autoStartQueuedIntervalMs,
       mode: 'autoStartQueued',
@@ -46,17 +50,23 @@ export function resolvePollInterval({
   }
 
   return {
-    intervalMs: POLLING_CONFIG.autoStartWatchIntervalMs,
-    mode: 'autoStartWatch',
+    intervalMs: POLLING_CONFIG.backgroundIntervalMs,
+    mode: 'background',
     shouldPoll: true,
   };
 }
 
 /** Background auto-start only needs torrent list updates (saves usenet/webdl calls on All tab). */
 export function shouldPollTorrentsOnly({
+  pollingPaused,
   isDisengaged,
   isWithinEngagementGrace,
   autoStartEnabled,
+  hasQueuedTorrents,
 }) {
-  return autoStartEnabled && isDisengaged && !isWithinEngagementGrace;
+  return (
+    autoStartEnabled &&
+    hasQueuedTorrents &&
+    !wantsFastPoll({ pollingPaused, isDisengaged, isWithinEngagementGrace })
+  );
 }

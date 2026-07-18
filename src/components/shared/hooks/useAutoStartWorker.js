@@ -17,9 +17,8 @@ import { useTorboxDownloadsStore, selectHasQueuedTorrents } from '@/store/torbox
  * @param {Object} options
  * @param {string | null | undefined} options.apiKey
  * @param {'torrents' | 'usenet' | 'webdl' | 'all'} options.viewType
- * @param {boolean} options.pollingPaused
  */
-export function useAutoStartWorker({ apiKey, viewType, pollingPaused }) {
+export function useAutoStartWorker({ apiKey, viewType }) {
   const [autoStartEnabled, setAutoStartEnabled] = useState(
     () => getAutoStartOptions()?.autoStart ?? false
   );
@@ -31,10 +30,7 @@ export function useAutoStartWorker({ apiKey, viewType, pollingPaused }) {
   const lastResultRef = useRef({ queuedCount: 0, activeCount: 0 });
 
   const autoStartApplies =
-    autoStartEnabled &&
-    (viewType === 'torrents' || viewType === 'all') &&
-    !!apiKey &&
-    !pollingPaused;
+    autoStartEnabled && (viewType === 'torrents' || viewType === 'all') && !!apiKey;
 
   useEffect(() => {
     const syncOptions = () => {

@@ -51,6 +51,7 @@ function ProgressRing({ progress, className = '' }) {
  */
 export default function AutoRefreshIndicator({
   pollSchedule,
+  pollingPaused = false,
   isRefreshing = false,
   refreshRateLimited = false,
   onRefreshNow,
@@ -92,6 +93,16 @@ export default function AutoRefreshIndicator({
         ? t('nextRefreshSlow', { seconds: secondsLeft })
         : t('autoRefreshSlowHint');
     }
+    if (mode === 'background') {
+      if (pollingPaused) {
+        return secondsLeft != null
+          ? t('nextRefreshMedia', { seconds: secondsLeft })
+          : t('autoRefreshMediaHint');
+      }
+      return secondsLeft != null
+        ? t('nextRefreshBackground', { seconds: secondsLeft })
+        : t('autoRefreshBackgroundHint');
+    }
     if (mode === 'autoStartWatch') {
       return secondsLeft != null
         ? t('nextRefreshWatch', { seconds: secondsLeft })
@@ -104,10 +115,13 @@ export default function AutoRefreshIndicator({
       return t('nextRefreshIn', { seconds: secondsLeft });
     }
     return t('refreshingSoon');
-  }, [isRefreshing, refreshRateLimited, mode, secondsLeft, t]);
+  }, [isRefreshing, refreshRateLimited, mode, pollingPaused, secondsLeft, t]);
 
   const showCountdown =
-    mode === 'active' || mode === 'autoStartQueued' || mode === 'autoStartWatch';
+    mode === 'active' ||
+    mode === 'autoStartQueued' ||
+    mode === 'autoStartWatch' ||
+    mode === 'background';
   const ringMuted = mode === 'paused' || mode === 'inactive' || mode === 'autoStartWorker';
 
   return (
