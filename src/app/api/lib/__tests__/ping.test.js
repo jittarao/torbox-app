@@ -1,5 +1,19 @@
 import { describe, expect, test, mock, beforeEach, afterEach } from 'bun:test';
-import { POST } from '../../ping/route.js';
+
+function mockMissingTorboxApiKey() {
+  mock.module('@/app/api/lib/requireTorboxApiKey', () => ({
+    requireTorboxApiKey: async () => ({
+      apiKey: null,
+      response: Response.json({ success: false, error: 'API key is required' }, { status: 401 }),
+    }),
+  }));
+}
+
+function mockTorboxApiKey(apiKey = 'test-key') {
+  mock.module('@/app/api/lib/requireTorboxApiKey', () => ({
+    requireTorboxApiKey: async () => ({ apiKey, response: null }),
+  }));
+}
 
 describe('/api/ping', () => {
   let originalFetch;
@@ -14,10 +28,9 @@ describe('/api/ping', () => {
   });
 
   test('returns 401 when API key is missing', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers(),
-    }));
+    mockMissingTorboxApiKey();
 
+    const { POST } = await import('../../ping/route.js');
     const request = new Request('http://localhost/api/ping', {
       method: 'POST',
       body: JSON.stringify({ domain: 'https://example.com' }),
@@ -31,10 +44,9 @@ describe('/api/ping', () => {
   });
 
   test('returns 400 for localhost', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
 
+    const { POST } = await import('../../ping/route.js');
     const request = new Request('http://localhost/api/ping', {
       method: 'POST',
       body: JSON.stringify({ domain: 'http://localhost' }),
@@ -47,10 +59,9 @@ describe('/api/ping', () => {
   });
 
   test('returns 400 for 169.254.169.254', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
 
+    const { POST } = await import('../../ping/route.js');
     const request = new Request('http://localhost/api/ping', {
       method: 'POST',
       body: JSON.stringify({ domain: 'http://169.254.169.254/latest/meta-data/' }),
@@ -63,9 +74,7 @@ describe('/api/ping', () => {
   });
 
   test('returns 200 for a valid public URL', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
 
     global.fetch = mock(() =>
       Promise.resolve(
@@ -76,6 +85,7 @@ describe('/api/ping', () => {
       )
     );
 
+    const { POST } = await import('../../ping/route.js');
     const request = new Request('http://localhost/api/ping', {
       method: 'POST',
       body: JSON.stringify({ domain: 'https://example.com', serverName: 'test' }),

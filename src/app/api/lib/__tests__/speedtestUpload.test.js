@@ -1,5 +1,19 @@
 import { describe, expect, test, mock, afterEach } from 'bun:test';
-import { POST } from '../../speedtest/upload/route.js';
+
+function mockMissingTorboxApiKey() {
+  mock.module('@/app/api/lib/requireTorboxApiKey', () => ({
+    requireTorboxApiKey: async () => ({
+      apiKey: null,
+      response: Response.json({ success: false, error: 'API key is required' }, { status: 401 }),
+    }),
+  }));
+}
+
+function mockTorboxApiKey(apiKey = 'test-key') {
+  mock.module('@/app/api/lib/requireTorboxApiKey', () => ({
+    requireTorboxApiKey: async () => ({ apiKey, response: null }),
+  }));
+}
 
 describe('/api/speedtest/upload', () => {
   afterEach(() => {
@@ -7,10 +21,9 @@ describe('/api/speedtest/upload', () => {
   });
 
   test('returns 401 when API key is missing', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers(),
-    }));
+    mockMissingTorboxApiKey();
 
+    const { POST } = await import('../../speedtest/upload/route.js');
     const formData = new FormData();
     formData.append('file', new File(['small'], 'test.txt', { type: 'text/plain' }));
 
@@ -27,10 +40,9 @@ describe('/api/speedtest/upload', () => {
   });
 
   test('returns 400 when content-length exceeds the limit', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
 
+    const { POST } = await import('../../speedtest/upload/route.js');
     const formData = new FormData();
     formData.append('file', new File(['x'], 'big.bin', { type: 'application/octet-stream' }));
 
@@ -48,10 +60,9 @@ describe('/api/speedtest/upload', () => {
   });
 
   test('returns 200 with fileSize for a small file', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
 
+    const { POST } = await import('../../speedtest/upload/route.js');
     const formData = new FormData();
     formData.append('file', new File(['hello'], 'test.txt', { type: 'text/plain' }));
 
