@@ -723,7 +723,7 @@
       "updateDesktopApp": "Update the desktop app to enable launch at login"
     },
     "nativeNotifications": {
-      "description": "Show system notifications for background folder watcher uploads.",
+      "description": "Show system notifications for folder watcher uploads and TorBox account alerts.",
       "enabledHelp": "Master switch for native desktop notifications.",
       "enabledLabel": "Enable native notifications",
       "saveFailed": "Failed to save notification settings",
@@ -732,6 +732,8 @@
       "testFailed": "Could not show a test notification",
       "testSuccess": "Test notification sent",
       "title": "Notifications",
+      "torboxHelp": "Alert when new TorBox account notifications arrive while the app is in the background.",
+      "torboxLabel": "Notify on TorBox notifications",
       "updateDesktopApp": "Update the desktop app to enable native notifications",
       "uploadFailureHelp": "Alert when a watched torrent upload fails.",
       "uploadFailureLabel": "Notify on upload failure",
@@ -745,7 +747,7 @@
       "general": "General",
       "generalDescription": "Startup, tray, sign-in, and connection options",
       "notifications": "Notifications",
-      "notificationsDescription": "Native system notifications for folder watcher uploads",
+      "notificationsDescription": "Native system notifications for uploads and TorBox alerts",
       "watcher": "Folder watcher",
       "watcherActive": "Running",
       "watcherDescription": "Automatic torrent uploads from a watch folder"

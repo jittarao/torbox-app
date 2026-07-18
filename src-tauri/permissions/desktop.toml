@@ -25,6 +25,7 @@ commands.allow = [
   "get_notification_settings",
   "set_notification_settings",
   "show_test_notification",
+  "show_torbox_notification",
   "check_for_update_command",
   "install_update_command",
 ]
