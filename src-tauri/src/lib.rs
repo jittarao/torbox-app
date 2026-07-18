@@ -104,6 +104,7 @@ pub fn run() {
             commands::notifications::get_notification_settings,
             commands::notifications::set_notification_settings,
             commands::notifications::show_test_notification,
+            commands::notifications::show_torbox_notification,
             commands::updates::check_for_update_command,
             commands::updates::install_update_command,
             commands::window_presence::get_window_engaged,

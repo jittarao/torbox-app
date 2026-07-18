@@ -24,6 +24,7 @@ export const useNotificationsStore = create((set, get) => ({
   lastFetchTime: null,
   currentApiKey: null,
   fetchingNotifications: false,
+  notificationsBaselineEstablished: false,
 
   setApiKey: (apiKey) => {
     const { currentApiKey } = get();
@@ -36,6 +37,7 @@ export const useNotificationsStore = create((set, get) => ({
         lastErrorTime: null,
         rateLimitBackoffUntil: null,
         lastFetchTime: null,
+        notificationsBaselineEstablished: false,
       });
     }
   },
@@ -65,7 +67,13 @@ export const useNotificationsStore = create((set, get) => ({
     }
 
     if (patch) {
-      set({ ...patch, fetchingNotifications: false });
+      set({
+        ...patch,
+        fetchingNotifications: false,
+        ...(patch.notifications && !get().notificationsBaselineEstablished
+          ? { notificationsBaselineEstablished: true }
+          : {}),
+      });
     } else if (get().fetchingNotifications) {
       set({ fetchingNotifications: false, loading: false });
     }

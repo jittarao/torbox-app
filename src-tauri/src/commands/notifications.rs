@@ -40,3 +40,18 @@ pub fn show_test_notification(
         .show_test_notification(&app)
         .map_err(|error| format!("{error} {hint}", hint = notification_permission_hint()))
 }
+
+#[tauri::command]
+pub fn show_torbox_notification(
+    title: String,
+    body: String,
+    window: WebviewWindow,
+    app: AppHandle,
+    state: State<AppState>,
+) -> Result<(), String> {
+    validate_window_origin(&window, &state)?;
+    state
+        .notifications
+        .show_torbox_notification(&app, &title, &body)
+        .map_err(|error| format!("{error} {hint}", hint = notification_permission_hint()))
+}

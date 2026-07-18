@@ -29,7 +29,11 @@ export default function DesktopNotificationsPanel({
   const saveNotificationSettings = useDesktopStore((state) => state.saveNotificationSettings);
   const sendTestNotification = useDesktopStore((state) => state.sendTestNotification);
   const [savingKey, setSavingKey] = useState<
-    'nativeNotifications' | 'notifyOnUploadSuccess' | 'notifyOnUploadFailure' | null
+    | 'nativeNotifications'
+    | 'notifyOnUploadSuccess'
+    | 'notifyOnUploadFailure'
+    | 'notifyOnTorboxNotifications'
+    | null
   >(null);
   const [testing, setTesting] = useState(false);
 
@@ -44,7 +48,11 @@ export default function DesktopNotificationsPanel({
   }
 
   const updateSetting = async (
-    key: 'nativeNotifications' | 'notifyOnUploadSuccess' | 'notifyOnUploadFailure',
+    key:
+      | 'nativeNotifications'
+      | 'notifyOnUploadSuccess'
+      | 'notifyOnUploadFailure'
+      | 'notifyOnTorboxNotifications',
     checked: boolean
   ) => {
     if (!notificationSettings) {
@@ -126,6 +134,19 @@ export default function DesktopNotificationsPanel({
             onChange={(event) => updateSetting('notifyOnUploadFailure', event.target.checked)}
             label={t('uploadFailureLabel')}
             description={t('uploadFailureHelp')}
+          />
+        </DesktopSettingGroupItem>
+        <DesktopSettingGroupItem dimmed={!masterEnabled}>
+          <DesktopToggle
+            id="desktop-notify-torbox-notifications"
+            checked={notificationSettings?.notifyOnTorboxNotifications ?? true}
+            disabled={
+              !notificationSettings || !masterEnabled || savingKey === 'notifyOnTorboxNotifications'
+            }
+            busy={savingKey === 'notifyOnTorboxNotifications'}
+            onChange={(event) => updateSetting('notifyOnTorboxNotifications', event.target.checked)}
+            label={t('torboxLabel')}
+            description={t('torboxHelp')}
           />
         </DesktopSettingGroupItem>
       </DesktopSettingGroup>

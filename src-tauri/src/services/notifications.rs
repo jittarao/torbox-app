@@ -145,6 +145,20 @@ impl NotificationService {
         )
     }
 
+    pub fn show_torbox_notification(
+        &self,
+        app: &AppHandle,
+        title: &str,
+        body: &str,
+    ) -> Result<(), String> {
+        let prefs = self.settings.get_notification_settings();
+        if !prefs.native_notifications || !prefs.notify_on_torbox_notifications {
+            return Ok(());
+        }
+
+        self.show_native_notification(app, title, body)
+    }
+
     fn show_native_notification(
         &self,
         app: &AppHandle,

@@ -16,6 +16,7 @@ import MobileMoreSheet from './MobileMoreSheet';
 import { SidebarContext, useSidebar } from './SidebarContext';
 import useSidebarCollapsed from './useSidebarCollapsed';
 import { useNotificationsPolling } from '@/components/shared/hooks/useNotificationsPolling';
+import { useTorboxNativeNotifications } from '@/components/shared/hooks/useTorboxNativeNotifications';
 import { useHealthPolling } from '@/components/shared/hooks/useHealthPolling';
 import { useGlobalUserPresence } from '@/components/shared/hooks/useGlobalUserPresence';
 import { useSessionHydrate } from '@/components/shared/hooks/useSessionHydrate';
@@ -55,6 +56,7 @@ export default function AppShell({ apiKey, children, className = '' }) {
   useGlobalUserPresence(pollingPaused);
   useHealthPolling(apiKey);
   useNotificationsPolling(apiKey);
+  useTorboxNativeNotifications(apiKey);
   useSessionHydrate(apiKey);
   const t = useTranslations('Header');
   const { isActive, pathname } = useNavActive();
