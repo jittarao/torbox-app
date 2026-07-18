@@ -27,11 +27,11 @@ fn register_remote_origin(app: &AppHandle, identifier: &str, origin: &str) -> Re
 }
 
 /// Registers dev-only localhost origins (debug builds only).
-pub fn register_dev_capabilities(app: &AppHandle) -> Result<(), String> {
+pub fn register_dev_capabilities(_app: &AppHandle) -> Result<(), String> {
     #[cfg(debug_assertions)]
     {
         for origin in ["http://localhost:3000", "http://127.0.0.1:3000"] {
-            register_remote_origin(app, &format!("dev-{origin}"), origin)?;
+            register_remote_origin(_app, &format!("dev-{origin}"), origin)?;
         }
     }
 
