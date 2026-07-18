@@ -143,12 +143,22 @@ jobs:
       # Unsigned builds have no .sig files, so latest.json generation is skipped
       # intentionally until signing is enabled (see signing-checklist.md).
       - name: Generate latest.json
-        continue-on-error: true
         shell: bash
-        run: bun scripts/generate-desktop-latest-json.js dist > dist/latest.json
+        run: |
+          if bun scripts/generate-desktop-latest-json.js dist > dist/latest.json.tmp; then
+            mv dist/latest.json.tmp dist/latest.json
+            echo "Generated latest.json"
+          else
+            rm -f dist/latest.json.tmp
+            echo "Skipping latest.json (no signed updater artifacts)"
+          fi
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
+
+      - name: Remove empty staged files
+        shell: bash
+        run: find dist -type f -empty -print -delete
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -157,7 +167,9 @@ jobs:
           name: TorBox Manager ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            dist/*
+            dist/*.dmg
+            dist/*-setup.exe
+            dist/latest.json
 
   # Signing steps are documented in desktop/release/signing-checklist.md.
   # Once secrets are configured, add TAURI_SIGNING_PRIVATE_KEY and platform
