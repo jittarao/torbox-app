@@ -183,7 +183,7 @@ Use Windows or macOS for production validation.
 
 ### macOS bundled `.app`
 
-- [ ] Gatekeeper warning for unsigned builds (expected until notarization)
+- [ ] First launch via right-click → Open (ad-hoc signed; Developer ID notarization deferred)
 - [ ] Login item + Requires approval flow
 - [ ] Folder picker + watcher on a user-selected directory
 
