@@ -1,5 +1,7 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+#[cfg(any(debug_assertions, test))]
+use std::path::Path;
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
@@ -291,6 +293,7 @@ impl SettingsService {
         })
     }
 
+    #[cfg(debug_assertions)]
     pub fn app_data_dir(&self) -> &Path {
         self.path
             .parent()

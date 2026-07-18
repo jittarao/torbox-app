@@ -94,11 +94,11 @@ pub fn restore_web_location(window: &WebviewWindow, settings: &SettingsService) 
     let _ = window.navigate(target);
 }
 
-fn resolve_navigation_base(window: &WebviewWindow, settings: &SettingsService) -> String {
+fn resolve_navigation_base(_window: &WebviewWindow, settings: &SettingsService) -> String {
     #[cfg(debug_assertions)]
     {
         let _ = settings;
-        if let Ok(url) = window.url() {
+        if let Ok(url) = _window.url() {
             let origin = url.origin().ascii_serialization();
             if origin.starts_with("http://localhost:") || origin.starts_with("http://127.0.0.1:") {
                 return origin;
