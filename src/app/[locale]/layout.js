@@ -1,6 +1,7 @@
 import { FileHandler } from '@/components/shared/FileHandler';
 import { ErrorHandlerInitializer } from '@/components/shared/ErrorHandlerInitializer';
 import { LocaleContentBoundary } from '@/components/shared/LocaleContentBoundary';
+import { DesktopBridgeInit } from '@/components/desktop/DesktopBridgeInit';
 import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
@@ -91,6 +92,7 @@ export default async function LocaleLayout({ children, params }) {
             <PostHogProvider>
               <LocaleContentBoundary>
                 <ErrorHandlerInitializer />
+                <DesktopBridgeInit />
                 <FileHandler />
                 <ActivityBeacon />
                 <Suspense

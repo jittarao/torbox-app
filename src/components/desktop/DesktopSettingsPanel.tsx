@@ -1,0 +1,184 @@
+'use client';
+
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useDesktopCapabilities } from '@/desktop/useDesktopCapabilities';
+import { useDesktopStore } from '@/store/desktopStore';
+import { hasFeature } from '@/desktop/capabilities';
+import DesktopFolderWatcherPanel from '@/components/desktop/DesktopFolderWatcherPanel';
+import DesktopNotificationsPanel from '@/components/desktop/DesktopNotificationsPanel';
+import DesktopSettingsGeneralTab from '@/components/desktop/DesktopSettingsGeneralTab';
+import DesktopSettingsSection from '@/components/desktop/DesktopSettingsSection';
+import {
+  DesktopInfoCallout,
+  DesktopStatusBadge,
+  DesktopTabContentHeader,
+  desktopTabDefault,
+  desktopTabSelected,
+} from '@/components/desktop/DesktopUi';
+import { Bell, Settings, Torrent } from '@/components/icons';
+
+type SettingsTab = 'general' | 'notifications' | 'watcher';
+
+type DesktopSettingsPanelProps = {
+  apiKey: string;
+  setToast?: (toast: { message: string; type: string }) => void;
+};
+
+export default function DesktopSettingsPanel({ apiKey, setToast }: DesktopSettingsPanelProps) {
+  const t = useTranslations('Desktop');
+  const { available, initialized, capabilities, instanceUrl, credentialStatus } =
+    useDesktopCapabilities();
+  const setInstanceUrl = useDesktopStore((state) => state.setInstanceUrl);
+  const syncApiKey = useDesktopStore((state) => state.syncApiKey);
+  const clearCredential = useDesktopStore((state) => state.clearCredential);
+  const watcherStatus = useDesktopStore((state) => state.watcherStatus);
+
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+
+  if (!initialized || !available) {
+    return null;
+  }
+
+  const canCustomizeUrl = hasFeature(capabilities, 'instanceUrl');
+  const canStoreApiKey = hasFeature(capabilities, 'secureCredentials');
+  const canUseWatcher = hasFeature(capabilities, 'folderWatcher');
+  const canUseTray = hasFeature(capabilities, 'tray');
+  const canUseNotifications = hasFeature(capabilities, 'nativeNotifications');
+
+  const tabs: {
+    id: SettingsTab;
+    label: string;
+    description: string;
+    icon: typeof Settings;
+    dot?: boolean;
+  }[] = [
+    {
+      id: 'general',
+      label: t('tabs.general'),
+      description: t('tabs.generalDescription'),
+      icon: Settings,
+    },
+    {
+      id: 'notifications',
+      label: t('tabs.notifications'),
+      description: t('tabs.notificationsDescription'),
+      icon: Bell,
+    },
+    {
+      id: 'watcher',
+      label: t('tabs.watcher'),
+      description: t('tabs.watcherDescription'),
+      icon: Torrent,
+      dot: Boolean(watcherStatus?.running),
+    },
+  ];
+
+  const activeTabMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+
+  return (
+    <div className="mx-auto flex max-w-5xl flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
+      <nav aria-label={t('tabs.ariaLabel')} className="lg:sticky lg:top-6 lg:w-48 lg:shrink-0">
+        <div className="flex gap-1 rounded-xl border border-border/60 bg-surface-alt/60 p-1 dark:border-border-dark/60 dark:bg-surface-dark/60 lg:flex-col lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0">
+          {tabs.map((tab) => {
+            const selected = activeTab === tab.id;
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                aria-current={selected ? 'page' : undefined}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors lg:w-full lg:justify-start lg:gap-2.5 lg:px-3 lg:py-2.5 lg:text-left ${
+                  selected ? desktopTabSelected : desktopTabDefault
+                }`}
+              >
+                {selected ? (
+                  <span
+                    className="absolute inset-y-1.5 left-0 hidden w-0.5 rounded-full bg-accent dark:bg-accent-dark lg:block"
+                    aria-hidden
+                  />
+                ) : null}
+                <TabIcon
+                  className={`size-4 shrink-0 ${selected ? 'text-accent dark:text-accent-dark' : ''}`}
+                />
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="truncate">{tab.label}</span>
+                  {tab.dot ? (
+                    <span
+                      className="size-1.5 shrink-0 rounded-full bg-label-success-text dark:bg-label-success-text-dark"
+                      title={t('tabs.watcherActive')}
+                      aria-label={t('tabs.watcherActive')}
+                    />
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      <div className="min-w-0 flex-1">
+        <DesktopTabContentHeader
+          title={activeTabMeta.label}
+          action={
+            activeTab === 'watcher' && watcherStatus?.running ? (
+              <DesktopStatusBadge status="success" pulse>
+                {t('tabs.watcherActive')}
+              </DesktopStatusBadge>
+            ) : null
+          }
+        />
+
+        {activeTab === 'general' && (
+          <DesktopSettingsGeneralTab
+            apiKey={apiKey}
+            credentialStatus={credentialStatus}
+            instanceUrl={instanceUrl}
+            canCustomizeUrl={canCustomizeUrl}
+            canStoreApiKey={canStoreApiKey}
+            canUseTray={canUseTray}
+            setToast={setToast}
+            setInstanceUrl={setInstanceUrl}
+            syncApiKey={syncApiKey}
+            clearCredential={clearCredential}
+          />
+        )}
+
+        {activeTab === 'notifications' && (
+          <div className="space-y-4">
+            {canUseNotifications ? (
+              <DesktopSettingsSection
+                title={t('nativeNotifications.title')}
+                description={t('nativeNotifications.description')}
+                icon={Bell}
+                compact
+              >
+                <DesktopNotificationsPanel embedded setToast={setToast} />
+              </DesktopSettingsSection>
+            ) : (
+              <DesktopSettingsSection title={t('tabs.notifications')} icon={Bell} compact>
+                <DesktopInfoCallout variant="warning">{t('updateDesktopApp')}</DesktopInfoCallout>
+              </DesktopSettingsSection>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'watcher' && canUseWatcher && (
+          <DesktopFolderWatcherPanel
+            embedded
+            hasCredential={Boolean(credentialStatus?.hasApiKey)}
+            instanceUrl={instanceUrl}
+            setToast={setToast}
+          />
+        )}
+
+        {activeTab === 'watcher' && !canUseWatcher && (
+          <DesktopSettingsSection title={t('folderWatcher.title')} icon={Torrent} compact>
+            <DesktopInfoCallout variant="warning">{t('updateDesktopApp')}</DesktopInfoCallout>
+          </DesktopSettingsSection>
+        )}
+      </div>
+    </div>
+  );
+}

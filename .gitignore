@@ -173,3 +173,7 @@ temp/
 
 # Audiobook
 .ffprobe/
+
+# Tauri desktop shell
+src-tauri/target/
+src-tauri/gen/schemas/
