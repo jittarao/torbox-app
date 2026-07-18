@@ -88,6 +88,7 @@ export type NotificationSettings = {
   nativeNotifications: boolean;
   notifyOnUploadSuccess: boolean;
   notifyOnUploadFailure: boolean;
+  notifyOnTorboxNotifications: boolean;
 };
 
 export type UpdateInfo = {

@@ -227,6 +227,14 @@ export async function showTestNotification(): Promise<boolean> {
   return true;
 }
 
+export async function showTorboxNotification(title: string, body: string): Promise<boolean> {
+  if (!(await isAvailable()) || !hasBridgeFeature('nativeNotifications')) {
+    return false;
+  }
+  await invoke('show_torbox_notification', { title, body });
+  return true;
+}
+
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
   if (!(await isAvailable()) || !hasBridgeFeature('updater')) {
     return null;
@@ -278,6 +286,7 @@ export const desktop = {
   getNotificationSettings,
   setNotificationSettings,
   showTestNotification,
+  showTorboxNotification,
   checkForUpdate,
   installUpdate,
   getWindowEngaged,

@@ -178,6 +178,8 @@ pub struct NotificationSettings {
     pub notify_on_upload_success: bool,
     #[serde(default = "default_true")]
     pub notify_on_upload_failure: bool,
+    #[serde(default = "default_true")]
+    pub notify_on_torbox_notifications: bool,
 }
 
 impl Default for NotificationSettings {
@@ -186,6 +188,7 @@ impl Default for NotificationSettings {
             native_notifications: true,
             notify_on_upload_success: true,
             notify_on_upload_failure: true,
+            notify_on_torbox_notifications: true,
         }
     }
 }
