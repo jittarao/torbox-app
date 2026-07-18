@@ -5,6 +5,8 @@ import { registerPollTimerReset, unregisterPollTimerReset } from '@/store/pollTi
 import { POLLING_CONFIG } from './pollingConfig';
 import { createPollSchedule } from './pollSchedule';
 import { resolvePollInterval, shouldPollTorrentsOnly } from './pollInterval';
+import { pollScheduleFirstDelay } from './pollTimerSchedule';
+import { shouldRescheduleOnQueueChange } from './userPresenceTransitions';
 
 const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
 
@@ -17,7 +19,6 @@ const ALL_ASSET_TYPES = ['torrents', 'usenet', 'webdl'];
 export function usePollTimer({
   type,
   pollingPaused,
-  workerBackedAutoStart = false,
   onPoll,
   isRateLimited,
   onPollSkipped,
@@ -42,7 +43,9 @@ export function usePollTimer({
   }, []);
 
   const autoStartApplies = autoStartEnabled && (type === 'torrents' || type === 'all');
-  const hasQueuedTorrents = useTorboxDownloadsStore((s) => selectHasQueuedTorrents(s));
+  const pollingPausedRef = useRef(pollingPaused);
+  pollingPausedRef.current = pollingPaused;
+  const prevPollingPausedRef = useRef(pollingPaused);
 
   const onPollRef = useRef(onPoll);
   const isRateLimitedRef = useRef(isRateLimited);
@@ -95,29 +98,22 @@ export function usePollTimer({
       return selectHasQueuedTorrents(useTorboxDownloadsStore.getState());
     };
 
-    const getPollState = () => {
-      if (workerBackedAutoStart && isDisengaged() && !isWithinEngagementGrace()) {
-        return {
-          intervalMs: POLLING_CONFIG.autoStartQueuedIntervalMs,
-          mode: 'autoStartWorker',
-          shouldPoll: false,
-        };
-      }
-
-      return resolvePollInterval({
-        pollingPaused,
+    const getPollState = () =>
+      resolvePollInterval({
+        pollingPaused: pollingPausedRef.current,
         isDisengaged: isDisengaged(),
         isWithinEngagementGrace: isWithinEngagementGrace(),
         autoStartEnabled: autoStartApplies && getAutoStartOptions()?.autoStart === true,
         hasQueuedTorrents: readHasQueuedTorrents(),
       });
-    };
 
     const useTorrentOnlyPoll = () =>
       shouldPollTorrentsOnly({
+        pollingPaused: pollingPausedRef.current,
         isDisengaged: isDisengaged(),
         isWithinEngagementGrace: isWithinEngagementGrace(),
         autoStartEnabled: autoStartApplies && getAutoStartOptions()?.autoStart === true,
+        hasQueuedTorrents: readHasQueuedTorrents(),
       });
 
     const emitSchedule = (delayMs, pollState = getPollState()) => {
@@ -209,12 +205,9 @@ export function usePollTimer({
       // SharedWorker not supported — fall back to setTimeout
     }
 
-    // Track last tick time for sleep-wake detection
-    let lastTickTime = Date.now();
     const resetLastTickTime = () => {
-      lastTickTime = Date.now();
+      // Reserved for sleep-wake detection if reintroduced.
     };
-    let tickCount = 0;
 
     const clearSafetyTimeout = () => {
       if (safetyTimeoutId) {
@@ -225,11 +218,9 @@ export function usePollTimer({
 
     const handlePollTick = () => {
       clearSafetyTimeout();
-      tickCount += 1;
       const tickState = getPollState();
       if (tickState.shouldPoll) {
-        lastTickTime = Date.now();
-        // Poll ticks use rev-based sync; stale reads block on TorBox shallow refresh.
+        resetLastTickTime();
         runPollTick();
       }
       if (tickState.shouldPoll) {
@@ -259,8 +250,6 @@ export function usePollTimer({
 
       if (workerPort) {
         workerPort.postMessage({ type: 'poll:start', intervalMs: delayMs });
-        // Safety net: fall back to setTimeout if SharedWorker silently fails
-        // Uses its own timer (safetyTimeoutId) so resetPollTimer→stopPolling doesn't clear it
         clearSafetyTimeout();
         safetyTimeoutId = setTimeout(() => {
           safetyTimeoutId = null;
@@ -327,16 +316,12 @@ export function usePollTimer({
     };
 
     const handleReEngaged = (immediateRefresh = false) => {
-      if (pollingPaused) {
-        stopPolling();
-        return;
-      }
       if (immediateRefresh) {
         runImmediateRefresh();
         resetLastTickTime();
       }
       clearGraceStopTimeout();
-      startPolling(POLLING_CONFIG.activeIntervalMs);
+      startPolling(pollScheduleFirstDelay(getPollState()));
     };
 
     const handleDisengaged = () => {
@@ -352,12 +337,7 @@ export function usePollTimer({
     onReEngagedRef.current = handleReEngaged;
     onDisengagedRef.current = handleDisengaged;
 
-    const initialState = getPollState();
-    const initialDelay =
-      initialState.shouldPoll && isDisengaged() && !isWithinEngagementGrace()
-        ? initialState.intervalMs
-        : POLLING_CONFIG.activeIntervalMs;
-    startPolling(initialDelay);
+    startPolling(pollScheduleFirstDelay(getPollState()));
 
     registerPollTimerReset(() => {
       if (cancelled) return;
@@ -370,8 +350,21 @@ export function usePollTimer({
       }
     });
 
+    const unsubscribeQueue = useTorboxDownloadsStore.subscribe((state, prevState) => {
+      if (cancelled) return;
+      const prevHasQueue = selectHasQueuedTorrents(prevState);
+      const nextHasQueue = selectHasQueuedTorrents(state);
+      if (!shouldRescheduleOnQueueChange(prevHasQueue, nextHasQueue)) return;
+
+      const pollState = getPollState();
+      if (pollState.shouldPoll) {
+        startPolling(pollScheduleFirstDelay(pollState));
+      }
+    });
+
     return () => {
       cancelled = true;
+      unsubscribeQueue();
       unregisterPollTimerReset();
       stopPolling();
       clearSafetyTimeout();
@@ -385,13 +378,13 @@ export function usePollTimer({
       onDisengagedRef.current = () => {};
       onScheduleUpdateRef.current?.(createPollSchedule('inactive', null, 0));
     };
-  }, [
-    type,
-    pollingPaused,
-    autoStartApplies,
-    hasQueuedTorrents,
-    workerBackedAutoStart,
-    onReEngagedRef,
-    onDisengagedRef,
-  ]);
+  }, [type, autoStartApplies, onReEngagedRef, onDisengagedRef]);
+
+  useEffect(() => {
+    const wasPaused = prevPollingPausedRef.current;
+    prevPollingPausedRef.current = pollingPaused;
+    if (!wasPaused && pollingPaused) {
+      onReEngagedRef.current?.(false);
+    }
+  }, [pollingPaused, onReEngagedRef]);
 }

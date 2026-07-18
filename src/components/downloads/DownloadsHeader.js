@@ -46,6 +46,7 @@ export default function DownloadsHeader({
           <AutoRefreshIndicator
             className="shrink-0 px-2 md:absolute md:right-3 md:top-1/2 md:-translate-y-1/2 md:px-0 z-10"
             pollSchedule={pollSchedule}
+            pollingPaused={pollingPaused}
             isRefreshing={isRefreshing}
             refreshRateLimited={!canManualRefresh}
             onRefreshNow={() => fetchItems()}
@@ -59,7 +60,6 @@ export default function DownloadsHeader({
         onRetry={() => fetchItems()}
         lastSuccessfulFetchAt={lastSuccessfulFetchAt}
         refreshBlockedReason={refreshBlockedReason}
-        pollingPaused={pollingPaused}
       />
 
       {isRefreshing && (

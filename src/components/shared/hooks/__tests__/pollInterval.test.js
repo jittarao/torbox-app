@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { resolvePollInterval, shouldPollTorrentsOnly } from '../pollInterval';
+import { resolvePollInterval, shouldPollTorrentsOnly, wantsFastPoll } from '../pollInterval';
 import { POLLING_CONFIG } from '../pollingConfig';
 
 describe('resolvePollInterval', () => {
@@ -54,7 +54,7 @@ describe('resolvePollInterval', () => {
     expect(result.shouldPoll).toBe(true);
   });
 
-  it('uses 15min when disengaged, auto-start on, and queue is empty', () => {
+  it('uses 15min background when disengaged, auto-start on, and queue is empty', () => {
     const result = resolvePollInterval({
       pollingPaused: false,
       isDisengaged: true,
@@ -62,11 +62,12 @@ describe('resolvePollInterval', () => {
       autoStartEnabled: true,
       hasQueuedTorrents: false,
     });
-    expect(result.intervalMs).toBe(15 * 60_000);
-    expect(result.mode).toBe('autoStartWatch');
+    expect(result.intervalMs).toBe(POLLING_CONFIG.backgroundIntervalMs);
+    expect(result.mode).toBe('background');
+    expect(result.shouldPoll).toBe(true);
   });
 
-  it('stops polling when disengaged without auto-start', () => {
+  it('uses 15min background when disengaged without auto-start', () => {
     const result = resolvePollInterval({
       pollingPaused: false,
       isDisengaged: true,
@@ -74,34 +75,115 @@ describe('resolvePollInterval', () => {
       autoStartEnabled: false,
       hasQueuedTorrents: true,
     });
-    expect(result.shouldPoll).toBe(false);
-    expect(result.mode).toBe('inactive');
+    expect(result.shouldPoll).toBe(true);
+    expect(result.mode).toBe('background');
+    expect(result.intervalMs).toBe(POLLING_CONFIG.backgroundIntervalMs);
+  });
+
+  it('uses 15min background when media is playing without queued torrents', () => {
+    const result = resolvePollInterval({
+      pollingPaused: true,
+      isDisengaged: false,
+      isWithinEngagementGrace: false,
+      autoStartEnabled: false,
+      hasQueuedTorrents: false,
+    });
+    expect(result).toEqual({
+      intervalMs: POLLING_CONFIG.backgroundIntervalMs,
+      mode: 'background',
+      shouldPoll: true,
+    });
+  });
+
+  it('uses 60s auto-start queued when media is playing and queue has items', () => {
+    const result = resolvePollInterval({
+      pollingPaused: true,
+      isDisengaged: false,
+      isWithinEngagementGrace: false,
+      autoStartEnabled: true,
+      hasQueuedTorrents: true,
+    });
+    expect(result).toEqual({
+      intervalMs: POLLING_CONFIG.autoStartQueuedIntervalMs,
+      mode: 'autoStartQueued',
+      shouldPoll: true,
+    });
+  });
+
+  it('uses 15min background when media is playing, auto-start on, and queue is empty', () => {
+    const result = resolvePollInterval({
+      pollingPaused: true,
+      isDisengaged: false,
+      isWithinEngagementGrace: false,
+      autoStartEnabled: true,
+      hasQueuedTorrents: false,
+    });
+    expect(result.mode).toBe('background');
+    expect(result.intervalMs).toBe(POLLING_CONFIG.backgroundIntervalMs);
+  });
+});
+
+describe('wantsFastPoll', () => {
+  it('is false when media is playing even if the tab is engaged', () => {
+    expect(
+      wantsFastPoll({
+        pollingPaused: true,
+        isDisengaged: false,
+        isWithinEngagementGrace: false,
+      })
+    ).toBe(false);
   });
 });
 
 describe('shouldPollTorrentsOnly', () => {
-  it('is true only in background auto-start phase', () => {
+  it('is true only in background auto-start queued phase', () => {
     expect(
       shouldPollTorrentsOnly({
+        pollingPaused: false,
         isDisengaged: true,
         isWithinEngagementGrace: false,
         autoStartEnabled: true,
+        hasQueuedTorrents: true,
       })
     ).toBe(true);
 
     expect(
       shouldPollTorrentsOnly({
+        pollingPaused: false,
         isDisengaged: false,
         isWithinEngagementGrace: false,
         autoStartEnabled: true,
+        hasQueuedTorrents: true,
       })
     ).toBe(false);
 
     expect(
       shouldPollTorrentsOnly({
+        pollingPaused: false,
         isDisengaged: true,
         isWithinEngagementGrace: true,
         autoStartEnabled: true,
+        hasQueuedTorrents: true,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldPollTorrentsOnly({
+        pollingPaused: true,
+        isDisengaged: false,
+        isWithinEngagementGrace: false,
+        autoStartEnabled: true,
+        hasQueuedTorrents: true,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldPollTorrentsOnly({
+        pollingPaused: true,
+        isDisengaged: false,
+        isWithinEngagementGrace: false,
+        autoStartEnabled: false,
+        hasQueuedTorrents: false,
       })
     ).toBe(false);
   });

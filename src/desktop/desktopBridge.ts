@@ -242,6 +242,18 @@ export async function installUpdate(): Promise<boolean> {
   return true;
 }
 
+export async function getWindowEngaged(): Promise<boolean | null> {
+  if (!isTauriRuntime()) {
+    return null;
+  }
+
+  try {
+    return await invoke<boolean>('get_window_engaged');
+  } catch {
+    return null;
+  }
+}
+
 export const desktop = {
   isTauriEnvironment,
   isAvailable,
@@ -268,4 +280,5 @@ export const desktop = {
   showTestNotification,
   checkForUpdate,
   installUpdate,
+  getWindowEngaged,
 };

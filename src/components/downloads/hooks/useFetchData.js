@@ -27,11 +27,10 @@ import {
 import { resetPollTimer } from '@/store/pollTimerReset';
 
 // Polling rules (intervals in pollingConfig.js + pollInterval.js):
-// 1. 15s when the tab is visible/active, or during engagement grace after hide/idle
-// 2. Disengaged + auto-start + queued torrents → 60s page poll, or worker-owned when SharedWorker active
-// 3. Disengaged + auto-start + empty queue → 15min watch poll for new queue items
-// 4. Disengaged without auto-start → polling stops
-// 5. On the All tab while engaged, each tick fetches torrents, usenet, and webdl
+// 1. 15s when engaged (visible/active, no media) or during engagement grace after hide/idle
+// 2. 60s when auto-start has queued torrents (overrides media playback)
+// 3. 15min background when idle, tabbed out, desktop hidden, or media playing
+// 4. On the All tab while engaged, each tick fetches torrents, usenet, and webdl
 
 export function useFetchData(apiKey, type = 'torrents') {
   const pollingPaused = usePollingPauseStore(selectIsPaused);
@@ -169,10 +168,9 @@ export function useFetchData(apiKey, type = 'torrents') {
     [setPollSchedule]
   );
 
-  const { workerActive, autoStartApplies, hasWork } = useAutoStartWorker({
+  const { autoStartApplies, hasWork } = useAutoStartWorker({
     apiKey,
     viewType: type,
-    pollingPaused,
   });
 
   useAutoStartWakeLock({
@@ -183,7 +181,6 @@ export function useFetchData(apiKey, type = 'torrents') {
   useDownloadListPolling({
     type,
     pollingPaused,
-    workerBackedAutoStart: workerActive,
     onPoll: handlePoll,
     isRateLimited,
     onPollSkipped: markRateLimited,

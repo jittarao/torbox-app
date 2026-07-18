@@ -14,6 +14,7 @@ use tauri::ActivationPolicy;
 
 use crate::constants::APP_DISPLAY_NAME;
 use crate::services::settings::{BackgroundPresence, SettingsService};
+use crate::services::window_presence;
 use crate::services::window_state;
 use crate::state::AppState;
 
@@ -100,6 +101,7 @@ pub fn register_window_behavior(
     window.on_window_event(move |event| {
         let tray_settings = settings.get_tray_settings();
         window_state::handle_window_geometry_event(&app_handle, &settings, event);
+        window_presence::handle_window_presence_event(&app_handle, event);
         match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
@@ -159,6 +161,8 @@ pub fn show_main_window(app: &AppHandle, open_settings: bool) {
         let _ = window.set_focus();
     }
 
+    window_presence::emit_presence_if_changed(app);
+
     if open_settings {
         let _ = app.emit(EVENT_TRAY_OPEN_SETTINGS, ());
     }
@@ -175,6 +179,8 @@ pub fn hide_main_window(app: &AppHandle) {
             sync_macos_dock_visible(app, false);
         }
     }
+
+    window_presence::emit_presence_if_changed(app);
 }
 
 pub fn dismiss_main_window(app: &AppHandle, presence: BackgroundPresence) {
@@ -191,6 +197,7 @@ pub fn dismiss_main_window(app: &AppHandle, presence: BackgroundPresence) {
             sync_macos_dock_visible(app, false);
         }
     }
+    window_presence::emit_presence_if_changed(app);
 }
 
 fn toggle_main_window(app: &AppHandle) {

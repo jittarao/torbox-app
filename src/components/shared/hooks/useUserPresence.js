@@ -1,12 +1,13 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { POLLING_CONFIG } from './pollingConfig';
+import { shouldReEngageOnMediaUnpause } from './userPresenceTransitions';
 
 const USER_ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
 
 /**
- * Tracks tab visibility and user idle state.
+ * Tracks tab visibility, desktop window presence, and user idle state.
  * Calls onReEngaged when the user returns (optional immediate refresh).
- * Calls onDisengaged when the tab is hidden or the user goes idle.
+ * Calls onDisengaged when the tab is hidden, the user goes idle, or the desktop window is unfocused/hidden.
  *
  * @param {Object} options
  * @param {boolean} options.pollingPaused
@@ -18,12 +19,14 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
   const isVisibleRef = useRef(
     typeof document !== 'undefined' && document.visibilityState === 'visible'
   );
+  const desktopDisengagedRef = useRef(false);
   const userIdleRef = useRef(false);
   const wasDisengagedRef = useRef(false);
   const lastImmediateRefreshAtRef = useRef(0);
   const idleTimeoutIdRef = useRef(null);
   const onReEngagedRef = useRef(onReEngaged);
   const onDisengagedRef = useRef(onDisengaged);
+  const prevPollingPausedRef = useRef(pollingPaused);
 
   useEffect(() => {
     onReEngagedRef.current = onReEngaged;
@@ -39,6 +42,10 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
     }
   }, []);
 
+  const isEffectivelyPresent = useCallback(() => {
+    return isVisibleRef.current && !desktopDisengagedRef.current;
+  }, []);
+
   const notifyReEngaged = useCallback((immediateRefresh) => {
     awaySinceRef.current = null;
     wasDisengagedRef.current = false;
@@ -50,10 +57,10 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
 
   const resetIdleTimer = useCallback(() => {
     clearIdleTimeout();
-    if (!isVisibleRef.current || pollingPaused) return;
+    if (!isEffectivelyPresent() || pollingPaused) return;
     idleTimeoutIdRef.current = setTimeout(() => {
       idleTimeoutIdRef.current = null;
-      if (!isVisibleRef.current || pollingPaused) return;
+      if (!isEffectivelyPresent() || pollingPaused) return;
       userIdleRef.current = true;
       if (awaySinceRef.current == null) {
         awaySinceRef.current = Date.now();
@@ -61,7 +68,75 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
       wasDisengagedRef.current = true;
       onDisengagedRef.current?.();
     }, POLLING_CONFIG.userIdleThresholdMs);
-  }, [pollingPaused, clearIdleTimeout]);
+  }, [pollingPaused, clearIdleTimeout, isEffectivelyPresent]);
+
+  const applyDesktopEngaged = useCallback(
+    (engaged) => {
+      desktopDisengagedRef.current = !engaged;
+
+      if (!engaged) {
+        if (awaySinceRef.current == null) {
+          awaySinceRef.current = Date.now();
+        }
+        wasDisengagedRef.current = true;
+        userIdleRef.current = false;
+        clearIdleTimeout();
+        onDisengagedRef.current?.();
+        return;
+      }
+
+      userIdleRef.current = false;
+      const immediateRefresh = wasDisengagedRef.current;
+      notifyReEngaged(immediateRefresh);
+      resetIdleTimer();
+    },
+    [clearIdleTimeout, notifyReEngaged, resetIdleTimer]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    /** @type {import('@tauri-apps/api/event').UnlistenFn | null} */
+    let unlisten = null;
+
+    (async () => {
+      const { isTauriEnvironment, getWindowEngaged } = await import('@/desktop/desktopBridge');
+      if (!isTauriEnvironment() || cancelled) return;
+
+      const engaged = await getWindowEngaged();
+      if (!cancelled && engaged != null) {
+        applyDesktopEngaged(engaged);
+      }
+
+      const { onWindowPresenceChanged } = await import('@/desktop/events');
+      unlisten = await onWindowPresenceChanged((payload) => {
+        if (cancelled) return;
+
+        applyDesktopEngaged(payload?.engaged === true);
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, [applyDesktopEngaged]);
+
+  useEffect(() => {
+    const wasPaused = prevPollingPausedRef.current;
+    prevPollingPausedRef.current = pollingPaused;
+
+    if (
+      shouldReEngageOnMediaUnpause({
+        wasPaused,
+        pollingPaused,
+        isEffectivelyPresent: isEffectivelyPresent(),
+        isUserIdle: userIdleRef.current,
+      })
+    ) {
+      notifyReEngaged(true);
+      resetIdleTimer();
+    }
+  }, [pollingPaused, isEffectivelyPresent, notifyReEngaged, resetIdleTimer]);
 
   useEffect(() => {
     if (!isVisibleRef.current) {
@@ -70,7 +145,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
     }
 
     const markUserActive = () => {
-      if (!isVisibleRef.current || pollingPaused) return;
+      if (!isEffectivelyPresent() || pollingPaused) return;
       const wasIdle = userIdleRef.current;
       userIdleRef.current = false;
       resetIdleTimer();
@@ -83,7 +158,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
     const handlePageShow = (event) => {
       if (!event.persisted) return;
       isVisibleRef.current = document.visibilityState === 'visible';
-      if (!isVisibleRef.current) return;
+      if (!isEffectivelyPresent()) return;
       userIdleRef.current = false;
       const immediateRefresh = wasDisengagedRef.current;
       notifyReEngaged(immediateRefresh);
@@ -101,6 +176,8 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
         return;
       }
 
+      if (!isEffectivelyPresent()) return;
+
       userIdleRef.current = false;
       const immediateRefresh = wasDisengagedRef.current;
       notifyReEngaged(immediateRefresh);
@@ -109,7 +186,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
 
     const handleWindowFocus = () => {
       if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
-      if (pollingPaused) return;
+      if (!isEffectivelyPresent() || pollingPaused) return;
       if (wasDisengagedRef.current) {
         notifyReEngaged(true);
       }
@@ -120,7 +197,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
       markUserActive();
     };
 
-    if (isVisibleRef.current) {
+    if (isEffectivelyPresent()) {
       resetIdleTimer();
     }
 
@@ -138,7 +215,7 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
       window.removeEventListener('focus', handleWindowFocus);
       USER_ACTIVITY_EVENTS.forEach((name) => document.removeEventListener(name, onUserActivity));
     };
-  }, [pollingPaused, resetIdleTimer, clearIdleTimeout, notifyReEngaged]);
+  }, [pollingPaused, resetIdleTimer, clearIdleTimeout, notifyReEngaged, isEffectivelyPresent]);
 
   return useMemo(
     () => ({
@@ -146,7 +223,8 @@ export function useUserPresence({ pollingPaused, onReEngaged, onDisengaged }) {
       isUserIdle: () => userIdleRef.current,
       wasDisengaged: () => wasDisengagedRef.current,
       awaySince: () => awaySinceRef.current,
-      isDisengaged: () => !isVisibleRef.current || userIdleRef.current,
+      isDisengaged: () =>
+        !isVisibleRef.current || userIdleRef.current || desktopDisengagedRef.current,
     }),
     []
   );
