@@ -24,6 +24,9 @@ pub const MAX_STABLE_FILE_MS: u64 = 60_000;
 pub const MIN_WINDOW_WIDTH: u32 = 900;
 pub const MIN_WINDOW_HEIGHT: u32 = 600;
 
+/// Passed only by the OS login item / autostart entry, never on manual launches.
+pub const START_HIDDEN_LAUNCH_ARG: &str = "--start-hidden";
+
 /// Matches `uploads.length > 1000` validation in Next.js and backend batch routes.
 pub const MAX_BATCH_UPLOADS_PER_REQUEST: usize = 1000;
 /// Matches backend `UPLOAD_RATE_LIMIT_MAX` default (requests per 15-minute window).

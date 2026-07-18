@@ -2,6 +2,7 @@ use serde::Serialize;
 use tauri::{AppHandle, State, WebviewWindow};
 
 use crate::commands::hello::validate_window_origin;
+use crate::commands::autostart::sync_launch_at_login;
 use crate::services::capabilities::emit_capabilities_changed;
 use crate::services::settings::TraySettings;
 use crate::services::tray::{hide_main_window, show_main_window};
@@ -25,6 +26,7 @@ pub fn set_tray_settings(
 ) -> Result<TraySettings, String> {
     validate_window_origin(&window, &state)?;
     state.settings.set_tray_settings(tray.clone())?;
+    sync_launch_at_login(&app, &state.settings);
     emit_capabilities_changed(&app);
     Ok(tray)
 }

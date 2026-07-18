@@ -124,7 +124,7 @@ pub fn register_window_behavior(
     Ok(())
 }
 
-/// Hides the main window on launch when launch-at-login + start-hidden are enabled.
+/// Hides the main window on launch when started by the login item with --start-hidden.
 pub fn apply_start_hidden_if_needed(app: &AppHandle, settings: &SettingsService) {
     if settings.should_start_hidden() {
         hide_main_window(app);
