@@ -22,8 +22,10 @@ Complete these steps before enabling signed releases and the auto-updater in pro
    ```
 
 8. Set `plugins.updater.pubkey` in `src-tauri/tauri.conf.json`.
-9. Set `plugins.updater.active: true` for release builds.
-10. Notarize and staple the `.dmg` / `.app` before publishing.
+9. Set `bundle.createUpdaterArtifacts: true` in `src-tauri/tauri.conf.json`.
+10. Set `plugins.updater.active: true` for release builds.
+11. Add `TAURI_SIGNING_PRIVATE_KEY` (and optional password) to GitHub Actions secrets.
+12. Notarize and staple the `.dmg` / `.app` before publishing.
 
 ## Windows (Authenticode)
 
