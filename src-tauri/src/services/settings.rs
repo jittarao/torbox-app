@@ -105,26 +105,63 @@ struct PathAllowlist {
     move_paths: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum BackgroundPresence {
+    Dock,
+    Tray,
+}
+
+impl Default for BackgroundPresence {
+    fn default() -> Self {
+        Self::Dock
+    }
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct TraySettings {
-    #[serde(default = "default_close_to_tray")]
-    pub close_to_tray: bool,
-    #[serde(default)]
-    pub minimize_to_tray: bool,
-    #[serde(default)]
+    pub background_presence: BackgroundPresence,
     pub start_hidden: bool,
 }
 
-fn default_close_to_tray() -> bool {
-    true
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TraySettingsData {
+    #[serde(default)]
+    background_presence: Option<BackgroundPresence>,
+    #[serde(default)]
+    start_hidden: bool,
+    #[serde(default)]
+    close_to_tray: bool,
+    #[serde(default)]
+    minimize_to_tray: bool,
+}
+
+impl<'de> Deserialize<'de> for TraySettings {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = TraySettingsData::deserialize(deserializer)?;
+        let background_presence = raw.background_presence.unwrap_or_else(|| {
+            if raw.close_to_tray || raw.minimize_to_tray {
+                BackgroundPresence::Tray
+            } else {
+                BackgroundPresence::Dock
+            }
+        });
+        Ok(Self {
+            background_presence,
+            start_hidden: raw.start_hidden,
+        })
+    }
 }
 
 impl Default for TraySettings {
     fn default() -> Self {
         Self {
-            close_to_tray: true,
-            minimize_to_tray: false,
+            background_presence: BackgroundPresence::Dock,
             start_hidden: false,
         }
     }
@@ -561,6 +598,27 @@ mod tests {
         fs::create_dir_all(&dir).unwrap();
         let service = SettingsService::new_for_test(&dir);
         (service, dir)
+    }
+
+    #[test]
+    fn tray_settings_migrates_legacy_close_to_tray() {
+        let json = r#"{"closeToTray":true,"minimizeToTray":false,"startHidden":false}"#;
+        let settings: TraySettings = serde_json::from_str(json).unwrap();
+        assert_eq!(settings.background_presence, BackgroundPresence::Tray);
+    }
+
+    #[test]
+    fn tray_settings_migrates_legacy_minimize_to_tray() {
+        let json = r#"{"closeToTray":false,"minimizeToTray":true,"startHidden":false}"#;
+        let settings: TraySettings = serde_json::from_str(json).unwrap();
+        assert_eq!(settings.background_presence, BackgroundPresence::Tray);
+    }
+
+    #[test]
+    fn tray_settings_migrates_legacy_dock_mode() {
+        let json = r#"{"closeToTray":false,"minimizeToTray":false,"startHidden":false}"#;
+        let settings: TraySettings = serde_json::from_str(json).unwrap();
+        assert_eq!(settings.background_presence, BackgroundPresence::Dock);
     }
 
     #[test]
