@@ -59,8 +59,6 @@ jobs:
           name: macos-release
           path: |
             src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/macos/*.tar.gz
-            src-tauri/target/release/bundle/macos/*.sig
           if-no-files-found: error
 
   build-windows:
@@ -108,8 +106,6 @@ jobs:
           name: windows-release
           path: |
             src-tauri/target/release/bundle/nsis/*-setup.exe
-            src-tauri/target/release/bundle/nsis/*.nsis.zip
-            src-tauri/target/release/bundle/nsis/*.sig
           if-no-files-found: error
 
   publish-release:
