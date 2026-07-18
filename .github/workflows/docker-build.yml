@@ -43,7 +43,7 @@ jobs:
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'))
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -94,7 +94,7 @@ jobs:
     steps:
       # Checkout repository code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Set up Bun runtime for extracting version from package.json
       - name: Set up Bun
@@ -329,7 +329,7 @@ jobs:
     steps:
       # Checkout repository code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Set up Bun for version extraction
       - name: Set up Bun
