@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { resolvePollInterval, shouldPollTorrentsOnly, wantsFastPoll } from '../pollInterval';
+import {
+  resolveAuxPollInterval,
+  resolvePollInterval,
+  shouldPollTorrentsOnly,
+  wantsFastPoll,
+} from '../pollInterval';
 import { POLLING_CONFIG } from '../pollingConfig';
 
 describe('resolvePollInterval', () => {
@@ -186,5 +191,61 @@ describe('shouldPollTorrentsOnly', () => {
         hasQueuedTorrents: false,
       })
     ).toBe(false);
+  });
+});
+
+describe('resolveAuxPollInterval', () => {
+  const activeMs = POLLING_CONFIG.healthActiveIntervalMs;
+  const backgroundMs = POLLING_CONFIG.healthBackgroundIntervalMs;
+
+  it('uses active interval when engaged without media', () => {
+    expect(
+      resolveAuxPollInterval({
+        pollingPaused: false,
+        isDisengaged: false,
+        isWithinEngagementGrace: false,
+        activeIntervalMs: activeMs,
+        backgroundIntervalMs: backgroundMs,
+      })
+    ).toEqual({
+      intervalMs: activeMs,
+      shouldPoll: true,
+    });
+  });
+
+  it('uses background interval when tab is disengaged', () => {
+    expect(
+      resolveAuxPollInterval({
+        pollingPaused: false,
+        isDisengaged: true,
+        isWithinEngagementGrace: false,
+        activeIntervalMs: activeMs,
+        backgroundIntervalMs: backgroundMs,
+      }).intervalMs
+    ).toBe(backgroundMs);
+  });
+
+  it('uses active interval during engagement grace', () => {
+    expect(
+      resolveAuxPollInterval({
+        pollingPaused: false,
+        isDisengaged: true,
+        isWithinEngagementGrace: true,
+        activeIntervalMs: activeMs,
+        backgroundIntervalMs: backgroundMs,
+      }).intervalMs
+    ).toBe(activeMs);
+  });
+
+  it('uses background interval when media is playing', () => {
+    expect(
+      resolveAuxPollInterval({
+        pollingPaused: true,
+        isDisengaged: false,
+        isWithinEngagementGrace: false,
+        activeIntervalMs: POLLING_CONFIG.notificationsActiveIntervalMs,
+        backgroundIntervalMs: POLLING_CONFIG.notificationsBackgroundIntervalMs,
+      }).intervalMs
+    ).toBe(POLLING_CONFIG.notificationsBackgroundIntervalMs);
   });
 });

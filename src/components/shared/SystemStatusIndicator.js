@@ -27,15 +27,8 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
     showBackend,
     platformHistory,
   } = useApiHealth(apiKey);
-  const startHealthPolling = useHealthStore((state) => state.startHealthPolling);
-  const stopHealthPolling = useHealthStore((state) => state.stopHealthPolling);
   const performHealthCheck = useHealthStore((state) => state.performHealthCheck);
   const refreshOnOpenRef = useRef(false);
-
-  useEffect(() => {
-    startHealthPolling(apiKey);
-    return () => stopHealthPolling();
-  }, [apiKey, startHealthPolling, stopHealthPolling]);
 
   const closePanel = useCallback(() => setIsOpen(false), []);
   useHeaderDropdownDismiss({ isOpen, onClose: closePanel, anchorRef: rootRef });

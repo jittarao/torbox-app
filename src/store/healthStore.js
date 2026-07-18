@@ -7,10 +7,6 @@ import {
   statusToSegment,
 } from '@/utils/healthHistory';
 import { checkBackendAvailability, getBackendModeSnapshot } from '@/utils/backendModeCache';
-import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
-
-/** Interval between automatic platform / TorBox / backend status checks */
-const HEALTH_CHECK_INTERVAL_MS = 180000; // 3 minutes
 
 /** Minimum time between non-forced health checks (e.g. opening the status panel) */
 const MIN_HEALTH_CHECK_GAP_MS = 60000; // 1 minute
@@ -32,9 +28,6 @@ export const useHealthStore = create((set, get) => ({
   checkingHealth: false,
   historyLoaded: false,
   platformHistory: [],
-  healthPollSubscribers: 0,
-  healthPollTimerId: null,
-  healthPollApiKey: null,
 
   loadHistory: () => {
     if (get().historyLoaded) {
@@ -214,40 +207,6 @@ export const useHealthStore = create((set, get) => ({
     } finally {
       get().recordPlatformSnapshot();
       set({ checkingHealth: false });
-    }
-  },
-
-  startHealthPolling: (apiKey) => {
-    const { healthPollSubscribers, healthPollTimerId } = get();
-    set({ healthPollSubscribers: healthPollSubscribers + 1, healthPollApiKey: apiKey });
-
-    if (healthPollTimerId) {
-      return;
-    }
-
-    get().performHealthCheck(apiKey, { force: true });
-
-    const timerId = setInterval(() => {
-      if (selectIsPaused(usePollingPauseStore.getState())) {
-        return;
-      }
-      const { healthPollApiKey: storedKey } = get();
-      get().performHealthCheck(storedKey, { force: true });
-    }, HEALTH_CHECK_INTERVAL_MS);
-
-    set({ healthPollTimerId: timerId });
-  },
-
-  stopHealthPolling: () => {
-    const { healthPollSubscribers, healthPollTimerId } = get();
-    const next = Math.max(0, healthPollSubscribers - 1);
-    set({ healthPollSubscribers: next });
-    if (next > 0) {
-      return;
-    }
-    if (healthPollTimerId) {
-      clearInterval(healthPollTimerId);
-      set({ healthPollTimerId: null, healthPollApiKey: null });
     }
   },
 }));
