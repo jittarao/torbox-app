@@ -1,8 +1,30 @@
-import { describe, expect, test, mock, afterEach } from 'bun:test';
+import { describe, expect, test, mock, afterEach, afterAll } from 'bun:test';
+
+const realRequireTorboxApiKey = await import('@/app/api/lib/requireTorboxApiKey');
+const realDownloadProtectionGuard = await import('@/app/api/lib/downloadProtectionGuard');
+const realTorboxFetch = await import('@/app/api/lib/torboxFetch');
+const realConstants = await import('@/components/constants');
+
+const mockedApiModuleRestores = [
+  ['@/app/api/lib/requireTorboxApiKey', realRequireTorboxApiKey],
+  ['@/app/api/lib/downloadProtectionGuard', realDownloadProtectionGuard],
+  ['@/app/api/lib/torboxFetch', realTorboxFetch],
+  ['@/components/constants', realConstants],
+];
+
+function restoreMockedApiModules() {
+  for (const [modulePath, moduleExports] of mockedApiModuleRestores) {
+    mock.module(modulePath, () => moduleExports);
+  }
+}
 
 describe('POST /api/torrents/control protection', () => {
   afterEach(() => {
     mock.restore();
+  });
+
+  afterAll(() => {
+    restoreMockedApiModules();
   });
 
   test('blocks stop_seeding for protected download', async () => {
