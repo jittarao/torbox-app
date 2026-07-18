@@ -42,7 +42,8 @@
     "macOS": {
       "minimumSystemVersion": "10.15",
       "bundleName": "TorBox Manager",
-      "infoPlist": "./Info.plist"
+      "infoPlist": "./Info.plist",
+      "signingIdentity": "-"
     },
     "windows": {
       "webviewInstallMode": {

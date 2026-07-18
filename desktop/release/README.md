@@ -102,10 +102,11 @@ Production endpoint (when enabled): `https://github.com/jittarao/torbox-app/rele
 
 See [`signing-checklist.md`](./signing-checklist.md) for Apple and Windows credential setup.
 
-Until signing is enabled:
+Until Apple Developer ID signing + notarization is enabled:
 
+- `bundle.macOS.signingIdentity` is `"-"` (ad-hoc) so CI-built `.app` bundles are sealed and no longer show macOS’s misleading **“is damaged”** dialog on Apple Silicon
+- Users still need **right-click → Open** (or **Privacy & Security → Open Anyway**) the first time; double-click remains blocked without a Developer ID cert
 - `bundle.createUpdaterArtifacts` is `false` (no updater `.sig` / zip bundles)
-- macOS Gatekeeper may block unsigned `.dmg`
 - Windows SmartScreen may warn on unsigned `-setup.exe`
 - Auto-update install is disabled (`tauri.conf.json` → `plugins.updater.active: false`)
 - `latest.json` is skipped on release (no valid signatures)
