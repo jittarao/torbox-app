@@ -1,4 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach, mock } from 'bun:test';
+import { restoreDomGlobals } from '../../../test-setup-dom.js';
 
 function mockDesktopBridge(overrides = {}) {
   return {
@@ -35,7 +36,7 @@ function mockDesktopEvents() {
 describe('desktopStore', () => {
   afterEach(() => {
     mock.restore();
-    delete globalThis.window;
+    restoreDomGlobals();
   });
 
   beforeEach(() => {

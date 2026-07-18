@@ -1,5 +1,6 @@
 import { describe, expect, test, mock, afterEach, beforeEach } from 'bun:test';
 import { hasFeature } from '@/desktop/capabilities';
+import { restoreDomGlobals } from '../../../test-setup-dom.js';
 
 describe('hasFeature', () => {
   test('returns true when feature exists', () => {
@@ -34,7 +35,7 @@ describe('hasFeature', () => {
 describe('desktopBridge browser fallback', () => {
   afterEach(() => {
     mock.restore();
-    delete globalThis.window;
+    restoreDomGlobals();
   });
 
   beforeEach(() => {

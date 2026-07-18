@@ -22,15 +22,28 @@ function makeRequest(body, apiKey) {
   });
 }
 
+function mockMissingTorboxApiKey() {
+  mock.module('@/app/api/lib/requireTorboxApiKey', () => ({
+    requireTorboxApiKey: async () => ({
+      apiKey: null,
+      response: Response.json({ success: false, error: 'API key is required' }, { status: 401 }),
+    }),
+  }));
+}
+
+function mockTorboxApiKey(apiKey = 'test-key') {
+  mock.module('@/app/api/lib/requireTorboxApiKey', () => ({
+    requireTorboxApiKey: async () => ({ apiKey, response: null }),
+  }));
+}
+
 describe('PUT /api/downloads/airlock', () => {
   afterEach(() => {
     mock.restore();
   });
 
   test('returns 401 when API key is missing', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers(),
-    }));
+    mockMissingTorboxApiKey();
     const { PUT } = await import('../route.js');
 
     const response = await PUT(makeRequest({ assetType: 'torrent', id: 1, airlocked: true }));
@@ -40,9 +53,7 @@ describe('PUT /api/downloads/airlock', () => {
   });
 
   test('returns 400 for invalid request body', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
     const { PUT } = await import('../route.js');
 
     const response = await PUT(
@@ -62,9 +73,7 @@ describe('PUT /api/downloads/airlock', () => {
   });
 
   test('returns 400 when download is queued', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
     mock.module('@/components/constants', () => ({
       API_BASE,
       API_VERSION,
@@ -90,9 +99,7 @@ describe('PUT /api/downloads/airlock', () => {
   });
 
   test('returns 404 when download is not in mylist', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
     mock.module('@/components/constants', () => ({
       API_BASE,
       API_VERSION,
@@ -116,9 +123,7 @@ describe('PUT /api/downloads/airlock', () => {
   });
 
   test('returns upstream list error status', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
     mock.module('@/components/constants', () => ({
       API_BASE,
       API_VERSION,
@@ -142,9 +147,7 @@ describe('PUT /api/downloads/airlock', () => {
   });
 
   test('returns 502 when list body reports success false with HTTP 200', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
     mock.module('@/components/constants', () => ({
       API_BASE,
       API_VERSION,
@@ -169,9 +172,7 @@ describe('PUT /api/downloads/airlock', () => {
 
   test('fetches current item and forwards preserved edit payload', async () => {
     const editBodies = [];
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
     mock.module('@/components/constants', () => ({
       API_BASE,
       API_VERSION,
@@ -218,9 +219,7 @@ describe('PUT /api/downloads/airlock', () => {
   });
 
   test('maps upstream AIRLOCK_LIMIT_REACHED to 422 with preserved detail', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
     mock.module('@/components/constants', () => ({
       API_BASE,
       API_VERSION,
@@ -261,9 +260,7 @@ describe('PUT /api/downloads/airlock', () => {
   });
 
   test('returns 408 on TorBox fetch timeout', async () => {
-    mock.module('next/headers', () => ({
-      headers: () => new Headers({ 'x-api-key': 'test-key' }),
-    }));
+    mockTorboxApiKey();
     mock.module('@/components/constants', () => ({
       API_BASE,
       API_VERSION,

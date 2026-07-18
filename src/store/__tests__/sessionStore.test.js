@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach, mock } from 'bun:test';
+import { describe, expect, test, beforeEach, afterEach, afterAll, mock } from 'bun:test';
 
 function mockStoreWithSetApiKey(realStore) {
   const realGetState = realStore.getState.bind(realStore);
@@ -13,6 +13,26 @@ function mockStoreWithSetApiKey(realStore) {
 }
 
 const { useNotificationsStore: realNotificationsStore } = await import('../notificationsStore.js');
+const realTagsStore = await import('../tagsStore.js');
+const realDownloadTagsStore = await import('../downloadTagsStore.js');
+const realProtectedDownloadsStore = await import('../protectedDownloadsStore.js');
+const realCustomViewsStore = await import('../customViewsStore.js');
+const realAutomationRulesStore = await import('../automationRulesStore.js');
+const realHealthStore = await import('../healthStore.js');
+const realRssStore = await import('../rssStore.js');
+const realUserProfile = await import('@/utils/userProfile');
+
+const mockedModuleRestores = [
+  ['@/store/tagsStore', realTagsStore],
+  ['@/store/downloadTagsStore', realDownloadTagsStore],
+  ['@/store/protectedDownloadsStore', realProtectedDownloadsStore],
+  ['@/store/customViewsStore', realCustomViewsStore],
+  ['@/store/automationRulesStore', realAutomationRulesStore],
+  ['@/store/notificationsStore', { useNotificationsStore: realNotificationsStore }],
+  ['@/store/healthStore', realHealthStore],
+  ['@/store/rssStore', realRssStore],
+  ['@/utils/userProfile', realUserProfile],
+];
 
 function applySessionStoreMocks() {
   mock.module('@/store/tagsStore', () => ({
@@ -45,6 +65,12 @@ function applySessionStoreMocks() {
   }));
 }
 
+function restoreSessionStoreMocks() {
+  for (const [modulePath, moduleExports] of mockedModuleRestores) {
+    mock.module(modulePath, () => moduleExports);
+  }
+}
+
 describe('sessionStore', () => {
   let useSessionStore;
 
@@ -61,6 +87,10 @@ describe('sessionStore', () => {
 
   afterEach(() => {
     mock.restore();
+  });
+
+  afterAll(() => {
+    restoreSessionStoreMocks();
   });
 
   test('setApiKey rejects invalid keys', () => {
