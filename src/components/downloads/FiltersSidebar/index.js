@@ -14,6 +14,7 @@ import SidebarSectionSkeleton from './SidebarSectionSkeleton';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 import useFiltersSidebarSectionsCollapsed from './useFiltersSidebarSectionsCollapsed';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAppAlert } from '@/hooks/useAppAlert';
 
 function SectionChevron({ expanded, className = '' }) {
   return (
@@ -262,6 +263,7 @@ export default function FiltersSidebar({
 }) {
   const t = useTranslations('DownloadsFilters');
   const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+  const { alert, AppAlert } = useAppAlert();
   const deleteViewStore = useCustomViewsStore((s) => s.deleteView);
   const deleteTagStore = useTagsStore((s) => s.deleteTag);
   const isFixed = variant === 'fixed';
@@ -323,7 +325,7 @@ export default function FiltersSidebar({
         alert(t('deleteViewFailed', { error: error.message }));
       }
     },
-    [apiKey, deleteViewStore, activeViewIds, onClearView, t, confirm]
+    [apiKey, deleteViewStore, activeViewIds, onClearView, t, confirm, alert]
   );
 
   const handleToggleViewsSortMode = useCallback(() => {
@@ -351,7 +353,7 @@ export default function FiltersSidebar({
         alert(t('deleteTagFailed', { error: error.message }));
       }
     },
-    [apiKey, deleteTagStore, onDeleteTag, t, confirm]
+    [apiKey, deleteTagStore, onDeleteTag, t, confirm, alert]
   );
 
   if (isFixed && collapsed && onToggleCollapsed) {
@@ -365,6 +367,7 @@ export default function FiltersSidebar({
           <FiltersSidebarHeader collapsed compact onToggle={onToggleCollapsed} />
         </aside>
         <ConfirmDialog />
+        <AppAlert />
       </>
     );
   }
@@ -581,6 +584,7 @@ export default function FiltersSidebar({
         </div>
       </aside>
       <ConfirmDialog />
+      <AppAlert />
     </>
   );
 }

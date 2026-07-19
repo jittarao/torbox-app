@@ -619,7 +619,7 @@ export function useDownloadsFilters({
     try {
       await updateView(view.id, { name: newName.trim() });
     } catch (error) {
-      alert(`Failed to rename view: ${error.message}`);
+      setToast({ message: `Failed to rename view: ${error.message}`, type: 'error' });
     }
   };
 
@@ -629,7 +629,7 @@ export function useDownloadsFilters({
     try {
       await updateTagName(tag.id, newName.trim());
     } catch (error) {
-      alert(`Failed to rename tag: ${error.message}`);
+      setToast({ message: `Failed to rename tag: ${error.message}`, type: 'error' });
     }
   };
 

@@ -13,6 +13,7 @@ import Pagination from './components/Pagination';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAppAlert } from '@/hooks/useAppAlert';
 
 const LinkHistory = ({ apiKey }) => {
   const t = useTranslations('Common');
@@ -41,6 +42,7 @@ const LinkHistory = ({ apiKey }) => {
   );
 
   const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+  const { alert, AppAlert } = useAppAlert();
 
   const {
     deleting,
@@ -51,7 +53,7 @@ const LinkHistory = ({ apiKey }) => {
     handleBulkDelete,
     handleCopy,
     handleBulkCopy,
-  } = useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks, confirm);
+  } = useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks, confirm, alert);
 
   const getLinkRowId = useCallback((item) => item.id, []);
   const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(history, getLinkRowId);
@@ -204,6 +206,7 @@ const LinkHistory = ({ apiKey }) => {
         </>
       )}
       <ConfirmDialog />
+      <AppAlert />
     </>
   );
 };

@@ -25,6 +25,7 @@ import { Refresh, RotateCcw, Trash, XCircle } from '@/components/icons';
 import { normalizeUploadId } from './utils';
 import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAppAlert } from '@/hooks/useAppAlert';
 
 export default function UploadManager({ apiKey }) {
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
@@ -57,6 +58,7 @@ export default function UploadManager({ apiKey }) {
   } = useUploads(apiKey, activeTab, filters, pagination, setPagination);
 
   const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+  const { alert, AppAlert } = useAppAlert();
 
   const {
     retrying,
@@ -74,7 +76,7 @@ export default function UploadManager({ apiKey }) {
     handleBulkRetry,
     handleClearAllFailed,
     handleDragEnd,
-  } = useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirm);
+  } = useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirm, alert);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -283,6 +285,7 @@ export default function UploadManager({ apiKey }) {
       )}
 
       <ConfirmDialog />
+      <AppAlert />
     </div>
   );
 }

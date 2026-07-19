@@ -6,12 +6,14 @@ import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 import { AdminBadge, AdminCard, AdminLoading, AdminStatRow } from './AdminUi';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAppAlert } from '@/hooks/useAppAlert';
 
 export default function UserDetail({ user }) {
   const [databaseInfo, setDatabaseInfo] = useState(null);
   const [automationInfo, setAutomationInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+  const { alert, AppAlert } = useAppAlert();
   const { updateUserStatus, updateUserUploadTier } = useAdminStore(
     useShallow((s) => ({
       updateUserStatus: s.updateUserStatus,
@@ -199,6 +201,7 @@ export default function UserDetail({ user }) {
         </AdminCard>
       ) : null}
       <ConfirmDialog />
+      <AppAlert />
     </div>
   );
 }
