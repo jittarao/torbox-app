@@ -8,7 +8,13 @@ function idsFromSelection(selectedUploads) {
     .filter((id) => id !== null);
 }
 
-export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads) {
+export function useUploadActions(
+  apiKey,
+  fetchUploads,
+  fetchStatusCounts,
+  setSelectedUploads,
+  confirmAction
+) {
   const [retrying, setRetrying] = useState(new Set());
   const [deleting, setDeleting] = useState(new Set());
   const [downloading, setDownloading] = useState(new Set());
@@ -58,10 +64,14 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
   const handleDelete = useCallback(
     async (id) => {
       const uploadId = normalizeUploadId(id);
+      if (uploadId == null || deleting.has(uploadId)) {
+        return;
+      }
+
       if (
-        uploadId == null ||
-        deleting.has(uploadId) ||
-        !confirm('Are you sure you want to delete this upload?')
+        !(await confirmAction('Are you sure you want to delete this upload?', {
+          confirmLabel: 'Delete',
+        }))
       ) {
         return;
       }
@@ -101,7 +111,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
         });
       }
     },
-    [apiKey, deleting, fetchUploads, fetchStatusCounts, setSelectedUploads]
+    [apiKey, deleting, fetchUploads, fetchStatusCounts, setSelectedUploads, confirmAction]
   );
 
   const handleDownload = useCallback(
@@ -188,7 +198,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
         return;
       }
 
-      if (!confirm(confirmMessage)) {
+      if (!(await confirmAction(confirmMessage, { confirmLabel: 'Delete' }))) {
         return;
       }
 
@@ -220,7 +230,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
         setBulkDeleting(false);
       }
     },
-    [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads]
+    [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirmAction]
   );
 
   const handleBulkDelete = useCallback(
@@ -304,9 +314,10 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
 
       const count = failedUploads.length;
       if (
-        !confirm(
-          `Retry ${count} failed upload${count > 1 ? 's' : ''}? They will be added back to the queue.`
-        )
+        !(await confirmAction(
+          `Retry ${count} failed upload${count > 1 ? 's' : ''}? They will be added back to the queue.`,
+          { confirmLabel: 'Retry', confirmVariant: 'primary' }
+        ))
       ) {
         return;
       }
@@ -346,7 +357,7 @@ export function useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSel
         setBulkRetrying(false);
       }
     },
-    [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads]
+    [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirmAction]
   );
 
   const handleDragEnd = useCallback(

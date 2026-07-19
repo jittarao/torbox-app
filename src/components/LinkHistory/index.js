@@ -12,6 +12,7 @@ import LinkHistoryTable from './components/LinkHistoryTable';
 import Pagination from './components/Pagination';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 const LinkHistory = ({ apiKey }) => {
   const t = useTranslations('Common');
@@ -39,6 +40,8 @@ const LinkHistory = ({ apiKey }) => {
     search
   );
 
+  const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+
   const {
     deleting,
     bulkDeleting,
@@ -48,7 +51,7 @@ const LinkHistory = ({ apiKey }) => {
     handleBulkDelete,
     handleCopy,
     handleBulkCopy,
-  } = useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks);
+  } = useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks, confirm);
 
   const getLinkRowId = useCallback((item) => item.id, []);
   const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(history, getLinkRowId);
@@ -200,6 +203,7 @@ const LinkHistory = ({ apiKey }) => {
           )}
         </>
       )}
+      <ConfirmDialog />
     </>
   );
 };

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 import adminApiClient from '@/utils/adminApiClient';
-import ConfirmButton from '@/components/shared/ConfirmButton';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import {
   AdminBadge,
   AdminCard,
@@ -74,10 +74,15 @@ export default function UserList({
   const [deleting, setDeleting] = useState(null);
   const [reactivating, setReactivating] = useState(false);
   const [searchValue, setSearchValue] = useState(filters?.search || '');
+  const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
 
   const handleDelete = async (authId, e) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    if (
+      !(await confirm('Are you sure you want to delete this user? This action cannot be undone.', {
+        confirmLabel: 'Delete',
+      }))
+    ) {
       return;
     }
 
@@ -114,9 +119,10 @@ export default function UserList({
 
   const handleReactivateAllInactive = async () => {
     if (
-      !confirm(
-        'Reactivate all inactive API keys? This will set is_active = 1 and status = active for every user with an inactive key.'
-      )
+      !(await confirm(
+        'Reactivate all inactive API keys? This will set is_active = 1 and status = active for every user with an inactive key.',
+        { confirmLabel: 'Reactivate', confirmVariant: 'primary' }
+      ))
     ) {
       return;
     }
@@ -435,14 +441,14 @@ export default function UserList({
                           >
                             {user.status === 'active' ? 'Disable' : 'Enable'}
                           </button>
-                          <ConfirmButton
-                            onConfirm={(e) => handleDelete(user.auth_id, e)}
-                            confirmText="Delete"
-                            className="text-xs font-medium text-label-danger-text hover:underline dark:text-label-danger-text-dark"
+                          <button
+                            type="button"
+                            onClick={(e) => handleDelete(user.auth_id, e)}
+                            className="text-xs font-medium text-label-danger-text hover:underline disabled:opacity-50 dark:text-label-danger-text-dark"
                             disabled={deleting === user.auth_id}
                           >
                             {deleting === user.auth_id ? 'Deleting…' : 'Delete'}
-                          </ConfirmButton>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -490,6 +496,7 @@ export default function UserList({
           </div>
         )}
       </div>
+      <ConfirmDialog />
     </div>
   );
 }

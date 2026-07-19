@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import adminApiClient from '@/utils/adminApiClient';
 import { AdminAlert, AdminBadge, AdminCard, AdminStatRow } from './AdminUi';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export default function SystemHealth({ metrics, onRefresh }) {
   const [syncing, setSyncing] = useState(false);
@@ -10,6 +11,7 @@ export default function SystemHealth({ metrics, onRefresh }) {
   const [quotaSummary, setQuotaSummary] = useState(null);
   const [quotaEnforcing, setQuotaEnforcing] = useState(false);
   const [quotaMessage, setQuotaMessage] = useState(null);
+  const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
 
   const loadQuotaSummary = async () => {
     try {
@@ -30,14 +32,15 @@ export default function SystemHealth({ metrics, onRefresh }) {
     const storageLimit = quotaSummary?.limit_storage_formatted ?? '—';
     const fileLimit = limits?.maxFiles ?? '—';
 
-    const confirmed = window.confirm(
+    const confirmed = await confirm(
       `Enforce upload quotas for LIMITED users over limits?\n\n` +
         `This hard-deletes oldest completed/failed staged files (and their upload log rows) ` +
         `until each affected user is within ${storageLimit} and ${fileLimit} files.\n\n` +
         `Queued/processing uploads are never removed.\n` +
         `UNLIMITED users are skipped.\n\n` +
         `Users currently over quota: ${over}\n\n` +
-        `Set tiers under Admin → Users before running this if heavy users should be exempt.`
+        `Set tiers under Admin → Users before running this if heavy users should be exempt.`,
+      { confirmLabel: 'Enforce', confirmVariant: 'danger', title: 'Enforce upload quotas' }
     );
     if (!confirmed) return;
 
@@ -209,6 +212,7 @@ export default function SystemHealth({ metrics, onRefresh }) {
           </div>
         </AdminCard>
       ) : null}
+      <ConfirmDialog />
     </div>
   );
 }
