@@ -129,6 +129,7 @@
     "Common.time.s": "s",
     "Desktop.appVersion": "Version",
     "Desktop.nativeNotifications.title": "Notifications",
+    "Desktop.tabs.notifications": "Notifications",
     "DownloadsFilters.activeSources": "{count, plural, one {# source} other {# sources}}",
     "DownloadsFilters.activeTrackers": "{count, plural, one {# tracker} other {# trackers}}",
     "DownloadsFilters.sourcesSection": "Source",

@@ -1,28 +1,37 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/navigation';
 import { useDesktopCapabilities } from '@/desktop/useDesktopCapabilities';
 import { useDesktopStore } from '@/store/desktopStore';
-import { hasFeature } from '@/desktop/capabilities';
-import type { FolderWatcherConfig } from '@/desktop/capabilities';
+import {
+  folderWatcherSupportsMultiRule,
+  hasFeature,
+  type FolderWatcherConfig,
+  type WatchRule,
+} from '@/desktop/capabilities';
 import { DesktopInfoCallout } from '@/components/desktop/DesktopUi';
 import DesktopFolderWatcherPanelContent from '@/components/desktop/DesktopFolderWatcherPanelContent';
 
-const DEFAULT_WATCHER_CONFIG: FolderWatcherConfig = {
-  enabled: false,
-  watchPath: null,
-  postUploadAction: 'moveToUploaded',
-  customMovePath: null,
-  torrentOptions: {
-    seed: 1,
-    allowZip: true,
-    asQueued: false,
-    addOnlyIfCached: false,
-  },
-  scanExistingOnEnable: false,
-  stableFileMs: 2000,
+export function createDefaultWatchRule(): WatchRule {
+  return {
+    id: crypto.randomUUID(),
+    enabled: false,
+    watchPath: null,
+    postUploadAction: 'moveToUploaded',
+    customMovePath: null,
+    torrentOptions: {
+      seed: 1,
+      allowZip: true,
+      asQueued: false,
+      addOnlyIfCached: false,
+    },
+    scanExistingOnEnable: false,
+  };
+}
+
+export const DEFAULT_WATCHER_CONFIG: FolderWatcherConfig = {
+  rules: [],
 };
 
 type DesktopFolderWatcherPanelProps = {
@@ -39,7 +48,6 @@ export default function DesktopFolderWatcherPanel({
   embedded = false,
 }: DesktopFolderWatcherPanelProps) {
   const t = useTranslations('Desktop.folderWatcher');
-  const router = useRouter();
   const { capabilities } = useDesktopCapabilities();
   const watcherConfig = useDesktopStore((state) => state.watcherConfig);
   const watcherStatus = useDesktopStore((state) => state.watcherStatus);
@@ -51,53 +59,23 @@ export default function DesktopFolderWatcherPanel({
 
   const [draft, setDraft] = useState<FolderWatcherConfig>(DEFAULT_WATCHER_CONFIG);
   const [saving, setSaving] = useState(false);
-  const [pickingWatchFolder, setPickingWatchFolder] = useState(false);
-  const [pickingMoveFolder, setPickingMoveFolder] = useState(false);
-  const [showScanConfirm, setShowScanConfirm] = useState(false);
-  const [showChangeFolderConfirm, setShowChangeFolderConfirm] = useState(false);
+  const [pickingWatchRuleId, setPickingWatchRuleId] = useState<string | null>(null);
+  const [pickingMoveRuleId, setPickingMoveRuleId] = useState<string | null>(null);
+  const [scanConfirmRuleId, setScanConfirmRuleId] = useState<string | null>(null);
+  const [changeFolderRuleId, setChangeFolderRuleId] = useState<string | null>(null);
   const [stopping, setStopping] = useState(false);
 
   const canUseWatcher = hasFeature(capabilities, 'folderWatcher');
+  const supportsMultiRule = folderWatcherSupportsMultiRule(capabilities);
   const canPickFolder = hasFeature(capabilities, 'folderPicker');
   const canUpload = hasFeature(capabilities, 'backgroundUploads');
+  const maxRules = capabilities?.features?.folderWatcher?.maxRules ?? 10;
 
   useEffect(() => {
     if (watcherConfig) {
       setDraft(watcherConfig);
     }
   }, [watcherConfig]);
-
-  const uploadedPreview = useMemo(() => {
-    if (!draft.watchPath) {
-      return null;
-    }
-    return `${draft.watchPath.replace(/\/$/, '')}/uploaded`;
-  }, [draft.watchPath]);
-
-  const hasUnsavedChanges = useMemo(() => {
-    if (!watcherConfig) {
-      return false;
-    }
-    return JSON.stringify(draft) !== JSON.stringify(watcherConfig);
-  }, [draft, watcherConfig]);
-
-  const formatActivityResult = useCallback(
-    (result: string) => {
-      switch (result) {
-        case 'success':
-          return t('activitySuccess');
-        case 'failed':
-          return t('activityFailed');
-        case 'retry':
-          return t('activityRetry');
-        case 'uploaded_move_failed':
-          return t('activityMoveFailed');
-        default:
-          return result;
-      }
-    },
-    [t]
-  );
 
   const notify = useCallback(
     (message: string, type: 'success' | 'error') => {
@@ -106,16 +84,14 @@ export default function DesktopFolderWatcherPanel({
     [setToast]
   );
 
-  const updateDraft = useCallback((partial: Partial<FolderWatcherConfig>) => {
-    setDraft((current) => ({ ...current, ...partial }));
-  }, []);
-
-  const handleSave = useCallback(
+  const persistDraft = useCallback(
     async (nextDraft: FolderWatcherConfig) => {
       setSaving(true);
       try {
         const ok = await saveWatcherConfig(nextDraft);
-        notify(ok ? t('saveSuccess') : t('saveFailed'), ok ? 'success' : 'error');
+        if (!ok) {
+          notify(t('saveFailed'), 'error');
+        }
       } catch (error) {
         notify(error instanceof Error ? error.message : t('saveFailed'), 'error');
       } finally {
@@ -125,116 +101,189 @@ export default function DesktopFolderWatcherPanel({
     [notify, saveWatcherConfig, t]
   );
 
-  const pickWatchFolder = useCallback(async () => {
-    setPickingWatchFolder(true);
-    try {
-      const path = await pickFolder();
-      if (path) {
-        const nextDraft = { ...draft, watchPath: path };
-        setDraft(nextDraft);
-        await handleSave(nextDraft);
-      }
-    } catch (error) {
-      notify(error instanceof Error ? error.message : t('pickFolderFailed'), 'error');
-    } finally {
-      setPickingWatchFolder(false);
-    }
-  }, [draft, handleSave, notify, pickFolder, t]);
+  const updateRule = useCallback(
+    async (ruleId: string, partial: Partial<WatchRule>) => {
+      const nextDraft = {
+        rules: draft.rules.map((rule) => (rule.id === ruleId ? { ...rule, ...partial } : rule)),
+      };
+      setDraft(nextDraft);
+      await persistDraft(nextDraft);
+    },
+    [draft.rules, persistDraft]
+  );
 
-  const handlePickWatchFolder = useCallback(async () => {
-    if (watcherStatus?.running) {
-      setShowChangeFolderConfirm(true);
+  const removeRule = useCallback(
+    async (ruleId: string) => {
+      const nextDraft = {
+        rules: draft.rules.filter((rule) => rule.id !== ruleId),
+      };
+      setDraft(nextDraft);
+      await persistDraft(nextDraft);
+    },
+    [draft.rules, persistDraft]
+  );
+
+  const addRule = useCallback(async () => {
+    if (draft.rules.length >= maxRules) {
       return;
     }
-    await pickWatchFolder();
-  }, [pickWatchFolder, watcherStatus?.running]);
+    const nextDraft = {
+      rules: [...draft.rules, createDefaultWatchRule()],
+    };
+    setDraft(nextDraft);
+    await persistDraft(nextDraft);
+  }, [draft.rules, maxRules, persistDraft]);
+
+  const pickWatchFolderForRule = useCallback(
+    async (ruleId: string) => {
+      setPickingWatchRuleId(ruleId);
+      try {
+        const path = await pickFolder();
+        if (path) {
+          const nextDraft = {
+            ...draft,
+            rules: draft.rules.map((rule) =>
+              rule.id === ruleId ? { ...rule, watchPath: path } : rule
+            ),
+          };
+          setDraft(nextDraft);
+          await persistDraft(nextDraft);
+        }
+      } catch (error) {
+        notify(error instanceof Error ? error.message : t('pickFolderFailed'), 'error');
+      } finally {
+        setPickingWatchRuleId(null);
+      }
+    },
+    [draft, notify, persistDraft, pickFolder, t]
+  );
+
+  const handlePickWatchFolder = useCallback(
+    async (ruleId: string) => {
+      const ruleStatus = watcherStatus?.rules.find((rule) => rule.ruleId === ruleId);
+      if (ruleStatus?.active) {
+        setChangeFolderRuleId(ruleId);
+        return;
+      }
+      await pickWatchFolderForRule(ruleId);
+    },
+    [pickWatchFolderForRule, watcherStatus?.rules]
+  );
 
   const confirmChangeFolderWhileRunning = useCallback(async () => {
-    setShowChangeFolderConfirm(false);
+    const ruleId = changeFolderRuleId;
+    if (!ruleId) {
+      return;
+    }
+    setChangeFolderRuleId(null);
     setSaving(true);
     try {
-      await stopWatcher();
-      const nextDraft = { ...draft, enabled: false };
+      const nextDraft = {
+        ...draft,
+        rules: draft.rules.map((rule) => (rule.id === ruleId ? { ...rule, enabled: false } : rule)),
+      };
       setDraft(nextDraft);
       const ok = await saveWatcherConfig(nextDraft);
       if (!ok) {
         notify(t('saveFailed'), 'error');
         return;
       }
-      await pickWatchFolder();
+      await pickWatchFolderForRule(ruleId);
     } catch (error) {
       notify(error instanceof Error ? error.message : t('saveFailed'), 'error');
     } finally {
       setSaving(false);
     }
-  }, [draft, notify, pickWatchFolder, saveWatcherConfig, stopWatcher, t]);
+  }, [changeFolderRuleId, draft, notify, pickWatchFolderForRule, saveWatcherConfig, t]);
 
-  const handlePickMoveFolder = useCallback(async () => {
-    setPickingMoveFolder(true);
-    try {
-      const path = await pickMoveDestinationFolder();
-      if (path) {
-        updateDraft({ customMovePath: path, postUploadAction: 'moveToCustom' });
+  const handlePickMoveFolder = useCallback(
+    async (ruleId: string) => {
+      setPickingMoveRuleId(ruleId);
+      try {
+        const path = await pickMoveDestinationFolder();
+        if (path) {
+          await updateRule(ruleId, { customMovePath: path, postUploadAction: 'moveToCustom' });
+        }
+      } catch (error) {
+        notify(error instanceof Error ? error.message : t('pickFolderFailed'), 'error');
+      } finally {
+        setPickingMoveRuleId(null);
       }
-    } catch (error) {
-      notify(error instanceof Error ? error.message : t('pickFolderFailed'), 'error');
-    } finally {
-      setPickingMoveFolder(false);
-    }
-  }, [notify, pickMoveDestinationFolder, t, updateDraft]);
+    },
+    [notify, pickMoveDestinationFolder, t, updateRule]
+  );
 
   const handleEnabledChange = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
+    async (ruleId: string, event: React.ChangeEvent<HTMLInputElement>) => {
       const enabling = event.target.checked;
+      const rule = draft.rules.find((entry) => entry.id === ruleId);
+      if (!rule) {
+        return;
+      }
 
       if (enabling) {
         if (!hasCredential) {
           notify(t('credentialRequired'), 'error');
           return;
         }
-        if (!draft.watchPath) {
+        if (!rule.watchPath) {
           notify(t('watchFolderRequired'), 'error');
           return;
         }
-        if (draft.postUploadAction === 'moveToCustom' && !draft.customMovePath) {
+        if (rule.postUploadAction === 'moveToCustom' && !rule.customMovePath) {
           notify(t('customMovePathRequired'), 'error');
           return;
         }
       }
 
-      const nextDraft = { ...draft, enabled: enabling };
+      const nextRule = { ...rule, enabled: enabling };
 
-      if (enabling && nextDraft.scanExistingOnEnable) {
-        setShowScanConfirm(true);
+      if (enabling && nextRule.scanExistingOnEnable) {
+        setScanConfirmRuleId(ruleId);
         return;
       }
 
+      const nextDraft = {
+        ...draft,
+        rules: draft.rules.map((entry) => (entry.id === ruleId ? nextRule : entry)),
+      };
       setDraft(nextDraft);
-      await handleSave(nextDraft);
+      await persistDraft(nextDraft);
     },
-    [draft, handleSave, hasCredential, notify, t]
+    [draft, hasCredential, notify, persistDraft, t]
   );
 
   const confirmEnableWithScan = useCallback(async () => {
-    const nextDraft = { ...draft, enabled: true };
-    setShowScanConfirm(false);
+    const ruleId = scanConfirmRuleId;
+    if (!ruleId) {
+      return;
+    }
+    setScanConfirmRuleId(null);
+    const nextDraft = {
+      ...draft,
+      rules: draft.rules.map((rule) => (rule.id === ruleId ? { ...rule, enabled: true } : rule)),
+    };
     setDraft(nextDraft);
-    await handleSave(nextDraft);
-  }, [draft, handleSave]);
+    await persistDraft(nextDraft);
+  }, [draft, persistDraft, scanConfirmRuleId]);
 
   const handleStart = useCallback(async () => {
     if (!hasCredential) {
       notify(t('credentialRequired'), 'error');
       return;
     }
+    if (!draft.rules.some((rule) => rule.enabled && rule.watchPath)) {
+      notify(t('watchFolderRequired'), 'error');
+      return;
+    }
     try {
-      const scanExisting = draft.scanExistingOnEnable;
+      const scanExisting = draft.rules.some((rule) => rule.enabled && rule.scanExistingOnEnable);
       const ok = await startWatcher(scanExisting);
       notify(ok ? t('startSuccess') : t('startFailed'), ok ? 'success' : 'error');
     } catch (error) {
       notify(error instanceof Error ? error.message : t('startFailed'), 'error');
     }
-  }, [draft.scanExistingOnEnable, hasCredential, notify, startWatcher, t]);
+  }, [draft.rules, hasCredential, notify, startWatcher, t]);
 
   const handleStop = useCallback(async () => {
     setStopping(true);
@@ -248,11 +297,12 @@ export default function DesktopFolderWatcherPanel({
     }
   }, [notify, stopWatcher, t]);
 
-  if (!canUseWatcher || !canPickFolder || !canUpload) {
+  if (!canUseWatcher || !canPickFolder || !canUpload || !supportsMultiRule) {
     return <DesktopInfoCallout variant="warning">{t('updateDesktopApp')}</DesktopInfoCallout>;
   }
 
   const isRunning = Boolean(watcherStatus?.running);
+  const canAddRule = draft.rules.length < maxRules;
 
   const content = (
     <DesktopFolderWatcherPanelContent
@@ -260,39 +310,30 @@ export default function DesktopFolderWatcherPanel({
       hasCredential={hasCredential}
       draft={draft}
       watcherStatus={watcherStatus}
-      uploadedPreview={uploadedPreview}
-      hasUnsavedChanges={hasUnsavedChanges}
       isRunning={isRunning}
       saving={saving}
       stopping={stopping}
-      pickingWatchFolder={pickingWatchFolder}
-      pickingMoveFolder={pickingMoveFolder}
-      showScanConfirm={showScanConfirm}
-      showChangeFolderConfirm={showChangeFolderConfirm}
+      canAddRule={canAddRule}
+      maxRules={maxRules}
+      pickingWatchRuleId={pickingWatchRuleId}
+      pickingMoveRuleId={pickingMoveRuleId}
+      scanConfirmRuleId={scanConfirmRuleId}
+      changeFolderRuleId={changeFolderRuleId}
       t={t}
-      formatActivityResult={formatActivityResult}
-      updateDraft={updateDraft}
+      onAddRule={addRule}
+      onRemoveRule={removeRule}
+      onUpdateRule={updateRule}
       onPickWatchFolder={handlePickWatchFolder}
       onPickMoveFolder={handlePickMoveFolder}
       onEnabledChange={handleEnabledChange}
-      onSave={handleSave}
       onStart={handleStart}
       onStop={handleStop}
-      onOpenUploads={() => router.push('/uploads')}
-      onCloseScanConfirm={() => setShowScanConfirm(false)}
+      onCloseScanConfirm={() => setScanConfirmRuleId(null)}
       onConfirmEnableWithScan={confirmEnableWithScan}
-      onCloseChangeFolderConfirm={() => setShowChangeFolderConfirm(false)}
+      onCloseChangeFolderConfirm={() => setChangeFolderRuleId(null)}
       onConfirmChangeFolderWhileRunning={confirmChangeFolderWhileRunning}
     />
   );
-
-  if (embedded) {
-    return (
-      <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark">
-        <div className="space-y-4 p-4 sm:p-5">{content}</div>
-      </div>
-    );
-  }
 
   return content;
 }

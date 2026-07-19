@@ -83,6 +83,7 @@ type DesktopToggleProps = {
   label: string;
   description?: string;
   busy?: boolean;
+  compact?: boolean;
 };
 
 export function DesktopToggle({
@@ -93,23 +94,34 @@ export function DesktopToggle({
   label,
   description,
   busy = false,
+  compact = false,
 }: DesktopToggleProps) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0 flex-1">
-        <label htmlFor={id} className="text-sm font-medium text-text dark:text-text-dark">
+    <div
+      className={
+        compact ? 'flex shrink-0 items-center gap-2' : 'flex items-start justify-between gap-4'
+      }
+    >
+      {compact ? (
+        <label htmlFor={id} className="sr-only">
           {label}
         </label>
-        {description ? (
-          <p
-            id={`${id}-description`}
-            className="mt-1 text-xs leading-relaxed text-muted dark:text-muted-dark"
-          >
-            {description}
-          </p>
-        ) : null}
-      </div>
-      <div className="flex shrink-0 items-center gap-2 pt-0.5">
+      ) : (
+        <div className="min-w-0 flex-1">
+          <label htmlFor={id} className="text-sm font-medium text-text dark:text-text-dark">
+            {label}
+          </label>
+          {description ? (
+            <p
+              id={`${id}-description`}
+              className="mt-1 text-xs leading-relaxed text-muted dark:text-muted-dark"
+            >
+              {description}
+            </p>
+          ) : null}
+        </div>
+      )}
+      <div className={`flex shrink-0 items-center gap-2 ${compact ? '' : 'pt-0.5'}`}>
         {busy ? (
           <span
             className="size-4 animate-spin rounded-full border-2 border-border border-t-accent dark:border-border-dark dark:border-t-accent-dark"

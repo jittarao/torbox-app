@@ -7,18 +7,16 @@ pub const DEFAULT_DESKTOP_SETTINGS_PATH: &str = "/en/desktop";
 pub const PROTOCOL_VERSION: u32 = 1;
 pub const MINIMUM_SUPPORTED_WEB_BRIDGE_VERSION: u32 = 1;
 pub const MAX_TORRENT_FILE_BYTES: u64 = 10_485_760;
-pub const DEFAULT_STABLE_FILE_MS: u64 = 2000;
+/// How long a watched file must stop changing before upload (not user-configurable).
+pub const STABLE_FILE_MS: u64 = 2000;
 pub const WATCHER_PROCESSED_RETENTION_DAYS: i64 = 30;
 pub const WATCHER_MAX_RETRIES: u32 = 3;
 pub const WATCHER_RATE_LIMIT_MAX_RETRIES: u32 = 10;
-pub const WATCHER_ACTIVITY_LOG_LIMIT: usize = 10;
+pub const MAX_WATCH_RULES: usize = 10;
 /// Idle delay after the last watch-folder event before flushing a batch.
 pub const WATCHER_BATCH_COALESCE_MS: u64 = 1500;
 /// Short follow-up delay when more than one batch worth of paths remain pending.
 pub const WATCHER_BATCH_DRAIN_MS: u64 = 100;
-pub const MIN_STABLE_FILE_MS: u64 = 500;
-pub const MAX_STABLE_FILE_MS: u64 = 60_000;
-
 pub const MIN_WINDOW_WIDTH: u32 = 900;
 pub const MIN_WINDOW_HEIGHT: u32 = 600;
 

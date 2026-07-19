@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::constants::WATCHER_PROCESSED_RETENTION_DAYS;
 use crate::constants::MAX_TORRENT_FILE_BYTES;
 use crate::services::atomic_json::write_atomic;
-use crate::services::settings::{FolderWatcherConfig, PostUploadAction};
+use crate::services::settings::{PostUploadAction, WatchRule};
 use crate::services::watcher_paths::{unique_destination_path, uploaded_subdir};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,16 +98,16 @@ impl ProcessedFingerprintStore {
 
 pub fn apply_post_upload_action(
     source_path: &Path,
-    config: &FolderWatcherConfig,
+    rule: &WatchRule,
 ) -> Result<Option<String>, String> {
-    match config.post_upload_action {
+    match rule.post_upload_action {
         PostUploadAction::Delete => {
             fs::remove_file(source_path)
                 .map_err(|e| format!("Failed to delete torrent file: {e}"))?;
             Ok(None)
         }
         PostUploadAction::MoveToUploaded => {
-            let watch_root = config
+            let watch_root = rule
                 .watch_path
                 .as_ref()
                 .ok_or("Watch path is not configured")?;
@@ -124,7 +124,7 @@ pub fn apply_post_upload_action(
             Ok(Some(dest.to_string_lossy().to_string()))
         }
         PostUploadAction::MoveToCustom => {
-            let dest_dir = config
+            let dest_dir = rule
                 .custom_move_path
                 .as_ref()
                 .ok_or("Custom move path is not configured")?;
@@ -200,13 +200,13 @@ mod tests {
         let watch = temp_dir("tbm-post");
         let source = watch.join("a.torrent");
         fs::write(&source, b"torrent").unwrap();
-        let config = FolderWatcherConfig {
+        let rule = WatchRule {
             watch_path: Some(watch.to_string_lossy().to_string()),
             post_upload_action: PostUploadAction::MoveToUploaded,
-            ..Default::default()
+            ..WatchRule::default()
         };
 
-        let moved_to = apply_post_upload_action(&source, &config).unwrap();
+        let moved_to = apply_post_upload_action(&source, &rule).unwrap();
         assert!(moved_to.is_some());
         assert!(!source.exists());
         assert!(watch.join("uploaded").join("a.torrent").exists());

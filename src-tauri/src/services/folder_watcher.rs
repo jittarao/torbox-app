@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -10,11 +10,11 @@ use tauri::{async_runtime::JoinHandle, AppHandle, Emitter, Manager};
 use tokio::sync::mpsc;
 
 use crate::services::credentials::read_api_key;
-use crate::services::settings::SettingsService;
+use crate::services::settings::{SettingsService, WatchRule};
 use crate::services::upload_queue::ProcessedFingerprintStore;
 use crate::services::watcher_batch::run_watcher_event_loop;
 use crate::services::watcher_paths::{
-    normalize_path, should_ignore_watched_file, uploaded_subdir,
+    normalize_path, resolve_rule_id_for_file_path, should_ignore_watched_file, uploaded_subdir,
 };
 
 pub(crate) const EVENT_WATCHER_STATUS: &str = "desktop://watcher-status-changed";
@@ -27,33 +27,43 @@ const SHUTDOWN_JOIN_TIMEOUT_SECS: u64 = 5;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct WatcherActivityEntry {
-    pub filename: String,
-    pub timestamp: String,
-    pub result: String,
-    pub detail: Option<String>,
+pub struct WatchRuleStatus {
+    pub rule_id: String,
+    pub watch_path: Option<String>,
+    pub enabled: bool,
+    pub active: bool,
+    pub queue_depth: usize,
+    pub uploads_today: u32,
+    pub last_error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WatcherStatus {
     pub running: bool,
-    pub watch_path: Option<String>,
     pub queue_depth: usize,
     pub last_error: Option<String>,
     pub uploads_today: u32,
-    pub activity: Vec<WatcherActivityEntry>,
+    pub rules: Vec<WatchRuleStatus>,
+}
+
+#[derive(Default)]
+struct RuleRuntimeState {
+    queue_depth: usize,
+    uploads_today: u32,
+    last_error: Option<String>,
 }
 
 struct WatcherRuntimeState {
     running: bool,
     session_generation: u64,
-    watch_path: Option<String>,
+    active_rule_ids: HashSet<String>,
+    path_to_rule: HashMap<PathBuf, String>,
+    rule_states: HashMap<String, RuleRuntimeState>,
     queue_depth: usize,
     last_error: Option<String>,
     uploads_today: u32,
     uploads_today_date: Option<String>,
-    activity: VecDeque<WatcherActivityEntry>,
     in_flight: HashSet<String>,
     stop_tx: Option<mpsc::Sender<()>>,
     task_handle: Option<JoinHandle<()>>,
@@ -65,12 +75,13 @@ impl Default for WatcherRuntimeState {
         Self {
             running: false,
             session_generation: 0,
-            watch_path: None,
+            active_rule_ids: HashSet::new(),
+            path_to_rule: HashMap::new(),
+            rule_states: HashMap::new(),
             queue_depth: 0,
             last_error: None,
             uploads_today: 0,
             uploads_today_date: None,
-            activity: VecDeque::new(),
             in_flight: HashSet::new(),
             stop_tx: None,
             task_handle: None,
@@ -109,19 +120,7 @@ impl FolderWatcherService {
     }
 
     pub fn get_status(&self) -> WatcherStatus {
-        let runtime = self
-            .inner
-            .runtime
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
-        WatcherStatus {
-            running: runtime.running,
-            watch_path: runtime.watch_path.clone(),
-            queue_depth: runtime.queue_depth,
-            last_error: runtime.last_error.clone(),
-            uploads_today: runtime.uploads_today,
-            activity: runtime.activity.iter().cloned().collect(),
-        }
+        build_watcher_status(&self.inner)
     }
 
     pub fn stop(&self) -> Result<(), String> {
@@ -146,6 +145,8 @@ impl FolderWatcherService {
             let task_handle = runtime.task_handle.take();
             runtime.watcher = None;
             runtime.running = false;
+            runtime.active_rule_ids.clear();
+            runtime.path_to_rule.clear();
             (stop_tx, task_handle, generation)
         };
 
@@ -167,6 +168,9 @@ impl FolderWatcherService {
             if runtime.session_generation == generation {
                 runtime.queue_depth = 0;
                 runtime.in_flight.clear();
+                for state in runtime.rule_states.values_mut() {
+                    state.queue_depth = 0;
+                }
             }
         }
 
@@ -174,27 +178,28 @@ impl FolderWatcherService {
         Ok(())
     }
 
-    pub fn start(&self, scan_existing: bool) -> Result<(), String> {
+    pub fn start(&self, rules_to_scan: &[String]) -> Result<(), String> {
         let config = self.inner.settings.get_folder_watcher_config();
-        if !config.enabled {
-            return Err("Folder watcher is disabled".into());
+        if !config.has_enabled_rules() {
+            return Err("No enabled watch rules".into());
         }
 
-        self.inner.settings.validate_folder_watcher_for_start(&config)?;
-
-        let watch_path = config
-            .watch_path
-            .as_ref()
-            .ok_or("Watch folder is not configured")?
-            .clone();
+        for rule in config.rules.iter().filter(|rule| rule.enabled) {
+            self.inner.settings.validate_watch_rule(rule)?;
+        }
 
         read_api_key(&self.inner.settings).map_err(|_| {
             "Store your TorBox API key via Enable background features before starting the watcher"
                 .to_string()
         })?;
 
-        normalize_path(&watch_path)?;
         self.stop_internal(SHUTDOWN_JOIN_TIMEOUT_SECS)?;
+
+        let enabled_rules: Vec<WatchRule> = config
+            .rules
+            .into_iter()
+            .filter(|rule| rule.enabled)
+            .collect();
 
         let session_generation = {
             let mut runtime = self
@@ -206,10 +211,20 @@ impl FolderWatcherService {
             runtime.session_generation
         };
 
-        let (event_tx, event_rx) = mpsc::channel::<PathBuf>(64);
+        let (event_tx, event_rx) = mpsc::channel::<(String, PathBuf)>(64);
         let (stop_tx, stop_rx) = mpsc::channel::<()>(1);
 
-        let watch_root = PathBuf::from(&watch_path);
+        let mut path_to_rule: HashMap<PathBuf, String> = HashMap::new();
+        for rule in &enabled_rules {
+            let watch_path = rule
+                .watch_path
+                .as_ref()
+                .ok_or("Enabled watch rules must have a watch folder")?;
+            let normalized = normalize_path(watch_path)?;
+            path_to_rule.insert(normalized, rule.id.clone());
+        }
+
+        let path_to_rule_for_notify = path_to_rule.clone();
         let notify_tx = event_tx.clone();
         let mut watcher = RecommendedWatcher::new(
             move |res: Result<Event, notify::Error>| {
@@ -217,8 +232,17 @@ impl FolderWatcherService {
                     match event.kind {
                         EventKind::Create(_) | EventKind::Modify(_) => {
                             for path in event.paths {
-                                if notify_tx.try_send(path).is_err() {
-                                    eprintln!("[folder-watcher] Dropped file event: channel full");
+                                if let Some(rule_id) =
+                                    resolve_rule_id_for_file_path(&path, &path_to_rule_for_notify)
+                                {
+                                    if notify_tx
+                                        .try_send((rule_id, path))
+                                        .is_err()
+                                    {
+                                        eprintln!(
+                                            "[folder-watcher] Dropped file event: channel full"
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -230,9 +254,18 @@ impl FolderWatcherService {
         )
         .map_err(|e| format!("Failed to create folder watcher: {e}"))?;
 
-        watcher
-            .watch(&watch_root, RecursiveMode::NonRecursive)
-            .map_err(|e| format!("Failed to watch folder: {e}"))?;
+        for (watch_root, rule_id) in &path_to_rule {
+            watcher
+                .watch(watch_root, RecursiveMode::NonRecursive)
+                .map_err(|e| format!("Failed to watch folder: {e}"))?;
+            if let Ok(mut runtime) = self.inner.runtime.lock() {
+                runtime.active_rule_ids.insert(rule_id.clone());
+                runtime
+                    .rule_states
+                    .entry(rule_id.clone())
+                    .or_default();
+            }
+        }
 
         {
             let mut runtime = self
@@ -241,31 +274,20 @@ impl FolderWatcherService {
                 .lock()
                 .map_err(|_| "Watcher runtime lock poisoned".to_string())?;
             runtime.running = true;
-            runtime.watch_path = Some(watch_path.clone());
             runtime.last_error = None;
             runtime.stop_tx = Some(stop_tx);
             runtime.watcher = Some(watcher);
+            runtime.path_to_rule = path_to_rule;
             reset_uploads_today_if_needed(&mut runtime);
         }
 
         self.emit_status();
 
-        if scan_existing && config.scan_existing_on_enable {
-            let uploaded_dir = uploaded_subdir(&watch_root);
-            let custom_move = config.custom_move_path.as_ref().map(PathBuf::from);
-            if let Ok(entries) = fs::read_dir(&watch_root) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_file()
-                        && !should_ignore_watched_file(
-                            &path,
-                            &watch_root,
-                            Some(&uploaded_dir),
-                            custom_move.as_deref(),
-                        )
-                    {
-                        let _ = event_tx.try_send(path);
-                    }
+        if !rules_to_scan.is_empty() {
+            let scan_ids: HashSet<&str> = rules_to_scan.iter().map(String::as_str).collect();
+            for rule in &enabled_rules {
+                if scan_ids.contains(rule.id.as_str()) {
+                    scan_existing_for_rule(&event_tx, rule)?;
                 }
             }
         }
@@ -284,25 +306,56 @@ impl FolderWatcherService {
 
     pub fn try_auto_start(&self) -> Result<(), String> {
         let config = self.inner.settings.get_folder_watcher_config();
-        if !config.enabled {
-            return Ok(());
-        }
-        if config.watch_path.is_none() {
+        if !config.has_enabled_rules() {
             return Ok(());
         }
         if read_api_key(&self.inner.settings).is_err() {
             return Ok(());
         }
-        if self.inner.settings.validate_folder_watcher_for_start(&config).is_err() {
+        if config
+            .rules
+            .iter()
+            .filter(|rule| rule.enabled)
+            .any(|rule| self.inner.settings.validate_watch_rule(rule).is_err())
+        {
             return Ok(());
         }
-        self.start(false)
+        self.start(&[])
     }
 
     fn emit_status(&self) {
         let status = self.get_status();
         let _ = self.inner.app.emit(EVENT_WATCHER_STATUS, status);
     }
+}
+
+fn scan_existing_for_rule(
+    event_tx: &mpsc::Sender<(String, PathBuf)>,
+    rule: &WatchRule,
+) -> Result<(), String> {
+    let watch_path = rule
+        .watch_path
+        .as_ref()
+        .ok_or("Watch folder is not configured")?;
+    let watch_root = PathBuf::from(watch_path);
+    let uploaded_dir = uploaded_subdir(&watch_root);
+    let custom_move = rule.custom_move_path.as_ref().map(PathBuf::from);
+    if let Ok(entries) = fs::read_dir(&watch_root) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file()
+                && !should_ignore_watched_file(
+                    &path,
+                    &watch_root,
+                    Some(&uploaded_dir),
+                    custom_move.as_deref(),
+                )
+            {
+                let _ = event_tx.try_send((rule.id.clone(), path));
+            }
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn is_session_active(inner: &FolderWatcherInner, session_generation: u64) -> bool {
@@ -318,11 +371,33 @@ fn reset_uploads_today_if_needed(runtime: &mut WatcherRuntimeState) {
     if runtime.uploads_today_date.as_deref() != Some(today.as_str()) {
         runtime.uploads_today = 0;
         runtime.uploads_today_date = Some(today);
+        for state in runtime.rule_states.values_mut() {
+            state.uploads_today = 0;
+        }
     }
 }
 
-pub(crate) fn adjust_queue_depth(inner: &FolderWatcherInner, delta: i32) {
+fn rule_state_mut<'a>(
+    runtime: &'a mut WatcherRuntimeState,
+    rule_id: &str,
+) -> &'a mut RuleRuntimeState {
+    runtime
+        .rule_states
+        .entry(rule_id.to_string())
+        .or_default()
+}
+
+pub(crate) fn adjust_queue_depth(inner: &FolderWatcherInner, rule_id: &str, delta: i32) {
     if let Ok(mut runtime) = inner.runtime.lock() {
+        let rule_state = rule_state_mut(&mut runtime, rule_id);
+        if delta.is_negative() {
+            rule_state.queue_depth = rule_state
+                .queue_depth
+                .saturating_sub(delta.unsigned_abs() as usize);
+        } else {
+            rule_state.queue_depth = rule_state.queue_depth.saturating_add(delta as usize);
+        }
+
         if delta.is_negative() {
             runtime.queue_depth = runtime
                 .queue_depth
@@ -352,75 +427,74 @@ pub(crate) fn set_in_flight(inner: &FolderWatcherInner, fingerprint: &str, activ
     }
 }
 
-pub(crate) fn record_success(inner: &FolderWatcherInner, filename: &str, moved_to: Option<String>) {
+pub(crate) fn record_success(inner: &FolderWatcherInner, rule_id: &str) {
     if let Ok(mut runtime) = inner.runtime.lock() {
         reset_uploads_today_if_needed(&mut runtime);
         runtime.uploads_today = runtime.uploads_today.saturating_add(1);
         runtime.last_error = None;
-        runtime.activity.push_front(WatcherActivityEntry {
-            filename: filename.to_string(),
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            result: "success".to_string(),
-            detail: moved_to,
-        });
-        while runtime.activity.len() > crate::constants::WATCHER_ACTIVITY_LOG_LIMIT {
-            runtime.activity.pop_back();
-        }
+        let rule_state = rule_state_mut(&mut runtime, rule_id);
+        rule_state.uploads_today = rule_state.uploads_today.saturating_add(1);
+        rule_state.last_error = None;
     }
     emit_status_from_inner(inner);
 }
 
-pub(crate) fn record_move_failed(inner: &FolderWatcherInner, filename: &str, error: &str) {
+pub(crate) fn record_move_failed(inner: &FolderWatcherInner, rule_id: &str, error: &str) {
     if let Ok(mut runtime) = inner.runtime.lock() {
         reset_uploads_today_if_needed(&mut runtime);
         runtime.uploads_today = runtime.uploads_today.saturating_add(1);
         runtime.last_error = Some(error.to_string());
-        runtime.activity.push_front(WatcherActivityEntry {
-            filename: filename.to_string(),
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            result: "uploaded_move_failed".to_string(),
-            detail: Some(error.to_string()),
-        });
-        while runtime.activity.len() > crate::constants::WATCHER_ACTIVITY_LOG_LIMIT {
-            runtime.activity.pop_back();
-        }
+        let rule_state = rule_state_mut(&mut runtime, rule_id);
+        rule_state.uploads_today = rule_state.uploads_today.saturating_add(1);
+        rule_state.last_error = Some(error.to_string());
     }
     emit_status_from_inner(inner);
 }
 
-pub(crate) fn record_failure(inner: &FolderWatcherInner, filename: &str, error: &str, will_retry: bool) {
+pub(crate) fn record_failure(inner: &FolderWatcherInner, rule_id: &str, error: &str) {
     if let Ok(mut runtime) = inner.runtime.lock() {
         runtime.last_error = Some(error.to_string());
-        runtime.activity.push_front(WatcherActivityEntry {
-            filename: filename.to_string(),
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            result: if will_retry {
-                "retry".to_string()
-            } else {
-                "failed".to_string()
-            },
-            detail: Some(error.to_string()),
-        });
-        while runtime.activity.len() > crate::constants::WATCHER_ACTIVITY_LOG_LIMIT {
-            runtime.activity.pop_back();
-        }
+        let rule_state = rule_state_mut(&mut runtime, rule_id);
+        rule_state.last_error = Some(error.to_string());
     }
     emit_status_from_inner(inner);
 }
 
 pub(crate) fn emit_status_from_inner(inner: &FolderWatcherInner) {
-    let status = {
-        let runtime = inner.runtime.lock().unwrap_or_else(|e| e.into_inner());
-        WatcherStatus {
-            running: runtime.running,
-            watch_path: runtime.watch_path.clone(),
-            queue_depth: runtime.queue_depth,
-            last_error: runtime.last_error.clone(),
-            uploads_today: runtime.uploads_today,
-            activity: runtime.activity.iter().cloned().collect(),
-        }
-    };
+    let status = build_watcher_status(inner);
     let _ = inner.app.emit(EVENT_WATCHER_STATUS, status);
+}
+
+fn build_watcher_status(inner: &FolderWatcherInner) -> WatcherStatus {
+    let runtime = inner
+        .runtime
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let config = inner.settings.get_folder_watcher_config();
+    let rules = config
+        .rules
+        .iter()
+        .map(|rule| {
+            let state = runtime.rule_states.get(&rule.id);
+            WatchRuleStatus {
+                rule_id: rule.id.clone(),
+                watch_path: rule.watch_path.clone(),
+                enabled: rule.enabled,
+                active: runtime.active_rule_ids.contains(&rule.id),
+                queue_depth: state.map(|s| s.queue_depth).unwrap_or(0),
+                uploads_today: state.map(|s| s.uploads_today).unwrap_or(0),
+                last_error: state.and_then(|s| s.last_error.clone()),
+            }
+        })
+        .collect();
+
+    WatcherStatus {
+        running: runtime.running,
+        queue_depth: runtime.queue_depth,
+        last_error: runtime.last_error.clone(),
+        uploads_today: runtime.uploads_today,
+        rules,
+    }
 }
 
 #[cfg(test)]

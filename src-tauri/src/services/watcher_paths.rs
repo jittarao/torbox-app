@@ -23,6 +23,23 @@ pub fn paths_equal(a: &str, b: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Resolve which watch rule owns a filesystem event path.
+pub fn resolve_rule_id_for_file_path(
+    file_path: &Path,
+    path_to_rule: &std::collections::HashMap<PathBuf, String>,
+) -> Option<String> {
+    if let Ok(canonical_file) = file_path.canonicalize() {
+        if let Some(parent) = canonical_file.parent() {
+            if let Some(rule_id) = path_to_rule.get(parent) {
+                return Some(rule_id.clone());
+            }
+        }
+    }
+
+    let parent = file_path.parent()?;
+    path_to_rule.get(parent).cloned()
+}
+
 /// Returns true when `file` is inside `parent` (or equal — files are not dirs so usually strict child).
 pub fn is_path_inside(parent: &Path, file: &Path) -> bool {
     file.starts_with(parent)
@@ -153,5 +170,20 @@ mod tests {
         fs::write(&first, b"1").unwrap();
         let second = unique_destination_path(&dir, "a.torrent");
         assert_eq!(second.file_name().unwrap().to_str().unwrap(), "a (1).torrent");
+    }
+
+    #[test]
+    fn resolve_rule_id_matches_canonical_watch_root() {
+        let watch = temp_dir("tbm-watch-resolve");
+        let mut path_to_rule = std::collections::HashMap::new();
+        path_to_rule.insert(watch.clone(), "rule-1".to_string());
+
+        let file = watch.join("movie.torrent");
+        fs::write(&file, b"t").unwrap();
+
+        assert_eq!(
+            resolve_rule_id_for_file_path(&file, &path_to_rule).as_deref(),
+            Some("rule-1")
+        );
     }
 }

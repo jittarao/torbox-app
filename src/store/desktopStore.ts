@@ -292,19 +292,29 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
   },
 
   saveWatcherConfig: async (config: FolderWatcherConfig) => {
-    const ok = await desktopBridge.setFolderWatcherConfig(config);
-    if (ok) {
+    try {
+      const ok = await desktopBridge.setFolderWatcherConfig(config);
+      if (ok) {
+        await Promise.all([get().refreshWatcherConfig(), get().refreshWatcherStatus()]);
+      }
+      return ok;
+    } catch (error) {
       await Promise.all([get().refreshWatcherConfig(), get().refreshWatcherStatus()]);
+      throw error;
     }
-    return ok;
   },
 
   startWatcher: async (scanExisting = false) => {
-    const ok = await desktopBridge.startFolderWatcher(scanExisting);
-    if (ok) {
-      await get().refreshWatcherStatus();
+    try {
+      const ok = await desktopBridge.startFolderWatcher(scanExisting);
+      if (ok) {
+        await Promise.all([get().refreshWatcherStatus(), get().refreshWatcherConfig()]);
+      }
+      return ok;
+    } catch (error) {
+      await Promise.all([get().refreshWatcherConfig(), get().refreshWatcherStatus()]);
+      throw error;
     }
-    return ok;
   },
 
   stopWatcher: async () => {
