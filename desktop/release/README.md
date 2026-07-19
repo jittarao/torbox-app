@@ -55,6 +55,8 @@ On tag push, `.github/workflows/desktop-release.yml`:
    - Windows `-setup.exe`
    - `latest.json` (only when signed updater artifacts exist)
 
+CI build jobs skip `bun install` (the shell loads the hosted UI, not a bundled Next.js app) and use `npx @tauri-apps/cli` plus Rust/sccache caching with faster release profile overrides. Local `bun run desktop:build` still uses the size-optimized `[profile.release]` in `src-tauri/Cargo.toml`.
+
 `workflow_dispatch` still builds and uploads CI artifacts for testing, but **does not** create a GitHub Release (releases require a tag).
 
 ### Retag after a failed release

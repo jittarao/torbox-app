@@ -13,6 +13,12 @@ concurrency:
   group: desktop-release-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Local `bun run desktop:build` keeps Cargo.toml size/LTO settings; CI uses faster release opts.
+  CARGO_PROFILE_RELEASE_LTO: thin
+  CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 16
+  CARGO_PROFILE_RELEASE_OPT_LEVEL: 2
+
 jobs:
   build-macos:
     runs-on: macos-latest
@@ -21,36 +27,48 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install frontend dependencies
-        run: bun install --frozen-lockfile
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          shared-key: desktop-release
+          cache-all-crates: true
+          cache-on-failure: true
+
+      - name: Resolve Tauri CLI version
+        id: tauri-cli
+        shell: bash
+        run: |
+          VERSION=$(grep -m1 '"@tauri-apps/cli@' bun.lock | sed -E 's/.*"@tauri-apps\/cli@([^"]+)".*/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Tauri CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: tauri-cli-npm-${{ runner.os }}-${{ steps.tauri-cli.outputs.version }}
 
       - name: Verify tag matches desktop version
         if: github.ref_type == 'tag'
         shell: bash
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          DESKTOP_VERSION=$(bun -e "console.log(JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')).version)")
+          DESKTOP_VERSION=$(node -pe "JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')).version")
           if [ "$TAG_VERSION" != "$DESKTOP_VERSION" ]; then
             echo "Tag v$TAG_VERSION does not match desktop version $DESKTOP_VERSION in src-tauri/tauri.conf.json"
             exit 1
           fi
 
       - name: Build desktop app (unsigned)
-        run: bun run desktop:build
+        run: npx --yes @tauri-apps/cli@${{ steps.tauri-cli.outputs.version }} build
         env:
+          RUSTC_WRAPPER: sccache
           TAURI_UPDATER_ACTIVE: 'false'
 
       - name: Upload macOS release files
@@ -68,36 +86,48 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install frontend dependencies
-        run: bun install --frozen-lockfile
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          shared-key: desktop-release
+          cache-all-crates: true
+          cache-on-failure: true
+
+      - name: Resolve Tauri CLI version
+        id: tauri-cli
+        shell: bash
+        run: |
+          VERSION=$(grep -m1 '"@tauri-apps/cli@' bun.lock | sed -E 's/.*"@tauri-apps\/cli@([^"]+)".*/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Tauri CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: tauri-cli-npm-${{ runner.os }}-${{ steps.tauri-cli.outputs.version }}
 
       - name: Verify tag matches desktop version
         if: github.ref_type == 'tag'
         shell: bash
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          DESKTOP_VERSION=$(bun -e "console.log(JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')).version)")
+          DESKTOP_VERSION=$(node -pe "JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')).version")
           if [ "$TAG_VERSION" != "$DESKTOP_VERSION" ]; then
             echo "Tag v$TAG_VERSION does not match desktop version $DESKTOP_VERSION in src-tauri/tauri.conf.json"
             exit 1
           fi
 
       - name: Build desktop app (unsigned)
-        run: bun run desktop:build
+        run: npx --yes @tauri-apps/cli@${{ steps.tauri-cli.outputs.version }} build
         env:
+          RUSTC_WRAPPER: sccache
           TAURI_UPDATER_ACTIVE: 'false'
 
       - name: Upload Windows release files
