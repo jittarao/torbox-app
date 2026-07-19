@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useTranslations } from 'next-intl';
+import { usePromptDialog } from '@/hooks/usePromptDialog';
 import { useCustomViews } from '@/components/shared/hooks/useCustomViews';
 import { useCustomViewsStore } from '@/store/customViewsStore';
 import { useTags } from '@/components/shared/hooks/useTags';
@@ -42,6 +43,10 @@ export function useDownloadsFilters({
   filterParams,
 }) {
   const downloadsFiltersT = useTranslations('DownloadsFilters');
+  const { prompt, PromptDialog } = usePromptDialog({
+    cancelLabel: downloadsFiltersT('close'),
+    confirmLabel: downloadsFiltersT('menuRename'),
+  });
   const { updateTag: updateTagName } = useTags(apiKey);
 
   const {
@@ -614,7 +619,7 @@ export function useDownloadsFilters({
   };
 
   const handleRenameView = async (view) => {
-    const newName = window.prompt('Rename view:', view.name);
+    const newName = await prompt('Rename view:', view.name);
     if (!newName?.trim() || newName.trim() === view.name) return;
     try {
       await updateView(view.id, { name: newName.trim() });
@@ -624,7 +629,7 @@ export function useDownloadsFilters({
   };
 
   const handleRenameTag = async (tag) => {
-    const newName = window.prompt('Rename tag:', tag.name);
+    const newName = await prompt('Rename tag:', tag.name);
     if (!newName?.trim() || newName.trim() === tag.name) return;
     try {
       await updateTagName(tag.id, newName.trim());
@@ -852,5 +857,6 @@ export function useDownloadsFilters({
     handleApplyFiltersFromModal,
     handlePreviewFiltersFromModal,
     handleReorderViews,
+    PromptDialog,
   };
 }
