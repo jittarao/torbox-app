@@ -20,6 +20,7 @@ use crate::state::AppState;
 
 const TRAY_OPEN_ID: &str = "tray-open";
 const TRAY_SETTINGS_ID: &str = "tray-settings";
+const TRAY_RESET_INSTANCE_ID: &str = "tray-reset-instance";
 const TRAY_QUIT_ID: &str = "tray-quit";
 pub const EVENT_TRAY_OPEN_SETTINGS: &str = "desktop://tray-open-settings";
 
@@ -29,6 +30,14 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), String> {
     let settings_item =
         MenuItem::with_id(app, TRAY_SETTINGS_ID, "Settings", true, None::<&str>)
             .map_err(|e| format!("Failed to create tray menu item: {e}"))?;
+    let reset_instance_item = MenuItem::with_id(
+        app,
+        TRAY_RESET_INSTANCE_ID,
+        "Reset instance URL",
+        true,
+        None::<&str>,
+    )
+    .map_err(|e| format!("Failed to create tray menu item: {e}"))?;
     let quit_item = MenuItem::with_id(app, TRAY_QUIT_ID, "Quit", true, None::<&str>)
         .map_err(|e| format!("Failed to create tray menu item: {e}"))?;
     let separator = PredefinedMenuItem::separator(app)
@@ -36,7 +45,13 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), String> {
 
     let menu = Menu::with_items(
         app,
-        &[&open_item, &settings_item, &separator, &quit_item],
+        &[
+            &open_item,
+            &settings_item,
+            &reset_instance_item,
+            &separator,
+            &quit_item,
+        ],
     )
     .map_err(|e| format!("Failed to build tray menu: {e}"))?;
 
@@ -56,7 +71,10 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), String> {
                 show_main_window(app, false);
             }
             TRAY_SETTINGS_ID => {
-                show_main_window(app, true);
+                open_desktop_settings(app);
+            }
+            TRAY_RESET_INSTANCE_ID => {
+                reset_instance_from_tray(app);
             }
             TRAY_QUIT_ID => {
                 quit_app(app);
@@ -164,8 +182,38 @@ pub fn show_main_window(app: &AppHandle, open_settings: bool) {
     window_presence::emit_presence_if_changed(app);
 
     if open_settings {
-        let _ = app.emit(EVENT_TRAY_OPEN_SETTINGS, ());
+        open_desktop_settings(app);
     }
+}
+
+pub fn open_desktop_settings(app: &AppHandle) {
+    show_main_window(app, false);
+    let Some(state) = app.try_state::<AppState>() else {
+        return;
+    };
+    window_state::navigate_to_desktop_settings(app, state.settings.as_ref());
+    let _ = app.emit(EVENT_TRAY_OPEN_SETTINGS, ());
+}
+
+pub fn reset_instance_from_tray(app: &AppHandle) {
+    let Some(state) = app.try_state::<AppState>() else {
+        return;
+    };
+
+    if state.settings.reset_instance_url_to_default().is_err() {
+        return;
+    }
+
+    if let Ok(mut session) = state.session_web_origin.write() {
+        *session = None;
+    }
+
+    let _ = crate::services::capabilities::register_custom_instance_capability(
+        app,
+        crate::constants::DEFAULT_INSTANCE_URL,
+    );
+    window_state::navigate_to_instance_root(app, state.settings.as_ref());
+    show_main_window(app, false);
 }
 
 pub fn hide_main_window(app: &AppHandle) {

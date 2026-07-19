@@ -313,8 +313,13 @@ impl SettingsService {
             .lock()
             .map_err(|_| "Settings lock poisoned".to_string())?;
         settings.instance_url = normalized.clone();
+        settings.last_web_path = None;
         self.persist(&settings)?;
         Ok(normalized)
+    }
+
+    pub fn reset_instance_url_to_default(&self) -> Result<String, String> {
+        self.set_instance_url(default_instance_url())
     }
 
     pub fn get_stored_api_key(&self) -> Option<String> {
@@ -663,6 +668,19 @@ mod tests {
         assert_eq!(geometry.height, Some(MIN_WINDOW_HEIGHT));
         assert_eq!(geometry.x, Some(10));
         assert_eq!(geometry.y, Some(20));
+    }
+
+    #[test]
+    fn set_instance_url_clears_last_web_path() {
+        let (service, dir) = temp_settings_service();
+        service
+            .set_last_web_path(Some("/en/desktop".to_string()))
+            .unwrap();
+        service
+            .set_instance_url("https://self-hosted.example.com".to_string())
+            .unwrap();
+        assert_eq!(service.get_last_web_path(), None);
+        let _ = fs::remove_dir_all(dir);
     }
 
     #[test]
