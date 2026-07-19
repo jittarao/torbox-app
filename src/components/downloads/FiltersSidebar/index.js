@@ -13,6 +13,7 @@ import FiltersSidebarSearch from './FiltersSidebarSearch';
 import SidebarSectionSkeleton from './SidebarSectionSkeleton';
 import { useFiltersSidebarCounts } from './useFiltersSidebarCounts';
 import useFiltersSidebarSectionsCollapsed from './useFiltersSidebarSectionsCollapsed';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 function SectionChevron({ expanded, className = '' }) {
   return (
@@ -260,6 +261,7 @@ export default function FiltersSidebar({
   countsLoading = false,
 }) {
   const t = useTranslations('DownloadsFilters');
+  const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
   const deleteViewStore = useCustomViewsStore((s) => s.deleteView);
   const deleteTagStore = useTagsStore((s) => s.deleteTag);
   const isFixed = variant === 'fixed';
@@ -307,7 +309,13 @@ export default function FiltersSidebar({
 
   const handleDeleteView = useCallback(
     async (viewId, viewName) => {
-      if (!window.confirm(t('confirmDeleteView', { name: viewName }))) return;
+      if (
+        !(await confirm(t('confirmDeleteView', { name: viewName }), {
+          confirmLabel: t('menuDelete'),
+        }))
+      ) {
+        return;
+      }
       try {
         await deleteViewStore(apiKey, viewId);
         if (activeViewIds.some((id) => String(id) === String(viewId))) onClearView();
@@ -315,7 +323,7 @@ export default function FiltersSidebar({
         alert(t('deleteViewFailed', { error: error.message }));
       }
     },
-    [apiKey, deleteViewStore, activeViewIds, onClearView, t]
+    [apiKey, deleteViewStore, activeViewIds, onClearView, t, confirm]
   );
 
   const handleToggleViewsSortMode = useCallback(() => {
@@ -329,7 +337,13 @@ export default function FiltersSidebar({
 
   const handleDeleteTagItem = useCallback(
     async (tagId, tagName) => {
-      if (!window.confirm(t('confirmDeleteTag', { name: tagName }))) return;
+      if (
+        !(await confirm(t('confirmDeleteTag', { name: tagName }), {
+          confirmLabel: t('menuDelete'),
+        }))
+      ) {
+        return;
+      }
       try {
         await deleteTagStore(apiKey, tagId);
         onDeleteTag?.(tagId);
@@ -337,231 +351,237 @@ export default function FiltersSidebar({
         alert(t('deleteTagFailed', { error: error.message }));
       }
     },
-    [apiKey, deleteTagStore, onDeleteTag, t]
+    [apiKey, deleteTagStore, onDeleteTag, t, confirm]
   );
 
   if (isFixed && collapsed && onToggleCollapsed) {
     return (
-      <aside
-        className={`fixed inset-y-0 z-[35] flex w-[var(--downloads-sidebar-width,2.5rem)] flex-col border-r border-border/60 bg-surface/90 backdrop-blur-xl dark:border-border-dark/60 dark:bg-surface-dark/90 ${className}`}
-        style={{ left: 'var(--sidebar-width, 0px)' }}
-        aria-label={t('sidebarLabel')}
-      >
-        <FiltersSidebarHeader collapsed compact onToggle={onToggleCollapsed} />
-      </aside>
+      <>
+        <aside
+          className={`fixed inset-y-0 z-[35] flex w-[var(--downloads-sidebar-width,2.5rem)] flex-col border-r border-border/60 bg-surface/90 backdrop-blur-xl dark:border-border-dark/60 dark:bg-surface-dark/90 ${className}`}
+          style={{ left: 'var(--sidebar-width, 0px)' }}
+          aria-label={t('sidebarLabel')}
+        >
+          <FiltersSidebarHeader collapsed compact onToggle={onToggleCollapsed} />
+        </aside>
+        <ConfirmDialog />
+      </>
     );
   }
 
   return (
-    <aside
-      className={`flex flex-col overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-        isSheet
-          ? 'h-full min-h-0 w-full bg-transparent'
-          : isFixed
-            ? 'fixed inset-y-0 z-[35] w-[var(--downloads-sidebar-width,14rem)] border-r border-border/60 dark:border-border-dark/60 bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-xl p-2.5'
-            : 'w-[var(--downloads-sidebar-width,14rem)] shrink-0 border border-border dark:border-border-dark rounded-lg bg-surface/50 dark:bg-surface-dark/50'
-      } ${className}`}
-      style={isFixed ? { left: 'var(--sidebar-width, 0px)' } : undefined}
-      aria-label={isSheet ? undefined : t('sidebarLabel')}
-      aria-busy={sidebarBusy || undefined}
-    >
-      {isFixed && onToggleCollapsed && (
-        <FiltersSidebarHeader collapsed={false} onToggle={onToggleCollapsed} />
-      )}
-      <FiltersSidebarSearch value={searchQuery} onChange={setSearchQuery} />
-      <div className="ui-scrollbar min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto overscroll-contain dark:divide-border-dark/60">
-        <SidebarSection
-          title={t('viewsSection')}
-          onAdd={onNewView}
-          addLabel={t('newView')}
-          headerActions={
-            <>
-              {showViewCombineToggle ? (
-                <SectionCombineToggle
-                  value={viewCombineMode}
-                  onChange={onSetViewCombineMode}
-                  sectionLabel={t('viewsSection')}
-                />
-              ) : null}
-              {canReorderViews ? (
-                <button
-                  type="button"
-                  onClick={handleToggleViewsSortMode}
-                  disabled={reorderDisabledBySearch}
-                  className={`p-1 rounded transition-colors ${
-                    viewsSortMode
-                      ? 'bg-accent/15 text-accent dark:bg-accent-dark/20 dark:text-accent-dark'
-                      : 'text-primary-text/50 hover:text-accent dark:text-primary-text-dark/50 dark:hover:text-accent-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
-                  } disabled:cursor-not-allowed disabled:opacity-40`}
-                  aria-label={viewsSortMode ? t('reorderViewsActive') : t('reorderViews')}
-                  aria-pressed={viewsSortMode}
-                  title={
-                    reorderDisabledBySearch
-                      ? t('reorderViewsDisabledSearch')
-                      : viewsSortMode
-                        ? t('reorderViewsActive')
-                        : t('reorderViews')
-                  }
-                >
-                  <ReorderViewsIcon />
-                </button>
-              ) : null}
-            </>
-          }
-          tall={sectionTall}
-          expanded={sectionsExpanded.views}
-          onToggle={() => toggleSection('views')}
-          toggleLabel={sectionToggleLabel(t('viewsSection'), sectionsExpanded.views)}
-          activeCount={activeViewIds.length}
-        >
-          {viewsLoading ? (
-            <SidebarSectionSkeleton rows={3} />
-          ) : (
-            <ViewSidebarSection
-              views={views}
-              viewCounts={viewCounts}
-              searchQuery={searchQuery}
-              activeViewIds={activeViewIds}
-              onApplyView={onApplyView}
-              onApplyViewRange={onApplyViewRange}
-              onClearViews={onClearViews}
-              onEditView={onEditView}
-              onRenameView={onRenameView}
-              onDeleteView={handleDeleteView}
-              sortMode={viewsSortMode}
-              onExitSortMode={handleExitViewsSortMode}
-              onReorderViews={onReorderViews}
-            />
-          )}
-        </SidebarSection>
-
-        <SidebarSection
-          title={t('tagsSection')}
-          onAdd={onOpenTagManager}
-          addLabel={t('manageTags')}
-          headerActions={
-            showTagCombineToggle ? (
-              <SectionCombineToggle
-                value={tagCombineMode}
-                onChange={onSetTagCombineMode}
-                disabled={trackerFilterLocked}
-                sectionLabel={t('tagsSection')}
-              />
-            ) : null
-          }
-          tall={sectionTall}
-          expanded={sectionsExpanded.tags}
-          onToggle={() => toggleSection('tags')}
-          toggleLabel={sectionToggleLabel(t('tagsSection'), sectionsExpanded.tags)}
-          activeCount={activeTagIds?.length ?? 0}
-        >
-          {tagsLoading ? (
-            <SidebarSectionSkeleton rows={4} />
-          ) : (
-            <TagSidebarSection
-              tags={tags}
-              tagCounts={tagCounts}
-              searchQuery={searchQuery}
-              activeTagIds={activeTagIds}
-              onApplyTag={onApplyTag}
-              onApplyTagRange={onApplyTagRange}
-              onClearTags={onClearTags}
-              onRenameTag={onRenameTag}
-              onDeleteTag={handleDeleteTagItem}
-              disabled={trackerFilterLocked}
-            />
-          )}
-        </SidebarSection>
-
-        {showTrackerSection && (
-          <SidebarSection
-            title={t('trackersSection')}
-            headerActions={
-              showTrackerCombineToggle ? (
-                <SectionCombineToggle
-                  value={trackerCombineMode}
-                  onChange={onSetTrackerCombineMode}
-                  disabled={trackerFilterLocked}
-                  sectionLabel={t('trackersSection')}
-                />
-              ) : null
-            }
-            tall={sectionTall}
-            expanded={sectionsExpanded.trackers}
-            onToggle={() => toggleSection('trackers')}
-            toggleLabel={sectionToggleLabel(t('trackersSection'), sectionsExpanded.trackers)}
-            activeCount={activeTrackers.length}
-          >
-            {countsLoading ? (
-              <SidebarSectionSkeleton rows={3} />
-            ) : (
-              <TrackerSidebarSection
-                entries={trackerEntries}
-                searchQuery={searchQuery}
-                activeTrackers={activeTrackers}
-                onApplyTracker={onApplyTracker}
-                onApplyTrackerRange={onApplyTrackerRange}
-                onClearTrackers={onClearTrackers}
-                disabled={trackerFilterLocked}
-              />
-            )}
-          </SidebarSection>
-        )}
-
-        {showSourceSection && (
-          <SidebarSection
-            title={t('sourcesSection')}
-            headerActions={
-              showSourceCombineToggle ? (
-                <SectionCombineToggle
-                  value={sourceCombineMode}
-                  onChange={onSetSourceCombineMode}
-                  disabled={trackerFilterLocked}
-                  sectionLabel={t('sourcesSection')}
-                />
-              ) : null
-            }
-            tall={sectionTall}
-            expanded={sectionsExpanded.sources}
-            onToggle={() => toggleSection('sources')}
-            toggleLabel={sectionToggleLabel(t('sourcesSection'), sectionsExpanded.sources)}
-            activeCount={activeSources.length}
-          >
-            {countsLoading ? (
-              <SidebarSectionSkeleton rows={3} />
-            ) : (
-              <SourceSidebarSection
-                entries={sourceEntries}
-                searchQuery={searchQuery}
-                activeSources={activeSources}
-                onApplySource={onApplySource}
-                onApplySourceRange={onApplySourceRange}
-                onClearSources={onClearSources}
-                disabled={trackerFilterLocked}
-              />
-            )}
-          </SidebarSection>
-        )}
-      </div>
-
-      <div
-        className={`shrink-0 space-y-1.5 border-t border-border/60 dark:border-border-dark/60 ${
-          isSheet ? 'bg-transparent pt-2' : 'bg-surface/50 dark:bg-surface-dark/50'
-        } ${isFixed ? 'pt-2.5' : isSheet ? '' : 'p-2'}`}
+    <>
+      <aside
+        className={`flex flex-col overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          isSheet
+            ? 'h-full min-h-0 w-full bg-transparent'
+            : isFixed
+              ? 'fixed inset-y-0 z-[35] w-[var(--downloads-sidebar-width,14rem)] border-r border-border/60 dark:border-border-dark/60 bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-xl p-2.5'
+              : 'w-[var(--downloads-sidebar-width,14rem)] shrink-0 border border-border dark:border-border-dark rounded-lg bg-surface/50 dark:bg-surface-dark/50'
+        } ${className}`}
+        style={isFixed ? { left: 'var(--sidebar-width, 0px)' } : undefined}
+        aria-label={isSheet ? undefined : t('sidebarLabel')}
+        aria-busy={sidebarBusy || undefined}
       >
-        <button
-          type="button"
-          onClick={onNewView || onNewFilter}
-          className={
-            isSheet
-              ? 'ui-btn-accent w-full justify-center !text-xs'
-              : 'w-full rounded-md border border-accent/40 px-2 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10 dark:border-accent-dark/40 dark:text-accent-dark dark:hover:bg-accent-dark/10'
-          }
+        {isFixed && onToggleCollapsed && (
+          <FiltersSidebarHeader collapsed={false} onToggle={onToggleCollapsed} />
+        )}
+        <FiltersSidebarSearch value={searchQuery} onChange={setSearchQuery} />
+        <div className="ui-scrollbar min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto overscroll-contain dark:divide-border-dark/60">
+          <SidebarSection
+            title={t('viewsSection')}
+            onAdd={onNewView}
+            addLabel={t('newView')}
+            headerActions={
+              <>
+                {showViewCombineToggle ? (
+                  <SectionCombineToggle
+                    value={viewCombineMode}
+                    onChange={onSetViewCombineMode}
+                    sectionLabel={t('viewsSection')}
+                  />
+                ) : null}
+                {canReorderViews ? (
+                  <button
+                    type="button"
+                    onClick={handleToggleViewsSortMode}
+                    disabled={reorderDisabledBySearch}
+                    className={`p-1 rounded transition-colors ${
+                      viewsSortMode
+                        ? 'bg-accent/15 text-accent dark:bg-accent-dark/20 dark:text-accent-dark'
+                        : 'text-primary-text/50 hover:text-accent dark:text-primary-text-dark/50 dark:hover:text-accent-dark hover:bg-surface-alt dark:hover:bg-surface-alt-dark'
+                    } disabled:cursor-not-allowed disabled:opacity-40`}
+                    aria-label={viewsSortMode ? t('reorderViewsActive') : t('reorderViews')}
+                    aria-pressed={viewsSortMode}
+                    title={
+                      reorderDisabledBySearch
+                        ? t('reorderViewsDisabledSearch')
+                        : viewsSortMode
+                          ? t('reorderViewsActive')
+                          : t('reorderViews')
+                    }
+                  >
+                    <ReorderViewsIcon />
+                  </button>
+                ) : null}
+              </>
+            }
+            tall={sectionTall}
+            expanded={sectionsExpanded.views}
+            onToggle={() => toggleSection('views')}
+            toggleLabel={sectionToggleLabel(t('viewsSection'), sectionsExpanded.views)}
+            activeCount={activeViewIds.length}
+          >
+            {viewsLoading ? (
+              <SidebarSectionSkeleton rows={3} />
+            ) : (
+              <ViewSidebarSection
+                views={views}
+                viewCounts={viewCounts}
+                searchQuery={searchQuery}
+                activeViewIds={activeViewIds}
+                onApplyView={onApplyView}
+                onApplyViewRange={onApplyViewRange}
+                onClearViews={onClearViews}
+                onEditView={onEditView}
+                onRenameView={onRenameView}
+                onDeleteView={handleDeleteView}
+                sortMode={viewsSortMode}
+                onExitSortMode={handleExitViewsSortMode}
+                onReorderViews={onReorderViews}
+              />
+            )}
+          </SidebarSection>
+
+          <SidebarSection
+            title={t('tagsSection')}
+            onAdd={onOpenTagManager}
+            addLabel={t('manageTags')}
+            headerActions={
+              showTagCombineToggle ? (
+                <SectionCombineToggle
+                  value={tagCombineMode}
+                  onChange={onSetTagCombineMode}
+                  disabled={trackerFilterLocked}
+                  sectionLabel={t('tagsSection')}
+                />
+              ) : null
+            }
+            tall={sectionTall}
+            expanded={sectionsExpanded.tags}
+            onToggle={() => toggleSection('tags')}
+            toggleLabel={sectionToggleLabel(t('tagsSection'), sectionsExpanded.tags)}
+            activeCount={activeTagIds?.length ?? 0}
+          >
+            {tagsLoading ? (
+              <SidebarSectionSkeleton rows={4} />
+            ) : (
+              <TagSidebarSection
+                tags={tags}
+                tagCounts={tagCounts}
+                searchQuery={searchQuery}
+                activeTagIds={activeTagIds}
+                onApplyTag={onApplyTag}
+                onApplyTagRange={onApplyTagRange}
+                onClearTags={onClearTags}
+                onRenameTag={onRenameTag}
+                onDeleteTag={handleDeleteTagItem}
+                disabled={trackerFilterLocked}
+              />
+            )}
+          </SidebarSection>
+
+          {showTrackerSection && (
+            <SidebarSection
+              title={t('trackersSection')}
+              headerActions={
+                showTrackerCombineToggle ? (
+                  <SectionCombineToggle
+                    value={trackerCombineMode}
+                    onChange={onSetTrackerCombineMode}
+                    disabled={trackerFilterLocked}
+                    sectionLabel={t('trackersSection')}
+                  />
+                ) : null
+              }
+              tall={sectionTall}
+              expanded={sectionsExpanded.trackers}
+              onToggle={() => toggleSection('trackers')}
+              toggleLabel={sectionToggleLabel(t('trackersSection'), sectionsExpanded.trackers)}
+              activeCount={activeTrackers.length}
+            >
+              {countsLoading ? (
+                <SidebarSectionSkeleton rows={3} />
+              ) : (
+                <TrackerSidebarSection
+                  entries={trackerEntries}
+                  searchQuery={searchQuery}
+                  activeTrackers={activeTrackers}
+                  onApplyTracker={onApplyTracker}
+                  onApplyTrackerRange={onApplyTrackerRange}
+                  onClearTrackers={onClearTrackers}
+                  disabled={trackerFilterLocked}
+                />
+              )}
+            </SidebarSection>
+          )}
+
+          {showSourceSection && (
+            <SidebarSection
+              title={t('sourcesSection')}
+              headerActions={
+                showSourceCombineToggle ? (
+                  <SectionCombineToggle
+                    value={sourceCombineMode}
+                    onChange={onSetSourceCombineMode}
+                    disabled={trackerFilterLocked}
+                    sectionLabel={t('sourcesSection')}
+                  />
+                ) : null
+              }
+              tall={sectionTall}
+              expanded={sectionsExpanded.sources}
+              onToggle={() => toggleSection('sources')}
+              toggleLabel={sectionToggleLabel(t('sourcesSection'), sectionsExpanded.sources)}
+              activeCount={activeSources.length}
+            >
+              {countsLoading ? (
+                <SidebarSectionSkeleton rows={3} />
+              ) : (
+                <SourceSidebarSection
+                  entries={sourceEntries}
+                  searchQuery={searchQuery}
+                  activeSources={activeSources}
+                  onApplySource={onApplySource}
+                  onApplySourceRange={onApplySourceRange}
+                  onClearSources={onClearSources}
+                  disabled={trackerFilterLocked}
+                />
+              )}
+            </SidebarSection>
+          )}
+        </div>
+
+        <div
+          className={`shrink-0 space-y-1.5 border-t border-border/60 dark:border-border-dark/60 ${
+            isSheet ? 'bg-transparent pt-2' : 'bg-surface/50 dark:bg-surface-dark/50'
+          } ${isFixed ? 'pt-2.5' : isSheet ? '' : 'p-2'}`}
         >
-          {t('newView')}
-        </button>
-      </div>
-    </aside>
+          <button
+            type="button"
+            onClick={onNewView || onNewFilter}
+            className={
+              isSheet
+                ? 'ui-btn-accent w-full justify-center !text-xs'
+                : 'w-full rounded-md border border-accent/40 px-2 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10 dark:border-accent-dark/40 dark:text-accent-dark dark:hover:bg-accent-dark/10'
+            }
+          >
+            {t('newView')}
+          </button>
+        </div>
+      </aside>
+      <ConfirmDialog />
+    </>
   );
 }
 

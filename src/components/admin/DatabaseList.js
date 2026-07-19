@@ -12,20 +12,22 @@ import {
   adminThClass,
   adminTheadClass,
 } from './AdminUi';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export default function DatabaseList({ databases }) {
   const [backingUp, setBackingUp] = useState(null);
   const [vacuuming, setVacuuming] = useState(null);
   const [downloading, setDownloading] = useState(null);
+  const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
 
   const handleBackup = async (authId) => {
     setBackingUp(authId);
     try {
       const result = await adminApiClient.backupDatabase(authId);
-      // Show success message with option to download
       if (
-        confirm(
-          `Backup created successfully!\n\nSize: ${result.backup.size_formatted}\n\nWould you like to download it now?`
+        await confirm(
+          `Backup created successfully!\n\nSize: ${result.backup.size_formatted}\n\nWould you like to download it now?`,
+          { confirmLabel: 'Download', confirmVariant: 'primary' }
         )
       ) {
         handleDownload(authId, result.backup.filename);
@@ -89,7 +91,12 @@ export default function DatabaseList({ databases }) {
   };
 
   const handleVacuum = async (authId) => {
-    if (!confirm('Are you sure you want to run VACUUM on this database? This may take a while.')) {
+    if (
+      !(await confirm(
+        'Are you sure you want to run VACUUM on this database? This may take a while.',
+        { confirmLabel: 'Run VACUUM', confirmVariant: 'primary' }
+      ))
+    ) {
       return;
     }
     setVacuuming(authId);
@@ -171,6 +178,7 @@ export default function DatabaseList({ databases }) {
           </tbody>
         </table>
       </div>
+      <ConfirmDialog />
     </div>
   );
 }

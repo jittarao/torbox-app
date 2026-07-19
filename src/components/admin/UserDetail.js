@@ -5,11 +5,13 @@ import adminApiClient from '@/utils/adminApiClient';
 import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 import { AdminBadge, AdminCard, AdminLoading, AdminStatRow } from './AdminUi';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export default function UserDetail({ user }) {
   const [databaseInfo, setDatabaseInfo] = useState(null);
   const [automationInfo, setAutomationInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
   const { updateUserStatus, updateUserUploadTier } = useAdminStore(
     useShallow((s) => ({
       updateUserStatus: s.updateUserStatus,
@@ -50,7 +52,7 @@ export default function UserDetail({ user }) {
   const handleTierChange = async (newTier) => {
     if (user.upload_tier === newTier) return;
     const label = newTier === 'unlimited' ? 'Unlimited' : 'Limited';
-    if (!confirm(`Change upload tier to ${label}?`)) return;
+    if (!(await confirm(`Change upload tier to ${label}?`, { confirmLabel: 'Change' }))) return;
     try {
       const result = await updateUserUploadTier(user.auth_id, newTier);
       if (!result.success) {
@@ -196,6 +198,7 @@ export default function UserDetail({ user }) {
           </div>
         </AdminCard>
       ) : null}
+      <ConfirmDialog />
     </div>
   );
 }

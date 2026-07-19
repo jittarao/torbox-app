@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks) {
+export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks, confirmAction) {
   const [deleting, setDeleting] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -8,7 +8,11 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
 
   const handleDelete = useCallback(
     async (id) => {
-      if (!confirm('Are you sure you want to delete this link history entry?')) {
+      if (
+        !(await confirmAction('Are you sure you want to delete this link history entry?', {
+          confirmLabel: 'Delete',
+        }))
+      ) {
         return;
       }
 
@@ -37,7 +41,7 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
         setDeleting(false);
       }
     },
-    [apiKey, fetchLinkHistory]
+    [apiKey, fetchLinkHistory, confirmAction]
   );
 
   const handleBulkDelete = useCallback(
@@ -45,7 +49,11 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
       if (selectedLinks.size === 0) return;
 
       const count = selectedLinks.size;
-      if (!confirm(`Delete ${count} link history entr${count > 1 ? 'ies' : 'y'}?`)) {
+      if (
+        !(await confirmAction(`Delete ${count} link history entr${count > 1 ? 'ies' : 'y'}?`, {
+          confirmLabel: 'Delete',
+        }))
+      ) {
         return;
       }
 
@@ -88,7 +96,7 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
         setBulkDeleting(false);
       }
     },
-    [apiKey, fetchLinkHistory, setSelectedLinks]
+    [apiKey, fetchLinkHistory, setSelectedLinks, confirmAction]
   );
 
   const showCopySuccess = useCallback((count) => {

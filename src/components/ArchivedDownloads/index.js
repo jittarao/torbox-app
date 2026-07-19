@@ -11,6 +11,7 @@ import Spinner from '@/components/shared/Spinner';
 import SearchBar from '@/components/LinkHistory/components/SearchBar';
 import { useArchivedDownloadsActions } from './hooks/useArchivedDownloadsActions';
 import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export default function ArchivedDownloads({ apiKey }) {
   const t = useTranslations('Common');
@@ -39,11 +40,14 @@ export default function ArchivedDownloads({ apiKey }) {
     fetchArchivedDownloads,
   } = useArchive(apiKey, pagination, setPagination, search);
 
+  const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+
   const { bulkDeleting, handleBulkDelete, handleRemove } = useArchivedDownloadsActions(
     apiKey,
     fetchArchivedDownloads,
     setSelectedItems,
-    removeFromArchive
+    removeFromArchive,
+    confirm
   );
 
   const archivedItems = getArchivedDownloads();
@@ -370,6 +374,7 @@ export default function ArchivedDownloads({ apiKey }) {
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmDialog />
     </>
   );
 }
