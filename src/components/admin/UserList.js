@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
 import adminApiClient from '@/utils/adminApiClient';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAppAlert } from '@/hooks/useAppAlert';
 import {
   AdminBadge,
   AdminCard,
@@ -75,6 +76,7 @@ export default function UserList({
   const [reactivating, setReactivating] = useState(false);
   const [searchValue, setSearchValue] = useState(filters?.search || '');
   const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+  const { alert, AppAlert } = useAppAlert();
 
   const handleDelete = async (authId, e) => {
     e.stopPropagation();
@@ -131,7 +133,7 @@ export default function UserList({
       const data = await adminApiClient.reactivateApiKeys();
       const count = data?.reactivated ?? data?.count ?? 0;
       if (count > 0) {
-        alert(`Reactivated ${count} API key(s).`);
+        alert(`Reactivated ${count} API key(s).`, 'success');
         fetchUsers(filters);
         onUsersUpdated?.();
       } else {
@@ -497,6 +499,7 @@ export default function UserList({
         )}
       </div>
       <ConfirmDialog />
+      <AppAlert />
     </div>
   );
 }

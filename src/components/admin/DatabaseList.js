@@ -13,12 +13,14 @@ import {
   adminTheadClass,
 } from './AdminUi';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAppAlert } from '@/hooks/useAppAlert';
 
 export default function DatabaseList({ databases }) {
   const [backingUp, setBackingUp] = useState(null);
   const [vacuuming, setVacuuming] = useState(null);
   const [downloading, setDownloading] = useState(null);
   const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+  const { alert, AppAlert } = useAppAlert();
 
   const handleBackup = async (authId) => {
     setBackingUp(authId);
@@ -102,7 +104,7 @@ export default function DatabaseList({ databases }) {
     setVacuuming(authId);
     try {
       const result = await adminApiClient.vacuumDatabase(authId);
-      alert(`Vacuum completed. Space freed: ${result.space_freed_formatted}`);
+      alert(`Vacuum completed. Space freed: ${result.space_freed_formatted}`, 'success');
     } catch (error) {
       alert(`Error: ${error.message}`);
     } finally {
@@ -179,6 +181,7 @@ export default function DatabaseList({ databases }) {
         </table>
       </div>
       <ConfirmDialog />
+      <AppAlert />
     </div>
   );
 }

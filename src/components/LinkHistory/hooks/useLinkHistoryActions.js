@@ -1,6 +1,12 @@
 import { useState, useCallback } from 'react';
 
-export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks, confirmAction) {
+export function useLinkHistoryActions(
+  apiKey,
+  fetchLinkHistory,
+  setSelectedLinks,
+  confirmAction,
+  showAlert
+) {
   const [deleting, setDeleting] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -36,12 +42,12 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
         await fetchLinkHistory();
       } catch (err) {
         console.error('Error deleting link history entry:', err);
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setDeleting(false);
       }
     },
-    [apiKey, fetchLinkHistory, confirmAction]
+    [apiKey, fetchLinkHistory, confirmAction, showAlert]
   );
 
   const handleBulkDelete = useCallback(
@@ -68,7 +74,7 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
           .filter((id) => id !== null);
 
         if (ids.length === 0) {
-          alert('No valid link history IDs to delete');
+          showAlert('No valid link history IDs to delete');
           return;
         }
 
@@ -91,12 +97,12 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
         await fetchLinkHistory();
       } catch (err) {
         console.error('Error bulk deleting link history:', err);
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setBulkDeleting(false);
       }
     },
-    [apiKey, fetchLinkHistory, setSelectedLinks, confirmAction]
+    [apiKey, fetchLinkHistory, setSelectedLinks, confirmAction, showAlert]
   );
 
   const showCopySuccess = useCallback((count) => {
@@ -115,10 +121,10 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
         showCopySuccess(1);
       } catch (err) {
         console.error('Failed to copy:', err);
-        alert('Failed to copy to clipboard');
+        showAlert('Failed to copy to clipboard');
       }
     },
-    [showCopySuccess]
+    [showCopySuccess, showAlert]
   );
 
   const handleBulkCopy = useCallback(
@@ -132,10 +138,10 @@ export function useLinkHistoryActions(apiKey, fetchLinkHistory, setSelectedLinks
         showCopySuccess(copyable.length);
       } catch (err) {
         console.error('Failed to copy links:', err);
-        alert('Failed to copy to clipboard');
+        showAlert('Failed to copy to clipboard');
       }
     },
-    [showCopySuccess]
+    [showCopySuccess, showAlert]
   );
 
   return {

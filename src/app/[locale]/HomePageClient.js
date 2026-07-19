@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useCallback } from 'react';
 import AppShell from '@/components/navigation/AppShell';
 import dynamic from 'next/dynamic';
 import { useFileHandler } from '@/hooks/useFileHandler';
@@ -9,6 +9,7 @@ import { useUpload } from '@/components/shared/hooks/useUpload';
 import { useSession } from '@/components/shared/hooks/useSession';
 import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
+import { useAppAlert } from '@/hooks/useAppAlert';
 
 const landingShell = <div className="min-h-screen bg-[#0a0a0b]" aria-hidden />;
 
@@ -32,6 +33,7 @@ export default function HomePageClient() {
   const mainRef = useRef(null);
   const didFocusMainRef = useRef(false);
   const { setLinkInput, validateAndAddFiles } = useUpload(apiKey, 'torrents');
+  const { alert, AppAlert } = useAppAlert();
 
   useEffect(() => {
     if (
@@ -59,18 +61,23 @@ export default function HomePageClient() {
 
   useEnsureUserDb(apiKey);
 
-  useFileHandler((file) => {
-    if (!apiKey) {
-      alert('Please enter your API key first');
-      return;
-    }
+  useFileHandler(
+    useCallback(
+      (file) => {
+        if (!apiKey) {
+          alert('Please enter your API key first');
+          return;
+        }
 
-    if (file.name.endsWith('.torrent')) {
-      validateAndAddFiles([file]);
-    } else if (file.name.endsWith('.nzb')) {
-      validateAndAddFiles([file]);
-    }
-  });
+        if (file.name.endsWith('.torrent')) {
+          validateAndAddFiles([file]);
+        } else if (file.name.endsWith('.nzb')) {
+          validateAndAddFiles([file]);
+        }
+      },
+      [apiKey, alert, validateAndAddFiles]
+    )
+  );
 
   useEffect(() => {
     if (!isClient || !hydrated || didFocusMainRef.current) return;
@@ -91,9 +98,12 @@ export default function HomePageClient() {
 
   if (!apiKey) {
     return (
-      <SectionErrorBoundary>
-        <LandingPage onKeyChange={handleKeyChange} />
-      </SectionErrorBoundary>
+      <>
+        <SectionErrorBoundary>
+          <LandingPage onKeyChange={handleKeyChange} />
+        </SectionErrorBoundary>
+        <AppAlert />
+      </>
     );
   }
 
@@ -114,6 +124,7 @@ export default function HomePageClient() {
           <Downloads apiKey={apiKey} onApiKeyChange={handleKeyChange} />
         </Suspense>
       </div>
+      <AppAlert />
     </AppShell>
   );
 }
