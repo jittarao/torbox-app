@@ -260,7 +260,9 @@ export const useDesktopStore = create<DesktopStoreState>((set, get) => ({
   setInstanceUrl: async (url: string) => {
     const normalized = await desktopBridge.setInstanceUrl(url);
     if (normalized) {
-      await get().refreshHello();
+      set((state) => ({
+        hello: state.hello ? { ...state.hello, instanceUrl: normalized } : state.hello,
+      }));
     }
     return normalized;
   },

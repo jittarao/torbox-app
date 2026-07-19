@@ -7,7 +7,7 @@ mod menu;
 mod services;
 mod state;
 
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use tauri::{Manager, RunEvent};
 
@@ -51,6 +51,7 @@ pub fn run() {
                 settings: Arc::clone(&settings),
                 folder_watcher,
                 notifications,
+                session_web_origin: RwLock::new(None),
             });
 
             commands::autostart::sync_launch_at_login(app.handle(), &settings);
