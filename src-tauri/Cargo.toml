@@ -1,6 +1,6 @@
 [package]
 name = "torbox-manager"
-version = "0.1.0"
+version = "0.1.1"
 description = "TorBox Manager desktop shell"
 authors = ["TorBox Manager"]
 edition = "2021"
