@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "build:analyze": "ANALYZE=true next build",
+    "build:analyze": "ANALYZE=true next build --webpack",
     "build:check": "bun run build && bun run scripts/analyze-bundle.js",
     "start": "next start",
     "lint": "eslint .",

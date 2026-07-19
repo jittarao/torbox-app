@@ -2,24 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+import { loadBarChart } from '@/utils/chartComponents';
 
-const Bar = dynamic(() => import('react-chartjs-2').then((mod) => mod.Bar), { ssr: false });
+const Bar = dynamic(() => loadBarChart(), { ssr: false });
 import { format, parseISO } from 'date-fns';
 import { useTranslations, useLocale } from 'next-intl';
 import { formatSize, SIZE_BASE_DECIMAL } from '@/components/downloads/utils/formatters';
 import { AlertCircle, BarChart3 } from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const THEME_COLORS = {
   download: {
