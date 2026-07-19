@@ -13,6 +13,8 @@ import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { isVideoFile, isAudioFile } from './utils/videoDetection';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { resolveItemFiles } from '@/utils/downloadEntityFiles';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import {
   useIsFileSelected,
   useIsItemBlockingFileSelect,
@@ -70,9 +72,10 @@ function FileRow({
   const filesToRender =
     file != null
       ? [file]
-      : fileIndex !== null
-        ? [item.files?.[fileIndex]].filter(Boolean)
-        : item.files || [];
+      : resolveItemFiles(item, useTorboxDownloadsStore.getState().filesByEntityKey).slice(
+          fileIndex !== null ? fileIndex : 0,
+          fileIndex !== null ? fileIndex + 1 : undefined
+        );
 
   return (
     <>

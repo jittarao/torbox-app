@@ -12,6 +12,7 @@ import Spinner from '@/components/shared/Spinner';
 import ConfirmButton from '@/components/shared/ConfirmButton';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
+import { getItemFileCount } from '@/utils/downloadEntityFiles';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 
 const mobileIconButtonClass =
@@ -98,7 +99,7 @@ export default function ItemActionButtons({
       ? 'shrink-0 p-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:size-4'
       : 'shrink-0 p-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
-  const fileCount = item.files?.length ?? item.file_count;
+  const fileCount = getItemFileCount(item);
   const filesExpanded = isExpanded;
   const filesLabel = filesExpanded
     ? t('files.hide')

@@ -13,6 +13,7 @@ import {
 } from '@/store/downloadsDerivedSelectors';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { buildRowDataSignature, collectDirtyRowKeys } from '@/utils/downloadListSignatures';
+import { downloadSearchNeedsFileCache } from '@/components/downloads/utils/downloadSearch';
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 import { useProtectedDownloads } from '@/components/shared/hooks/useProtectedDownloads';
@@ -96,7 +97,10 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
   }, [apiKey, isBackendAvailable, protectedHasLoaded, protectedLoading, fetchProtectedDownloads]);
 
   const { entities, order } = useTorboxDownloadsStore(
-    useShallow((s) => ({ entities: s.entities, order: s.order }))
+    useShallow((s) => ({
+      entities: s.entities,
+      order: s.order,
+    }))
   );
 
   const {
@@ -108,6 +112,11 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     sortField,
     sortDirection,
   } = filterParams;
+
+  const needsFileCacheForSearch = downloadSearchNeedsFileCache(search);
+  const filesByEntityKey = useTorboxDownloadsStore((s) =>
+    needsFileCacheForSearch ? s.filesByEntityKey : null
+  );
 
   const filterCriteria = useMemo(
     () => ({
@@ -215,7 +224,13 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     const listStable = needsFullListRebuild ? false : dirtyKeys.length === 0;
 
     if (!filterUnchanged || !listStable) {
-      ids = selectVisibleSortedFromMap(viewIds, map, filterCriteria, entities);
+      ids = selectVisibleSortedFromMap(
+        viewIds,
+        map,
+        filterCriteria,
+        entities,
+        needsFileCacheForSearch ? filesByEntityKey : null
+      );
       items = new Array(ids.length);
       let needsFallback = false;
       for (let i = 0; i < ids.length; i++) {
@@ -258,6 +273,8 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     stableDownloadHistory,
     activeType,
     viewIdIndexMap,
+    needsFileCacheForSearch,
+    filesByEntityKey,
   ]);
 
   return {

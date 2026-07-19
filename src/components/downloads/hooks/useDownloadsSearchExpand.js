@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { shouldAutoExpandItemForSearch } from '../utils/downloadSearch';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 
 /**
  * Auto-expand rows when file-name search matches nested files; collapse on clear.
@@ -45,9 +46,10 @@ export function useDownloadsSearchExpand({
       return;
     }
 
+    const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
     for (const item of sortedItems) {
       if (
-        shouldAutoExpandItemForSearch(item, query) &&
+        shouldAutoExpandItemForSearch(item, query, filesByEntityKey) &&
         !userCollapsedIdsRef.current.has(item.id) &&
         !searchExpandedItemIdsRef.current.has(item.id)
       ) {

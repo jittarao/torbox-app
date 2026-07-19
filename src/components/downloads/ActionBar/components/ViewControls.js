@@ -13,6 +13,7 @@ import {
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { getItemFileCount } from '@/utils/downloadEntityFiles';
 import { setItem } from '@/utils/storage';
 
 const toolbarBtnBase =
@@ -73,8 +74,7 @@ export default function ViewControls({
     setItem('downloads-view-mode', mode);
   };
 
-  const itemsWithFiles =
-    unfilteredItems?.filter((item) => item.files && item.files.length > 0) ?? [];
+  const itemsWithFiles = unfilteredItems?.filter((item) => getItemFileCount(item) > 0) ?? [];
   const hasItemsWithFiles = itemsWithFiles.length > 0;
   const allExpanded = hasItemsWithFiles && itemsWithFiles.every((item) => expandedById[item.id]);
 

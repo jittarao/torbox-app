@@ -2,6 +2,7 @@
  * Pure derived selectors for downloads list (filter/sort on ids, not persisted arrays).
  */
 
+import { getItemFileCount } from '@/utils/downloadEntityFiles';
 import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
 import { STATUS_OPTIONS } from '@/components/constants';
 import { itemMatchesFilters } from '@/components/downloads/filters/filterEvaluation';
@@ -103,7 +104,7 @@ function statusCompare(a, b) {
 }
 
 function fileCountCompare(a, b) {
-  return (a.files?.length || 0) - (b.files?.length || 0);
+  return getItemFileCount(a) - getItemFileCount(b);
 }
 
 function booleanCompare(a, b, field) {
@@ -259,7 +260,8 @@ export function filterIds(
   criteria,
   tagMappings = {},
   downloadHistoryLookup = null,
-  protectedMap = {}
+  protectedMap = {},
+  filesByEntityKey = null
 ) {
   if (!ids?.length) return [];
 
@@ -276,7 +278,7 @@ export function filterIds(
     const row = enrichRowForFilter(entity, tagMappings, lookup, protectedMap);
     if (!row) return false;
 
-    if (!itemMatchesDownloadSearch(row, search)) return false;
+    if (!itemMatchesDownloadSearch(row, search, filesByEntityKey)) return false;
     if (!matchesStatusFilter(row, statusFilter)) return false;
     if (!rowMatchesColumnFilters(row, criteria)) return false;
 
@@ -292,7 +294,7 @@ export function filterIds(
  * @param {FilterCriteria} criteria
  * @returns {string[]}
  */
-export function filterEnrichedIds(ids, enrichedMap, criteria) {
+export function filterEnrichedIds(ids, enrichedMap, criteria, filesByEntityKey = null) {
   if (!ids?.length) return [];
 
   const { search = '', statusFilter = 'all' } = criteria;
@@ -301,7 +303,7 @@ export function filterEnrichedIds(ids, enrichedMap, criteria) {
     const row = enrichedMap.get(id);
     if (!row) return false;
 
-    if (!itemMatchesDownloadSearch(row, search)) return false;
+    if (!itemMatchesDownloadSearch(row, search, filesByEntityKey)) return false;
     if (!matchesStatusFilter(row, statusFilter)) return false;
     if (!rowMatchesColumnFilters(row, criteria)) return false;
 
@@ -326,12 +328,21 @@ export function selectVisibleSortedIds(
 ) {
   const viewIds = selectViewOrderedIds(torboxState, viewType);
   const entities = torboxState.entities || {};
+  const filesByEntityKey = torboxState.filesByEntityKey || null;
   const lookup =
     downloadHistoryOrLookup?.itemDownloads != null
       ? downloadHistoryOrLookup
       : buildDownloadHistoryLookup(downloadHistoryOrLookup || []);
 
-  const filtered = filterIds(viewIds, entities, criteria, tagMappings, lookup);
+  const filtered = filterIds(
+    viewIds,
+    entities,
+    criteria,
+    tagMappings,
+    lookup,
+    {},
+    filesByEntityKey
+  );
   return sortIds(
     filtered,
     entities,
@@ -348,8 +359,14 @@ export function selectVisibleSortedIds(
  * @param {Record<string, object>} entities
  * @returns {string[]}
  */
-export function selectVisibleSortedFromMap(viewIds, enrichedMap, criteria, entities) {
-  const filtered = filterEnrichedIds(viewIds, enrichedMap, criteria);
+export function selectVisibleSortedFromMap(
+  viewIds,
+  enrichedMap,
+  criteria,
+  entities,
+  filesByEntityKey = null
+) {
+  const filtered = filterEnrichedIds(viewIds, enrichedMap, criteria, filesByEntityKey);
   return sortIds(
     filtered,
     entities,
@@ -436,6 +453,7 @@ export function countDownloadsPerViewFromStore(
 
   const lookup = buildDownloadHistoryLookup(downloadHistory);
   const entities = torboxState.entities || {};
+  const filesByEntityKey = torboxState.filesByEntityKey || null;
   const viewIds = selectViewOrderedIds(torboxState, activeAssetType);
 
   for (const view of views) {
@@ -464,7 +482,9 @@ export function countDownloadsPerViewFromStore(
         appliedFilters: filters,
       },
       tagMappings,
-      lookup
+      lookup,
+      {},
+      filesByEntityKey
     );
     counts[view.id] = matched.length;
   }

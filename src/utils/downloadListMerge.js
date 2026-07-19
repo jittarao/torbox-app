@@ -2,6 +2,8 @@
  * Pure merge + structural sharing for TorBox download lists.
  */
 
+import { rowFileListSignature, slimRowForStorage } from '@/utils/downloadEntityFiles';
+
 const ROW_COMPARE_FIELDS = [
   'id',
   'name',
@@ -35,11 +37,6 @@ const ROW_COMPARE_FIELDS = [
 // This preserves structural sharing — items with no meaningful field change
 // reuse the previous entity reference.
 
-export function fileListSignature(files) {
-  if (!files?.length) return '';
-  return files.map((f) => `${f.id}:${f.size ?? 0}`).join('|');
-}
-
 /**
  * Checks if a row is in a state where it could still change (active, downloading, etc.).
  * No longer forces new references — structural sharing applies to all items equally.
@@ -69,7 +66,7 @@ export function downloadRowEqual(prev, next) {
     if (prev[field] !== next[field]) return false;
   }
 
-  if (fileListSignature(prev.files) !== fileListSignature(next.files)) {
+  if (rowFileListSignature(prev) !== rowFileListSignature(next)) {
     return false;
   }
 
@@ -150,7 +147,7 @@ export function downloadListReconcileSignature(items) {
   if (!items?.length) return '';
   const parts = items.map((i) => {
     const id = `${i.assetType || 'torrents'}:${i.id}`;
-    const files = fileListSignature(i.files);
+    const files = rowFileListSignature(i);
     return files ? `${id}[${files}]` : id;
   });
   parts.sort();
@@ -183,27 +180,68 @@ export function entityKey(assetType, id) {
  * @param {string[]} prevOrderKeys
  * @param {object[]} mergedList
  * @param {'torrents' | 'usenet' | 'webdl'} assetType
+ * @param {Record<string, object[]>} [prevFilesCache]
  */
-export function mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, assetType) {
+export function mergeListIntoEntities(
+  prevEntities,
+  prevOrderKeys,
+  mergedList,
+  assetType,
+  prevFilesCache = {}
+) {
   const nextEntities = { ...prevEntities };
+  let nextFilesCache = prevFilesCache;
+  let filesCacheDirty = false;
   const nextOrder = [];
   const nextKeySet = new Set();
+
+  const touchFilesCache = () => {
+    if (!filesCacheDirty) {
+      nextFilesCache = { ...prevFilesCache };
+      filesCacheDirty = true;
+    }
+  };
 
   for (const row of mergedList || []) {
     const key = entityKey(assetType, row.id);
     nextKeySet.add(key);
+    const tagged = row.assetType === assetType ? row : { ...row, assetType };
+    const { slim, files } = slimRowForStorage(tagged);
     const prev = prevEntities[key];
-    nextEntities[key] = prev && downloadRowEqual(prev, row) ? prev : row;
+    nextEntities[key] = prev && downloadRowEqual(prev, slim) ? prev : slim;
+
+    if (files?.length) {
+      const nextFiles =
+        prev?.fileListSignature === slim.fileListSignature && prevFilesCache[key]
+          ? prevFilesCache[key]
+          : files;
+      if (prevFilesCache[key] !== nextFiles) {
+        touchFilesCache();
+        nextFilesCache[key] = nextFiles;
+      }
+    } else if (key in prevFilesCache) {
+      touchFilesCache();
+      delete nextFilesCache[key];
+    }
+
     nextOrder.push(key);
   }
 
   for (const key of prevOrderKeys || []) {
     if (!nextKeySet.has(key)) {
       delete nextEntities[key];
+      if (key in prevFilesCache) {
+        touchFilesCache();
+        delete nextFilesCache[key];
+      }
     }
   }
 
-  return { entities: nextEntities, orderKeys: nextOrder };
+  return {
+    entities: nextEntities,
+    orderKeys: nextOrder,
+    filesCache: filesCacheDirty ? nextFilesCache : prevFilesCache,
+  };
 }
 
 /**
@@ -212,8 +250,14 @@ export function mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, a
  * @param {{ delta?: boolean, data?: object[], removed?: (number|string)[] }} payload
  * @param {'torrents' | 'usenet' | 'webdl'} assetType
  */
-export function mergeDownloadEntities(prevEntities, prevOrderKeys, payload, assetType) {
+export function mergeDownloadEntities(
+  prevEntities,
+  prevOrderKeys,
+  payload,
+  assetType,
+  prevFilesCache = {}
+) {
   const prevList = (prevOrderKeys || []).map((key) => prevEntities[key]).filter(Boolean);
   const mergedList = mergeDownloadList(prevList, payload, assetType);
-  return mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, assetType);
+  return mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, assetType, prevFilesCache);
 }

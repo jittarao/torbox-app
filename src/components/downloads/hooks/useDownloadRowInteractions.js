@@ -7,6 +7,7 @@ import { useFileInteractionStore } from '@/store/fileInteractionStore';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { getIdFieldForItem, resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { getFilesVisibleForDownloadSearch } from '../utils/downloadSearch';
+import { resolveItemFiles } from '@/utils/downloadEntityFiles';
 
 function findEntityBySelectionId(entityKeys, selectionId) {
   if (!entityKeys?.length) return null;
@@ -121,7 +122,11 @@ export function useDownloadRowInteractions({
           ? findEntityBySelectionId(keys, selectionId)
           : itemsRef.current?.find((row) => getDownloadSelectionId(row) === selectionId);
         if (item) {
-          getFilesVisibleForDownloadSearch(item, fileSearch)
+          getFilesVisibleForDownloadSearch(
+            item,
+            fileSearch,
+            useTorboxDownloadsStore.getState().filesByEntityKey
+          )
             .slice(start, end + 1)
             .forEach((f) => {
               onFileSelect(selectionId, f.id, checked);

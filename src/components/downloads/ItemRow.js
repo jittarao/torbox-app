@@ -27,6 +27,7 @@ import {
   useItemHasSelectedFiles,
 } from '@/components/shared/hooks/useSelection';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { getItemFileCount } from '@/utils/downloadEntityFiles';
 
 function normalizeBooleanValue(value) {
   return value === true || value === 1 || value === 'true';
@@ -215,7 +216,7 @@ const SeedsPeersCellMemo = memo(SeedsPeersCell);
 function FileCountCell({ item, style }) {
   return (
     <td className={tableDataCellText} style={style}>
-      {item.files?.length || 0}
+      {getItemFileCount(item)}
     </td>
   );
 }

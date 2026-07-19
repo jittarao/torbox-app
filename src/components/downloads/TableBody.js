@@ -21,6 +21,7 @@ import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { buildFlattenedTableRows } from './utils/flattenTableRows';
 import FileOverflowRow from './FileOverflowRow';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
 import { useLayoutOnTabVisible } from './hooks/useLayoutOnTabVisible';
 import { useDownloadRowInteractions } from './hooks/useDownloadRowInteractions';
@@ -106,6 +107,16 @@ function useTableBodyState(props) {
     [deferredExpandedById]
   );
 
+  const getVisibleFiles = useCallback(
+    (item, search) =>
+      getFilesVisibleForDownloadSearch(
+        item,
+        search,
+        useTorboxDownloadsStore.getState().filesByEntityKey
+      ),
+    []
+  );
+
   const expandedItemsArray = useMemo(() => {
     return Object.keys(deferredExpandedById)
       .map((id) => (Number.isNaN(Number(id)) ? id : Number(id)))
@@ -118,10 +129,16 @@ function useTableBodyState(props) {
       deferredItems,
       expandedSet,
       deferredUncappedFileExpandById,
-      getFilesVisibleForDownloadSearch,
+      getVisibleFiles,
       fileSearch
     );
-  }, [deferredItems, expandedItemsArray, deferredUncappedFileExpandById, fileSearch]);
+  }, [
+    deferredItems,
+    expandedItemsArray,
+    deferredUncappedFileExpandById,
+    fileSearch,
+    getVisibleFiles,
+  ]);
 
   const measureElement = useCallback((element, _entry, instance) => {
     if (!element || !instance) return 0;
