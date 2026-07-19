@@ -311,7 +311,7 @@ export async function fetchDownloadType(
       const torboxState = useTorboxDownloadsStore.getState();
       const prevOrder = torboxState.order[listKey] || [];
 
-      const { entities, orderKeys } = mergeDownloadEntities(
+      const { entities, orderKeys, filesCache } = mergeDownloadEntities(
         torboxState.entities,
         prevOrder,
         {
@@ -319,7 +319,8 @@ export async function fetchDownloadType(
           data: payloadData,
           ...(isDeltaPayload && { removed: data.removed }),
         },
-        assetType
+        assetType,
+        torboxState.filesByEntityKey
       );
 
       const sortedItems = orderKeys.map((key) => entities[key]).filter(Boolean);
@@ -339,7 +340,7 @@ export async function fetchDownloadType(
         return [];
       }
 
-      store.setListFromMerge(assetType, entities, orderKeys);
+      store.setListFromMerge(assetType, entities, orderKeys, filesCache);
 
       if (listKey === 'torrents' && !isAutoStartWorkerActive()) {
         try {

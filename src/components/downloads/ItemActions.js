@@ -11,6 +11,7 @@ import ItemActionButtons from './ItemActionButtons';
 import MoreOptionsDropdown from './MoreOptionsDropdown';
 import { useTranslations } from 'next-intl';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { resolveItemFiles } from '@/utils/downloadEntityFiles';
 import { resolveItemAssetType, getIdFieldForItem } from '@/store/torboxDownloadsSelectors';
 import { removeQueuedAfterForceStart } from '@/store/downloadListReconcile';
 import { isQueuedItem } from '@/utils/utility';
@@ -59,7 +60,8 @@ function ItemActions({
 
   // Downloads a torrent or a webdl/usenet item
   const handleDownload = async () => {
-    if (!item.files || item.files.length === 0) {
+    const files = resolveItemFiles(item, useTorboxDownloadsStore.getState().filesByEntityKey);
+    if (!files.length) {
       setToast({
         message: t('toast.noFiles'),
         type: 'error',
@@ -72,11 +74,11 @@ function ItemActions({
 
     const metadata = {
       assetType: resolvedAssetType,
-      item: item,
+      item: { ...item, files },
     };
     // If there's only one file, download it directly
-    if (item.files.length === 1) {
-      await downloadSingle(item.id, { fileId: item.files[0].id }, idField, false, metadata);
+    if (files.length === 1) {
+      await downloadSingle(item.id, { fileId: files[0].id }, idField, false, metadata);
       return;
     } else {
       // Otherwise, download the item as a zip

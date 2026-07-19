@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { STATUS_OPTIONS } from '@/components/constants';
 import { isQueuedItem } from '@/utils/utility';
+import { getItemFileCount } from '@/utils/downloadEntityFiles';
 
 export function useSort() {
   const [sortField, setSortField] = useState('created_at');
@@ -62,7 +63,7 @@ export function useSort() {
         (a[field] || '').toLowerCase().localeCompare((b[field] || '').toLowerCase()),
       date: (a, b, field) => new Date(a[field] || 0) - new Date(b[field] || 0),
       status: (a, b) => getStatusPriority(b) - getStatusPriority(a),
-      file_count: (a, b) => (a.files?.length || 0) - (b.files?.length || 0),
+      file_count: (a, b) => getItemFileCount(a) - getItemFileCount(b),
     }),
     [getStatusPriority]
   );

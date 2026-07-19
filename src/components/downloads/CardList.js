@@ -11,6 +11,7 @@ import { useStreamInitializer } from './hooks/useStreamInitializer';
 import DownloadCardContainer from './DownloadCardContainer';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
+import { resolveItemFiles } from '@/utils/downloadEntityFiles';
 import { useTranslations } from 'next-intl';
 import { getCardListItemGapPx } from './utils/responsiveLayout';
 import { CARD_ROW_CONTENT_VISIBILITY } from './utils/tableConstants';
@@ -42,7 +43,8 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch, expandedItemsKey) {
       const expandedById = useDownloadsUiStore.getState().expandedById;
       const filesExpanded = expandedById[id];
       const entity = useTorboxDownloadsStore.getState().entities[entityKey];
-      const filesVisible = getFilesVisibleForDownloadSearch(entity, fileSearch);
+      const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
+      const filesVisible = getFilesVisibleForDownloadSearch(entity, fileSearch, filesByEntityKey);
 
       let cardHeight = isMobile ? 152 : 100;
       if (filesExpanded && filesVisible) {
@@ -311,8 +313,9 @@ export default function CardList() {
     if (!fileSearch) return null;
     const search = fileSearch.toLowerCase();
     return (item) => {
-      if (!item.files || item.files.length === 0) return false;
-      return item.files.some((file) => {
+      const files = resolveItemFiles(item, useTorboxDownloadsStore.getState().filesByEntityKey);
+      if (!files.length) return false;
+      return files.some((file) => {
         const name = file.name || file.short_name || '';
         return name.toLowerCase().includes(search);
       });

@@ -8,6 +8,7 @@ import {
   itemsReconcileStructureUnchanged,
 } from '@/utils/downloadListMerge';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 
 export function useSelection(items, activeType = 'all', apiKey = '') {
   const {
@@ -43,8 +44,9 @@ export function useSelection(items, activeType = 'all', apiKey = '') {
     if (!itemsReconcileStructureUnchanged(prevItemsRef.current, items)) {
       const signature = downloadListReconcileSignature(items);
       const { listSignature, reconcileWithItems } = useDownloadsSelectionStore.getState();
+      const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
       if (signature !== listSignature) {
-        reconcileWithItems(items, signature);
+        reconcileWithItems(items, signature, filesByEntityKey);
       }
     }
     prevItemsRef.current = items;

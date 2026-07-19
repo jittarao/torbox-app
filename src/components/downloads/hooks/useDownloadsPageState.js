@@ -33,6 +33,8 @@ import { useAutomationEvents } from '@/components/shared/hooks/useAutomationEven
 import { useDownloadProtectionActions } from './useDownloadProtectionActions';
 import { useStopSeeding } from './useStopSeeding';
 import { useProtectedDownloadsStore } from '@/store/protectedDownloadsStore';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { getItemFileCount, resolveItemFiles } from '@/utils/downloadEntityFiles';
 
 export const FILTERS_SIDEBAR_EXPANDED = '14rem';
 export const FILTERS_SIDEBAR_COLLAPSED = '2.5rem';
@@ -252,9 +254,7 @@ export function useDownloadsPageState(apiKey) {
 
   const expandAllFiles = useCallback(() => {
     searchExpandedItemIdsRef.current = new Set();
-    const itemIds = viewItems
-      .filter((item) => item.files && item.files.length > 0)
-      .map((item) => item.id);
+    const itemIds = viewItems.filter((item) => getItemFileCount(item) > 0).map((item) => item.id);
     expandIds(itemIds);
   }, [viewItems, expandIds, searchExpandedItemIdsRef]);
 
@@ -309,13 +309,14 @@ export function useDownloadsPageState(apiKey) {
     if (selectedItems.items.size === 0 && selectedItems.files.size === 0) return formatSize(0);
 
     const itemMap = buildSelectionIdMap(viewItems);
+    const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
 
     const filesSize = Array.from(selectedItems.files.entries()).reduce(
       (acc, [selectionId, fileIds]) => {
         const item = itemMap.get(selectionId);
         if (!item) return acc;
         const fileIdSet = new Set(fileIds);
-        const files = item.files || [];
+        const files = resolveItemFiles(item, filesByEntityKey);
         for (let i = 0; i < files.length; i++) {
           if (fileIdSet.has(files[i].id)) {
             acc += files[i].size || 0;

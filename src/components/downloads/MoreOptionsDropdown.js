@@ -20,6 +20,8 @@ import { buildShortMagnetLink } from '@/utils/retryDownload';
 import { INTEGRATION_TYPES } from '@/types/api';
 import TagAssignmentModal from './Tags/TagAssignmentModal';
 import ModalOverlay from '@/components/shared/ModalOverlay';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { getItemFileCount, resolveItemFiles } from '@/utils/downloadEntityFiles';
 
 function menuButtonClass(menuVariant, tone = 'neutral') {
   if (menuVariant === 'sheet') {
@@ -635,10 +637,11 @@ export default function MoreOptionsDropdown({
     if (isUploadingRef.current) return;
     isUploadingRef.current = true;
     try {
+      const files = resolveItemFiles(item, useTorboxDownloadsStore.getState().filesByEntityKey);
       const uploadData = {
         id: item.id,
-        file_id: item.files?.[0]?.id || null,
-        zip: item.files?.length > 1,
+        file_id: files[0]?.id || null,
+        zip: getItemFileCount(item) > 1,
         type: activeType,
       };
 

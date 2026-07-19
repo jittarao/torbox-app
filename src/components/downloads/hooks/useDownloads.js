@@ -5,10 +5,19 @@ import { FETCH_TIMEOUT_MS, NON_RETRYABLE_ERRORS } from '@/components/constants';
 import { retryFetch } from '@/utils/retryFetch';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
 import { buildSelectionIdMap } from '@/utils/downloadSelectionId';
+import { resolveItemFiles } from '@/utils/downloadEntityFiles';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { parseUtcDate } from '@/utils/parseUtcDate';
 
 // Parallel downloads
 const CONCURRENT_DOWNLOADS = 3;
+
+function metadataItemFiles(metadata) {
+  const item = metadata?.item;
+  if (!item) return [];
+  if (item.files?.length) return item.files;
+  return resolveItemFiles(item, useTorboxDownloadsStore.getState().filesByEntityKey);
+}
 
 const saveLinkHistoryToBackend = async (apiKey) => {
   const { ensureUserDb } = await import('@/utils/ensureUserDb');
@@ -296,7 +305,7 @@ export function useDownloads(
           // Extract just the names we need for display
           const itemName = metadata.item?.name || null;
           const fileName = fileId
-            ? metadata.item?.files?.find((file) => file.id === fileId)?.short_name || null
+            ? metadataItemFiles(metadata).find((file) => file.id === fileId)?.short_name || null
             : null;
 
           // Prepare link history data
@@ -328,7 +337,7 @@ export function useDownloads(
       const resultId = fileId !== undefined && fileId !== null ? `${id}-${fileId}` : id;
       const itemName = metadata.item?.name || null;
       const fileName = fileId
-        ? metadata.item?.files?.find((file) => file.id === fileId)?.short_name || null
+        ? metadataItemFiles(metadata).find((file) => file.id === fileId)?.short_name || null
         : null;
 
       const failedDownloadHistory = {
@@ -367,7 +376,7 @@ export function useDownloads(
           let filename = options.filename;
           if (!filename) {
             // Get filename from metadata
-            const file = metadata.item?.files?.find((f) => f.id === options.fileId);
+            const file = metadataItemFiles(metadata).find((f) => f.id === options.fileId);
             filename = file?.name || `${options.fileId}.zip`;
           }
 
@@ -448,6 +457,7 @@ export function useDownloads(
       setDownloadProgress({ current: 0, total });
 
       const itemSelectionMap = buildSelectionIdMap(items);
+      const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
 
       // Create array of all download tasks
       const downloadTasks = [
@@ -455,16 +465,17 @@ export function useDownloads(
           const item = itemSelectionMap.get(selectionId);
           const itemId = item?.id ?? selectionId;
           const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
-          if (item?.files?.length === 1) {
+          const itemFiles = resolveItemFiles(item, filesByEntityKey);
+          if (itemFiles.length === 1) {
             // If there's exactly one file, create a file task
             return {
               type: 'file',
               itemId,
-              fileId: item.files[0].id,
-              name: item.files[0].name || `File ${item.files[0].id}`,
+              fileId: itemFiles[0].id,
+              name: itemFiles[0].name || `File ${itemFiles[0].id}`,
               metadata: {
                 assetType: taskAssetType,
-                item,
+                item: item ? { ...item, files: itemFiles } : item,
               },
             };
           } else {
@@ -486,17 +497,18 @@ export function useDownloads(
           const item = itemSelectionMap.get(selectionId);
           const itemId = item?.id ?? selectionId;
           const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
+          const itemFiles = resolveItemFiles(item, filesByEntityKey);
           return Array.from(fileIds).map((fileId) => ({
             type: 'file',
             itemId,
             fileId,
-            name: item?.files?.find((f) => f.id === fileId)?.name || `File ${fileId}`,
+            name: itemFiles.find((f) => f.id === fileId)?.name || `File ${fileId}`,
             metadata: {
               assetType: taskAssetType,
               item: item
                 ? {
                     ...item,
-                    files: (item.files || []).filter((f) => f.id === fileId),
+                    files: itemFiles.filter((f) => f.id === fileId),
                   }
                 : undefined,
             },

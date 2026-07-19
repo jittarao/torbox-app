@@ -3,6 +3,8 @@
  * @typedef {{ include: DownloadSearchTerm[], exclude: DownloadSearchTerm[] }} ParsedDownloadSearch
  */
 
+import { resolveItemFiles } from '@/utils/downloadEntityFiles';
+
 /** Split release/file names into tokens (spaces, dots, hyphens, underscores, etc.). */
 const SEARCH_TOKEN_SPLIT = /[.\-_+\s/\\[\](){}|,;:!?@#%&*='"`~]+/;
 
@@ -225,27 +227,32 @@ function haystackMatchesParsed(haystack, parsed) {
   return haystackMatchesInclude(haystack, parsed);
 }
 
-/** @param {{ name?: string, files?: Array<{ name?: string, short_name?: string }> }} item @param {ParsedDownloadSearch} parsed */
-function collectItemSearchHaystacks(item) {
+/** @param {{ name?: string, files?: Array<{ name?: string, short_name?: string }> }} item @param {ParsedDownloadSearch} parsed @param {Record<string, object[]>} [filesByEntityKey] */
+function collectItemSearchHaystacks(item, parsed, filesByEntityKey) {
   /** @type {string[]} */
   const haystacks = [];
   if (item.name) haystacks.push(item.name);
-  for (const file of item.files || []) {
+  for (const file of resolveItemFiles(item, filesByEntityKey)) {
     const name = file.short_name || file.name;
     if (name) haystacks.push(name);
   }
   return haystacks;
 }
 
-/** @param {{ name?: string, files?: Array<{ name?: string, short_name?: string }> }} item @param {ParsedDownloadSearch} parsed */
-function itemHasExcludedHaystack(item, parsed) {
-  const haystacks = collectItemSearchHaystacks(item);
+/** @param {{ name?: string, files?: Array<{ name?: string, short_name?: string }> }} item @param {ParsedDownloadSearch} parsed @param {Record<string, object[]>} [filesByEntityKey] */
+function itemHasExcludedHaystack(item, parsed, filesByEntityKey) {
+  const haystacks = collectItemSearchHaystacks(item, parsed, filesByEntityKey);
   return haystacks.some((haystack) => haystackMatchesExclude(haystack, parsed));
 }
 
 /** @param {string} query */
 function isEmptyDownloadSearchQuery(query) {
   return !(query || '').trim();
+}
+
+/** True when filter/search must read file names from the side cache. */
+export function downloadSearchNeedsFileCache(query) {
+  return !isEmptyDownloadSearchQuery(query);
 }
 
 /** @param {{ name?: string, short_name?: string }} file @param {ParsedDownloadSearch | null} parsed */
@@ -262,25 +269,29 @@ function itemNameMatchesDownloadSearch(item, parsed) {
 }
 
 /** Item row visible when title or any file name matches the parsed query. */
-export function itemMatchesDownloadSearch(item, query) {
+export function itemMatchesDownloadSearch(item, query, filesByEntityKey = null) {
   if (isEmptyDownloadSearchQuery(query)) return true;
   const parsed = getParsedDownloadSearch(query);
   if (!parsed) return true;
 
   if (!parsed.include.length) {
-    return !itemHasExcludedHaystack(item, parsed);
+    return !itemHasExcludedHaystack(item, parsed, filesByEntityKey);
   }
 
-  return collectItemSearchHaystacks(item).some((haystack) =>
+  return collectItemSearchHaystacks(item, parsed, filesByEntityKey).some((haystack) =>
     haystackMatchesParsed(haystack, parsed)
   );
 }
 
 /** True when at least one file name matches (used to auto-expand). */
-export function itemHasFileNameSearchMatch(item, query) {
+export function itemHasFileNameSearchMatch(item, query, filesByEntityKey = null) {
   if (isEmptyDownloadSearchQuery(query)) return false;
   const parsed = getParsedDownloadSearch(query);
-  return item.files?.some((file) => fileMatchesDownloadSearch(file, parsed)) ?? false;
+  return (
+    resolveItemFiles(item, filesByEntityKey).some((file) =>
+      fileMatchesDownloadSearch(file, parsed)
+    ) ?? false
+  );
 }
 
 /** Max matching files before search skips auto-expand (avoids huge inline lists). */
@@ -290,13 +301,14 @@ export const MAX_AUTO_EXPAND_MATCHING_FILES = 15;
  * Auto-expand only when file names match, the item title does not already surface
  * the hit, and the match count is small enough to browse inline.
  */
-export function shouldAutoExpandItemForSearch(item, query) {
+export function shouldAutoExpandItemForSearch(item, query, filesByEntityKey = null) {
   if (isEmptyDownloadSearchQuery(query)) return false;
   const parsed = getParsedDownloadSearch(query);
-  if (!parsed || !item.files?.length) return false;
+  const files = resolveItemFiles(item, filesByEntityKey);
+  if (!parsed || !files.length) return false;
   if (itemNameMatchesDownloadSearch(item, parsed)) return false;
 
-  const matchingFiles = item.files.filter((file) => fileMatchesDownloadSearch(file, parsed));
+  const matchingFiles = files.filter((file) => fileMatchesDownloadSearch(file, parsed));
   return matchingFiles.length > 0 && matchingFiles.length <= MAX_AUTO_EXPAND_MATCHING_FILES;
 }
 
@@ -306,9 +318,9 @@ export function shouldAutoExpandItemForSearch(item, query) {
  * - File names match: matching files only
  * - Title-only match: all files
  */
-export function getFilesVisibleForDownloadSearch(item, query) {
+export function getFilesVisibleForDownloadSearch(item, query, filesByEntityKey = null) {
   if (!item) return [];
-  const files = item.files || [];
+  const files = resolveItemFiles(item, filesByEntityKey);
   if (isEmptyDownloadSearchQuery(query)) return files;
 
   const parsed = getParsedDownloadSearch(query);
