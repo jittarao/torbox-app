@@ -2,6 +2,8 @@ pub const APP_DISPLAY_NAME: &str = "TorBox Manager";
 pub const BUNDLE_IDENTIFIER: &str = "tools.tbm.desktop";
 pub const LEGACY_LAUNCH_AGENT_LABEL: &str = "torbox-manager";
 pub const DEFAULT_INSTANCE_URL: &str = "https://tbm.tools";
+/// Default locale path for the in-app desktop settings page.
+pub const DEFAULT_DESKTOP_SETTINGS_PATH: &str = "/en/desktop";
 pub const PROTOCOL_VERSION: u32 = 1;
 pub const MINIMUM_SUPPORTED_WEB_BRIDGE_VERSION: u32 = 1;
 pub const MAX_TORRENT_FILE_BYTES: u64 = 10_485_760;

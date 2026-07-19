@@ -702,7 +702,7 @@
     "instanceUrlCancel": "Cancel",
     "instanceUrlChangeAction": "Change instance URL",
     "instanceUrlCurrent": "Connected instance",
-    "instanceUrlHelp": "Use a self-hosted HTTPS TorBox Manager URL instead of the default hosted instance.",
+    "instanceUrlHelp": "Use a self-hosted TorBox Manager URL instead of the default hosted instance. HTTPS is required for public hosts; HTTP is allowed for local or private network addresses (for example http://192.168.1.10:3000).",
     "instanceUrlSave": "Save URL",
     "instanceUrlSaveFailed": "Could not save the instance URL",
     "instanceUrlSaved": "Instance URL saved. Restart the desktop app to connect.",

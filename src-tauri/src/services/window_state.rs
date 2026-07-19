@@ -5,7 +5,9 @@ use std::sync::{
 use std::time::Duration;
 
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, Position, Size, WebviewWindow};
+use url::Url;
 
+use crate::constants::DEFAULT_DESKTOP_SETTINGS_PATH;
 use crate::services::settings::{SettingsService, WindowGeometry};
 use crate::services::web_path::{extract_web_path_from_url, navigation_url_for_path};
 
@@ -75,23 +77,63 @@ pub fn handle_window_geometry_event(
     }
 }
 
-pub fn restore_web_location(window: &WebviewWindow, settings: &SettingsService) {
-    let Some(web_path) = settings.get_last_web_path() else {
+/// Ensures the webview loads the configured instance URL on startup.
+/// Restores the last in-app path when available; otherwise opens the instance root.
+pub fn restore_instance_navigation(window: &WebviewWindow, settings: &SettingsService) {
+    let Some(target) = resolve_startup_navigation_url(window, settings) else {
         return;
     };
 
-    let base = resolve_navigation_base(window, settings);
-    let Ok(target) = navigation_url_for_path(&base, &web_path) else {
-        return;
-    };
-
-    if let Ok(current) = window.url() {
-        if current.path() == target.path() && current.query() == target.query() {
-            return;
-        }
+    if should_navigate_to(window, &target) {
+        let _ = window.navigate(target);
     }
+}
 
+pub fn navigate_to_instance_root(app: &AppHandle, settings: &SettingsService) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let Some(target) = instance_root_url(&window, settings) else {
+        return;
+    };
     let _ = window.navigate(target);
+}
+
+pub fn navigate_to_desktop_settings(app: &AppHandle, settings: &SettingsService) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let base = resolve_navigation_base(&window, settings);
+    let Ok(target) = navigation_url_for_path(&base, DEFAULT_DESKTOP_SETTINGS_PATH) else {
+        return;
+    };
+    let _ = window.navigate(target);
+}
+
+fn resolve_startup_navigation_url(
+    window: &WebviewWindow,
+    settings: &SettingsService,
+) -> Option<Url> {
+    let base = resolve_navigation_base(window, settings);
+    if let Some(web_path) = settings.get_last_web_path() {
+        return navigation_url_for_path(&base, &web_path).ok();
+    }
+    instance_root_url(window, settings)
+}
+
+fn instance_root_url(window: &WebviewWindow, settings: &SettingsService) -> Option<Url> {
+    let base = resolve_navigation_base(window, settings);
+    Url::parse(&format!("{}/", base.trim_end_matches('/'))).ok()
+}
+
+fn should_navigate_to(window: &WebviewWindow, target: &Url) -> bool {
+    let Ok(current) = window.url() else {
+        return true;
+    };
+
+    current.origin() != target.origin()
+        || current.path() != target.path()
+        || current.query() != target.query()
 }
 
 fn resolve_navigation_base(_window: &WebviewWindow, settings: &SettingsService) -> String {
@@ -125,5 +167,16 @@ pub fn persist_main_window_state(app: &AppHandle, settings: &SettingsService) {
     if let Some(window) = app.get_webview_window("main") {
         persist_window_geometry(&window, settings);
         persist_web_location(&window, settings);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn startup_target_uses_instance_root_without_saved_path() {
+        let target = Url::parse("https://self-hosted.example.com/").unwrap();
+        assert_eq!(target.as_str(), "https://self-hosted.example.com/");
     }
 }
