@@ -70,7 +70,7 @@ pub fn run() {
 
             if let Some(window) = app.get_webview_window("main") {
                 services::window_state::restore_window_geometry(&window, settings.as_ref());
-                services::window_state::restore_web_location(&window, settings.as_ref());
+                services::window_state::restore_instance_navigation(&window, settings.as_ref());
             }
 
             services::tray::apply_start_hidden_if_needed(app.handle(), settings.as_ref());

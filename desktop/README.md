@@ -75,7 +75,7 @@ bun run desktop:icon
 | Self-hosted | User-configured `https://host` via **Settings** in the sidebar |
 | Dev         | `http://localhost:3000` (`tauri dev` only)                     |
 
-Custom URLs must be HTTPS origins without paths, credentials, or query strings. Changing the instance URL requires an **app restart**.
+Custom URLs must be HTTPS origins without paths, credentials, or query strings (HTTP is allowed for local/private network hosts). Changing the instance URL requires an **app restart**. If a custom instance fails to load, use the tray menu **Reset instance URL** to return to the default hosted instance without reinstalling.
 
 ## IPC commands
 
