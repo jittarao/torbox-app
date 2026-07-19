@@ -121,9 +121,68 @@ pub fn validate_window_origin(window: &WebviewWindow, state: &AppState) -> Resul
         }
     }
 
-    if current_origin != stored_origin {
+    let mut session = state
+        .session_web_origin
+        .write()
+        .map_err(|_| "Session origin lock poisoned".to_string())?;
+
+    if !is_webview_origin_allowed(
+        &current_origin,
+        session.as_deref(),
+        &stored_origin,
+    ) {
         return Err("Origin does not match configured instance URL".into());
     }
 
+    if session.is_none() || current_origin == stored_origin {
+        *session = Some(current_origin);
+    }
+
     Ok(())
+}
+
+fn is_webview_origin_allowed(
+    current_origin: &str,
+    session_origin: Option<&str>,
+    stored_origin: &str,
+) -> bool {
+    if let Some(session_origin) = session_origin {
+        if current_origin == session_origin {
+            return true;
+        }
+    }
+
+    current_origin == stored_origin
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_webview_origin_allowed;
+
+    #[test]
+    fn allows_current_session_origin_after_instance_url_change() {
+        assert!(is_webview_origin_allowed(
+            "https://tbm.tools",
+            Some("https://tbm.tools"),
+            "https://self-hosted.example.com",
+        ));
+    }
+
+    #[test]
+    fn allows_navigation_to_stored_instance_origin() {
+        assert!(is_webview_origin_allowed(
+            "https://self-hosted.example.com",
+            Some("https://tbm.tools"),
+            "https://self-hosted.example.com",
+        ));
+    }
+
+    #[test]
+    fn rejects_untrusted_origin() {
+        assert!(!is_webview_origin_allowed(
+            "https://evil.example.com",
+            Some("https://tbm.tools"),
+            "https://self-hosted.example.com",
+        ));
+    }
 }

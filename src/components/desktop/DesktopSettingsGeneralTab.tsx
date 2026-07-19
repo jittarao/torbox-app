@@ -19,6 +19,16 @@ import { Bolt, Cloud, Key, Layers } from '@/components/icons';
 import { formatDate } from '@/components/uploads/utils';
 import type { CredentialStatus } from '@/desktop/capabilities';
 
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error;
+  }
+  return fallback;
+}
+
 type DesktopSettingsGeneralTabProps = {
   apiKey: string;
   credentialStatus: CredentialStatus | null;
@@ -70,7 +80,7 @@ export default function DesktopSettingsGeneralTab({
       setCustomUrl('');
       setShowCustomUrl(false);
     } catch (error) {
-      notify(error instanceof Error ? error.message : t('instanceUrlSaveFailed'), 'error');
+      notify(resolveErrorMessage(error, t('instanceUrlSaveFailed')), 'error');
     } finally {
       setSavingUrl(false);
     }

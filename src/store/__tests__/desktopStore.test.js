@@ -17,6 +17,7 @@ function mockDesktopBridge(overrides = {}) {
     showTestNotification: async () => false,
     checkForUpdate: async () => null,
     installUpdate: async () => false,
+    setInstanceUrl: async () => null,
     resetAvailabilityCache: () => {},
     ...overrides,
   };
@@ -106,5 +107,43 @@ describe('desktopStore', () => {
       'autostart denied'
     );
     expect(useDesktopStore.getState().launchAtLogin).toEqual(previous);
+  });
+
+  test('setInstanceUrl updates hello without refreshHello', async () => {
+    const hello = {
+      protocolVersion: 1,
+      appVersion: '0.1.0',
+      buildChannel: 'stable',
+      platform: 'windows',
+      capabilities: {
+        protocolVersion: 1,
+        features: {
+          instanceUrl: { version: 1, canCustomize: true },
+        },
+      },
+      minimumSupportedWebBridgeVersion: 1,
+      instanceUrl: 'https://tbm.tools',
+    };
+    const refreshHello = mock(async () => {
+      throw new Error('Origin does not match configured instance URL');
+    });
+
+    mock.module('@/desktop/desktopBridge', () =>
+      mockDesktopBridge({
+        isAvailable: async () => true,
+        setInstanceUrl: async () => 'https://self-hosted.example.com',
+        hello: refreshHello,
+      })
+    );
+    mock.module('@/desktop/events', () => mockDesktopEvents());
+
+    const { useDesktopStore } = await import('@/store/desktopStore');
+    useDesktopStore.setState({ hello });
+
+    await expect(
+      useDesktopStore.getState().setInstanceUrl('https://self-hosted.example.com')
+    ).resolves.toBe('https://self-hosted.example.com');
+    expect(refreshHello).not.toHaveBeenCalled();
+    expect(useDesktopStore.getState().hello?.instanceUrl).toBe('https://self-hosted.example.com');
   });
 });
