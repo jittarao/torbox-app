@@ -2,7 +2,6 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense, createContext, useContext } from 'react';
-import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react';
 
 const PostHogClientContext = createContext(null);
 
@@ -45,26 +44,18 @@ export function PostHogProvider({ children }) {
     };
   }, []);
 
-  if (!client) {
-    return <PostHogClientContext.Provider value={null}>{children}</PostHogClientContext.Provider>;
-  }
-
   return (
-    <PHProvider client={client}>
-      <PostHogClientContext.Provider value={client}>
-        <SuspendedPostHogPageView />
-        {children}
-      </PostHogClientContext.Provider>
-    </PHProvider>
+    <PostHogClientContext.Provider value={client}>
+      {client ? <SuspendedPostHogPageView /> : null}
+      {children}
+    </PostHogClientContext.Provider>
   );
 }
 
 function PostHogPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const posthogFromProvider = usePostHog();
-  const posthogFromContext = usePostHogClient();
-  const posthog = posthogFromProvider ?? posthogFromContext;
+  const posthog = usePostHogClient();
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.__TBM_RYBBIT__) {

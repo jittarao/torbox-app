@@ -2,20 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import { useRef, useMemo, useEffect, useState, useSyncExternalStore, useCallback } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  LogarithmicScale,
-} from 'chart.js';
+import { loadLineChart } from '@/utils/chartComponents';
 
-const Line = dynamic(() => import('react-chartjs-2').then((mod) => mod.Line), { ssr: false });
+const Line = dynamic(() => loadLineChart(), { ssr: false });
 import { formatSpeed } from './utils/formatters';
 import { useSpeedData } from '../shared/hooks/useSpeedData';
 import useIsMobile from '@/hooks/useIsMobile';
@@ -23,19 +12,6 @@ import { useTranslations } from 'next-intl';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { selectItemsForView } from '@/store/torboxDownloadsSelectors';
 import { getItem, setItem } from '@/utils/storage';
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  LogarithmicScale
-);
 
 // Theme colors from tailwind config
 const THEME_COLORS = {
