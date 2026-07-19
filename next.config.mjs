@@ -41,7 +41,17 @@ const nextConfig = {
 
   // Optimize bundle size
   experimental: {
-    optimizePackageImports: ['lodash', 'date-fns', 'chart.js'],
+    optimizePackageImports: [
+      '@dnd-kit/core',
+      '@dnd-kit/modifiers',
+      '@dnd-kit/sortable',
+      '@tanstack/react-virtual',
+      'chart.js',
+      'date-fns',
+      'next-intl',
+      'posthog-js',
+      'react-chartjs-2',
+    ],
   },
 
   // Optimize images
@@ -123,16 +133,39 @@ const nextConfig = {
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
+          shaka: {
+            test: /[\\/]node_modules[\\/]shaka-player[\\/]/,
+            name: 'shaka-player',
+            chunks: 'async',
+            priority: 40,
+            enforce: true,
+          },
+          charts: {
+            test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2)[\\/]/,
+            name: 'charts',
+            chunks: 'async',
+            priority: 40,
+            enforce: true,
+          },
+          posthog: {
+            test: /[\\/]node_modules[\\/]posthog-js[\\/]/,
+            name: 'posthog',
+            chunks: 'async',
+            priority: 40,
+            enforce: true,
+          },
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
-            chunks: 'all',
+            chunks: 'initial',
+            priority: 10,
           },
           common: {
             name: 'common',
             minChunks: 2,
             minSize: 30000,
             chunks: 'all',
+            priority: 5,
           },
         },
       };
