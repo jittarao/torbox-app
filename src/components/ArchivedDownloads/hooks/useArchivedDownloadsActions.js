@@ -4,7 +4,8 @@ export function useArchivedDownloadsActions(
   apiKey,
   fetchArchivedDownloads,
   setSelectedItems,
-  removeFromArchive
+  removeFromArchive,
+  confirmAction
 ) {
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
@@ -14,9 +15,10 @@ export function useArchivedDownloadsActions(
 
       const count = selectedItems.size;
       if (
-        !confirm(
-          `Delete ${count} archived download entr${count > 1 ? 'ies' : 'y'}? This cannot be undone.`
-        )
+        !(await confirmAction(
+          `Delete ${count} archived download entr${count > 1 ? 'ies' : 'y'}? This cannot be undone.`,
+          { confirmLabel: 'Delete' }
+        ))
       ) {
         return;
       }
@@ -60,7 +62,7 @@ export function useArchivedDownloadsActions(
         setBulkDeleting(false);
       }
     },
-    [apiKey, fetchArchivedDownloads, setSelectedItems]
+    [apiKey, fetchArchivedDownloads, setSelectedItems, confirmAction]
   );
 
   const handleRemove = useCallback(
