@@ -42,8 +42,9 @@ fn build_capabilities() -> serde_json::Value {
                 "version": 1
             },
             "folderWatcher": {
-                "version": 1,
-                "recursive": false
+                "version": 2,
+                "recursive": false,
+                "maxRules": crate::constants::MAX_WATCH_RULES
             },
             "backgroundUploads": {
                 "version": 1,

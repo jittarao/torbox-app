@@ -103,3 +103,21 @@ describe('desktopBridge browser fallback', () => {
     await expect(checkForUpdate()).resolves.toBeNull();
   });
 });
+
+describe('folderWatcher capabilities', () => {
+  test('folderWatcherSupportsMultiRule requires version 2', async () => {
+    const { folderWatcherSupportsMultiRule } = await import('@/desktop/capabilities');
+    expect(
+      folderWatcherSupportsMultiRule({
+        protocolVersion: 1,
+        features: { folderWatcher: { version: 1 } },
+      })
+    ).toBe(false);
+    expect(
+      folderWatcherSupportsMultiRule({
+        protocolVersion: 1,
+        features: { folderWatcher: { version: 2, maxRules: 10 } },
+      })
+    ).toBe(true);
+  });
+});
