@@ -1,5 +1,7 @@
 pub const APP_DISPLAY_NAME: &str = "TorBox Manager";
+#[cfg(target_os = "macos")]
 pub const BUNDLE_IDENTIFIER: &str = "tools.tbm.desktop";
+#[cfg(target_os = "macos")]
 pub const LEGACY_LAUNCH_AGENT_LABEL: &str = "torbox-manager";
 pub const DEFAULT_INSTANCE_URL: &str = "https://tbm.tools";
 /// Default locale path for the in-app desktop settings page.

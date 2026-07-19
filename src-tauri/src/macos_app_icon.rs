@@ -24,6 +24,3 @@ pub fn apply_dock_icon() {
         app.setApplicationIconImage(Some(&image));
     }
 }
-
-#[cfg(not(target_os = "macos"))]
-pub fn apply_dock_icon() {}
