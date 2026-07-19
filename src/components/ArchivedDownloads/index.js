@@ -6,18 +6,17 @@ import { Archive, Copy, Restore, Times } from '@/components/icons';
 import { useArchive } from '@/hooks/useArchive';
 import TimeAgoWithTooltip from '@/components/shared/TimeAgoWithTooltip';
 import useIsMobile from '@/hooks/useIsMobile';
-import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import SearchBar from '@/components/LinkHistory/components/SearchBar';
 import { useArchivedDownloadsActions } from './hooks/useArchivedDownloadsActions';
 import { useShiftRangeRowSelection } from '@/hooks/useShiftRangeRowSelection';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { useAppAlert } from '@/hooks/useAppAlert';
 
 export default function ArchivedDownloads({ apiKey }) {
   const t = useTranslations('Common');
   const archivedT = useTranslations('ArchivedDownloads');
   const isMobile = useIsMobile();
-  const [toast, setToast] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 50,
@@ -41,13 +40,15 @@ export default function ArchivedDownloads({ apiKey }) {
   } = useArchive(apiKey, pagination, setPagination, search);
 
   const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
+  const { alert, AppAlert } = useAppAlert();
 
   const { bulkDeleting, handleBulkDelete, handleRemove } = useArchivedDownloadsActions(
     apiKey,
     fetchArchivedDownloads,
     setSelectedItems,
     removeFromArchive,
-    confirm
+    confirm,
+    alert
   );
 
   const archivedItems = getArchivedDownloads();
@@ -113,17 +114,10 @@ export default function ArchivedDownloads({ apiKey }) {
   const onRemove = async (id) => {
     await handleRemove(
       id,
-      () =>
-        setToast({
-          message: archivedT('toast.removed') || 'Removed from archive',
-          type: 'success',
-        }),
+      () => alert(archivedT('toast.removed') || 'Removed from archive', 'success'),
       (err) => {
         console.error('Error removing from archive:', err);
-        setToast({
-          message: err.message || archivedT('toast.removeError') || 'Failed to remove',
-          type: 'error',
-        });
+        alert(err.message || archivedT('toast.removeError') || 'Failed to remove');
       }
     );
   };
@@ -131,16 +125,10 @@ export default function ArchivedDownloads({ apiKey }) {
   const handleRestore = async (download) => {
     try {
       await restoreFromArchive(download);
-      setToast({
-        message: archivedT('toast.restored') || 'Added to TorBox',
-        type: 'success',
-      });
+      alert(archivedT('toast.restored') || 'Added to TorBox', 'success');
     } catch (err) {
       console.error('Error restoring from archive:', err);
-      setToast({
-        message: err.message || archivedT('toast.restoreError') || 'Failed to restore',
-        type: 'error',
-      });
+      alert(err.message || archivedT('toast.restoreError') || 'Failed to restore');
     }
   };
 
@@ -148,10 +136,7 @@ export default function ArchivedDownloads({ apiKey }) {
     const encodedName = encodeURIComponent(download.name || 'Unknown');
     const magnetLink = `magnet:?xt=urn:btih:${download.hash}&dn=${encodedName}`;
     await navigator.clipboard.writeText(magnetLink);
-    setToast({
-      message: archivedT('toast.magnetCopied'),
-      type: 'success',
-    });
+    alert(archivedT('toast.magnetCopied'), 'success');
   };
 
   return (
@@ -373,8 +358,8 @@ export default function ArchivedDownloads({ apiKey }) {
         </div>
       )}
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <ConfirmDialog />
+      <AppAlert />
     </>
   );
 }

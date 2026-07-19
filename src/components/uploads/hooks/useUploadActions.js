@@ -13,7 +13,8 @@ export function useUploadActions(
   fetchUploads,
   fetchStatusCounts,
   setSelectedUploads,
-  confirmAction
+  confirmAction,
+  showAlert
 ) {
   const [retrying, setRetrying] = useState(new Set());
   const [deleting, setDeleting] = useState(new Set());
@@ -49,7 +50,7 @@ export function useUploadActions(
         await fetchStatusCounts();
       } catch (err) {
         console.error('Error retrying upload:', err);
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setRetrying((prev) => {
           const next = new Set(prev);
@@ -58,7 +59,7 @@ export function useUploadActions(
         });
       }
     },
-    [apiKey, retrying, fetchUploads, fetchStatusCounts]
+    [apiKey, retrying, fetchUploads, fetchStatusCounts, showAlert]
   );
 
   const handleDelete = useCallback(
@@ -102,7 +103,7 @@ export function useUploadActions(
         await fetchStatusCounts();
       } catch (err) {
         console.error('Error deleting upload:', err);
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setDeleting((prev) => {
           const next = new Set(prev);
@@ -111,7 +112,15 @@ export function useUploadActions(
         });
       }
     },
-    [apiKey, deleting, fetchUploads, fetchStatusCounts, setSelectedUploads, confirmAction]
+    [
+      apiKey,
+      deleting,
+      fetchUploads,
+      fetchStatusCounts,
+      setSelectedUploads,
+      confirmAction,
+      showAlert,
+    ]
   );
 
   const handleDownload = useCallback(
@@ -154,7 +163,7 @@ export function useUploadActions(
         document.body.removeChild(a);
       } catch (err) {
         console.error('Error downloading file:', err);
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setDownloading((prev) => {
           const next = new Set(prev);
@@ -163,7 +172,7 @@ export function useUploadActions(
         });
       }
     },
-    [apiKey, downloading]
+    [apiKey, downloading, showAlert]
   );
 
   const handleCopy = useCallback(
@@ -179,7 +188,7 @@ export function useUploadActions(
         setTimeout(() => setCopySuccess(null), 2000);
       } catch (err) {
         console.error('Error copying to clipboard:', err);
-        alert('Failed to copy to clipboard');
+        showAlert('Failed to copy to clipboard');
       } finally {
         setCopying((prev) => {
           const next = new Set(prev);
@@ -188,13 +197,13 @@ export function useUploadActions(
         });
       }
     },
-    [copying]
+    [copying, showAlert]
   );
 
   const bulkDeleteIds = useCallback(
     async (ids, confirmMessage) => {
       if (ids.length === 0) {
-        alert('No valid upload IDs to delete');
+        showAlert('No valid upload IDs to delete');
         return;
       }
 
@@ -225,12 +234,12 @@ export function useUploadActions(
         await fetchStatusCounts();
       } catch (err) {
         console.error('Error bulk deleting uploads:', err);
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setBulkDeleting(false);
       }
     },
-    [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirmAction]
+    [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirmAction, showAlert]
   );
 
   const handleBulkDelete = useCallback(
@@ -240,7 +249,7 @@ export function useUploadActions(
       const ids = idsFromSelection(selectedUploads);
       const count = ids.length;
       if (count === 0) {
-        alert('No valid upload IDs selected');
+        showAlert('No valid upload IDs selected');
         return;
       }
 
@@ -279,7 +288,7 @@ export function useUploadActions(
           .filter((id) => id !== null);
 
         if (ids.length === 0) {
-          alert('No failed uploads to delete');
+          showAlert('No failed uploads to delete');
           return;
         }
 
@@ -292,7 +301,7 @@ export function useUploadActions(
         await bulkDeleteIds(ids, message);
       } catch (err) {
         console.error('Error clearing failed uploads:', err);
-        alert(err.message);
+        showAlert(err.message);
       }
     },
     [apiKey, bulkDeleteIds]
@@ -308,7 +317,7 @@ export function useUploadActions(
       });
 
       if (failedUploads.length === 0) {
-        alert('No failed uploads selected. Only failed uploads can be retried.');
+        showAlert('No failed uploads selected. Only failed uploads can be retried.');
         return;
       }
 
@@ -328,7 +337,7 @@ export function useUploadActions(
         const ids = failedUploads.map((u) => normalizeUploadId(u.id)).filter((id) => id !== null);
 
         if (ids.length === 0) {
-          alert('No valid upload IDs to retry');
+          showAlert('No valid upload IDs to retry');
           return;
         }
 
@@ -352,12 +361,12 @@ export function useUploadActions(
         await fetchStatusCounts();
       } catch (err) {
         console.error('Error bulk retrying uploads:', err);
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setBulkRetrying(false);
       }
     },
-    [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirmAction]
+    [apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirmAction, showAlert]
   );
 
   const handleDragEnd = useCallback(
@@ -415,12 +424,12 @@ export function useUploadActions(
       } catch (err) {
         console.error('Error reordering uploads:', err);
         await fetchUploads();
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setReordering(false);
       }
     },
-    [apiKey, fetchUploads]
+    [apiKey, fetchUploads, showAlert]
   );
 
   return {

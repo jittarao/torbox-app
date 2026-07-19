@@ -5,7 +5,8 @@ export function useArchivedDownloadsActions(
   fetchArchivedDownloads,
   setSelectedItems,
   removeFromArchive,
-  confirmAction
+  confirmAction,
+  showAlert
 ) {
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
@@ -34,7 +35,7 @@ export function useArchivedDownloadsActions(
           .filter((id) => id !== null);
 
         if (ids.length === 0) {
-          alert('No valid archive IDs to delete');
+          showAlert('No valid archive IDs to delete');
           return;
         }
 
@@ -57,12 +58,12 @@ export function useArchivedDownloadsActions(
         await fetchArchivedDownloads();
       } catch (err) {
         console.error('Error bulk deleting archived downloads:', err);
-        alert(err.message);
+        showAlert(err.message);
       } finally {
         setBulkDeleting(false);
       }
     },
-    [apiKey, fetchArchivedDownloads, setSelectedItems, confirmAction]
+    [apiKey, fetchArchivedDownloads, setSelectedItems, confirmAction, showAlert]
   );
 
   const handleRemove = useCallback(
