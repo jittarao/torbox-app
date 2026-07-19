@@ -24,6 +24,7 @@ base64 = "0.22"
 sha2 = "0.10"
 rfd = "0.15"
 tokio = { version = "1", features = ["sync", "time", "rt-multi-thread", "macros"] }
+uuid = { version = "1", features = ["v4"] }
 tauri-plugin-autostart = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"

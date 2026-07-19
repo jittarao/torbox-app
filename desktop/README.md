@@ -95,9 +95,11 @@ Tauri events: `desktop://watcher-status-changed`, `desktop://torrent-detected`, 
 
 ## Torrent folder watcher
 
-See Phase 5 docs in the original migration plan. Watcher auto-resumes on launch when enabled and a credential is stored.
+Supports **multiple watch rules** (desktop bridge `folderWatcher` v2, up to 10 folders). Each rule has its own folder, enabled toggle, post-upload behavior, and torrent options. Existing single-folder settings migrate automatically to one rule on first load.
 
-Detected `.torrent` files are **coalesced into batches** (~1.5s idle after the last file event, up to 1000 per request) and uploaded via `POST /api/uploads/batch`. Native notifications summarize each batch (e.g. “5 torrents were uploaded successfully”) instead of one notification per file. Per-file Tauri events and the activity log are unchanged.
+Watcher auto-resumes on launch when any rule is enabled and a credential is stored.
+
+Detected `.torrent` files are **coalesced into batches** (~1.5s idle after the last file event, up to 1000 per request) and uploaded via `POST /api/uploads/batch`. Native notifications summarize each batch (e.g. “5 torrents were uploaded successfully”) instead of one notification per file. Per-file Tauri events are unchanged.
 
 ## Tray and background operation
 

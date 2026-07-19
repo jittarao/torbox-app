@@ -6,7 +6,7 @@ export type DesktopFeatureMap = {
   secureCredentials?: { version: number; canStoreApiKey: boolean };
   instanceUrl?: { version: number; canCustomize: boolean };
   folderPicker?: { version: number };
-  folderWatcher?: { version: number; recursive?: boolean };
+  folderWatcher?: { version: number; recursive?: boolean; maxRules?: number };
   backgroundUploads?: { version: number; maxFileBytes?: number };
   nativeNotifications?: { version: number };
   tray?: { version: number };
@@ -45,30 +45,36 @@ export type TorrentUploadOptions = {
   addOnlyIfCached: boolean;
 };
 
-export type FolderWatcherConfig = {
+export type WatchRule = {
+  id: string;
   enabled: boolean;
   watchPath: string | null;
   postUploadAction: PostUploadAction;
   customMovePath: string | null;
   torrentOptions: TorrentUploadOptions;
   scanExistingOnEnable: boolean;
-  stableFileMs: number;
 };
 
-export type WatcherActivityEntry = {
-  filename: string;
-  timestamp: string;
-  result: string;
-  detail?: string | null;
+export type FolderWatcherConfig = {
+  rules: WatchRule[];
+};
+
+export type WatchRuleStatus = {
+  ruleId: string;
+  watchPath: string | null;
+  enabled: boolean;
+  active: boolean;
+  queueDepth: number;
+  uploadsToday: number;
+  lastError: string | null;
 };
 
 export type WatcherStatus = {
   running: boolean;
-  watchPath: string | null;
   queueDepth: number;
   lastError: string | null;
   uploadsToday: number;
-  activity: WatcherActivityEntry[];
+  rules: WatchRuleStatus[];
 };
 
 export type LaunchAtLoginStatus = {
@@ -107,4 +113,10 @@ export function hasFeature(
   feature: keyof DesktopFeatureMap
 ): boolean {
   return Boolean(capabilities?.features?.[feature]);
+}
+
+export function folderWatcherSupportsMultiRule(
+  capabilities: DesktopCapabilities | null | undefined
+): boolean {
+  return (capabilities?.features?.folderWatcher?.version ?? 0) >= 2;
 }

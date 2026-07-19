@@ -7,6 +7,9 @@ function mockDesktopBridge(overrides = {}) {
     hello: async () => null,
     getCredentialStatus: async () => null,
     getFolderWatcherConfig: async () => null,
+    setFolderWatcherConfig: async () => true,
+    startFolderWatcher: async () => true,
+    stopFolderWatcher: async () => true,
     getFolderWatcherStatus: async () => null,
     getLaunchAtLogin: async () => null,
     setLaunchAtLogin: async () => null,
@@ -145,5 +148,105 @@ describe('desktopStore', () => {
     ).resolves.toBe('https://self-hosted.example.com');
     expect(refreshHello).not.toHaveBeenCalled();
     expect(useDesktopStore.getState().hello?.instanceUrl).toBe('https://self-hosted.example.com');
+  });
+
+  test('refreshWatcherStatus stores per-rule status breakdown', async () => {
+    const watcherStatus = {
+      running: true,
+      queueDepth: 2,
+      lastError: null,
+      uploadsToday: 3,
+      rules: [
+        {
+          ruleId: 'rule-a',
+          watchPath: '/tmp/watch-a',
+          enabled: true,
+          active: true,
+          queueDepth: 1,
+          uploadsToday: 2,
+          lastError: null,
+        },
+        {
+          ruleId: 'rule-b',
+          watchPath: '/tmp/watch-b',
+          enabled: true,
+          active: false,
+          queueDepth: 1,
+          uploadsToday: 1,
+          lastError: 'upload failed',
+        },
+      ],
+    };
+
+    mock.module('@/desktop/desktopBridge', () =>
+      mockDesktopBridge({
+        isAvailable: async () => true,
+        hello: async () => ({
+          protocolVersion: 1,
+          appVersion: '0.1.0',
+          buildChannel: 'stable',
+          platform: 'macos',
+          capabilities: {
+            protocolVersion: 1,
+            features: { folderWatcher: { version: 2, maxRules: 10 } },
+          },
+          minimumSupportedWebBridgeVersion: 1,
+          instanceUrl: 'https://tbm.tools',
+        }),
+        getFolderWatcherStatus: async () => watcherStatus,
+      })
+    );
+    mock.module('@/desktop/events', () => mockDesktopEvents());
+
+    const { useDesktopStore } = await import('@/store/desktopStore');
+    useDesktopStore.setState({
+      initialized: false,
+      available: false,
+      initError: null,
+    });
+
+    await useDesktopStore.getState().initialize();
+
+    expect(useDesktopStore.getState().watcherStatus?.rules).toHaveLength(2);
+    expect(useDesktopStore.getState().watcherStatus?.rules[0].ruleId).toBe('rule-a');
+    expect(useDesktopStore.getState().watcherStatus?.rules[1].lastError).toBe('upload failed');
+  });
+
+  test('saveWatcherConfig refreshes config after start failure rollback', async () => {
+    const rolledBackConfig = {
+      rules: [{ id: 'rule-a', enabled: false, watchPath: '/tmp/watch-a' }],
+    };
+    let configLoads = 0;
+
+    mock.module('@/desktop/desktopBridge', () =>
+      mockDesktopBridge({
+        isAvailable: async () => true,
+        setFolderWatcherConfig: async () => {
+          throw new Error('Failed to watch folder');
+        },
+        getFolderWatcherConfig: async () => {
+          configLoads += 1;
+          return rolledBackConfig;
+        },
+        getFolderWatcherStatus: async () => null,
+      })
+    );
+    mock.module('@/desktop/events', () => mockDesktopEvents());
+
+    const { useDesktopStore } = await import('@/store/desktopStore');
+    useDesktopStore.setState({
+      watcherConfig: {
+        rules: [{ id: 'rule-a', enabled: true, watchPath: '/tmp/watch-a' }],
+      },
+    });
+
+    await expect(
+      useDesktopStore.getState().saveWatcherConfig({
+        rules: [{ id: 'rule-a', enabled: true, watchPath: '/tmp/watch-a' }],
+      })
+    ).rejects.toThrow('Failed to watch folder');
+
+    expect(configLoads).toBeGreaterThan(0);
+    expect(useDesktopStore.getState().watcherConfig).toEqual(rolledBackConfig);
   });
 });

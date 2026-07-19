@@ -8,8 +8,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
 use crate::constants::{
-    DEFAULT_INSTANCE_URL, DEFAULT_STABLE_FILE_MS, MAX_STABLE_FILE_MS, MIN_STABLE_FILE_MS,
-    MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH,
+    DEFAULT_INSTANCE_URL, MAX_WATCH_RULES, MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH,
 };
 use crate::services::atomic_json::write_atomic;
 use crate::services::url_validation::{default_instance_url, validate_instance_url};
@@ -63,7 +62,8 @@ impl Default for TorrentUploadOptions {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct FolderWatcherConfig {
+pub struct WatchRule {
+    pub id: String,
     #[serde(default)]
     pub enabled: bool,
     #[serde(default)]
@@ -76,25 +76,124 @@ pub struct FolderWatcherConfig {
     pub torrent_options: TorrentUploadOptions,
     #[serde(default)]
     pub scan_existing_on_enable: bool,
-    #[serde(default = "default_stable_file_ms")]
-    pub stable_file_ms: u64,
 }
 
-fn default_stable_file_ms() -> u64 {
-    DEFAULT_STABLE_FILE_MS
-}
-
-impl Default for FolderWatcherConfig {
+impl Default for WatchRule {
     fn default() -> Self {
         Self {
+            id: uuid::Uuid::new_v4().to_string(),
             enabled: false,
             watch_path: None,
             post_upload_action: PostUploadAction::MoveToUploaded,
             custom_move_path: None,
             torrent_options: TorrentUploadOptions::default(),
             scan_existing_on_enable: false,
-            stable_file_ms: DEFAULT_STABLE_FILE_MS,
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FolderWatcherConfig {
+    pub rules: Vec<WatchRule>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LegacyFolderWatcherConfig {
+    #[serde(default)]
+    enabled: bool,
+    #[serde(default)]
+    watch_path: Option<String>,
+    #[serde(default)]
+    post_upload_action: PostUploadAction,
+    #[serde(default)]
+    custom_move_path: Option<String>,
+    #[serde(default)]
+    torrent_options: TorrentUploadOptions,
+    #[serde(default)]
+    scan_existing_on_enable: bool,
+    #[serde(default = "default_ignored_stable_file_ms", skip_serializing)]
+    #[allow(dead_code)]
+    stable_file_ms: u64,
+}
+
+fn default_ignored_stable_file_ms() -> u64 {
+    0
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum FolderWatcherConfigRaw {
+    Current { rules: Vec<WatchRule> },
+    Legacy(LegacyFolderWatcherConfig),
+}
+
+impl<'de> Deserialize<'de> for FolderWatcherConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = FolderWatcherConfigRaw::deserialize(deserializer)?;
+        Ok(match raw {
+            FolderWatcherConfigRaw::Current { rules } => Self { rules },
+            FolderWatcherConfigRaw::Legacy(legacy) => Self {
+                rules: vec![WatchRule {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    enabled: legacy.enabled,
+                    watch_path: legacy.watch_path,
+                    post_upload_action: legacy.post_upload_action,
+                    custom_move_path: legacy.custom_move_path,
+                    torrent_options: legacy.torrent_options,
+                    scan_existing_on_enable: legacy.scan_existing_on_enable,
+                }],
+            },
+        })
+    }
+}
+
+impl Default for FolderWatcherConfig {
+    fn default() -> Self {
+        Self { rules: Vec::new() }
+    }
+}
+
+impl FolderWatcherConfig {
+    pub fn has_enabled_rules(&self) -> bool {
+        self.rules.iter().any(|rule| rule.enabled)
+    }
+
+    /// Rule IDs that should scan existing files after a config save (newly enabled rules only).
+    pub fn rules_to_scan_after_save(
+        previous: &FolderWatcherConfig,
+        next: &FolderWatcherConfig,
+    ) -> Vec<String> {
+        let previously_enabled: std::collections::HashSet<&str> = previous
+            .rules
+            .iter()
+            .filter(|rule| rule.enabled)
+            .map(|rule| rule.id.as_str())
+            .collect();
+
+        next.rules
+            .iter()
+            .filter(|rule| rule.enabled && rule.scan_existing_on_enable)
+            .filter(|rule| !previously_enabled.contains(rule.id.as_str()))
+            .map(|rule| rule.id.clone())
+            .collect()
+    }
+
+    /// Rule IDs to scan when the user manually starts the watcher with scanExisting=true.
+    pub fn rules_to_scan_on_manual_start(&self) -> Vec<String> {
+        self.rules
+            .iter()
+            .filter(|rule| rule.enabled && rule.scan_existing_on_enable)
+            .map(|rule| rule.id.clone())
+            .collect()
+    }
+
+    pub fn find_rule(&self, rule_id: &str) -> Option<&WatchRule> {
+        self.rules.iter().find(|rule| rule.id == rule_id)
     }
 }
 
@@ -286,17 +385,23 @@ impl SettingsService {
             .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
         fs::create_dir_all(&dir).map_err(|e| format!("Failed to create app data dir: {e}"))?;
         let path = dir.join("desktop-settings.json");
-        let settings = if path.exists() {
+        let (settings, needs_folder_watcher_persist) = if path.exists() {
             let raw =
                 fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {e}"))?;
-            serde_json::from_str(&raw).unwrap_or_default()
+            let settings: DesktopSettings = serde_json::from_str(&raw).unwrap_or_default();
+            let needs_folder_watcher_persist = folder_watcher_json_needs_upgrade(&raw);
+            (settings, needs_folder_watcher_persist)
         } else {
-            DesktopSettings::default()
+            (DesktopSettings::default(), false)
         };
-        Ok(Self {
+        let service = Self {
             path,
             settings: Mutex::new(settings),
-        })
+        };
+        if needs_folder_watcher_persist {
+            let _ = service.persist_folder_watcher_format_upgrade();
+        }
+        Ok(service)
     }
 
     pub fn get_instance_url(&self) -> String {
@@ -470,7 +575,7 @@ impl SettingsService {
     }
 
     pub fn set_folder_watcher_config(&self, config: FolderWatcherConfig) -> Result<(), String> {
-        self.validate_folder_watcher_for_start(&config)?;
+        self.validate_folder_watcher_config(&config)?;
 
         let mut settings = self
             .settings
@@ -481,44 +586,89 @@ impl SettingsService {
         self.persist(&settings)
     }
 
-    pub fn disable_folder_watcher(&self) -> Result<(), String> {
+    pub fn disable_all_watch_rules(&self) -> Result<(), String> {
         let mut settings = self
             .settings
             .lock()
             .map_err(|_| "Settings lock poisoned".to_string())?;
-        settings.folder_watcher.enabled = false;
+        for rule in &mut settings.folder_watcher.rules {
+            rule.enabled = false;
+        }
         self.persist(&settings)
     }
 
-    pub fn validate_folder_watcher_for_start(
-        &self,
-        config: &FolderWatcherConfig,
-    ) -> Result<(), String> {
+    pub fn validate_folder_watcher_config(&self, config: &FolderWatcherConfig) -> Result<(), String> {
+        if config.rules.len() > MAX_WATCH_RULES {
+            return Err(format!("At most {MAX_WATCH_RULES} watch rules are allowed"));
+        }
+
         let settings = self
             .settings
             .lock()
             .map_err(|_| "Settings lock poisoned".to_string())?;
 
-        if let Some(ref watch_path) = config.watch_path {
-            self.ensure_watch_path_allowed(&settings.path_allowlist, watch_path)?;
+        let mut seen_watch_paths: Vec<PathBuf> = Vec::new();
+        let mut seen_rule_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+        for rule in &config.rules {
+            if rule.id.trim().is_empty() {
+                return Err("Each watch rule must have an id".into());
+            }
+            if !seen_rule_ids.insert(rule.id.clone()) {
+                return Err("Duplicate watch rule id".into());
+            }
+            self.validate_watch_rule_with_allowlist(&settings.path_allowlist, rule)?;
+
+            if let Some(ref watch_path) = rule.watch_path {
+                let normalized = normalize_path(watch_path)?;
+                for existing in &seen_watch_paths {
+                    if paths_overlap(&existing, &normalized) {
+                        return Err(
+                            "Watch folders must not overlap or be nested inside each other".into(),
+                        );
+                    }
+                }
+                seen_watch_paths.push(normalized);
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_watch_rule(&self, rule: &WatchRule) -> Result<(), String> {
+        let settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+        self.validate_watch_rule_with_allowlist(&settings.path_allowlist, rule)
+    }
+
+    fn validate_watch_rule_with_allowlist(
+        &self,
+        allowlist: &PathAllowlist,
+        rule: &WatchRule,
+    ) -> Result<(), String> {
+        if rule.enabled {
+            let watch_path = rule
+                .watch_path
+                .as_ref()
+                .ok_or("Enabled watch rules must have a watch folder")?;
+            self.ensure_watch_path_allowed(allowlist, watch_path)?;
+            normalize_path(watch_path)?;
+        } else if let Some(ref watch_path) = rule.watch_path {
+            self.ensure_watch_path_allowed(allowlist, watch_path)?;
             normalize_path(watch_path)?;
         }
 
-        if config.post_upload_action == PostUploadAction::MoveToCustom {
-            let custom = config
+        if rule.post_upload_action == PostUploadAction::MoveToCustom {
+            let custom = rule
                 .custom_move_path
                 .as_ref()
                 .ok_or("Custom move path is required for moveToCustom action")?;
-            self.ensure_move_path_allowed(&settings.path_allowlist, custom)?;
+            self.ensure_move_path_allowed(allowlist, custom)?;
         }
 
-        if config.stable_file_ms < MIN_STABLE_FILE_MS || config.stable_file_ms > MAX_STABLE_FILE_MS {
-            return Err(format!(
-                "stableFileMs must be between {MIN_STABLE_FILE_MS} and {MAX_STABLE_FILE_MS}"
-            ));
-        }
-
-        if config.torrent_options.seed > 2 {
+        if rule.torrent_options.seed > 2 {
             return Err("seed must be 0, 1, or 2".into());
         }
 
@@ -600,6 +750,28 @@ impl SettingsService {
             .map_err(|e| format!("Failed to encode settings: {e}"))?;
         write_atomic(&self.path, &raw)
     }
+
+    fn persist_folder_watcher_format_upgrade(&self) -> Result<(), String> {
+        let settings = self
+            .settings
+            .lock()
+            .map_err(|_| "Settings lock poisoned".to_string())?;
+        self.persist(&settings)
+    }
+}
+
+fn folder_watcher_json_needs_upgrade(raw: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(raw)
+        .ok()
+        .and_then(|value| value.get("folderWatcher").cloned())
+        .map(|folder_watcher| folder_watcher.is_object() && folder_watcher.get("rules").is_none())
+        .unwrap_or(false)
+}
+
+fn paths_overlap(left: &PathBuf, right: &PathBuf) -> bool {
+    left == right
+        || crate::services::watcher_paths::is_path_inside(left, right)
+        || crate::services::watcher_paths::is_path_inside(right, left)
 }
 
 #[cfg(test)]
@@ -687,11 +859,13 @@ mod tests {
     fn validate_rejects_unallowlisted_watch_path() {
         let (service, dir) = temp_settings_service();
         let config = FolderWatcherConfig {
-            watch_path: Some("/tmp/not-allowlisted".to_string()),
-            ..Default::default()
+            rules: vec![WatchRule {
+                watch_path: Some("/tmp/not-allowlisted".to_string()),
+                ..WatchRule::default()
+            }],
         };
         let error = service
-            .validate_folder_watcher_for_start(&config)
+            .validate_folder_watcher_config(&config)
             .unwrap_err();
         assert!(error.contains("native folder picker"));
         let _ = fs::remove_dir_all(dir);
@@ -702,28 +876,140 @@ mod tests {
         let (service, dir) = temp_settings_service();
         let registered = service.register_watch_path_from_picker(&dir.to_string_lossy()).unwrap();
         let config = FolderWatcherConfig {
-            watch_path: Some(registered),
-            ..Default::default()
+            rules: vec![WatchRule {
+                watch_path: Some(registered),
+                ..WatchRule::default()
+            }],
         };
-        service
-            .validate_folder_watcher_for_start(&config)
-            .unwrap();
+        service.validate_folder_watcher_config(&config).unwrap();
         let _ = fs::remove_dir_all(dir);
     }
 
     #[test]
-    fn validate_rejects_invalid_stable_file_ms() {
+    fn folder_watcher_config_migrates_legacy_shape() {
+        let json = r#"{
+            "enabled": true,
+            "watchPath": "/tmp/watch",
+            "postUploadAction": "delete",
+            "scanExistingOnEnable": true,
+            "stableFileMs": 3000
+        }"#;
+        let config: FolderWatcherConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.rules.len(), 1);
+        assert!(config.rules[0].enabled);
+        assert_eq!(config.rules[0].watch_path.as_deref(), Some("/tmp/watch"));
+        assert_eq!(config.rules[0].post_upload_action, PostUploadAction::Delete);
+        assert!(config.rules[0].scan_existing_on_enable);
+    }
+
+    #[test]
+    fn current_format_deserializes_rules_array() {
+        let json = r#"{
+            "rules": [
+                {
+                    "id": "rule-a",
+                    "enabled": true,
+                    "watchPath": "/tmp/watch-a"
+                },
+                {
+                    "id": "rule-b",
+                    "enabled": false,
+                    "watchPath": "/tmp/watch-b"
+                }
+            ]
+        }"#;
+        let config: FolderWatcherConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.rules.len(), 2);
+        assert_eq!(config.rules[0].id, "rule-a");
+        assert!(config.rules[0].enabled);
+        assert_eq!(config.rules[1].id, "rule-b");
+        assert!(!config.rules[1].enabled);
+    }
+
+    #[test]
+    fn persisted_multi_rule_config_survives_reload() {
+        let config = FolderWatcherConfig {
+            rules: vec![
+                WatchRule {
+                    id: "rule-a".to_string(),
+                    enabled: true,
+                    watch_path: Some("/tmp/watch-a".to_string()),
+                    ..WatchRule::default()
+                },
+                WatchRule {
+                    id: "rule-b".to_string(),
+                    enabled: false,
+                    watch_path: Some("/tmp/watch-b".to_string()),
+                    ..WatchRule::default()
+                },
+            ],
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        let loaded: FolderWatcherConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(loaded.rules.len(), 2);
+        assert_eq!(loaded.rules[0].id, "rule-a");
+        assert_eq!(loaded.rules[1].id, "rule-b");
+    }
+
+    #[test]
+    fn rules_to_scan_only_newly_enabled() {
+        let previous = FolderWatcherConfig {
+            rules: vec![
+                WatchRule {
+                    id: "rule-a".to_string(),
+                    enabled: true,
+                    scan_existing_on_enable: true,
+                    ..WatchRule::default()
+                },
+                WatchRule {
+                    id: "rule-b".to_string(),
+                    enabled: false,
+                    scan_existing_on_enable: true,
+                    ..WatchRule::default()
+                },
+            ],
+        };
+        let next = FolderWatcherConfig {
+            rules: vec![
+                WatchRule {
+                    id: "rule-a".to_string(),
+                    enabled: true,
+                    scan_existing_on_enable: true,
+                    ..WatchRule::default()
+                },
+                WatchRule {
+                    id: "rule-b".to_string(),
+                    enabled: true,
+                    scan_existing_on_enable: true,
+                    ..WatchRule::default()
+                },
+            ],
+        };
+
+        let to_scan = FolderWatcherConfig::rules_to_scan_after_save(&previous, &next);
+        assert_eq!(to_scan, vec!["rule-b".to_string()]);
+    }
+
+    #[test]
+    fn validate_rejects_duplicate_watch_paths() {
         let (service, dir) = temp_settings_service();
         let registered = service.register_watch_path_from_picker(&dir.to_string_lossy()).unwrap();
         let config = FolderWatcherConfig {
-            watch_path: Some(registered),
-            stable_file_ms: 100,
-            ..Default::default()
+            rules: vec![
+                WatchRule {
+                    watch_path: Some(registered.clone()),
+                    ..WatchRule::default()
+                },
+                WatchRule {
+                    watch_path: Some(registered),
+                    ..WatchRule::default()
+                },
+            ],
         };
         let error = service
-            .validate_folder_watcher_for_start(&config)
+            .validate_folder_watcher_config(&config)
             .unwrap_err();
-        assert!(error.contains("stableFileMs"));
+        assert!(error.contains("overlap"));
         let _ = fs::remove_dir_all(dir);
     }
 }
