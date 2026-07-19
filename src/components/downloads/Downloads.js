@@ -80,6 +80,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
   const filtersSidebarWidth = filtersSidebarCollapsed
     ? FILTERS_SIDEBAR_COLLAPSED
     : FILTERS_SIDEBAR_EXPANDED;
+  const FilterPromptDialog = filterData.PromptDialog;
 
   return (
     <div
@@ -223,6 +224,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <FilterPromptDialog />
     </div>
   );
 }
