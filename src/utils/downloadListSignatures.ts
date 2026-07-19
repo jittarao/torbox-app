@@ -1,4 +1,4 @@
-import { fileListSignature } from '@/utils/downloadListMerge';
+import { fileListSignature } from '@/utils/downloadEntityFiles';
 
 type EntityMap = Record<string, Record<string, unknown> | undefined>;
 
@@ -8,8 +8,10 @@ export function buildRowDataSignature(
   entity: Record<string, unknown> | undefined
 ): string {
   if (!entity) return `${key}:missing`;
+  const filesSig = entity.fileListSignature as string | undefined;
   const files = entity.files as unknown[] | undefined;
-  return `${key}:${entity.progress ?? 0}:${entity.download_state ?? ''}:${entity.active ? 1 : 0}:${entity.download_finished ? 1 : 0}:${entity.airlocked ? 1 : 0}:${fileListSignature(files)}:${entity.updated_at ?? ''}`;
+  const fileSig = filesSig !== undefined ? filesSig : fileListSignature(files);
+  return `${key}:${entity.progress ?? 0}:${entity.download_state ?? ''}:${entity.active ? 1 : 0}:${entity.download_finished ? 1 : 0}:${entity.airlocked ? 1 : 0}:${fileSig}:${entity.updated_at ?? ''}`;
 }
 
 export function viewIdsOrderUnchanged(

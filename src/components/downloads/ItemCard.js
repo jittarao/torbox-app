@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { formatSize, formatSpeed, formatEta, timeAgo, formatDate } from './utils/formatters';
 import DownloadStateBadge from './DownloadStateBadge';
 import ItemActions from './ItemActions';
@@ -34,6 +34,8 @@ import {
   useItemHasSelectedFiles,
 } from '@/components/shared/hooks/useSelection';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { getItemFileCount } from '@/utils/downloadEntityFiles';
 import {
   cardContainerPad,
   tableActionsCellInner,
@@ -70,7 +72,17 @@ function ItemCard({
   const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
   const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
-  const visibleFiles = getFilesVisibleForDownloadSearch(item, fileSearch);
+  const selectionKey = getDownloadSelectionId(item);
+  const cachedFiles = useTorboxDownloadsStore((s) => s.filesByEntityKey[selectionKey]);
+  const visibleFiles = useMemo(
+    () =>
+      getFilesVisibleForDownloadSearch(
+        item,
+        fileSearch,
+        cachedFiles ? { [selectionKey]: cachedFiles } : null
+      ),
+    [item, fileSearch, selectionKey, cachedFiles]
+  );
   const isAirlocked = normalizeBooleanValue(item.airlocked);
   const isProtected = item.is_protected === true;
 
@@ -252,7 +264,7 @@ function ItemCard({
       case 'size':
         return formatSize(item.size || 0);
       case 'file_count':
-        return item.files?.length || 0;
+        return getItemFileCount(item);
       case 'created_at':
         return timeAgo(item.created_at, commonT);
       case 'cached_at':

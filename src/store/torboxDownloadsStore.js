@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { downloadRowEqual, mergeListIntoEntities } from '@/utils/downloadListMerge';
+import { slimRowForStorage } from '@/utils/downloadEntityFiles';
 import {
   entityKey,
   getListKeyForAssetType,
@@ -33,6 +34,8 @@ function pollScheduleEqual(a, b) {
 export const useTorboxDownloadsStore = create((set, get) => ({
   /** @type {Record<string, object>} */
   entities: {},
+  /** @type {Record<string, object[]>} */
+  filesByEntityKey: {},
   order: { ...emptyOrder },
   ...initialMeta,
 
@@ -44,22 +47,24 @@ export const useTorboxDownloadsStore = create((set, get) => ({
     const listKey = getListKeyForAssetType(assetType);
     const state = get();
     const prevOrder = state.order[listKey] || [];
-    const { entities, orderKeys } = mergeListIntoEntities(
+    const { entities, orderKeys, filesCache } = mergeListIntoEntities(
       state.entities,
       prevOrder,
       mergedList,
-      assetType
+      assetType,
+      state.filesByEntityKey
     );
-    get().setListFromMerge(assetType, entities, orderKeys);
+    get().setListFromMerge(assetType, entities, orderKeys, filesCache);
   },
 
   /**
    * Apply pre-merged entities + order keys for one asset type (fetch path).
    */
-  setListFromMerge: (assetType, entities, orderKeys) => {
+  setListFromMerge: (assetType, entities, orderKeys, filesCache) => {
     const listKey = getListKeyForAssetType(assetType);
     const state = get();
     const prevOrder = state.order[listKey] || [];
+    const nextFilesCache = filesCache ?? state.filesByEntityKey;
 
     if (
       prevOrder.length === orderKeys.length &&
@@ -73,13 +78,14 @@ export const useTorboxDownloadsStore = create((set, get) => ({
           break;
         }
       }
-      if (rowsUnchanged) {
+      if (rowsUnchanged && nextFilesCache === state.filesByEntityKey) {
         return;
       }
     }
 
     set({
       entities,
+      filesByEntityKey: nextFilesCache,
       order: { ...state.order, [listKey]: orderKeys },
     });
   },
@@ -112,6 +118,7 @@ export const useTorboxDownloadsStore = create((set, get) => ({
   resetForApiKey: (hasApiKey) =>
     set({
       entities: {},
+      filesByEntityKey: {},
       order: { ...emptyOrder },
       loading: !!hasApiKey,
       refreshing: false,
@@ -150,15 +157,18 @@ export const useTorboxDownloadsStore = create((set, get) => ({
       return row && !idSet.has(row.id);
     });
     const nextEntities = { ...state.entities };
+    const nextFilesCache = { ...state.filesByEntityKey };
     for (const key of prevOrder) {
       const row = state.entities[key];
       if (row && idSet.has(row.id)) {
         delete nextEntities[key];
+        delete nextFilesCache[key];
       }
     }
 
     set({
       entities: nextEntities,
+      filesByEntityKey: nextFilesCache,
       order: { ...state.order, [listKey]: nextOrder },
     });
   },
@@ -175,11 +185,29 @@ export const useTorboxDownloadsStore = create((set, get) => ({
     if (!prev) return;
 
     const nextRow = { ...prev, ...partial };
-    const listKey = getListKeyForAssetType(assetType);
-    const storedRow = downloadRowEqual(prev, nextRow) ? prev : nextRow;
+    let storedRow = downloadRowEqual(prev, nextRow) ? prev : nextRow;
+    let nextFilesCache = state.filesByEntityKey;
+
+    if (partial.files !== undefined) {
+      const { slim, files } = slimRowForStorage(storedRow);
+      storedRow = downloadRowEqual(prev, slim) ? prev : slim;
+      const prevCached = state.filesByEntityKey[key];
+
+      if (files?.length) {
+        const nextFiles =
+          prev?.fileListSignature === slim.fileListSignature && prevCached ? prevCached : files;
+        if (prevCached !== nextFiles) {
+          nextFilesCache = { ...state.filesByEntityKey, [key]: nextFiles };
+        }
+      } else if (key in state.filesByEntityKey) {
+        nextFilesCache = { ...state.filesByEntityKey };
+        delete nextFilesCache[key];
+      }
+    }
 
     set({
       entities: { ...state.entities, [key]: storedRow },
+      ...(nextFilesCache !== state.filesByEntityKey ? { filesByEntityKey: nextFilesCache } : {}),
     });
   },
 }));

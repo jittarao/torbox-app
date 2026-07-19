@@ -166,14 +166,106 @@ describe('mergeListIntoEntities', () => {
     };
     const { entities, orderKeys } = mergeListIntoEntities({}, [], [row], 'torrents');
     expect(orderKeys).toEqual([entityKey('torrents', 1)]);
-    expect(entities[entityKey('torrents', 1)]).toBe(row);
+    expect(entities[entityKey('torrents', 1)]).toMatchObject({
+      id: 1,
+      assetType: 'torrents',
+      fileCount: 0,
+      fileListSignature: '',
+    });
+  });
+
+  test('slims files[] onto side cache with fileCount and fileListSignature on entity', () => {
+    const files = [
+      { id: 10, size: 100, name: 'a.mkv' },
+      { id: 11, size: 200, name: 'b.mkv' },
+    ];
+    const row = {
+      id: 1,
+      assetType: 'torrents',
+      added: '2020-01-01',
+      download_finished: true,
+      active: false,
+      files,
+    };
+    const key = entityKey('torrents', 1);
+    const { entities, filesCache } = mergeListIntoEntities({}, [], [row], 'torrents');
+    const stored = entities[key];
+    expect(stored.files).toBeUndefined();
+    expect(stored.fileCount).toBe(2);
+    expect(stored.fileListSignature).toBe('10:100|11:200');
+    expect(filesCache[key]).toBe(files);
+  });
+
+  test('reuses cached files when fileListSignature unchanged', () => {
+    const files = [{ id: 10, size: 100 }];
+    const key = entityKey('torrents', 1);
+    const prevEntity = {
+      id: 1,
+      assetType: 'torrents',
+      fileCount: 1,
+      fileListSignature: '10:100',
+      download_finished: true,
+      active: false,
+    };
+    const prevCache = { [key]: files };
+    const incoming = {
+      id: 1,
+      added: '2020-01-01',
+      download_finished: true,
+      active: false,
+      files: [{ id: 10, size: 100, name: 'updated-name.mkv' }],
+    };
+    const { filesCache } = mergeListIntoEntities(
+      { [key]: prevEntity },
+      [key],
+      [incoming],
+      'torrents',
+      prevCache
+    );
+    expect(filesCache[key]).toBe(files);
+  });
+
+  test('returns same filesCache reference when cache unchanged', () => {
+    const files = [{ id: 10, size: 100 }];
+    const key = entityKey('torrents', 1);
+    const prevEntity = {
+      id: 1,
+      assetType: 'torrents',
+      fileCount: 1,
+      fileListSignature: '10:100',
+      download_finished: true,
+      active: false,
+    };
+    const prevCache = { [key]: files };
+    const incoming = {
+      id: 1,
+      added: '2020-01-01',
+      download_finished: true,
+      active: false,
+      files: [{ id: 10, size: 100, name: 'updated-name.mkv' }],
+    };
+    const { filesCache } = mergeListIntoEntities(
+      { [key]: prevEntity },
+      [key],
+      [incoming],
+      'torrents',
+      prevCache
+    );
+    expect(filesCache).toBe(prevCache);
   });
 });
 
 describe('downloadListReconcileSignature', () => {
   test('changes when file list changes for the same item id', () => {
-    const withoutFiles = [{ id: 1, assetType: 'torrents' }];
-    const withFiles = [{ id: 1, assetType: 'torrents', files: [{ id: 10, size: 100 }] }];
+    const withoutFiles = [{ id: 1, assetType: 'torrents', fileCount: 0, fileListSignature: '' }];
+    const withFiles = [
+      {
+        id: 1,
+        assetType: 'torrents',
+        fileCount: 1,
+        fileListSignature: '10:100',
+      },
+    ];
     expect(downloadListReconcileSignature(withoutFiles)).not.toBe(
       downloadListReconcileSignature(withFiles)
     );

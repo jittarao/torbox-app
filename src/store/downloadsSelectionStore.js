@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { downloadListReconcileSignature } from '@/utils/downloadListMerge';
+import { resolveItemFiles } from '@/utils/downloadEntityFiles';
 import { getDownloadSelectionId, selectionIdMatchesItem } from '@/utils/downloadSelectionId';
 import { getItem, setItem } from '@/utils/storage';
 
@@ -82,7 +83,7 @@ function readRawSelection(activeType, apiKeyScope = '') {
   return null;
 }
 
-export function pruneSelectionAgainstItems(selection, currentItems) {
+export function pruneSelectionAgainstItems(selection, currentItems, filesByEntityKey = null) {
   if (!currentItems?.length) {
     return selection;
   }
@@ -108,14 +109,15 @@ export function pruneSelectionAgainstItems(selection, currentItems) {
       item = currentItems.find((i) => selectionIdMatchesItem(mapKey, i));
     }
 
-    if (item && (!item.files || !item.files.length)) {
+    const itemFiles = resolveItemFiles(item, filesByEntityKey);
+    if (item && !itemFiles.length) {
       validFiles.set(getDownloadSelectionId(item), new Set(fileIds));
       continue;
     }
 
     if (!item) continue;
 
-    const fileIdSet = new Set(item.files?.map((f) => f.id) ?? []);
+    const fileIdSet = new Set(itemFiles.map((f) => f.id));
     const validFileIds = new Set(Array.from(fileIds).filter((fileId) => fileIdSet.has(fileId)));
 
     if (validFileIds.size > 0) {
@@ -206,13 +208,13 @@ export const useDownloadsSelectionStore = create((set, get) => ({
     set({ selectedItems: empty });
   },
 
-  reconcileWithItems: (items, signature) => {
+  reconcileWithItems: (items, signature, filesByEntityKey = null) => {
     const nextSignature =
       signature !== undefined ? signature : downloadListReconcileSignature(items);
     const { listSignature, selectedItems, activeType, apiKeyScope } = get();
     if (listSignature === nextSignature) return;
 
-    const pruned = pruneSelectionAgainstItems(selectedItems, items || []);
+    const pruned = pruneSelectionAgainstItems(selectedItems, items || [], filesByEntityKey);
     persistSelection(activeType, pruned, apiKeyScope);
     set({ listSignature: nextSignature, selectedItems: pruned });
   },
