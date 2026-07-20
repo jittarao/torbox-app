@@ -33,6 +33,7 @@ import { useAutomationEvents } from '@/components/shared/hooks/useAutomationEven
 import { useDownloadProtectionActions } from './useDownloadProtectionActions';
 import { useStopSeeding } from './useStopSeeding';
 import { useProtectedDownloadsStore } from '@/store/protectedDownloadsStore';
+import { useDownloadTagsStore } from '@/store/downloadTagsStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getItemFileCount, resolveItemFiles } from '@/utils/downloadEntityFiles';
 
