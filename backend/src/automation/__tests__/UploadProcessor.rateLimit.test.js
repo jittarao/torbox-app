@@ -182,7 +182,8 @@ describe('UploadProcessor uncached rate limits', () => {
         userDb
       );
 
-      expect(result).toBe(false);
+      expect(result.success).toBe(false);
+      expect(result.stopTypeDrain).toBe(true);
       expect(apiCalled).toBe(false);
 
       const row = userDb.db
