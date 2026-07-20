@@ -79,6 +79,23 @@ export default function AdminSettingsPageClient() {
               </div>
             </AdminCard>
 
+            <AdminCard title="Upload processor drain">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <AdminStatRow
+                  label="Batch fetch size (SQL rows)"
+                  value={config.upload_processor?.batch_fetch_size}
+                />
+                <AdminStatRow
+                  label="Max work per drain"
+                  value={config.upload_processor?.max_work_per_drain}
+                />
+                <AdminStatRow
+                  label="Create upload timeout (ms)"
+                  value={config.upload_processor?.create_upload_timeout_ms}
+                />
+              </div>
+            </AdminCard>
+
             <AdminCard title="Database">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <AdminStatRow label="Max connections" value={config.database?.max_db_connections} />

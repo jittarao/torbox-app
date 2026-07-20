@@ -176,6 +176,9 @@ bun run dev
 | `UPLOAD_UNCACHED_LIMIT_PER_HOUR`          | Uncached TorBox create limit per type (torrent/usenet/webdl); cached responses excluded      | `60`                     | No       |
 | `UPLOAD_PROCESSOR_INTERVAL_MS`            | Upload queue processor poll interval (ms)                                                    | `5000`                   | No       |
 | `UPLOAD_PROCESS_CONCURRENCY`              | Max users processed in parallel per upload processor cycle                                   | `6`                      | No       |
+| `UPLOAD_BATCH_FETCH_SIZE`                 | SQL rows fetched per in-memory queue buffer (not the per-drain work cap)                     | `50`                     | No       |
+| `UPLOAD_MAX_WORK_PER_DRAIN`               | Max uploads processed per drain invocation before yielding worker                            | `25`                     | No       |
+| `CREATE_UPLOAD_TIMEOUT_MS`                | TorBox create API request timeout (ms)                                                       | `30000`                  | No       |
 | `UPLOAD_CONNECTION_DEFER_MS`              | Defer queued uploads (ms) when TorBox API is unreachable                                     | `900000` (15 min)        | No       |
 | `AUTOMATION_INACTIVE_USER_DAYS`           | Skip automation for users inactive longer than N days (`last_seen_at`; `0` disables)         | `30`                     | No       |
 
@@ -336,6 +339,9 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 # UPLOAD_UNCACHED_LIMIT_PER_HOUR=60
 # UPLOAD_PROCESSOR_INTERVAL_MS=5000
 # UPLOAD_PROCESS_CONCURRENCY=6
+# UPLOAD_BATCH_FETCH_SIZE=50
+# UPLOAD_MAX_WORK_PER_DRAIN=25
+# CREATE_UPLOAD_TIMEOUT_MS=30000
 # UPLOAD_CONNECTION_DEFER_MS=900000
 ```
 
@@ -514,6 +520,9 @@ docker network create torbox-network
 | `UPLOAD_UNCACHED_LIMIT_PER_HOUR` | Uncached TorBox create limit per type; cached responses excluded (default `60`)        |
 | `UPLOAD_PROCESSOR_INTERVAL_MS`   | Upload queue poll interval in ms (default `5000`)                                      |
 | `UPLOAD_PROCESS_CONCURRENCY`     | Parallel users per upload processor cycle (default `6`)                                |
+| `UPLOAD_BATCH_FETCH_SIZE`        | SQL fetch size per in-memory queue buffer (default `50`; not the per-drain work cap)   |
+| `UPLOAD_MAX_WORK_PER_DRAIN`      | Max uploads per drain invocation (default `25`)                                        |
+| `CREATE_UPLOAD_TIMEOUT_MS`       | TorBox create request timeout in ms (default `30000`)                                  |
 | `UPLOAD_CONNECTION_DEFER_MS`     | Defer ms when TorBox is unreachable (default `900000`)                                 |
 | `AUTOMATION_INACTIVE_USER_DAYS`  | Skip automation for users inactive N days (`last_seen_at`; `0` disables; default `30`) |
 
