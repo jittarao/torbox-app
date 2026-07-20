@@ -1035,7 +1035,7 @@
       "webdlPassword": "パスワードを入力してください（オプション）"
     },
     "rateLimit": {
-      "details": "{count} アイテムがキューにあります。TorBoxは1分あたり {perMinute} アイテムと1時間あたり {perHour} アイテムに制限しています。大規模なバッチは適切な遅延で自動的に処理されます。",
+      "details": "{count} アイテムがキューにあります。TorBoxはキャッシュされていないアップロードを種類ごとに1時間あたり {perHour} 件に制限しています。キャッシュ済みのアイテムはカウントされません。大規模なバッチは自動的に処理されます。",
       "info": "レート制限"
     },
     "section": {
@@ -1581,8 +1581,8 @@
     "title": "グローバルアップロードオプション"
   },
   "UploadProgress": {
-    "approachingRateLimit": "レート制限に近づいています:",
-    "approachingRateLimitDetails": "分あたり {perMinute}/10、時間あたり {perHour}/60",
+    "approachingRateLimit": "キャッシュなしのレート制限に近づいています:",
+    "approachingRateLimitDetails": "キャッシュなしで時間あたり {perHour}/60",
     "estimatedCompletion": "推定完了時間:",
     "pleaseWait": "お待ちください...",
     "preparingUploads": "アップロードを準備中...",

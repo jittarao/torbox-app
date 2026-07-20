@@ -1018,7 +1018,7 @@
       "webdlPassword": "Introducir contraseña (opcional)"
     },
     "rateLimit": {
-      "details": "Tiene {count} elementos en cola. TorBox limita las cargas a {perMinute} por minuto y {perHour} por hora. Los lotes grandes se procesarán automáticamente con retrasos adecuados.",
+      "details": "Tiene {count} elementos en cola. TorBox limita las cargas sin caché a {perHour} por hora y tipo. Los elementos en caché no se cuentan. Los lotes grandes se procesan automáticamente.",
       "info": "Límite de tasa"
     },
     "section": {
@@ -1553,8 +1553,8 @@
     "title": "Opciones de carga global"
   },
   "UploadProgress": {
-    "approachingRateLimit": "Límite de velocidad aproximándose:",
-    "approachingRateLimitDetails": "{perMinute}/10 por minuto, {perHour}/60 por hora",
+    "approachingRateLimit": "Límite de velocidad de cargas sin caché aproximándose:",
+    "approachingRateLimitDetails": "{perHour}/60 sin caché por hora",
     "estimatedCompletion": "Finalización estimada:",
     "pleaseWait": "Por favor espera...",
     "preparingUploads": "Preparando subidas...",

@@ -1025,7 +1025,7 @@
       "webdlPassword": "Passwort eingeben (optional)"
     },
     "rateLimit": {
-      "details": "Sie haben {count} Elemente in der Warteschlange. TorBox beschränkt Uploads auf {perMinute} pro Minute und {perHour} pro Stunde. Große Batch-Uploads werden automatisch mit entsprechenden Verzögerungen verarbeitet.",
+      "details": "Sie haben {count} Elemente in der Warteschlange. TorBox beschränkt nicht zwischengespeicherte Uploads auf {perHour} pro Stunde und Typ. Zwischengespeicherte Elemente werden nicht gezählt. Große Batch-Uploads werden automatisch verarbeitet.",
       "info": "Rate Limit Hinweis"
     },
     "section": {
@@ -1554,8 +1554,8 @@
     "title": "Globale Upload-Optionen"
   },
   "UploadProgress": {
-    "approachingRateLimit": "Rate-Limit wird erreicht:",
-    "approachingRateLimitDetails": "{perMinute}/10 pro Minute, {perHour}/60 pro Stunde",
+    "approachingRateLimit": "Nicht zwischengespeichertes Rate-Limit wird erreicht:",
+    "approachingRateLimitDetails": "{perHour}/60 nicht zwischengespeichert pro Stunde",
     "estimatedCompletion": "Geschätzte Fertigstellung:",
     "pleaseWait": "Bitte warten...",
     "preparingUploads": "Uploads werden vorbereitet...",
