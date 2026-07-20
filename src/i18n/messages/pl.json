@@ -1024,7 +1024,7 @@
       "webdlPassword": "Hasło (jeśli wymagane)"
     },
     "rateLimit": {
-      "details": "{count} elementów w kolejce. TorBox ogranicza przesyłanie do {perMinute} na minutę i {perHour} na godzinę. Duże partie będą automatycznie przetwarzane z odpowiednimi opóźnieniami.",
+      "details": "Masz {count} elementów w kolejce. TorBox ogranicza niezbuforowane przesyłania do {perHour} na godzinę na typ. Zbuforowane elementy nie są liczone. Duże partie są przetwarzane automatycznie.",
       "info": "Ograniczenie prędkości"
     },
     "section": {
@@ -1559,8 +1559,8 @@
     "title": "Globalne opcje przesyłania"
   },
   "UploadProgress": {
-    "approachingRateLimit": "Zbliżanie się do limitu:",
-    "approachingRateLimitDetails": "{perMinute}/10 na minutę, {perHour}/60 na godzinę",
+    "approachingRateLimit": "Zbliżanie się do limitu niezbuforowanych:",
+    "approachingRateLimitDetails": "{perHour}/60 niezbuforowanych na godzinę",
     "estimatedCompletion": "Szacowany czas ukończenia:",
     "pleaseWait": "Proszę czekać...",
     "preparingUploads": "Przygotowywanie przesyłania...",

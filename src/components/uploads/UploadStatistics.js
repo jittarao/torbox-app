@@ -1,13 +1,23 @@
 const TYPE_CONFIG = [
   { lastHourKey: 'torrents', typeKey: 'torrent', label: 'Torrents' },
-  { lastHourKey: 'usenets', typeKey: 'usenet', label: 'Usenets' },
-  { lastHourKey: 'webdls', typeKey: 'webdl', label: 'WebDLs' },
+  { lastHourKey: 'usenets', typeKey: 'usenet', label: 'Usenet' },
+  { lastHourKey: 'webdls', typeKey: 'webdl', label: 'WebDL' },
 ];
 
-const DEFAULT_HOURLY_LIMIT = 60;
+const DEFAULT_UNCACHED_HOURLY_LIMIT = 60;
+
+function getUncachedCount(lastHour, lastHourKey) {
+  const entry = lastHour?.[lastHourKey];
+  if (entry != null && typeof entry === 'object') {
+    return entry.uncached ?? 0;
+  }
+  return typeof entry === 'number' ? entry : 0;
+}
 
 function getTypeLimit(rateLimit, typeKey) {
-  return rateLimit?.perType?.[typeKey] ?? rateLimit?.perHour ?? DEFAULT_HOURLY_LIMIT;
+  return (
+    rateLimit?.perType?.[typeKey] ?? rateLimit?.uncachedPerHour ?? DEFAULT_UNCACHED_HOURLY_LIMIT
+  );
 }
 
 export default function UploadStatistics({ uploadStatistics }) {
@@ -17,7 +27,7 @@ export default function UploadStatistics({ uploadStatistics }) {
 
   const types = TYPE_CONFIG.map(({ lastHourKey, typeKey, label }) => {
     const limit = getTypeLimit(rateLimit, typeKey);
-    const count = lastHour[lastHourKey] || 0;
+    const count = getUncachedCount(lastHour, lastHourKey);
     return { key: lastHourKey, label, count, limit };
   });
 
@@ -30,7 +40,7 @@ export default function UploadStatistics({ uploadStatistics }) {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h3 className="text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
-            Upload Statistics (Last Hour)
+            Uncached Uploads (Last Hour)
           </h3>
           <div className="flex gap-4 text-sm flex-wrap">
             {activeTypes.length > 0 ? (
@@ -44,13 +54,13 @@ export default function UploadStatistics({ uploadStatistics }) {
                   </span>
                   <span className="text-primary-text/50 dark:text-primary-text-dark/50">
                     {' '}
-                    / {t.limit}
+                    / {t.limit} uncached
                   </span>
                 </div>
               ))
             ) : (
               <span className="text-primary-text/50 dark:text-primary-text-dark/50 text-sm">
-                No activity in the last hour
+                No uncached uploads in the last hour
               </span>
             )}
           </div>
@@ -63,7 +73,7 @@ export default function UploadStatistics({ uploadStatistics }) {
                 : 'bg-label-active-bg dark:bg-label-active-bg-dark text-label-active-text dark:text-label-active-text-dark'
             }`}
           >
-            {isAtLimit ? '⚠️ Rate limit reached' : '⚠️ Approaching rate limit'}
+            {isAtLimit ? '⚠️ Uncached rate limit reached' : '⚠️ Approaching uncached rate limit'}
           </div>
         )}
       </div>

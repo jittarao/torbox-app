@@ -1120,7 +1120,7 @@
       "webdlPassword": "Password (if required)"
     },
     "rateLimit": {
-      "details": "You have {count} items queued. TorBox limits uploads to {perMinute} per minute and {perHour} per hour. Large batches will be processed automatically with appropriate delays.",
+      "details": "You have {count} items queued. TorBox limits uncached uploads to {perHour} per hour per type. Cached items are not counted. Large batches are processed automatically.",
       "info": "Rate Limit Notice"
     },
     "section": {
@@ -1676,8 +1676,8 @@
     "title": "Global Upload Options"
   },
   "UploadProgress": {
-    "approachingRateLimit": "Approaching rate limit:",
-    "approachingRateLimitDetails": "{perMinute}/10 per minute, {perHour}/60 per hour",
+    "approachingRateLimit": "Approaching uncached rate limit:",
+    "approachingRateLimitDetails": "{perHour}/60 uncached per hour",
     "estimatedCompletion": "Estimated completion:",
     "pleaseWait": "Please wait...",
     "preparingUploads": "Preparing uploads...",

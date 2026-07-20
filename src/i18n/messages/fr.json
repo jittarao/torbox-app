@@ -1008,7 +1008,7 @@
       "webdlPassword": "Entrer le mot de passe (optionnel)"
     },
     "rateLimit": {
-      "details": "Vous avez {count} éléments en file d'attente. TorBox limite les téléchargements à {perMinute} par minute et {perHour} par heure. Les lots importants seront traités automatiquement avec des retards appropriés.",
+      "details": "Vous avez {count} éléments en file d'attente. TorBox limite les téléchargements non mis en cache à {perHour} par heure et par type. Les éléments mis en cache ne sont pas comptés. Les lots importants sont traités automatiquement.",
       "info": "Limite de taux"
     },
     "section": {
@@ -1540,8 +1540,8 @@
     "title": "Options de téléchargement globales"
   },
   "UploadProgress": {
-    "approachingRateLimit": "Limite de débit approchée:",
-    "approachingRateLimitDetails": "{perMinute}/10 par minute, {perHour}/60 par heure",
+    "approachingRateLimit": "Limite de débit pour les éléments non mis en cache approchée:",
+    "approachingRateLimitDetails": "{perHour}/60 non mis en cache par heure",
     "estimatedCompletion": "Achèvement estimé:",
     "pleaseWait": "Veuillez patienter...",
     "preparingUploads": "Préparation des téléversements...",
