@@ -23,6 +23,7 @@ import {
   UPLOAD_BATCH_FETCH_SIZE,
   UPLOAD_MAX_WORK_PER_DRAIN,
 } from '../config/uploadProcessorConfig.js';
+import { CLEAR_TRANSIENT_ERROR_EXPR, transientMessageBindParams } from './uploadDeferral.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 
@@ -273,7 +274,7 @@ class UploadProcessor {
         `
         UPDATE uploads
         SET status = 'queued',
-            error_message = 'Uncached rate limit reached. Will retry automatically.',
+            error_message = NULL,
             next_attempt_at = ?,
             last_processed_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
@@ -287,13 +288,14 @@ class UploadProcessor {
         `
         UPDATE uploads
         SET next_attempt_at = ?,
+            error_message = ${CLEAR_TRANSIENT_ERROR_EXPR},
             updated_at = CURRENT_TIMESTAMP
         WHERE status = 'queued'
           AND type = ?
           AND id != ?
       `
       )
-      .run(nextAttemptAt, type, upload.id);
+      .run(nextAttemptAt, ...transientMessageBindParams(), type, upload.id);
 
     if (deferOthersResult.changes > 0) {
       logger.debug('Deferred other queued uploads due to uncached hourly limit', {
@@ -564,7 +566,7 @@ class UploadProcessor {
         `
         UPDATE uploads
         SET status = 'queued',
-            error_message = 'TorBox API unavailable. Will retry automatically.',
+            error_message = NULL,
             next_attempt_at = ?,
             last_processed_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
@@ -578,13 +580,14 @@ class UploadProcessor {
         `
         UPDATE uploads
         SET next_attempt_at = ?,
+            error_message = ${CLEAR_TRANSIENT_ERROR_EXPR},
             updated_at = CURRENT_TIMESTAMP
         WHERE status = 'queued'
           AND type = ?
           AND id != ?
       `
       )
-      .run(nextAttemptAt, type, upload.id);
+      .run(nextAttemptAt, ...transientMessageBindParams(), type, upload.id);
 
     if (deferOthersResult.changes > 0) {
       logger.debug('Deferred other queued uploads due to TorBox outage', {
@@ -1042,10 +1045,8 @@ class UploadProcessor {
     const nextAttemptAt =
       deferMs > 0 ? this.formatDateForSQL(new Date(Date.now() + deferMs)) : null;
 
-    // Create user-friendly error message
-    const userFriendlyError = isConnection
-      ? 'TorBox API unavailable. Will retry automatically.'
-      : this.createUserFriendlyError(error, isRateLimit);
+    // Create user-friendly error message (deferrals use queue-level state, not per-row errors)
+    const userFriendlyError = shouldDefer ? null : this.createUserFriendlyError(error, isRateLimit);
 
     // Update upload record
     const updateResult = userDb.db
@@ -1071,13 +1072,14 @@ class UploadProcessor {
           `
           UPDATE uploads
           SET next_attempt_at = ?,
+              error_message = ${CLEAR_TRANSIENT_ERROR_EXPR},
               updated_at = CURRENT_TIMESTAMP
           WHERE status = 'queued'
             AND type = ?
             AND id != ?
         `
         )
-        .run(nextAttemptAt, type, id);
+        .run(nextAttemptAt, ...transientMessageBindParams(), type, id);
       if (deferOthersResult.changes > 0) {
         logger.debug('Deferred other queued uploads due to TorBox backoff', {
           type,

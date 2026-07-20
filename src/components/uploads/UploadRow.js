@@ -1,7 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { useTranslations } from 'next-intl';
 import Tooltip from '@/components/shared/Tooltip';
-import { formatErrorMessage, formatDate, formatTimeAgo, normalizeUploadId } from './utils';
+import {
+  formatDate,
+  formatTimeAgo,
+  normalizeUploadId,
+  getUploadRowErrorMessage,
+  isUploadDeferred,
+} from './utils';
 import { STATUS_COLORS, TYPE_LABELS } from './constants';
 
 function UploadDateCell({ dateString, t }) {
@@ -33,6 +39,7 @@ export default function UploadRow({
   isSortable = false,
 }) {
   const t = useTranslations('Common');
+  const tUploadStats = useTranslations('UploadStatistics');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: upload.id,
     disabled: !isSortable,
@@ -51,6 +58,8 @@ export default function UploadRow({
   const uploadId = normalizeUploadId(upload.id);
   const canDownload = upload.upload_type === 'file' && upload.file_path;
   const canCopy = (upload.upload_type === 'magnet' || upload.upload_type === 'link') && upload.url;
+  const rowErrorMessage = getUploadRowErrorMessage(upload);
+  const isWaiting = upload.status === 'queued' && isUploadDeferred(upload.next_attempt_at);
 
   const rowProps = isSortable
     ? {
@@ -124,12 +133,16 @@ export default function UploadRow({
             {upload.name}
           </div>
         </div>
-        {upload.error_message && (
-          <div
-            className="text-xs text-red-500 dark:text-red-400 mt-0.5"
-            title={upload.error_message}
-          >
-            {formatErrorMessage(upload.error_message)}
+        {rowErrorMessage && (
+          <div className="text-xs text-red-500 dark:text-red-400 mt-0.5" title={rowErrorMessage}>
+            {rowErrorMessage}
+          </div>
+        )}
+        {isWaiting && !rowErrorMessage && (
+          <div className="text-xs text-primary-text/60 dark:text-primary-text-dark/60 mt-0.5">
+            {tUploadStats('rowWaiting', {
+              time: formatTimeAgo(upload.next_attempt_at, t),
+            })}
           </div>
         )}
       </td>

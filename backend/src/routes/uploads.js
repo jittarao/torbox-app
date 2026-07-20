@@ -22,6 +22,7 @@ import {
   getUploadRateLimitConfig,
   UPLOAD_UNCACHED_WINDOW_SQL,
 } from '../config/uploadRateLimits.js';
+import { getUploadDeferralStatistics } from '../automation/uploadDeferral.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
@@ -882,13 +883,28 @@ export function setupUploadsRoutes(app, backend) {
         }
       }
 
+      const { byType: deferralByType, retryAt } = getUploadDeferralStatistics(userDb);
+
       const uploadStatistics = {
         lastHour: {
-          torrents: { uncached: uncachedByType.torrent },
-          usenets: { uncached: uncachedByType.usenet },
-          webdls: { uncached: uncachedByType.webdl },
+          torrents: {
+            uncached: uncachedByType.torrent,
+            deferredCount: deferralByType.torrent.deferredCount,
+            deferredUntil: deferralByType.torrent.deferredUntil,
+          },
+          usenets: {
+            uncached: uncachedByType.usenet,
+            deferredCount: deferralByType.usenet.deferredCount,
+            deferredUntil: deferralByType.usenet.deferredUntil,
+          },
+          webdls: {
+            uncached: uncachedByType.webdl,
+            deferredCount: deferralByType.webdl.deferredCount,
+            deferredUntil: deferralByType.webdl.deferredUntil,
+          },
         },
         rateLimit: getUploadRateLimitConfig(),
+        retryAt,
       };
 
       // Build ORDER BY - queued items by queue_order, others by last activity
@@ -903,10 +919,7 @@ export function setupUploadsRoutes(app, backend) {
 
       // Get paginated results
       const query = `
-          SELECT id, type, upload_type, file_path, url, name, status,
-                 error_message, retry_count, seed, allow_zip, as_queued, add_only_if_cached, password,
-                 queue_order, torbox_hash, torbox_torrent_id, torbox_auth_id,
-                 last_processed_at, completed_at, created_at, updated_at
+          SELECT ${UPLOAD_DETAIL_SELECT}
           FROM uploads
           ${whereClause}
           ${orderBy}

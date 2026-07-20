@@ -1687,6 +1687,20 @@
     "uploading": "Uploading {current} of {total}",
     "waitingBeforeNext": "Waiting {time} before next upload"
   },
+  "UploadStatistics": {
+    "approachingRateLimit": "Approaching uncached rate limit",
+    "deferredSummary": "{count, plural, one {# upload waiting — resumes in {time}} other {# uploads waiting — resumes in {time}}}",
+    "deferredTypeSummary": "{label}: {count, plural, one {# upload waiting — resumes in {time}} other {# uploads waiting — resumes in {time}}}",
+    "noUncached": "No uncached uploads in the last hour",
+    "rateLimitReached": "Uncached rate limit reached",
+    "rowWaiting": "Waiting — resumes {time}",
+    "soon": "soon",
+    "title": "Uncached Uploads (Last Hour)",
+    "typeTorrents": "Torrents",
+    "typeUncached": "/ {limit} uncached",
+    "typeUsenet": "Usenet",
+    "typeWebdl": "WebDL"
+  },
   "Usage": {
     "danger": {
       "message": "You've used {used} of your {limit} plan floor ({percent}%) in the last 30 days. Reduce usage soon to avoid warnings or restrictions.",
