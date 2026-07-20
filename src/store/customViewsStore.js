@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { isBackendAvailable } from '@/utils/backendModeCache';
 import { createApiKeyScopedSlice } from '@/store/createApiKeyScopedStore';
+import {
+  normalizeFilters,
+  needsFilterSchemaPersist,
+} from '@/components/downloads/filters/filterHelpers';
 
 async function readApiError(response, fallback) {
   try {
@@ -14,6 +18,38 @@ async function readApiError(response, fallback) {
 export function reorderViewsByIds(views, orderedIds) {
   const viewById = new Map(views.map((view) => [String(view.id), view]));
   return orderedIds.map((id) => viewById.get(String(id))).filter(Boolean);
+}
+
+export function normalizeLoadedViews(views) {
+  return (views || []).map((view) => ({
+    ...view,
+    filters: normalizeFilters(view.filters),
+  }));
+}
+
+async function persistMigratedViewFilters(apiKey, views) {
+  const pending = (views || []).filter((view) => needsFilterSchemaPersist(view.filters));
+  if (pending.length === 0) return;
+
+  await Promise.all(
+    pending.map(async (view) => {
+      try {
+        const response = await fetch(`/api/custom-views/${view.id}`, {
+          method: 'PUT',
+          headers: {
+            'x-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ filters: normalizeFilters(view.filters) }),
+        });
+        if (!response.ok) {
+          console.warn(`[CustomViews] Failed to persist migrated filters for view ${view.id}`);
+        }
+      } catch (err) {
+        console.warn(`[CustomViews] Failed to persist migrated filters for view ${view.id}`, err);
+      }
+    })
+  );
 }
 
 export const useCustomViewsStore = create((set, get) => ({
@@ -78,7 +114,9 @@ export const useCustomViewsStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
-        set({ views: data.views || [], loading: false, hasLoaded: true });
+        const rawViews = data.views || [];
+        set({ views: normalizeLoadedViews(rawViews), loading: false, hasLoaded: true });
+        void persistMigratedViewFilters(apiKey, rawViews);
       } else {
         set({ error: data.error || 'Failed to load views', loading: false, hasLoaded: true });
       }

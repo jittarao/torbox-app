@@ -63,6 +63,34 @@ function migrateFilterRule(filter) {
   return migrated;
 }
 
+function filterRuleChanged(before, after) {
+  return (
+    before.column !== after.column ||
+    before.operator !== after.operator ||
+    before.value !== after.value
+  );
+}
+
+/**
+ * True when stored filters lack the current schema stamp and should be persisted.
+ * @param {object|string|undefined} filters
+ * @returns {boolean}
+ */
+export function needsFilterSchemaPersist(filters) {
+  if (!filters) return false;
+
+  let parsed = filters;
+  if (typeof filters === 'string') {
+    try {
+      parsed = JSON.parse(filters);
+    } catch {
+      return false;
+    }
+  }
+
+  return (parsed._filterSchemaVersion ?? 0) < FILTER_SCHEMA_VERSION;
+}
+
 /**
  * Migrate all filters in a normalized filter structure.
  * @param {object} filters
@@ -72,16 +100,25 @@ export function migrateCustomViewFilters(filters) {
   if (!filters?.groups) return filters;
   if (filters._filterSchemaVersion >= FILTER_SCHEMA_VERSION) return filters;
 
+  let didTransform = false;
+  const groups = filters.groups.map((group) => ({
+    ...group,
+    filters: (group.filters || []).map((filter) => {
+      const migrated = migrateFilterRule(filter);
+      if (filterRuleChanged(filter, migrated)) {
+        didTransform = true;
+      }
+      return migrated;
+    }),
+  }));
+
   const migrated = {
     ...filters,
     _filterSchemaVersion: FILTER_SCHEMA_VERSION,
-    groups: filters.groups.map((group) => ({
-      ...group,
-      filters: (group.filters || []).map(migrateFilterRule),
-    })),
+    groups,
   };
 
-  if (!migrationWarningLogged && typeof console !== 'undefined') {
+  if (didTransform && !migrationWarningLogged && typeof console !== 'undefined') {
     migrationWarningLogged = true;
     console.info(
       '[CustomViews] Migrated saved filter rules to automation-aligned columns and units.'

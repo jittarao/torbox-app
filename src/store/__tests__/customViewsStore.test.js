@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { reorderViewsByIds } from '@/store/customViewsStore';
+import { reorderViewsByIds, normalizeLoadedViews } from '@/store/customViewsStore';
+import { FILTER_SCHEMA_VERSION } from '@/components/downloads/filters/filterHelpers';
 
 describe('reorderViewsByIds', () => {
   const views = [
@@ -21,5 +22,26 @@ describe('reorderViewsByIds', () => {
       { id: 2, name: 'B' },
       { id: 1, name: 'A' },
     ]);
+  });
+});
+
+describe('normalizeLoadedViews', () => {
+  test('stamps schema version on loaded views', () => {
+    const [normalized] = normalizeLoadedViews([
+      {
+        id: 1,
+        name: 'Completed',
+        filters: {
+          groups: [
+            {
+              logicOperator: 'and',
+              filters: [{ column: 'download_state', operator: 'is_any_of', value: ['completed'] }],
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(normalized.filters._filterSchemaVersion).toBe(FILTER_SCHEMA_VERSION);
   });
 });
