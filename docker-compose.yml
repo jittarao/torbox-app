@@ -34,6 +34,11 @@ services:
       # Upload retention quotas (LIMITED tier users; backend only)
       - UPLOAD_LIMIT_MAX_STORAGE_MB=${UPLOAD_LIMIT_MAX_STORAGE_MB:-100}
       - UPLOAD_LIMIT_MAX_FILES=${UPLOAD_LIMIT_MAX_FILES:-500}
+      # Upload processor: uncached TorBox create limit per type (cached responses excluded)
+      - UPLOAD_UNCACHED_LIMIT_PER_HOUR=${UPLOAD_UNCACHED_LIMIT_PER_HOUR:-60}
+      - UPLOAD_PROCESSOR_INTERVAL_MS=${UPLOAD_PROCESSOR_INTERVAL_MS:-5000}
+      - UPLOAD_PROCESS_CONCURRENCY=${UPLOAD_PROCESS_CONCURRENCY:-6}
+      - UPLOAD_CONNECTION_DEFER_MS=${UPLOAD_CONNECTION_DEFER_MS:-900000}
       # Automation inactivity filter (skip polling for users inactive N days; 0 disables)
       - AUTOMATION_INACTIVE_USER_DAYS=${AUTOMATION_INACTIVE_USER_DAYS:-30}
       # Automation rules: set true to paginate all TorBox mylist pages (default: first page only)

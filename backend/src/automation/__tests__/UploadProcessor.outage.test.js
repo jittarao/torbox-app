@@ -60,9 +60,8 @@ describe('UploadProcessor outage handling', () => {
       connectionDeferCalled = true;
       return false;
     };
-    processor.isAtRateLimit = () => false;
+    processor.isAtUncachedHourlyLimit = () => false;
     processor.getApiClient = async () => ({});
-    processor.waitForRateLimit = async () => {};
     processor.buildFormData = async () => ({ getHeaders: () => ({}) });
     processor.makeApiRequest = async () => {
       apiRequestCalled = true;

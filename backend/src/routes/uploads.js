@@ -18,7 +18,10 @@ import {
   UPLOAD_RETRY_SELECT_FIELDS,
 } from '../automation/uploadDuplicateResolve.js';
 import { isConnectionError } from '../utils/torboxErrors.js';
-import { getUploadRateLimitConfig } from '../config/uploadRateLimits.js';
+import {
+  getUploadRateLimitConfig,
+  UPLOAD_UNCACHED_WINDOW_SQL,
+} from '../config/uploadRateLimits.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
@@ -572,6 +575,8 @@ export function setupUploadsRoutes(app, backend) {
               excludeUploadIds: successfulUploads.map((u) => u.id),
             });
           }
+
+          nudgeUploadProcessor(backend, authId);
         }
 
         res.json({
@@ -767,6 +772,8 @@ export function setupUploadsRoutes(app, backend) {
         });
       }
 
+      nudgeUploadProcessor(backend, authId);
+
       res.json({ success: true, data: upload });
     } catch (error) {
       logger.error('Error creating upload', error, {
@@ -854,29 +861,32 @@ export function setupUploadsRoutes(app, backend) {
         statusCountsMap[row.status] = row.count;
       });
 
-      // Get upload statistics for rate limit display
-      // Count API attempts in the last hour from upload_attempts table
-      // This is more accurate than counting completed uploads since it tracks all attempts
-      const uploadStats = userDb.db
+      // Per-type uncached attempt counts for rate limit display
+      const uncachedStats = userDb.db
         .prepare(
           `
-          SELECT 
-            COUNT(*) as uploads_last_hour,
-            SUM(CASE WHEN type = 'torrent' THEN 1 ELSE 0 END) as torrents_last_hour,
-            SUM(CASE WHEN type = 'usenet' THEN 1 ELSE 0 END) as usenets_last_hour,
-            SUM(CASE WHEN type = 'webdl' THEN 1 ELSE 0 END) as webdls_last_hour
+          SELECT
+            type,
+            COUNT(*) as uncached_count
           FROM upload_attempts
-          WHERE attempted_at >= datetime('now', '-1 hour')
+          WHERE is_cached = 0 AND attempted_at >= ${UPLOAD_UNCACHED_WINDOW_SQL}
+          GROUP BY type
         `
         )
-        .get();
+        .all();
+
+      const uncachedByType = { torrent: 0, usenet: 0, webdl: 0 };
+      for (const row of uncachedStats) {
+        if (row.type in uncachedByType) {
+          uncachedByType[row.type] = row.uncached_count;
+        }
+      }
 
       const uploadStatistics = {
         lastHour: {
-          total: uploadStats?.uploads_last_hour || 0,
-          torrents: uploadStats?.torrents_last_hour || 0,
-          usenets: uploadStats?.usenets_last_hour || 0,
-          webdls: uploadStats?.webdls_last_hour || 0,
+          torrents: { uncached: uncachedByType.torrent },
+          usenets: { uncached: uncachedByType.usenet },
+          webdls: { uncached: uncachedByType.webdl },
         },
         rateLimit: getUploadRateLimitConfig(),
       };
