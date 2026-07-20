@@ -18,6 +18,9 @@
 #   UPLOAD_PROCESSOR_INTERVAL_MS — upload queue poll interval ms (default 5000)
 #   UPLOAD_PROCESS_CONCURRENCY   — max users processed in parallel per cycle (default 6)
 #   UPLOAD_CONNECTION_DEFER_MS   — defer ms when TorBox is unreachable (default 900000)
+#   UPLOAD_BATCH_FETCH_SIZE      — SQL fetch size per queue buffer (default 50)
+#   UPLOAD_MAX_WORK_PER_DRAIN    — max uploads per drain invocation (default 25)
+#   CREATE_UPLOAD_TIMEOUT_MS     — TorBox create request timeout ms (default 30000)
 #   AUTOMATION_INACTIVE_USER_DAYS — skip automation for users inactive N days (default 30; 0 disables)
 #   DOWNLOAD_SYNC_CACHE_TTL_MS — download list cache eviction when idle (default 1800000)
 #   DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS — background full reconcile interval for multi-page catalogs (default 300000)
@@ -58,6 +61,9 @@ services:
       UPLOAD_PROCESSOR_INTERVAL_MS: ${UPLOAD_PROCESSOR_INTERVAL_MS:-5000}
       UPLOAD_PROCESS_CONCURRENCY: ${UPLOAD_PROCESS_CONCURRENCY:-6}
       UPLOAD_CONNECTION_DEFER_MS: ${UPLOAD_CONNECTION_DEFER_MS:-900000}
+      UPLOAD_BATCH_FETCH_SIZE: ${UPLOAD_BATCH_FETCH_SIZE:-50}
+      UPLOAD_MAX_WORK_PER_DRAIN: ${UPLOAD_MAX_WORK_PER_DRAIN:-25}
+      CREATE_UPLOAD_TIMEOUT_MS: ${CREATE_UPLOAD_TIMEOUT_MS:-30000}
       AUTOMATION_INACTIVE_USER_DAYS: ${AUTOMATION_INACTIVE_USER_DAYS:-30}
       AUTOMATION_RULES_MYLIST_FULL_PAGINATION: ${AUTOMATION_RULES_MYLIST_FULL_PAGINATION:-}
 

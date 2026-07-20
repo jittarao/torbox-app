@@ -180,6 +180,18 @@ LIMITED tier users (default for all new users) have staged upload files capped b
 
 Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uploadQuota.js`. Counters are cached in the master DB; startup backfill reconciles usage from per-user SQLite + disk.
 
+### Upload processor drain tuning
+
+`UploadProcessor` drains queued uploads per user via buffered round-robin (see `src/automation/UploadProcessor.js`, config in `src/config/uploadProcessorConfig.js`). **Fetch size and work cap are independent** — tune them separately.
+
+| Variable                    | Description                                                           | Default |
+| --------------------------- | --------------------------------------------------------------------- | ------- |
+| `UPLOAD_BATCH_FETCH_SIZE`   | SQL rows fetched per in-memory per-type queue buffer                  | `50`    |
+| `UPLOAD_MAX_WORK_PER_DRAIN` | Max uploads processed per drain invocation before yielding the worker | `25`    |
+| `CREATE_UPLOAD_TIMEOUT_MS`  | TorBox create API request timeout (ms)                                | `30000` |
+
+Related (unchanged): `UPLOAD_PROCESSOR_INTERVAL_MS` (scheduler tick, default 5s), `UPLOAD_PROCESS_CONCURRENCY` (cross-user worker slots, default 6), `UPLOAD_UNCACHED_LIMIT_PER_HOUR` (per-type uncached hourly budget, default 60).
+
 ## User activity tracking
 
 Engagement is recorded via a **frontend beacon** (`ActivityBeacon` → `POST /api/backend/activity` → `ActivityTracker`).

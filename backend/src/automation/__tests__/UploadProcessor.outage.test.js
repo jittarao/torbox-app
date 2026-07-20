@@ -47,7 +47,7 @@ describe('UploadProcessor outage handling', () => {
     expect(updateCall.sql).toContain('TorBox API unavailable. Will retry automatically.');
   });
 
-  test('processUpload still calls createtorrent when torrent list prefetch failed', async () => {
+  test('processUpload calls createtorrent for torrent magnet uploads', async () => {
     const userDb = createRecordingDb();
     const processor = new UploadProcessor(null, {
       updateUploadCounters: async () => {},
@@ -85,7 +85,6 @@ describe('UploadProcessor outage handling', () => {
         upload_type: 'magnet',
         url: 'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef01',
         name: 'Test',
-        _torboxTorrentList: null,
       },
       userDb,
       'queued'
@@ -93,45 +92,38 @@ describe('UploadProcessor outage handling', () => {
 
     expect(connectionDeferCalled).toBe(false);
     expect(apiRequestCalled).toBe(true);
-    expect(result).toBe(true);
+    expect(result.success).toBe(true);
+    expect(result.stopTypeDrain).toBe(false);
   });
 
-  test('tryCompleteTorrentFromExistingList skips createtorrent when hash exists', async () => {
+  test('processUpload stops type drain on request timeout', async () => {
     const userDb = createRecordingDb();
     const processor = new UploadProcessor(null, {
-      decrementUploadCounter() {},
+      updateUploadCounters: async () => {},
     });
 
-    processor.handleSuccessfulUpload = () => {
-      userDb.calls.push({ sql: 'handleSuccessfulUpload', params: [] });
+    processor.isAtUncachedHourlyLimit = () => false;
+    processor.getApiClient = async () => ({});
+    processor.buildFormData = async () => ({ getHeaders: () => ({}) });
+    processor.makeApiRequest = async () => {
+      throw Object.assign(new Error('timeout of 30000ms exceeded'), { code: 'ECONNABORTED' });
     };
 
-    const completed = await processor.tryCompleteTorrentFromExistingList(
+    const result = await processor.processUpload(
       {
-        id: 8,
+        id: 11,
         authId: 'auth-1',
         type: 'torrent',
         upload_type: 'magnet',
         url: 'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef01',
-        name: 'One',
+        name: 'Timeout test',
       },
       userDb,
-      'torrent',
-      [
-        {
-          id: 42,
-          hash: 'abcdef0123456789abcdef0123456789abcdef01',
-          auth_id: 'torbox-auth',
-          name: 'One',
-          active: true,
-          download_present: true,
-          download_finished: true,
-        },
-      ]
+      'queued'
     );
 
-    expect(completed).toBe(true);
-    expect(userDb.calls.some((call) => call.sql === 'handleSuccessfulUpload')).toBe(true);
+    expect(result.success).toBe(false);
+    expect(result.stopTypeDrain).toBe(true);
   });
 
   test('handleFailedUpload fails immediately on TorBox API error without re-queue', async () => {
