@@ -107,7 +107,7 @@ export const tableHeaderCheckboxCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:p
 export const tableHeaderActionsCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-right text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide z-[2] bg-surface-alt dark:bg-surface-alt-dark ${tableActionsStickyShell}`;
 
 export const tableContainerClass =
-  'overflow-x-auto rounded-lg md:rounded-xl border border-border dark:border-border-dark md:shadow-sm md:shadow-black/[0.03] dark:md:shadow-black/20';
+  'ui-scrollbar overflow-x-auto rounded-lg md:rounded-xl border border-border dark:border-border-dark md:shadow-sm md:shadow-black/[0.03] dark:md:shadow-black/20';
 
 export const cardContainerPad =
   'px-3 py-3 md:px-3.5 md:py-3 lg:p-4 rounded-lg md:rounded-xl border border-border/80 dark:border-border-dark/80 md:border-border/50 dark:md:border-border-dark/50 md:shadow-sm md:shadow-black/[0.04] dark:md:shadow-black/25';
