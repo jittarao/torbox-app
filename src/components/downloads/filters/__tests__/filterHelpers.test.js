@@ -21,6 +21,7 @@ import {
   itemMatchesAllViewFilters,
   mergeViewAssetTypeFilter,
   migrateCustomViewFilters,
+  needsFilterSchemaPersist,
   normalizeFilters,
   normalizeFilterStructure,
   stampFilterSchemaVersion,
@@ -296,6 +297,39 @@ describe('migrateCustomViewFilters', () => {
     };
     const migrated = migrateCustomViewFilters(legacy);
     expect(migrated.groups[0].filters[0].value).toBe(2);
+  });
+
+  test('stamps schema version without altering current-format filters', () => {
+    const current = {
+      groups: [
+        {
+          logicOperator: LOGIC_OPERATORS.AND,
+          filters: [{ column: 'download_state', operator: 'is_any_of', value: ['completed'] }],
+        },
+      ],
+    };
+    const migrated = migrateCustomViewFilters(current);
+    expect(migrated._filterSchemaVersion).toBe(FILTER_SCHEMA_VERSION);
+    expect(migrated.groups[0].filters[0]).toEqual({
+      column: 'download_state',
+      operator: 'is_any_of',
+      value: ['completed'],
+    });
+  });
+});
+
+describe('needsFilterSchemaPersist', () => {
+  test('true when schema version is missing', () => {
+    expect(needsFilterSchemaPersist({ groups: [{ filters: [] }] })).toBe(true);
+  });
+
+  test('false when schema version is current', () => {
+    expect(
+      needsFilterSchemaPersist({
+        _filterSchemaVersion: FILTER_SCHEMA_VERSION,
+        groups: [{ filters: [] }],
+      })
+    ).toBe(false);
   });
 });
 
