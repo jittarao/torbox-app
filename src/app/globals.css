@@ -625,6 +625,7 @@ select option {
 
   .ui-scrollbar::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
 
   .ui-scrollbar::-webkit-scrollbar-track {
