@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   getUploadResourceId,
   hasUploadResourcePayload,
+  isTorboxCachedUploadResponse,
   isTorboxDuplicateUploadResponse,
   isTorboxOutageResponse,
   isTorboxTransientQueuedResponse,
@@ -280,6 +281,37 @@ describe('uploadResponseValidation', () => {
       expect(isTorboxTransientQueuedResponse({ data: undefined })).toBe(false);
       expect(isTorboxTransientQueuedResponse({ data: {} })).toBe(false);
       expect(isTorboxTransientQueuedResponse({})).toBe(false);
+    });
+  });
+
+  describe('isTorboxCachedUploadResponse', () => {
+    test('detects cached torrent response', () => {
+      expect(
+        isTorboxCachedUploadResponse({
+          data: { success: true, detail: 'Found Cached Torrent', data: { torrent_id: 1 } },
+        })
+      ).toBe(true);
+    });
+
+    test('detects cached webdl response (case-insensitive)', () => {
+      expect(
+        isTorboxCachedUploadResponse({
+          data: { success: true, detail: 'Found cached web download', data: {} },
+        })
+      ).toBe(true);
+    });
+
+    test('rejects non-cached success', () => {
+      expect(
+        isTorboxCachedUploadResponse({
+          data: { success: true, detail: 'Torrent Added Successfully', data: {} },
+        })
+      ).toBe(false);
+    });
+
+    test('rejects missing detail', () => {
+      expect(isTorboxCachedUploadResponse({ data: { success: true } })).toBe(false);
+      expect(isTorboxCachedUploadResponse({})).toBe(false);
     });
   });
 });

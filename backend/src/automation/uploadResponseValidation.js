@@ -135,6 +135,19 @@ export function isTorboxTransientQueuedResponse(response) {
   return /queued\s+successfully/i.test(detail);
 }
 
+/**
+ * True when TorBox served the create request from its shared debrid cache
+ * (e.g. detail "Found Cached Torrent"). These do not count toward the 60/hour uncached limit.
+ *
+ * This is unrelated to mylist duplicate pre-check, which detects items already on the user's account.
+ * @param {Object|undefined} response - Axios response ({ data })
+ * @returns {boolean}
+ */
+export function isTorboxCachedUploadResponse(response) {
+  const detail = String(response?.data?.detail ?? '');
+  return detail.toLowerCase().includes('cached');
+}
+
 export function isTorboxDuplicateUploadResponse(response) {
   const envelope = response?.data;
   if (envelope == null || typeof envelope !== 'object' || Array.isArray(envelope)) {
