@@ -1,12 +1,37 @@
 import { parseUtcDate } from '@/utils/parseUtcDate';
 import { timeAgo } from '@/components/downloads/utils/formatters';
 
+const TRANSIENT_DEFERRAL_MESSAGES = [
+  'Uncached rate limit reached. Will retry automatically.',
+  'TorBox API unavailable. Will retry automatically.',
+  'Rate limit reached. Will retry automatically.',
+];
+
 /** Stable numeric id for Set lookups and API payloads (SQLite/json may use number or string). */
 export function normalizeUploadId(id) {
   if (id == null || id === '') return null;
   const numId = typeof id === 'string' ? parseInt(id, 10) : Number(id);
   if (!Number.isFinite(numId) || numId <= 0) return null;
   return numId;
+}
+
+export function isTransientDeferralMessage(errorMessage) {
+  if (!errorMessage || typeof errorMessage !== 'string') return false;
+  return TRANSIENT_DEFERRAL_MESSAGES.includes(errorMessage);
+}
+
+export function isUploadDeferred(nextAttemptAt) {
+  if (!nextAttemptAt) return false;
+  const date = parseUtcDate(nextAttemptAt);
+  return !isNaN(date.getTime()) && date.getTime() > Date.now();
+}
+
+export function getUploadRowErrorMessage(upload) {
+  if (!upload?.error_message) return null;
+  if (upload.status === 'queued' && isTransientDeferralMessage(upload.error_message)) {
+    return null;
+  }
+  return formatErrorMessage(upload.error_message);
 }
 
 // Format error messages for better user experience

@@ -39,12 +39,12 @@ describe('UploadProcessor outage handling', () => {
     const updateCall = userDb.calls.find(
       (call) =>
         call.sql.includes('UPDATE uploads') &&
-        call.sql.includes('error_message') &&
-        call.sql.includes('next_attempt_at')
+        call.sql.includes('next_attempt_at') &&
+        call.sql.includes('WHERE id = ?')
     );
     expect(updateCall).toBeDefined();
     expect(updateCall.sql).not.toContain('retry_count');
-    expect(updateCall.sql).toContain('TorBox API unavailable. Will retry automatically.');
+    expect(updateCall.sql).toContain('error_message = NULL');
   });
 
   test('processUpload calls createtorrent for torrent magnet uploads', async () => {
