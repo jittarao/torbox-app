@@ -170,7 +170,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
 
           <div
             ref={scrollContainerRef}
-            className={`min-w-0 ${isFullscreen ? 'fixed inset-0 z-50 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
+            className={`min-w-0 ${isFullscreen ? 'ui-scrollbar fixed inset-0 z-50 bg-surface dark:bg-surface-dark overflow-auto' : 'relative z-[1]'} ${
               downloadLinks.length > 0 ? 'pb-[var(--download-panel-peek-height,0px)]' : ''
             }`}
           >
