@@ -6,6 +6,7 @@ import { getUploadFilePath, fileExists, validateFilePathOwnership } from '../uti
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import {
   getUploadResourceId,
+  isTorboxCachedUploadResponse,
   isTorboxDuplicateUploadResponse,
   isTorboxOutageResponse,
   isTorboxTransientQueuedResponse,
@@ -18,16 +19,14 @@ import {
 } from './uploadDuplicateResolve.js';
 import { isConnectionError } from '../utils/torboxErrors.js';
 import {
-  UPLOAD_RATE_LIMIT_PER_HOUR,
-  UPLOAD_RATE_LIMIT_PER_MINUTE,
+  UPLOAD_UNCACHED_LIMIT_PER_HOUR,
+  UPLOAD_UNCACHED_WINDOW_SQL,
 } from '../config/uploadRateLimits.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 
-// Rate limits: 10 per minute, 60 per hour per type
-const RATE_LIMIT_PER_MINUTE = UPLOAD_RATE_LIMIT_PER_MINUTE;
-const RATE_LIMIT_PER_HOUR = UPLOAD_RATE_LIMIT_PER_HOUR;
-const MINUTE_MS = 60 * 1000;
+// Rate limit: 60 uncached creates per hour per type (cached responses are unlimited)
+const UNCACHED_LIMIT_PER_HOUR = UPLOAD_UNCACHED_LIMIT_PER_HOUR;
 const HOUR_MS = 60 * 60 * 1000;
 const PROCESSOR_INTERVAL_MS = parseInt(process.env.UPLOAD_PROCESSOR_INTERVAL_MS || '5000', 10);
 
@@ -41,8 +40,8 @@ export function extractTorboxTorrentResult(response, type) {
     torboxAuthId: torboxData.auth_id ?? null,
   };
 }
-const MIN_INTERVAL_THRESHOLD = 7; // Only enforce spacing when 7+ in last minute
 const RATE_LIMIT_BUFFER_MS = 1000; // 1 second buffer for rate limit calculations
+const RATE_LIMIT_UNKNOWN_RETRY_MS = 60 * 1000; // fallback when 429 but no Retry-After and no local window data
 const API_TIMEOUT_MS = 30000;
 const INITIAL_BACKOFF_MS = 30000; // 30 seconds
 const MAX_BACKOFF_MS = 300000; // 5 minutes
@@ -113,197 +112,132 @@ class UploadProcessor {
   }
 
   /**
-   * Get time boundaries for rate limit checking
-   * @returns {Object} Object with now, oneMinuteAgo, oneHourAgo
+   * Get current time for rate-limit wait calculations
+   * @returns {{ now: Date }}
    */
   getRateLimitBoundaries() {
-    const now = new Date();
-    return {
-      now,
-      oneMinuteAgo: this.formatDateForSQL(new Date(now.getTime() - MINUTE_MS)),
-      oneHourAgo: this.formatDateForSQL(new Date(now.getTime() - HOUR_MS)),
-    };
+    return { now: new Date() };
   }
 
   /**
-   * Count upload attempts in a time window
+   * Count uncached upload attempts in the rolling hour window for a type
    * @param {Object} userDb - User database instance
    * @param {string} type - Upload type
-   * @param {string} sinceDate - SQL datetime string
-   * @returns {number} Count of attempts
+   * @returns {number} Count of uncached attempts
    */
-  countAttemptsSince(userDb, type, sinceDate) {
+  countUncachedAttemptsSince(userDb, type) {
     const result = userDb.db
       .prepare(
         `
         SELECT COUNT(*) as count
         FROM upload_attempts
-        WHERE type = ? AND attempted_at >= ?
+        WHERE type = ? AND is_cached = 0 AND attempted_at >= ${UPLOAD_UNCACHED_WINDOW_SQL}
       `
       )
-      .get(type, sinceDate);
+      .get(type);
     return result?.count || 0;
   }
 
   /**
-   * Get oldest attempt in a time window
+   * Get oldest uncached attempt in the rolling hour window
    * @param {Object} userDb - User database instance
    * @param {string} type - Upload type
-   * @param {string} sinceDate - SQL datetime string
    * @returns {string|null} Oldest attempt datetime or null
    */
-  getOldestAttemptSince(userDb, type, sinceDate) {
+  getOldestUncachedAttemptSince(userDb, type) {
     const result = userDb.db
       .prepare(
         `
         SELECT MIN(attempted_at) as oldest
         FROM upload_attempts
-        WHERE type = ? AND attempted_at >= ?
+        WHERE type = ? AND is_cached = 0 AND attempted_at >= ${UPLOAD_UNCACHED_WINDOW_SQL}
       `
       )
-      .get(type, sinceDate);
+      .get(type);
     return result?.oldest || null;
-  }
-
-  /**
-   * Get most recent attempt in a time window
-   * @param {Object} userDb - User database instance
-   * @param {string} type - Upload type
-   * @param {string} sinceDate - SQL datetime string
-   * @returns {string|null} Most recent attempt datetime or null
-   */
-  getMostRecentAttemptSince(userDb, type, sinceDate) {
-    const result = userDb.db
-      .prepare(
-        `
-        SELECT attempted_at
-        FROM upload_attempts
-        WHERE type = ? AND attempted_at >= ?
-        ORDER BY attempted_at DESC
-        LIMIT 1
-      `
-      )
-      .get(type, sinceDate);
-    return result?.attempted_at || null;
   }
 
   // ==================== Rate Limit Methods ====================
 
   /**
-   * Calculate wait time based on rate limits from database
+   * Calculate wait time until uncached hourly budget has capacity
    * @param {Object} userDb - User database instance
    * @param {string} type - Upload type (torrent, usenet, webdl)
    * @returns {number} Wait time in milliseconds
    */
   calculateWaitTime(userDb, type) {
-    const { now, oneMinuteAgo, oneHourAgo } = this.getRateLimitBoundaries();
-    let waitTime = 0;
+    const { now } = this.getRateLimitBoundaries();
+    const hourCount = this.countUncachedAttemptsSince(userDb, type);
 
-    // Check per-minute limit
-    const minuteCount = this.countAttemptsSince(userDb, type, oneMinuteAgo);
-    if (minuteCount >= RATE_LIMIT_PER_MINUTE) {
-      const oldestMinute = this.getOldestAttemptSince(userDb, type, oneMinuteAgo);
-      if (oldestMinute) {
-        const oldestDate = this.parseSQLDate(oldestMinute);
-        const timeUntilOldestExpires = MINUTE_MS - (now.getTime() - oldestDate.getTime());
-        waitTime = Math.max(waitTime, timeUntilOldestExpires + RATE_LIMIT_BUFFER_MS);
-      }
+    if (hourCount < UNCACHED_LIMIT_PER_HOUR) {
+      return 0;
     }
 
-    // Check per-hour limit
-    const hourCount = this.countAttemptsSince(userDb, type, oneHourAgo);
-    if (hourCount >= RATE_LIMIT_PER_HOUR) {
-      const oldestHour = this.getOldestAttemptSince(userDb, type, oneHourAgo);
-      if (oldestHour) {
-        const oldestDate = this.parseSQLDate(oldestHour);
-        const timeUntilOldestExpires = HOUR_MS - (now.getTime() - oldestDate.getTime());
-        waitTime = Math.max(waitTime, timeUntilOldestExpires + RATE_LIMIT_BUFFER_MS);
-      }
+    const oldestHour = this.getOldestUncachedAttemptSince(userDb, type);
+    if (!oldestHour) {
+      return HOUR_MS;
     }
 
-    return waitTime;
+    const oldestDate = this.parseSQLDate(oldestHour);
+    const timeUntilOldestExpires = HOUR_MS - (now.getTime() - oldestDate.getTime());
+    return Math.max(0, timeUntilOldestExpires + RATE_LIMIT_BUFFER_MS);
   }
 
   /**
-   * Check if we're currently at the rate limit (without waiting)
-   * @param {Object} userDb - User database instance
-   * @param {string} type - Upload type
-   * @returns {boolean} True if at rate limit
+   * Whether the per-type uncached hourly budget is exhausted (proactive gate before create API).
    */
-  isAtRateLimit(userDb, type) {
-    const { oneMinuteAgo, oneHourAgo } = this.getRateLimitBoundaries();
-    const minuteCount = this.countAttemptsSince(userDb, type, oneMinuteAgo);
-    const hourCount = this.countAttemptsSince(userDb, type, oneHourAgo);
-
-    return minuteCount >= RATE_LIMIT_PER_MINUTE || hourCount >= RATE_LIMIT_PER_HOUR;
+  isAtUncachedHourlyLimit(userDb, type) {
+    return this.countUncachedAttemptsSince(userDb, type) >= UNCACHED_LIMIT_PER_HOUR;
   }
 
-  /**
-   * Check if we're too close to rate limit (within 1 of the limit)
-   * This helps prevent hitting the limit by processing one more upload
-   * @param {Object} userDb - User database instance
-   * @param {string} type - Upload type
-   * @returns {boolean} True if too close to limit
-   */
-  isTooCloseToRateLimit(userDb, type) {
-    const { oneMinuteAgo, oneHourAgo } = this.getRateLimitBoundaries();
-    const minuteCount = this.countAttemptsSince(userDb, type, oneMinuteAgo);
-    const hourCount = this.countAttemptsSince(userDb, type, oneHourAgo);
-
-    return minuteCount >= RATE_LIMIT_PER_MINUTE - 1 || hourCount >= RATE_LIMIT_PER_HOUR - 1;
-  }
-
-  /**
-   * Calculate minimum time until next upload can be processed
-   * Only enforces spacing when approaching the rate limit to maximize throughput
-   * @param {Object} userDb - User database instance
-   * @param {string} type - Upload type
-   * @returns {number} Minimum wait time in milliseconds before next upload
-   */
-  calculateMinTimeUntilNextUpload(userDb, type) {
-    const { now, oneMinuteAgo } = this.getRateLimitBoundaries();
-    const count = this.countAttemptsSince(userDb, type, oneMinuteAgo);
-
-    // Only enforce spacing when we're approaching the limit (7+ in last minute)
-    if (count >= MIN_INTERVAL_THRESHOLD) {
-      const recentAttempt = this.getMostRecentAttemptSince(userDb, type, oneMinuteAgo);
-      if (recentAttempt) {
-        const lastAttemptDate = this.parseSQLDate(recentAttempt);
-        const timeSinceLastAttempt = now.getTime() - lastAttemptDate.getTime();
-        const minIntervalMs = MINUTE_MS / RATE_LIMIT_PER_MINUTE; // 6000ms = 6 seconds
-
-        if (timeSinceLastAttempt < minIntervalMs) {
-          return minIntervalMs - timeSinceLastAttempt;
-        }
-      }
-    }
-
-    return 0; // No wait needed - we have capacity
-  }
-
-  /**
-   * Wait for rate limit if needed
-   * @param {Object} userDb - User database instance
-   * @param {string} type - Upload type
-   * @returns {Promise<void>}
-   */
-  async waitForRateLimit(userDb, type) {
-    // First, ensure minimum spacing between uploads (6 seconds for 10/minute limit)
-    const minWaitTime = this.calculateMinTimeUntilNextUpload(userDb, type);
-    if (minWaitTime > 0) {
-      logger.debug('Waiting for minimum interval between uploads', {
-        type,
-        waitTimeMs: minWaitTime,
-      });
-      await new Promise((resolve) => setTimeout(resolve, minWaitTime));
-    }
-
-    // Then check if we're at the rate limit and wait if needed
+  async handleRateLimitDeferral(upload, userDb, type) {
     const waitTime = this.calculateWaitTime(userDb, type);
-    if (waitTime > 0) {
-      logger.debug('Waiting for rate limit', { type, waitTimeMs: waitTime });
-      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + waitTime));
+
+    logger.debug('Uncached hourly limit reached, deferring upload', {
+      uploadId: upload.id,
+      type,
+      waitTimeMs: waitTime,
+      nextAttemptAt,
+    });
+
+    userDb.db
+      .prepare(
+        `
+        UPDATE uploads
+        SET status = 'queued',
+            error_message = 'Uncached rate limit reached. Will retry automatically.',
+            next_attempt_at = ?,
+            last_processed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+      )
+      .run(nextAttemptAt, upload.id);
+
+    const deferOthersResult = userDb.db
+      .prepare(
+        `
+        UPDATE uploads
+        SET next_attempt_at = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE status = 'queued'
+          AND type = ?
+          AND id != ?
+      `
+      )
+      .run(nextAttemptAt, type, upload.id);
+
+    if (deferOthersResult.changes > 0) {
+      logger.debug('Deferred other queued uploads due to uncached hourly limit', {
+        type,
+        deferredCount: deferOthersResult.changes,
+        nextAttemptAt,
+      });
     }
+
+    await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
+    return false;
   }
 
   // ==================== API Client Management ====================
@@ -365,17 +299,26 @@ class UploadProcessor {
     statusCode,
     success,
     errorCode = null,
-    errorMessage = null
+    errorMessage = null,
+    isCached = false
   ) {
     try {
       userDb.db
         .prepare(
           `
-          INSERT INTO upload_attempts (upload_id, type, status_code, success, error_code, error_message)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO upload_attempts (upload_id, type, status_code, success, error_code, error_message, is_cached)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
         `
         )
-        .run(uploadId, type, statusCode, success ? 1 : 0, errorCode, errorMessage);
+        .run(
+          uploadId,
+          type,
+          statusCode,
+          success ? 1 : 0,
+          errorCode,
+          errorMessage,
+          isCached ? 1 : 0
+        );
     } catch (error) {
       // Don't throw - logging shouldn't break upload processing
       logger.error('Failed to log upload attempt', error, {
@@ -542,15 +485,11 @@ class UploadProcessor {
     });
 
     if (error) {
-      this.logUploadAttempt(
-        userDb,
-        upload.id,
+      logger.warn('TorBox connection error during upload deferral', {
+        uploadId: upload.id,
         type,
-        error.response?.status ?? null,
-        false,
-        'CONNECTION_ERROR',
-        error.message
-      );
+        error: error.message,
+      });
     }
 
     userDb.db
@@ -609,16 +548,6 @@ class UploadProcessor {
     const deferMs = this.calculateBackoffDelay(retryCount);
     const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + deferMs));
 
-    this.logUploadAttempt(
-      userDb,
-      upload.id,
-      type,
-      response?.status ?? 200,
-      false,
-      'TRANSIENT_QUEUED',
-      data.detail || 'TorBox returned transient queued response'
-    );
-
     logger.warn('TorBox returned transient queued response, will retry', {
       uploadId: upload.id,
       type,
@@ -675,7 +604,8 @@ class UploadProcessor {
   }
 
   /**
-   * Complete a torrent upload when it already exists on TorBox (mylist/getqueued pre-check).
+   * Complete a torrent upload when it already exists on the user's TorBox account (mylist/getqueued).
+   * Duplicate-avoidance only — unrelated to TorBox shared-cache "Found Cached Torrent" responses.
    * @returns {Promise<boolean>}
    */
   async tryCompleteTorrentFromExistingList(upload, userDb, type, torrents) {
@@ -712,35 +642,6 @@ class UploadProcessor {
     );
 
     return true;
-  }
-
-  async handleRateLimitDeferral(upload, userDb, type) {
-    const waitTime = this.calculateWaitTime(userDb, type);
-    const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + waitTime));
-
-    logger.debug('At rate limit, deferring upload', {
-      uploadId: upload.id,
-      type,
-      waitTimeMs: waitTime,
-      nextAttemptAt,
-    });
-
-    userDb.db
-      .prepare(
-        `
-        UPDATE uploads
-        SET status = 'queued',
-            error_message = NULL,
-            next_attempt_at = ?,
-            last_processed_at = CURRENT_TIMESTAMP,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `
-      )
-      .run(nextAttemptAt, upload.id);
-
-    await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
-    return false;
   }
 
   /**
@@ -803,7 +704,8 @@ class UploadProcessor {
       response?.status ?? 200,
       true,
       data.error ?? 'DUPLICATE_ITEM',
-      data.detail ?? null
+      data.detail ?? null,
+      true
     );
 
     logger.info('TorBox reported duplicate upload; resolving existing resource', {
@@ -841,7 +743,9 @@ class UploadProcessor {
     };
 
     if (resolved.hash || resolved.torrentId != null) {
-      this.handleSuccessfulUpload(upload, userDb, type, syntheticResponse);
+      this.handleSuccessfulUpload(upload, userDb, type, syntheticResponse, {
+        skipLogAttempt: true,
+      });
       return true;
     }
 
@@ -901,7 +805,8 @@ class UploadProcessor {
     );
 
     if (!options.skipLogAttempt) {
-      this.logUploadAttempt(userDb, id, type, response.status, true, null, null);
+      const isCached = isTorboxCachedUploadResponse(response);
+      this.logUploadAttempt(userDb, id, type, response.status, true, null, null, isCached);
     }
 
     // Update upload status (staged files retained until tier quota eviction)
@@ -992,35 +897,22 @@ class UploadProcessor {
    * @returns {number} Delay in milliseconds
    */
   calculateRateLimitDelay(error, userDb, type) {
-    // Prefer Retry-After header if present
     const retryAfterHeader =
       error.response?.headers?.['retry-after'] ?? error.response?.headers?.['Retry-After'];
     const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
 
-    if (Number.isFinite(retryAfterSeconds)) {
-      return Math.max(0, retryAfterSeconds) * 1000;
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return retryAfterSeconds * 1000;
     }
 
-    // Calculate wait time based on actual rate limit state
-    let rateLimitDelayMs = this.calculateWaitTime(userDb, type);
-
-    // Fallback if calculateWaitTime returns 0
-    if (rateLimitDelayMs === 0) {
-      const { now, oneMinuteAgo } = this.getRateLimitBoundaries();
-      const oldestMinute = this.getOldestAttemptSince(userDb, type, oneMinuteAgo);
-
-      if (oldestMinute) {
-        const oldestDate = this.parseSQLDate(oldestMinute);
-        rateLimitDelayMs = Math.max(
-          0,
-          MINUTE_MS - (now.getTime() - oldestDate.getTime()) + RATE_LIMIT_BUFFER_MS
-        );
-      } else {
-        rateLimitDelayMs = MINUTE_MS;
-      }
+    // Rolling 60/hour: wait until the oldest tracked uncached attempt leaves the window
+    const rollingWaitMs = this.calculateWaitTime(userDb, type);
+    if (rollingWaitMs > 0) {
+      return rollingWaitMs;
     }
 
-    return rateLimitDelayMs;
+    // External usage may have exhausted the limit without entries in our log — retry soon
+    return RATE_LIMIT_UNKNOWN_RETRY_MS;
   }
 
   /**
@@ -1078,20 +970,11 @@ class UploadProcessor {
   async handleFailedUpload(upload, userDb, type, error, originalStatus = null) {
     const { id } = upload;
 
-    // Log failed attempt if API call was made
-    if (error.response) {
-      const errorData = error.response?.data;
-      const errorCode = errorData?.error || null;
-      const errorMessage = errorData?.detail || error.message || null;
-      this.logUploadAttempt(
-        userDb,
-        id,
-        type,
-        error.response.status,
-        false,
-        errorCode,
-        errorMessage
-      );
+    const isRateLimit = this.isRateLimitError(error);
+    const isConnection = isConnectionError(error);
+
+    // Rate-limit attempts are not logged — they do not consume uncached budget and are retried after deferral.
+    if (error.response && !isRateLimit) {
       logger.warn('TorBox API error response', {
         uploadId: id,
         type,
@@ -1101,22 +984,19 @@ class UploadProcessor {
           error.response.headers?.['retry-after'] ?? error.response.headers?.['Retry-After'],
         data: error.response.data,
       });
-    } else if (this.isRateLimitError(error)) {
-      logger.warn('Rate limit (no API response body)', {
+    } else if (isRateLimit) {
+      logger.warn('TorBox rate limit response', {
         uploadId: id,
         type,
+        ...(error.response && {
+          status: error.response.status,
+          retryAfter:
+            error.response.headers?.['retry-after'] ?? error.response.headers?.['Retry-After'],
+          data: error.response.data,
+        }),
         message: error.message,
       });
-    } else if (isConnectionError(error)) {
-      this.logUploadAttempt(
-        userDb,
-        id,
-        type,
-        error.response?.status ?? null,
-        false,
-        'CONNECTION_ERROR',
-        error.message
-      );
+    } else if (isConnection) {
       logger.warn('TorBox connection error during upload', {
         uploadId: id,
         type,
@@ -1125,8 +1005,6 @@ class UploadProcessor {
       });
     }
 
-    const isRateLimit = this.isRateLimitError(error);
-    const isConnection = isConnectionError(error);
     const isNonRetryable = this.isNonRetryableError(error);
     // Only defer (and call TorBox again later) for rate limits and platform outages.
     // All other API failures get a single createtorrent attempt; use manual Retry to try again.
@@ -1166,10 +1044,8 @@ class UploadProcessor {
       )
       .run(finalStatus, userFriendlyError, finalRetryCount, nextAttemptAt, id);
 
-    // When API returns 429, defer all other queued uploads of this type so we don't keep
-    // making API calls for the rest of the queue (our pre-check uses local limits and may
-    // not match the API's stricter limit, so 554, 555, ... would otherwise each get tried
-    // and each get 429 until the window passes).
+    // When API returns 429, defer all other queued uploads of this type so we don't hammer
+    // TorBox for the rest of the queue (e.g. external tools may have exhausted the limit first).
     if ((isRateLimit || isConnection) && nextAttemptAt) {
       const deferOthersResult = userDb.db
         .prepare(
@@ -1251,19 +1127,11 @@ class UploadProcessor {
         throw new Error('authId is required for processing upload');
       }
 
-      // Check rate limit before making request or getting API client
-      if (this.isAtRateLimit(userDb, type)) {
-        return await this.handleRateLimitDeferral(upload, userDb, type);
-      }
-
       // Get API client (force refresh if this is a retry after auth error)
       const apiClient = await this.getApiClient(upload.authId, isRetryAfterAuthError);
 
-      // Wait for rate limit if needed
-      await this.waitForRateLimit(userDb, type);
-
-      // _torboxTorrentList is an array when mylist prefetch succeeded (duplicate pre-check).
-      // null means prefetch failed — skip pre-check but still attempt createtorrent.
+      // Duplicate check: skip createtorrent if torrent is already on this user's account (mylist).
+      // Unrelated to TorBox shared-cache rate limits — that is determined from the create API response.
       if (type === 'torrent' && Array.isArray(upload._torboxTorrentList)) {
         const completedFromList = await this.tryCompleteTorrentFromExistingList(
           upload,
@@ -1274,6 +1142,10 @@ class UploadProcessor {
         if (completedFromList) {
           return true;
         }
+      }
+
+      if (this.isAtUncachedHourlyLimit(userDb, type)) {
+        return await this.handleRateLimitDeferral(upload, userDb, type);
       }
 
       // Build FormData
