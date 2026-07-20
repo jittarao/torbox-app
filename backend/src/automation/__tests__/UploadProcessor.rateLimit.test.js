@@ -187,10 +187,67 @@ describe('UploadProcessor uncached rate limits', () => {
       expect(apiCalled).toBe(false);
 
       const row = userDb.db
-        .prepare('SELECT status, next_attempt_at FROM uploads WHERE id = ?')
+        .prepare('SELECT status, next_attempt_at, error_message FROM uploads WHERE id = ?')
         .get(uploadId);
       expect(row.status).toBe('queued');
       expect(row.next_attempt_at).not.toBeNull();
+      expect(row.error_message).toBeNull();
+    });
+  });
+
+  test('proactive defer clears stale transient error_message on sibling queued uploads', async () => {
+    await withUserDb(async (userDb) => {
+      const processor = new UploadProcessor(env.userDatabaseManager, {
+        updateUploadCounters: async () => {},
+      });
+
+      userDb.db
+        .prepare(
+          `
+          INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
+          SELECT value, 'torrent', 200, 1, 0, datetime('now', '-30 minutes')
+          FROM (SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
+                UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10
+                UNION ALL SELECT 11 UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14 UNION ALL SELECT 15
+                UNION ALL SELECT 16 UNION ALL SELECT 17 UNION ALL SELECT 18 UNION ALL SELECT 19 UNION ALL SELECT 20
+                UNION ALL SELECT 21 UNION ALL SELECT 22 UNION ALL SELECT 23 UNION ALL SELECT 24 UNION ALL SELECT 25
+                UNION ALL SELECT 26 UNION ALL SELECT 27 UNION ALL SELECT 28 UNION ALL SELECT 29 UNION ALL SELECT 30
+                UNION ALL SELECT 31 UNION ALL SELECT 32 UNION ALL SELECT 33 UNION ALL SELECT 34 UNION ALL SELECT 35
+                UNION ALL SELECT 36 UNION ALL SELECT 37 UNION ALL SELECT 38 UNION ALL SELECT 39 UNION ALL SELECT 40
+                UNION ALL SELECT 41 UNION ALL SELECT 42 UNION ALL SELECT 43 UNION ALL SELECT 44 UNION ALL SELECT 45
+                UNION ALL SELECT 46 UNION ALL SELECT 47 UNION ALL SELECT 48 UNION ALL SELECT 49 UNION ALL SELECT 50
+                UNION ALL SELECT 51 UNION ALL SELECT 52 UNION ALL SELECT 53 UNION ALL SELECT 54 UNION ALL SELECT 55
+                UNION ALL SELECT 56 UNION ALL SELECT 57 UNION ALL SELECT 58 UNION ALL SELECT 59 UNION ALL SELECT 60)
+        `
+        )
+        .run();
+
+      userDb.db
+        .prepare(
+          `
+          INSERT INTO uploads (type, upload_type, url, name, status, queue_order, error_message)
+          VALUES
+            ('torrent', 'magnet', 'magnet:?xt=urn:btih:one', 'queued-a', 'queued', 0,
+             'Uncached rate limit reached. Will retry automatically.'),
+            ('torrent', 'magnet', 'magnet:?xt=urn:btih:two', 'queued-b', 'queued', 1, NULL),
+            ('torrent', 'magnet', 'magnet:?xt=urn:btih:three', 'current', 'processing', 2, NULL)
+        `
+        )
+        .run();
+
+      const uploadId = userDb.db.prepare(`SELECT id FROM uploads WHERE name = 'current'`).get().id;
+
+      processor.getApiClient = async () => ({});
+
+      await processor.processUpload(
+        { id: uploadId, type: 'torrent', authId: env.authId, upload_type: 'magnet' },
+        userDb
+      );
+
+      const rows = userDb.db
+        .prepare(`SELECT name, error_message FROM uploads ORDER BY queue_order ASC`)
+        .all();
+      expect(rows.every((row) => row.error_message == null)).toBe(true);
     });
   });
 
@@ -332,5 +389,33 @@ describe('GET /api/uploads uncached statistics', () => {
     expect(res.body.uploadStatistics.lastHour.usenets.uncached).toBe(1);
     expect(res.body.uploadStatistics.lastHour.webdls.uncached).toBe(0);
     expect(res.body.uploadStatistics.rateLimit.uncachedPerHour).toBe(60);
+  });
+
+  test('returns deferred queue counts and retryAt when uploads are waiting', async () => {
+    const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
+    try {
+      userDb.db
+        .prepare(
+          `
+          INSERT INTO uploads (type, upload_type, url, name, status, queue_order, next_attempt_at)
+          VALUES
+            ('torrent', 'magnet', 'magnet:?xt=urn:btih:a', 'a', 'queued', 0, datetime('now', '+30 minutes')),
+            ('torrent', 'magnet', 'magnet:?xt=urn:btih:b', 'b', 'queued', 1, datetime('now', '+45 minutes')),
+            ('usenet', 'link', 'https://example.com/nzb', 'c', 'queued', 0, datetime('now', '+20 minutes'))
+        `
+        )
+        .run();
+    } finally {
+      env.userDatabaseManager.releaseConnection(env.authId);
+    }
+
+    const res = await request(app).get('/api/uploads').set('x-api-key', env.apiKey);
+
+    expect(res.status).toBe(200);
+    expect(res.body.uploadStatistics.lastHour.torrents.deferredCount).toBe(2);
+    expect(res.body.uploadStatistics.lastHour.torrents.deferredUntil).not.toBeNull();
+    expect(res.body.uploadStatistics.lastHour.usenets.deferredCount).toBe(1);
+    expect(res.body.uploadStatistics.retryAt).not.toBeNull();
+    expect(res.body.data[0]).toHaveProperty('next_attempt_at');
   });
 });
