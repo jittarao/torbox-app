@@ -115,6 +115,44 @@ describe('itemMatchesFilters original_url source host', () => {
   });
 });
 
+const statusFilter = (...values) => ({
+  logicOperator: 'and',
+  groups: [
+    {
+      logicOperator: 'and',
+      filters: [{ column: 'download_state', operator: 'is_any_of', value: values }],
+    },
+  ],
+});
+
+describe('itemMatchesFilters download_state column', () => {
+  test('is_any_of downloading includes Meta_DL and Checking_Resume_Data', () => {
+    const filters = statusFilter('downloading');
+    expect(itemMatchesFilters({ download_state: 'metaDL', active: true }, filters)).toBe(true);
+    expect(
+      itemMatchesFilters({ download_state: 'checkingResumeData', active: true }, filters)
+    ).toBe(true);
+    expect(
+      itemMatchesFilters(
+        { active: true, download_finished: false, download_present: false },
+        filters
+      )
+    ).toBe(true);
+    expect(itemMatchesFilters({ download_state: 'stalledDL', active: true }, filters)).toBe(false);
+  });
+
+  test('is_none_of downloading excludes Meta_DL and Checking_Resume_Data', () => {
+    const filters = statusFilter('completed');
+    expect(itemMatchesFilters({ download_state: 'metaDL', active: true }, filters)).toBe(false);
+    expect(
+      itemMatchesFilters(
+        { active: false, download_finished: true, download_present: true },
+        filters
+      )
+    ).toBe(true);
+  });
+});
+
 describe('itemMatchesFilters airlocked column', () => {
   const filtersWithAirlockRule = (operator, value) => ({
     logicOperator: 'and',
