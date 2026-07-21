@@ -225,6 +225,38 @@ describe('mergeListIntoEntities', () => {
     expect(filesCache[key]).toBe(files);
   });
 
+  test('preserves files cache when re-merging slim entity without inline files[]', () => {
+    const files = [{ id: 10, size: 100, name: 'a.mkv' }];
+    const key = entityKey('torrents', 1);
+    const prevEntity = {
+      id: 1,
+      assetType: 'torrents',
+      fileCount: 1,
+      fileListSignature: '10:100',
+      download_finished: true,
+      active: false,
+      download_speed: 1000,
+    };
+    const prevCache = { [key]: files };
+    const slimPollRow = {
+      id: 1,
+      assetType: 'torrents',
+      fileCount: 1,
+      fileListSignature: '10:100',
+      download_finished: true,
+      active: false,
+      download_speed: 1000,
+    };
+    const { filesCache } = mergeListIntoEntities(
+      { [key]: prevEntity },
+      [key],
+      [slimPollRow],
+      'torrents',
+      prevCache
+    );
+    expect(filesCache[key]).toBe(files);
+  });
+
   test('returns same filesCache reference when cache unchanged', () => {
     const files = [{ id: 10, size: 100 }];
     const key = entityKey('torrents', 1);
