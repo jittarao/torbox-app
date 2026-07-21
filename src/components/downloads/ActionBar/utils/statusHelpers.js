@@ -1,6 +1,14 @@
 import { STATUS_OPTIONS } from '@/components/constants';
 import { isQueuedItem } from '@/utils/utility';
 
+/** Map transitional download states to the user-facing Downloading label for filters. */
+export function normalizeStatusLabelForFilter(label) {
+  if (label === 'Meta_DL' || label === 'Checking_Resume_Data') {
+    return 'downloading';
+  }
+  return String(label || '').toLowerCase();
+}
+
 export const getMatchingStatus = (item) => {
   if (isQueuedItem(item))
     return {

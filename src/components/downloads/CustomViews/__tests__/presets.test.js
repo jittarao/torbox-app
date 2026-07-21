@@ -51,6 +51,12 @@ describe('createViewPresets', () => {
         active.filters
       )
     ).toBe(false);
+    expect(itemMatchesFilters({ download_state: 'metaDL', active: true }, active.filters)).toBe(
+      true
+    );
+    expect(
+      itemMatchesFilters({ download_state: 'checkingResumeData', active: true }, active.filters)
+    ).toBe(true);
   });
 
   test('dead matches failed and inactive items', () => {
