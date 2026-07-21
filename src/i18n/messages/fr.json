@@ -1559,7 +1559,6 @@
     "noUncached": "Aucun téléversement non mis en cache au cours de la dernière heure",
     "rateLimitReached": "Limite de débit atteinte",
     "resumesIn": "Reprise {time}",
-    "rowWaiting": "En attente — reprise {time}",
     "soon": "bientôt",
     "title": "Téléversements non mis en cache (dernière heure)",
     "typeUncached": "/ {limit} non mis en cache"
