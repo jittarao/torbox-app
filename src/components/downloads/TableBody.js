@@ -107,14 +107,11 @@ function useTableBodyState(props) {
     [deferredExpandedById]
   );
 
+  const filesByEntityKey = useTorboxDownloadsStore((s) => s.filesByEntityKey);
+
   const getVisibleFiles = useCallback(
-    (item, search) =>
-      getFilesVisibleForDownloadSearch(
-        item,
-        search,
-        useTorboxDownloadsStore.getState().filesByEntityKey
-      ),
-    []
+    (item, search) => getFilesVisibleForDownloadSearch(item, search, filesByEntityKey),
+    [filesByEntityKey]
   );
 
   const expandedItemsArray = useMemo(() => {

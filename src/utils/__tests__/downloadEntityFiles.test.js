@@ -5,6 +5,7 @@ import {
   resolveItemFiles,
   applyFilesCacheEntry,
   updateFilesCacheEntry,
+  shouldEvictFilesCache,
 } from '../downloadEntityFiles.js';
 
 describe('slimRowForStorage', () => {
@@ -52,6 +53,16 @@ describe('resolveItemFiles', () => {
   });
 });
 
+describe('shouldEvictFilesCache', () => {
+  test('keeps cache when slim row still has files metadata', () => {
+    expect(shouldEvictFilesCache({ fileCount: 2, fileListSignature: '1:1|2:2' })).toBe(false);
+  });
+
+  test('evicts when slim row has no files metadata', () => {
+    expect(shouldEvictFilesCache({ fileCount: 0, fileListSignature: '' })).toBe(true);
+  });
+});
+
 describe('applyFilesCacheEntry', () => {
   test('mutates cache in place when entry changes', () => {
     const cache = {};
@@ -65,6 +76,21 @@ describe('applyFilesCacheEntry', () => {
     );
     expect(changed).toBe(true);
     expect(cache['torrents:1']).toEqual([{ id: 1, size: 1 }]);
+  });
+
+  test('does not evict cache for slim row without inline files[]', () => {
+    const prevFiles = [{ id: 1, size: 1 }];
+    const cache = { 'torrents:1': prevFiles };
+    const changed = applyFilesCacheEntry(
+      cache,
+      'torrents:1',
+      { fileCount: 1, fileListSignature: '1:1' },
+      null,
+      { fileListSignature: '1:1' },
+      prevFiles
+    );
+    expect(changed).toBe(false);
+    expect(cache['torrents:1']).toBe(prevFiles);
   });
 
   test('skips mutation when cached ref unchanged', () => {

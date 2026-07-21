@@ -39,6 +39,13 @@ export function getItemFileCount(item) {
   return item.file_count ?? 0;
 }
 
+/** True when a slim row has no files and its side-cache entry should be removed. */
+export function shouldEvictFilesCache(slimRow) {
+  if (!slimRow) return true;
+  const count = slimRow.fileCount ?? slimRow.file_count ?? 0;
+  return count === 0 && !slimRow.fileListSignature;
+}
+
 /**
  * Resolve full files[] for an item from the side cache (expand-time / action-time).
  *
@@ -75,6 +82,7 @@ export function applyFilesCacheEntry(cache, key, slimRow, files, prevEntity, pre
     return true;
   }
 
+  if (!shouldEvictFilesCache(slimRow)) return false;
   if (!(key in cache)) return false;
   delete cache[key];
   return true;
