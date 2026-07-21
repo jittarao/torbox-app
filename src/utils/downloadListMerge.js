@@ -2,7 +2,11 @@
  * Pure merge + structural sharing for TorBox download lists.
  */
 
-import { rowFileListSignature, slimRowForStorage } from '@/utils/downloadEntityFiles';
+import {
+  rowFileListSignature,
+  slimRowForStorage,
+  shouldEvictFilesCache,
+} from '@/utils/downloadEntityFiles';
 
 const ROW_COMPARE_FIELDS = [
   'id',
@@ -219,7 +223,7 @@ export function mergeListIntoEntities(
         touchFilesCache();
         nextFilesCache[key] = nextFiles;
       }
-    } else if (key in prevFilesCache) {
+    } else if (shouldEvictFilesCache(slim) && key in prevFilesCache) {
       touchFilesCache();
       delete nextFilesCache[key];
     }
