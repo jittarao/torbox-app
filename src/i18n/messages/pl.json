@@ -1570,6 +1570,19 @@
     "uploading": "Przesyłanie {current} z {total}",
     "waitingBeforeNext": "Oczekiwanie {time} przed następnym przesyłaniem"
   },
+  "UploadStatistics": {
+    "approachingRateLimit": "Zbliżanie się do limitu",
+    "deferredCount": "{count, plural, one {# w kolejce} few {# w kolejce} many {# w kolejce} other {# w kolejce}}",
+    "deferredSummary": "{count, plural, one {# przesyłanie oczekuje — wznowienie {time}} few {# przesyłania oczekują — wznowienie {time}} many {# przesyłań oczekuje — wznowienie {time}} other {# przesyłania oczekują — wznowienie {time}}}",
+    "deferredTypeSummary": "{label}: {count, plural, one {# przesyłanie oczekuje — wznowienie {time}} few {# przesyłania oczekują — wznowienie {time}} many {# przesyłań oczekuje — wznowienie {time}} other {# przesyłania oczekują — wznowienie {time}}}",
+    "noUncached": "Brak niezbuforowanych przesłań w ostatniej godzinie",
+    "rateLimitReached": "Osiągnięto limit",
+    "resumesIn": "Wznowienie {time}",
+    "rowWaiting": "Oczekiwanie — wznowienie {time}",
+    "soon": "wkrótce",
+    "title": "Niezbuforowane przesyłania (ostatnia godzina)",
+    "typeUncached": "/ {limit} niezbuforowanych"
+  },
   "Usage": {
     "danger": {
       "message": "W ciągu ostatnich 30 dni wykorzystałeś {used} z minimalnego limitu planu {limit} ({percent} %). Wkrótce zmniejsz zużycie, aby uniknąć ostrzeżeń lub ograniczeń.",

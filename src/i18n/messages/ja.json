@@ -1592,6 +1592,19 @@
     "uploading": "{total} 件中 {current} 件をアップロード中",
     "waitingBeforeNext": "次のアップロードまで {time} 待機中"
   },
+  "UploadStatistics": {
+    "approachingRateLimit": "制限に近づいています",
+    "deferredCount": "{count, plural, other {# 件キュー}}",
+    "deferredSummary": "{count, plural, other {# 件のアップロード待機中 — {time} に再開}}",
+    "deferredTypeSummary": "{label}: {count, plural, other {# 件のアップロード待機中 — {time} に再開}}",
+    "noUncached": "直近1時間にキャッシュなしのアップロードはありません",
+    "rateLimitReached": "レート制限に達しました",
+    "resumesIn": "{time} に再開",
+    "rowWaiting": "待機中 — {time} に再開",
+    "soon": "まもなく",
+    "title": "キャッシュなしアップロード（直近1時間）",
+    "typeUncached": "/ {limit} キャッシュなし"
+  },
   "Usage": {
     "danger": {
       "message": "過去30日間でプラン下限 {limit} のうち {used}（{percent}%）を使用しています。警告や制限を避けるため、すぐに使用量を減らしてください。",
