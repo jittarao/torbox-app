@@ -20,6 +20,7 @@ import {
   getItemFieldForColumn,
   getValueConversion,
 } from '@/components/downloads/filters/filterFieldRegistry';
+import { getItemFileCount } from '@/utils/downloadEntityFiles';
 import {
   extractSourceHost,
   normalizeSourceHostKey,
@@ -138,7 +139,8 @@ function evaluateFilter(filter, item) {
 
   const columnKey = filter.column;
   const itemField = getItemFieldForColumn(columnKey);
-  const columnValue = item[itemField] ?? item[columnKey];
+  const columnValue =
+    columnKey === 'file_count' ? getItemFileCount(item) : (item[itemField] ?? item[columnKey]);
   const operator = filter.operator;
   const filterValue = filter.value;
 

@@ -177,6 +177,14 @@ describe('itemMatchesFilters unit conversions', () => {
     expect(itemMatchesFilters({ eta: 45 * 60 }, filters)).toBe(false);
   });
 
+  test('file count uses fileCount on slim entities (files in side cache)', () => {
+    const filters = numericFilter('file_count', 'gt', 0);
+    expect(itemMatchesFilters({ fileCount: 3 }, filters)).toBe(true);
+    expect(itemMatchesFilters({ fileCount: 0 }, filters)).toBe(false);
+    expect(itemMatchesFilters({ file_count: 2 }, filters)).toBe(true);
+    expect(itemMatchesFilters({ files: [{ id: 1 }, { id: 2 }] }, filters)).toBe(true);
+  });
+
   test('active boolean matches entity.active', () => {
     const filters = {
       logicOperator: 'and',
