@@ -1,4 +1,7 @@
-import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
+import {
+  getMatchingStatus,
+  normalizeStatusLabelForFilter,
+} from '@/components/downloads/ActionBar/utils/statusHelpers';
 import {
   COMPARISON_OPERATORS,
   MULTI_SELECT_OPERATORS,
@@ -238,7 +241,7 @@ function evaluateFilter(filter, item) {
   if (isStatusColumn(columnKey)) {
     if (columnKey === 'download_state') {
       const itemStatus = getMatchingStatus(item);
-      const itemStatusLabel = itemStatus?.label?.toLowerCase() || '';
+      const itemStatusLabel = normalizeStatusLabelForFilter(itemStatus?.label);
 
       const filterValues = Array.isArray(filterValue)
         ? filterValue.map((v) => String(v).toLowerCase())
