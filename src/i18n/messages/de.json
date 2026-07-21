@@ -1573,7 +1573,6 @@
     "noUncached": "Keine nicht zwischengespeicherten Uploads in der letzten Stunde",
     "rateLimitReached": "Rate-Limit erreicht",
     "resumesIn": "Fortsetzung {time}",
-    "rowWaiting": "Warten — Fortsetzung {time}",
     "soon": "bald",
     "title": "Nicht zwischengespeicherte Uploads (letzte Stunde)",
     "typeUncached": "/ {limit} nicht zwischengespeichert"

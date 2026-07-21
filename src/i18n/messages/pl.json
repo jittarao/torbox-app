@@ -1578,7 +1578,6 @@
     "noUncached": "Brak niezbuforowanych przesłań w ostatniej godzinie",
     "rateLimitReached": "Osiągnięto limit",
     "resumesIn": "Wznowienie {time}",
-    "rowWaiting": "Oczekiwanie — wznowienie {time}",
     "soon": "wkrótce",
     "title": "Niezbuforowane przesyłania (ostatnia godzina)",
     "typeUncached": "/ {limit} niezbuforowanych"

@@ -1600,7 +1600,6 @@
     "noUncached": "直近1時間にキャッシュなしのアップロードはありません",
     "rateLimitReached": "レート制限に達しました",
     "resumesIn": "{time} に再開",
-    "rowWaiting": "待機中 — {time} に再開",
     "soon": "まもなく",
     "title": "キャッシュなしアップロード（直近1時間）",
     "typeUncached": "/ {limit} キャッシュなし"
