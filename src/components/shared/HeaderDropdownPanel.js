@@ -51,6 +51,9 @@ export default function HeaderDropdownPanel({
   );
 
   if (isMobile && mounted) {
+    const container =
+      (typeof document !== 'undefined' && document.querySelector('dialog[open]')) || document.body;
+
     return createPortal(
       <div data-header-overlay>
         <div
@@ -64,7 +67,7 @@ export default function HeaderDropdownPanel({
           </div>
         </div>
       </div>,
-      document.body
+      container
     );
   }
 
