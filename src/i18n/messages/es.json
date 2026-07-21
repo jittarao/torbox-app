@@ -1564,6 +1564,19 @@
     "uploading": "Subiendo {current} de {total}",
     "waitingBeforeNext": "Esperando {time} antes de la próxima subida"
   },
+  "UploadStatistics": {
+    "approachingRateLimit": "Acercándose al límite",
+    "deferredCount": "{count, plural, one {# en cola} other {# en cola}}",
+    "deferredSummary": "{count, plural, one {# subida en espera — reanuda {time}} other {# subidas en espera — reanudan {time}}}",
+    "deferredTypeSummary": "{label}: {count, plural, one {# subida en espera — reanuda {time}} other {# subidas en espera — reanudan {time}}}",
+    "noUncached": "No hay subidas sin caché en la última hora",
+    "rateLimitReached": "Límite de velocidad alcanzado",
+    "resumesIn": "Reanuda {time}",
+    "rowWaiting": "En espera — reanuda {time}",
+    "soon": "pronto",
+    "title": "Subidas sin caché (última hora)",
+    "typeUncached": "/ {limit} sin caché"
+  },
   "Usage": {
     "danger": {
       "message": "Has usado {used} de tu mínimo de plan de {limit} ({percent} %) en los últimos 30 días. Reduce el uso pronto para evitar advertencias o restricciones.",

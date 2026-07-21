@@ -1565,6 +1565,19 @@
     "uploading": "Lade {current} von {total} hoch",
     "waitingBeforeNext": "Warte {time} vor dem nächsten Upload"
   },
+  "UploadStatistics": {
+    "approachingRateLimit": "Limit wird erreicht",
+    "deferredCount": "{count, plural, one {# in Warteschlange} other {# in Warteschlange}}",
+    "deferredSummary": "{count, plural, one {# Upload wartet — Fortsetzung {time}} other {# Uploads warten — Fortsetzung {time}}}",
+    "deferredTypeSummary": "{label}: {count, plural, one {# Upload wartet — Fortsetzung {time}} other {# Uploads warten — Fortsetzung {time}}}",
+    "noUncached": "Keine nicht zwischengespeicherten Uploads in der letzten Stunde",
+    "rateLimitReached": "Rate-Limit erreicht",
+    "resumesIn": "Fortsetzung {time}",
+    "rowWaiting": "Warten — Fortsetzung {time}",
+    "soon": "bald",
+    "title": "Nicht zwischengespeicherte Uploads (letzte Stunde)",
+    "typeUncached": "/ {limit} nicht zwischengespeichert"
+  },
   "Usage": {
     "danger": {
       "message": "Sie haben {used} von Ihrem Plan-Minimum von {limit} ({percent} %) in den letzten 30 Tagen verbraucht. Reduzieren Sie die Nutzung bald, um Warnungen oder Einschränkungen zu vermeiden.",
