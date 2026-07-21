@@ -1695,7 +1695,6 @@
     "noUncached": "No uncached uploads in the last hour",
     "rateLimitReached": "Rate limit reached",
     "resumesIn": "Resumes {time}",
-    "rowWaiting": "Waiting — resumes {time}",
     "soon": "soon",
     "title": "Uncached Uploads (Last Hour)",
     "typeTorrents": "Torrents",
