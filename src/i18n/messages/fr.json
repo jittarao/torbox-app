@@ -1551,6 +1551,19 @@
     "uploading": "Téléversement de {current} sur {total}",
     "waitingBeforeNext": "Attente de {time} avant le prochain téléversement"
   },
+  "UploadStatistics": {
+    "approachingRateLimit": "Proche de la limite",
+    "deferredCount": "{count, plural, one {# en file} other {# en file}}",
+    "deferredSummary": "{count, plural, one {# téléversement en attente — reprise {time}} other {# téléversements en attente — reprise {time}}}",
+    "deferredTypeSummary": "{label}: {count, plural, one {# téléversement en attente — reprise {time}} other {# téléversements en attente — reprise {time}}}",
+    "noUncached": "Aucun téléversement non mis en cache au cours de la dernière heure",
+    "rateLimitReached": "Limite de débit atteinte",
+    "resumesIn": "Reprise {time}",
+    "rowWaiting": "En attente — reprise {time}",
+    "soon": "bientôt",
+    "title": "Téléversements non mis en cache (dernière heure)",
+    "typeUncached": "/ {limit} non mis en cache"
+  },
   "Usage": {
     "danger": {
       "message": "Vous avez utilisé {used} sur le minimum de votre forfait de {limit} ({percent} %) au cours des 30 derniers jours. Réduisez votre utilisation rapidement pour éviter des avertissements ou des restrictions.",

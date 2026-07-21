@@ -1688,11 +1688,13 @@
     "waitingBeforeNext": "Waiting {time} before next upload"
   },
   "UploadStatistics": {
-    "approachingRateLimit": "Approaching uncached rate limit",
-    "deferredSummary": "{count, plural, one {# upload waiting — resumes in {time}} other {# uploads waiting — resumes in {time}}}",
-    "deferredTypeSummary": "{label}: {count, plural, one {# upload waiting — resumes in {time}} other {# uploads waiting — resumes in {time}}}",
+    "approachingRateLimit": "Approaching limit",
+    "deferredCount": "{count, plural, one {# queued} other {# queued}}",
+    "deferredSummary": "{count, plural, one {# upload waiting — resumes {time}} other {# uploads waiting — resumes {time}}}",
+    "deferredTypeSummary": "{label}: {count, plural, one {# upload waiting — resumes {time}} other {# uploads waiting — resumes {time}}}",
     "noUncached": "No uncached uploads in the last hour",
-    "rateLimitReached": "Uncached rate limit reached",
+    "rateLimitReached": "Rate limit reached",
+    "resumesIn": "Resumes {time}",
     "rowWaiting": "Waiting — resumes {time}",
     "soon": "soon",
     "title": "Uncached Uploads (Last Hour)",
