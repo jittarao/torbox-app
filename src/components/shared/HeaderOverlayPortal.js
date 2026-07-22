@@ -14,5 +14,8 @@ export default function HeaderOverlayPortal({ children, open }) {
     return null;
   }
 
-  return createPortal(children, document.body);
+  const container =
+    (typeof document !== 'undefined' && document.querySelector('dialog[open]')) || document.body;
+
+  return createPortal(children, container);
 }

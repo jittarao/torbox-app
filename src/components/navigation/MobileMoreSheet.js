@@ -47,12 +47,28 @@ export default function MobileMoreSheet({
       dialog.showModal();
     }
 
+    const handleClickOutside = (e) => {
+      if (e.target === dialog) {
+        onClose?.();
+      }
+    };
+
+    const handleCancel = (e) => {
+      e.preventDefault();
+      onClose?.();
+    };
+
+    dialog.addEventListener('click', handleClickOutside);
+    dialog.addEventListener('cancel', handleCancel);
+
     return () => {
+      dialog.removeEventListener('click', handleClickOutside);
+      dialog.removeEventListener('cancel', handleCancel);
       if (dialog.open) {
         dialog.close();
       }
     };
-  }, [open]);
+  }, [open, onClose]);
 
   return (
     <ModalOverlay
