@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
 import { getColumnMinWidth } from './utils/tableColumnLayout';
 
@@ -62,9 +62,12 @@ export default function ResizableColumn({
     [isResizing]
   );
 
+  const handleMouseMoveEvent = useEffectEvent((e) => handleMouseMove(e));
+  const handleMouseUpEvent = useEffectEvent((e) => handleMouseUp(e));
+
   useEffect(() => {
-    const onMouseMove = (e) => handleMouseMove(e);
-    const onMouseUp = (e) => handleMouseUp(e);
+    const onMouseMove = (e) => handleMouseMoveEvent(e);
+    const onMouseUp = (e) => handleMouseUpEvent(e);
 
     if (isResizing) {
       document.addEventListener('mousemove', onMouseMove);
@@ -79,9 +82,26 @@ export default function ResizableColumn({
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
     };
-  }, [isResizing, handleMouseMove, handleMouseUp]);
+  }, [isResizing]);
 
   const pixelWidth = Math.max(minWidth, parseInt(width, 10) || minWidth);
+
+  const handleActivate = (e) => {
+    if (wasResizingRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClick?.(e);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!sortable) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleActivate(e);
+    }
+  };
 
   return (
     <th
@@ -97,14 +117,9 @@ export default function ResizableColumn({
               maxWidth: `${pixelWidth}px`,
             }
       }
-      onClick={(e) => {
-        if (wasResizingRef.current) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        onClick?.(e);
-      }}
+      onClick={sortable ? handleActivate : undefined}
+      onKeyDown={sortable ? handleKeyDown : undefined}
+      tabIndex={sortable ? 0 : undefined}
     >
       <div className="flex items-center min-w-0 pr-3">{children}</div>
       {!(isMobile && columnId === 'name') && (
@@ -117,6 +132,7 @@ export default function ResizableColumn({
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
+              e.stopPropagation();
             }
           }}
         >

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 export const useRssStore = create((set, get) => ({
   feeds: [],
@@ -86,9 +87,9 @@ export const useRssStore = create((set, get) => ({
         }),
       });
 
-      const data = await response.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-      if (data.success) {
+      if (responseOk && data.success) {
         await get().fetchFeeds(apiKey);
         return { success: true, data: data.data };
       }
@@ -120,9 +121,9 @@ export const useRssStore = create((set, get) => ({
         }),
       });
 
-      const data = await response.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-      if (data.success) {
+      if (responseOk && data.success) {
         await get().fetchFeeds(apiKey);
         return { success: true, data: data.data };
       }
@@ -154,9 +155,9 @@ export const useRssStore = create((set, get) => ({
         }),
       });
 
-      const data = await response.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-      if (data.success) {
+      if (responseOk && data.success) {
         try {
           await get().fetchFeeds(apiKey);
         } catch (error) {
@@ -189,9 +190,9 @@ export const useRssStore = create((set, get) => ({
         }
       );
 
-      const data = await response.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-      if (data.success) {
+      if (responseOk && data.success) {
         return { success: true, data: data.data || [] };
       }
 

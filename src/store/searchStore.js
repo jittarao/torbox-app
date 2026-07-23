@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { useSessionStore } from '@/store/sessionStore';
 import { getItem, setItem, removeItem, getJSON } from '@/utils/storage';
 
@@ -107,13 +108,13 @@ export const useSearchStore = create((set, get) => ({
         },
       });
 
-      const data = await res.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(res);
 
       if (get().activeRequestId !== requestId) {
         return;
       }
 
-      if (!res.ok || data.error) {
+      if (!responseOk || data.error) {
         set({
           loading: false,
           error: data.error || `Request failed: ${res.status}`,

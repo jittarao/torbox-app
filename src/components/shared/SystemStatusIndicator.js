@@ -123,13 +123,11 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
   };
 
   const handleToggle = useCallback(() => {
-    setIsOpen((open) => {
-      if (!open) {
-        refreshOnOpenRef.current = true;
-      }
-      return !open;
-    });
-  }, []);
+    if (!isOpen) {
+      refreshOnOpenRef.current = true;
+    }
+    setIsOpen((open) => !open);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !refreshOnOpenRef.current) return;
@@ -201,6 +199,7 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
             />
             <div className="z-overlay-panel fixed inset-0 flex items-end justify-center p-3 sm:items-center sm:p-4 pointer-events-none">
               <dialog
+                aria-label={t('refreshStatus')}
                 className="pointer-events-auto w-full max-w-sm max-h-[min(90vh,32rem)] flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl dark:border-border-dark dark:bg-surface-alt-dark"
                 style={{ display: 'flex' }}
                 open

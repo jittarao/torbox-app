@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
+import { resetLoadingUnlessAborted } from '@/utils/asyncLoadingReset';
 
 function mergePaginationTotals(prev, next) {
   if (prev.total === next.total && prev.totalPages === next.totalPages) {
@@ -116,9 +118,9 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
         return;
       }
 
-      const data = await response.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-      if (!response.ok) {
+      if (!responseOk) {
         throw new Error(data.error || 'Failed to fetch link history');
       }
 
@@ -143,10 +145,7 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
       setError(err.message);
       console.error('Error fetching link history:', err);
     } finally {
-      // Only update loading state if this request wasn't aborted
-      if (!abortController.signal.aborted) {
-        setLoading(false);
-      }
+      resetLoadingUnlessAborted(abortController.signal, setLoading);
     }
   }, [apiKey, pagination.limit, search, setPagination, backendMode, backendIsLoading]);
 

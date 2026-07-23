@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ExternalLink, Play, X } from '@/components/icons';
 import Infuse from '@/components/icons/Infuse';
 import Iina from '@/components/icons/Iina';
-// import Stremio from '@/components/icons/Stremio';
 import WebPlayer from '@/components/icons/WebPlayer';
 import ModalSheet from '@/components/shared/ModalSheet';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
@@ -19,7 +18,6 @@ const PLAYER_OPTIONS = [
   { id: 'web', icon: WebPlayer, platformKey: null, brand: false, external: false },
   { id: 'infuse', icon: Infuse, platformKey: 'infuse', brand: true, external: true },
   { id: 'iina', icon: Iina, platformKey: 'iina', brand: true, external: true },
-  // { id: 'stremio', icon: Stremio, platformKey: 'stremio', brand: true, external: true },
 ];
 
 function getFileExtensionLabel(filename) {
@@ -190,7 +188,7 @@ export default function OpenInModal({
                     type="button"
                     onClick={() => onSelect(id)}
                     disabled={isDisabled}
-                    className="group flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 text-left transition-all hover:border-accent/50 hover:bg-surface-alt hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:border-border-dark dark:bg-surface-dark dark:hover:border-accent-dark/50 dark:hover:bg-surface-alt-dark"
+                    className="group flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 text-left transition-colors transition-shadow hover:border-accent/50 hover:bg-surface-alt hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:border-border-dark dark:bg-surface-dark dark:hover:border-accent-dark/50 dark:hover:bg-surface-alt-dark"
                   >
                     <span
                       className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${iconWrapClass}`}

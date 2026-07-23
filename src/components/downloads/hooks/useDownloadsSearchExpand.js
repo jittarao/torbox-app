@@ -1,82 +1,49 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
-import { shouldAutoExpandItemForSearch } from '../utils/downloadSearch';
-import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { useCallback, useState } from 'react';
 
 /**
- * Auto-expand rows when file-name search matches nested files; collapse on clear.
- * Respects manual collapse while the same query is active.
+ * Tracks user overrides for search-driven auto-expand/collapse.
+ * Expansion is derived at read time; no parent store writes from effects.
  */
-export function useDownloadsSearchExpand({
-  search,
-  sortedItems,
-  selectedItems,
-  setExpanded,
-  collapseAllExpanded,
-}) {
-  const searchExpandedItemIdsRef = useRef(new Set());
-  const userCollapsedIdsRef = useRef(new Set());
-  const lastSearchRef = useRef(search);
+export function useDownloadsSearchExpand({ search, collapseAllExpanded }) {
+  const [userCollapsedIds, setUserCollapsedIds] = useState(() => new Set());
+  const [collapsedForSearch, setCollapsedForSearch] = useState(search);
 
-  useEffect(() => {
-    const query = search.trim();
-    const prevQuery = lastSearchRef.current.trim();
+  if (search !== collapsedForSearch) {
+    setCollapsedForSearch(search);
+    setUserCollapsedIds(new Set());
+  }
 
-    if (query !== prevQuery) {
-      for (const id of searchExpandedItemIdsRef.current) {
-        if (selectedItems.files.has(id)) continue;
-        setExpanded(id, false);
-      }
-      searchExpandedItemIdsRef.current = new Set();
-      userCollapsedIdsRef.current = new Set();
-      lastSearchRef.current = search;
-    }
-
-    if (!query) {
-      const searchExpanded = searchExpandedItemIdsRef.current;
-      if (searchExpanded.size === 0) return;
-
-      for (const id of searchExpanded) {
-        if (selectedItems.files.has(id)) continue;
-        setExpanded(id, false);
-      }
-      searchExpandedItemIdsRef.current = new Set();
-      userCollapsedIdsRef.current = new Set();
-      return;
-    }
-
-    const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
-    for (const item of sortedItems) {
-      if (
-        shouldAutoExpandItemForSearch(item, query, filesByEntityKey) &&
-        !userCollapsedIdsRef.current.has(item.id) &&
-        !searchExpandedItemIdsRef.current.has(item.id)
-      ) {
-        setExpanded(item.id, true);
-        searchExpandedItemIdsRef.current.add(item.id);
-      }
-    }
-  }, [search, sortedItems, selectedItems.files, setExpanded]);
+  const resetSearchCollapsePrefs = useCallback(() => {
+    setUserCollapsedIds(new Set());
+  }, []);
 
   const notifySearchToggleFiles = useCallback(
     (itemId, isCurrentlyExpanded) => {
-      searchExpandedItemIdsRef.current.delete(itemId);
       if (!search.trim()) return;
-      if (isCurrentlyExpanded) {
-        userCollapsedIdsRef.current.add(itemId);
-      } else {
-        userCollapsedIdsRef.current.delete(itemId);
-      }
+      setUserCollapsedIds((prev) => {
+        const next = new Set(prev);
+        if (isCurrentlyExpanded) {
+          next.add(itemId);
+        } else {
+          next.delete(itemId);
+        }
+        return next;
+      });
     },
     [search]
   );
 
   const collapseAllFiles = useCallback(() => {
-    searchExpandedItemIdsRef.current = new Set();
-    userCollapsedIdsRef.current = new Set();
+    setUserCollapsedIds(new Set());
     collapseAllExpanded();
   }, [collapseAllExpanded]);
 
-  return { searchExpandedItemIdsRef, collapseAllFiles, notifySearchToggleFiles };
+  return {
+    searchUserCollapsedIds: userCollapsedIds,
+    resetSearchCollapsePrefs,
+    collapseAllFiles,
+    notifySearchToggleFiles,
+  };
 }

@@ -1,8 +1,10 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { useLatestRef } from '@/hooks/useLatestRef';
 
 const DOUBLE_TAP_MS = 300;
 const SWIPE_THRESHOLD = 80;
 const SEEK_ZONE_RATIO = 0.4;
+const NEVER_BLOCKED = () => false;
 
 /**
  * Mobile gesture handling: tap toggle chrome, double-tap seek, swipe down dismiss.
@@ -20,8 +22,9 @@ export function usePlayerGestures({
   onToggleControls,
   onDoubleTapSeek,
   onSwipeDown,
-  isBlocked = () => false,
+  isBlocked = NEVER_BLOCKED,
 }) {
+  const isBlockedRef = useLatestRef(isBlocked);
   const lastTapRef = useRef({ time: 0, x: 0, y: 0 });
   const pointerStartRef = useRef(null);
   const suppressTapRef = useRef(false);
@@ -45,7 +48,7 @@ export function usePlayerGestures({
 
   const handlePointerDown = useCallback(
     (e) => {
-      if (!enabled || isBlocked()) return;
+      if (!enabled || isBlockedRef.current()) return;
       if (isInteractiveTarget(e.target)) return;
 
       pointerStartRef.current = {
@@ -55,12 +58,12 @@ export function usePlayerGestures({
         time: Date.now(),
       };
     },
-    [enabled, isBlocked, isInteractiveTarget]
+    [enabled, isBlockedRef, isInteractiveTarget]
   );
 
   const handlePointerUp = useCallback(
     (e) => {
-      if (!enabled || isBlocked()) return;
+      if (!enabled || isBlockedRef.current()) return;
       if (isInteractiveTarget(e.target)) return;
 
       const start = pointerStartRef.current;
@@ -114,7 +117,7 @@ export function usePlayerGestures({
     },
     [
       enabled,
-      isBlocked,
+      isBlockedRef,
       isInteractiveTarget,
       targetRef,
       onSwipeDown,
@@ -124,7 +127,7 @@ export function usePlayerGestures({
     ]
   );
 
-  const bindGestures = useCallback(() => {
+  useEffect(() => {
     const el = targetRef.current;
     if (!el || !enabled) return undefined;
 
@@ -137,6 +140,4 @@ export function usePlayerGestures({
       clearToggleTimeout();
     };
   }, [targetRef, enabled, handlePointerDown, handlePointerUp, clearToggleTimeout]);
-
-  return { bindGestures };
 }

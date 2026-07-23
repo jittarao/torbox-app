@@ -222,28 +222,40 @@ export async function splitRetriesByTorboxPresence({
   }
 
   const completedIds = [];
-  const unresolvedDuplicates = [];
+  const unresolvedDuplicates = duplicateFailures.filter(
+    (upload) => upload.type !== 'torrent' || !torrents
+  );
 
-  for (const upload of duplicateFailures) {
-    if (upload.type !== 'torrent' || !torrents) {
-      unresolvedDuplicates.push(upload);
-      continue;
+  const torrentUploads = duplicateFailures.reduce((acc, upload) => {
+    if (upload.type === 'torrent' && torrents) {
+      acc.push(upload);
     }
+    return acc;
+  }, []);
 
-    const expectedHash = await getExpectedTorrentHash({ ...upload, authId });
-    const resolved = matchTorboxResource(
-      upload,
-      filterActiveTorboxTorrents(torrents),
-      expectedHash
-    );
+  const torrentResults = await Promise.all(
+    torrentUploads.map(async (upload) => {
+      const expectedHash = await getExpectedTorrentHash({ ...upload, authId });
+      const resolved = matchTorboxResource(
+        upload,
+        filterActiveTorboxTorrents(torrents),
+        expectedHash
+      );
 
-    if (resolved.hash || resolved.torrentId != null) {
-      const result = completeUploadWithTorboxResult(userDb, upload.id, resolved);
-      if (result.changes > 0) {
-        completedIds.push(upload.id);
-      } else {
-        unresolvedDuplicates.push(upload);
+      if (resolved.hash || resolved.torrentId != null) {
+        const result = completeUploadWithTorboxResult(userDb, upload.id, resolved);
+        if (result.changes > 0) {
+          return { upload, completed: true };
+        }
       }
+
+      return { upload, completed: false };
+    })
+  );
+
+  for (const { upload, completed } of torrentResults) {
+    if (completed) {
+      completedIds.push(upload.id);
     } else {
       unresolvedDuplicates.push(upload);
     }

@@ -13,7 +13,14 @@ export { DOWNLOAD_PROTECTED_CODE, DOWNLOAD_PROTECTED_MESSAGE };
  * @returns {Promise<{ allowed: string[], blocked: string[], forbidden?: boolean }>}
  */
 export async function assertDestructiveAllowed(apiKey, downloadIds, operation) {
-  const ids = [...new Set(downloadIds.map((id) => String(id)).filter(Boolean))];
+  const ids = [
+    ...new Set(
+      downloadIds.flatMap((id) => {
+        const normalized = String(id);
+        return normalized ? [normalized] : [];
+      })
+    ),
+  ];
 
   if (ids.length === 0) {
     return { allowed: [], blocked: [] };

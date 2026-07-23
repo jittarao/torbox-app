@@ -34,7 +34,6 @@ const LinkHistoryRow = memo(
 
     return (
       <tr
-        role="row"
         aria-selected={isSelected}
         className={rowClassName}
         onMouseDown={(e) => {
@@ -59,10 +58,10 @@ const LinkHistoryRow = memo(
         <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70">
           {item.item_id}
         </td>
-        <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] overflow-hidden text-ellipsis">
+        <td className="px-2.5 md:px-3 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] truncate">
           {item.item_name || '-'}
         </td>
-        <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] overflow-hidden text-ellipsis">
+        <td className="px-2.5 md:px-3 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 max-w-[200px] truncate">
           {item.file_name || '-'}
         </td>
         <td className="px-2.5 md:px-3 py-1.5 whitespace-nowrap text-xs text-primary-text/70 dark:text-primary-text-dark/70">

@@ -1,8 +1,26 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { parseUtcDate } from '@/utils/parseUtcDate';
 import { ACTION_TYPES } from '../constants';
 import LastEvaluatedAtValue from './LastEvaluatedAtValue';
+
+function formatLogTimestamp(timestamp, locale) {
+  try {
+    if (!timestamp) {
+      return 'Invalid Date';
+    }
+    const date = parseUtcDate(timestamp);
+    return Number.isNaN(date.getTime()) ? timestamp : date.toLocaleString(locale);
+  } catch {
+    return timestamp || 'Invalid Date';
+  }
+}
+
+function LogTimestamp({ timestamp }) {
+  const locale = useLocale();
+  return formatLogTimestamp(timestamp, locale);
+}
 
 /**
  * Get display name for action type
@@ -102,16 +120,7 @@ export default function RuleLogsModal({
                 >
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-                      {(() => {
-                        try {
-                          const dateStr = log.timestamp;
-                          if (!dateStr) return 'Invalid Date';
-                          const date = parseUtcDate(dateStr);
-                          return isNaN(date.getTime()) ? dateStr : date.toLocaleString();
-                        } catch (e) {
-                          return log.timestamp || 'Invalid Date';
-                        }
-                      })()}
+                      <LogTimestamp timestamp={log.timestamp} />
                     </span>
                     <span
                       className={`text-xs px-2 py-1 rounded ${

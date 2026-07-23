@@ -93,7 +93,7 @@ export default function AppShell({ apiKey, children, className = '' }) {
   }, [nav.sections, isActive, getLabel, t]);
 
   const userLabel = getLabel(USER_NAV_ITEM.labelKey);
-  const shellClass = ['min-h-screen', className].filter(Boolean).join(' ');
+  const shellClass = ['min-h-dvh', className].filter(Boolean).join(' ');
   const sidebarWidth = hydrated && collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
 
   const sidebarContextValue = useMemo(
@@ -147,7 +147,7 @@ export default function AppShell({ apiKey, children, className = '' }) {
           toggleDarkMode={toggleDarkMode}
         />
 
-        <div className="flex min-h-screen min-w-0 flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:pl-[var(--sidebar-width)]">
+        <div className="flex min-h-dvh min-w-0 flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] md:pl-[var(--sidebar-width)]">
           <ReferralHeaderBanner apiKey={apiKey} />
           <main className="min-w-0 flex-1 pb-mobile-nav md:pb-0">
             <SectionErrorBoundary>{children}</SectionErrorBoundary>

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import DesktopLaunchAtLoginPanel from '@/components/desktop/DesktopLaunchAtLoginPanel';
 import DesktopTrayPanel from '@/components/desktop/DesktopTrayPanel';
+import DesktopUpdaterPanel from '@/components/desktop/DesktopUpdaterPanel';
 import DesktopSettingsSection from '@/components/desktop/DesktopSettingsSection';
 import {
   desktopBtnDanger,
@@ -15,7 +16,7 @@ import {
   DesktopMetaRow,
   DesktopStatusBadge,
 } from '@/components/desktop/DesktopUi';
-import { Bolt, Cloud, Key, Layers } from '@/components/icons';
+import { Bolt, Cloud, CloudDownload, Key, Layers } from '@/components/icons';
 import { formatDate } from '@/components/uploads/utils';
 import type { CredentialStatus } from '@/desktop/capabilities';
 
@@ -60,6 +61,7 @@ export default function DesktopSettingsGeneralTab({
   const [syncingKey, setSyncingKey] = useState(false);
   const [clearingKey, setClearingKey] = useState(false);
   const [showCustomUrl, setShowCustomUrl] = useState(false);
+  const instanceUrlInputId = useId();
 
   const notify = (message: string, type: 'success' | 'error') => {
     setToast?.({ message, type });
@@ -144,6 +146,15 @@ export default function DesktopSettingsGeneralTab({
           <DesktopTrayPanel embedded setToast={setToast} />
         </DesktopSettingsSection>
       ) : null}
+
+      <DesktopSettingsSection
+        title={t('updater.title')}
+        description={t('updater.description')}
+        icon={CloudDownload}
+        compact
+      >
+        <DesktopUpdaterPanel embedded setToast={setToast} />
+      </DesktopSettingsSection>
 
       {canStoreApiKey ? (
         <DesktopSettingsSection
@@ -241,7 +252,11 @@ export default function DesktopSettingsGeneralTab({
                         {t('instanceUrlHelp')}
                       </p>
                     </div>
+                    <label htmlFor={instanceUrlInputId} className="sr-only">
+                      {t('instanceUrlTitle')}
+                    </label>
                     <input
+                      id={instanceUrlInputId}
                       type="url"
                       value={customUrl}
                       onChange={(e) => setCustomUrl(e.target.value)}

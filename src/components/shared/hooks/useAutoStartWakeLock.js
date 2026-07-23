@@ -67,6 +67,6 @@ export function useAutoStartWakeLock({ enabled, hasWork }) {
 }
 
 /** @internal — test helper */
-export function resetWakeLockForTests() {
+function resetWakeLockForTests() {
   releaseScreenWakeLock();
 }

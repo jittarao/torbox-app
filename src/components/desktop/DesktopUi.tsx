@@ -158,7 +158,7 @@ export function DesktopToggle({
   );
 }
 
-export function DesktopSubsection({
+function DesktopSubsection({
   title,
   description,
   children,
@@ -186,7 +186,7 @@ export function DesktopSubsection({
   );
 }
 
-export function DesktopActionBar({
+function DesktopActionBar({
   children,
   className = '',
   hint,

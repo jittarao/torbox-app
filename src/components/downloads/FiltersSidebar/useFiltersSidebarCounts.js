@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useDownloadTagsStore } from '@/store/downloadTagsStore';
@@ -86,7 +86,7 @@ export function useFiltersSidebarCounts(activeAssetType, views) {
     sourceEntries: [],
   });
 
-  return useMemo(() => {
+  const counts = useMemo(() => {
     const cache = countsCacheRef.current;
     const metaUnchanged =
       cache.activeAssetType === activeAssetType &&
@@ -118,6 +118,10 @@ export function useFiltersSidebarCounts(activeAssetType, views) {
     const trackerEntries = buildTrackerEntries(torboxSlice);
     const sourceEntries = buildSourceEntries(torboxSlice);
 
+    return { tagCounts, viewCounts, trackerEntries, sourceEntries };
+  }, [torboxSlice, activeAssetType, views, tagMappings, downloadHistory, viewIds]);
+
+  useLayoutEffect(() => {
     countsCacheRef.current = {
       viewIds: viewIds.slice(),
       rowRefs: viewIds.map((id) => torboxSlice.entities[id]),
@@ -125,12 +129,12 @@ export function useFiltersSidebarCounts(activeAssetType, views) {
       views,
       tagMappings,
       downloadHistory,
-      tagCounts,
-      viewCounts,
-      trackerEntries,
-      sourceEntries,
+      tagCounts: counts.tagCounts,
+      viewCounts: counts.viewCounts,
+      trackerEntries: counts.trackerEntries,
+      sourceEntries: counts.sourceEntries,
     };
+  }, [viewIds, torboxSlice.entities, activeAssetType, views, tagMappings, downloadHistory, counts]);
 
-    return { tagCounts, viewCounts, trackerEntries, sourceEntries };
-  }, [torboxSlice, activeAssetType, views, tagMappings, downloadHistory, viewIds]);
+  return counts;
 }

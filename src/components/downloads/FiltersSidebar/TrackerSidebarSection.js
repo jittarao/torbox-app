@@ -6,10 +6,13 @@ import SidebarListItem from './SidebarListItem';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
 
+const EMPTY_ENTRIES = [];
+const EMPTY_ACTIVE_TRACKERS = [];
+
 export default function TrackerSidebarSection({
-  entries = [],
+  entries = EMPTY_ENTRIES,
   searchQuery = '',
-  activeTrackers = [],
+  activeTrackers = EMPTY_ACTIVE_TRACKERS,
   onApplyTracker,
   onApplyTrackerRange,
   onClearTrackers,
@@ -31,23 +34,10 @@ export default function TrackerSidebarSection({
   const selectedCount = activeTrackerSet.size;
   const hasSearchQuery = searchQuery.trim().length > 0;
 
-  const handleListMouseDown = useCallback((event) => {
-    if (event.shiftKey && event.target.closest('[data-sidebar-item]')) {
-      event.preventDefault();
-    }
-  }, []);
-
-  const handleListClick = useCallback(
-    (event) => {
-      const activateButton = event.target.closest('[data-sidebar-activate]');
-      if (!activateButton || disabled) return;
-
-      const row = activateButton.closest('[data-sidebar-item]');
-      if (!row) return;
-
-      const index = Number(row.dataset.index);
+  const handleItemActivate = useCallback(
+    (index) => (event) => {
       const entry = filteredEntries[index];
-      if (!entry || entry.url !== row.dataset.id) return;
+      if (!entry || disabled) return;
 
       const isActive = activeTrackerSet.has(entry.url);
 
@@ -95,7 +85,7 @@ export default function TrackerSidebarSection({
           {hasSearchQuery ? t('noTrackerMatches', { query: searchQuery.trim() }) : t('noTrackers')}
         </p>
       ) : (
-        <div onMouseDown={handleListMouseDown} onClick={handleListClick}>
+        <div>
           {filteredEntries.map((entry, index) => {
             const isActive = activeTrackerSet.has(entry.url);
             return (
@@ -108,6 +98,7 @@ export default function TrackerSidebarSection({
                 isActive={isActive}
                 disabled={disabled}
                 title={entry.url}
+                onClick={handleItemActivate(index)}
               />
             );
           })}

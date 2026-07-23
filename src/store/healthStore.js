@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 import {
   appendHistoryEntry,
@@ -67,7 +68,17 @@ export const useHealthStore = create((set, get) => ({
         signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
+      if (!responseOk) {
+        set({
+          platformHealth: {
+            status: 'unhealthy',
+            message: data.message || `HTTP ${response.status}`,
+            responseTime: null,
+          },
+        });
+        return;
+      }
       set({
         platformHealth: {
           status: data.status === 'healthy' ? 'healthy' : 'unhealthy',
@@ -113,8 +124,8 @@ export const useHealthStore = create((set, get) => ({
         signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
       });
 
-      const data = await response.json().catch(() => ({}));
-      const status = data.status || 'unhealthy';
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
+      const status = responseOk ? data.status || 'healthy' : 'unhealthy';
 
       set({
         connectionHealth: {
@@ -171,8 +182,8 @@ export const useHealthStore = create((set, get) => ({
         signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
       });
 
-      const data = await response.json().catch(() => ({}));
-      applyBackendMode(data.available ? 'backend' : 'local');
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
+      applyBackendMode(responseOk && data.available ? 'backend' : 'local');
     } catch (err) {
       set({
         backendHealth: {

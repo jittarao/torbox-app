@@ -7,11 +7,15 @@ import SidebarOverflowMenu from './SidebarOverflowMenu';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
 
+const EMPTY_TAGS = [];
+const EMPTY_TAG_COUNTS = {};
+const EMPTY_ACTIVE_TAG_IDS = [];
+
 export default function TagSidebarSection({
-  tags = [],
-  tagCounts = {},
+  tags = EMPTY_TAGS,
+  tagCounts = EMPTY_TAG_COUNTS,
   searchQuery = '',
-  activeTagIds = [],
+  activeTagIds = EMPTY_ACTIVE_TAG_IDS,
   onApplyTag,
   onApplyTagRange,
   onClearTags,
@@ -38,62 +42,10 @@ export default function TagSidebarSection({
 
   const closeOverflowMenu = useCallback(() => setOverflowMenu(null), []);
 
-  const handleListMouseDown = useCallback((event) => {
-    if (event.shiftKey && event.target.closest('[data-sidebar-item]')) {
-      event.preventDefault();
-    }
-  }, []);
-
-  const handleListClick = useCallback(
-    (event) => {
-      const menuButton = event.target.closest('[data-sidebar-menu]');
-      if (menuButton) {
-        event.stopPropagation();
-        const row = menuButton.closest('[data-sidebar-item]');
-        if (!row) return;
-        const index = Number(row.dataset.index);
-        const tag = filteredTags[index];
-        if (!tag || String(tag.id) !== row.dataset.id) return;
-        const tagId = String(tag.id);
-        if (overflowMenu?.tagId === tagId) {
-          closeOverflowMenu();
-          return;
-        }
-        const tagIsActive = activeTagSet.has(Number(tag.id));
-        setOverflowMenu({
-          tagId,
-          anchorRef: { current: menuButton },
-          items: [
-            {
-              id: 'apply',
-              label: tagIsActive ? t('menuClear') : t('menuApply'),
-              onClick: () => onApplyTag?.(tag.id),
-            },
-            {
-              id: 'rename',
-              label: t('menuRename'),
-              onClick: () => onRenameTag?.(tag),
-            },
-            {
-              id: 'delete',
-              label: t('menuDelete'),
-              destructive: true,
-              onClick: () => onDeleteTag?.(tag.id, tag.name),
-            },
-          ],
-        });
-        return;
-      }
-
-      const activateButton = event.target.closest('[data-sidebar-activate]');
-      if (!activateButton || disabled) return;
-
-      const row = activateButton.closest('[data-sidebar-item]');
-      if (!row) return;
-
-      const index = Number(row.dataset.index);
+  const handleItemActivate = useCallback(
+    (index) => (event) => {
       const tag = filteredTags[index];
-      if (!tag || String(tag.id) !== row.dataset.id) return;
+      if (!tag || disabled) return;
 
       const tagIsActive = activeTagSet.has(Number(tag.id));
 
@@ -108,19 +60,41 @@ export default function TagSidebarSection({
 
       lastIndexRef.current = index;
     },
-    [
-      disabled,
-      filteredTags,
-      activeTagSet,
-      onApplyTag,
-      onApplyTagRange,
-      onRenameTag,
-      onDeleteTag,
-      lastIndexRef,
-      overflowMenu,
-      closeOverflowMenu,
-      t,
-    ]
+    [disabled, filteredTags, activeTagSet, onApplyTag, onApplyTagRange, lastIndexRef]
+  );
+
+  const handleMenuToggle = useCallback(
+    (tag) => (_isOpen, menuButtonRef) => {
+      const tagId = String(tag.id);
+      if (overflowMenu?.tagId === tagId) {
+        closeOverflowMenu();
+        return;
+      }
+      const tagIsActive = activeTagSet.has(Number(tag.id));
+      setOverflowMenu({
+        tagId,
+        anchorRef: menuButtonRef,
+        items: [
+          {
+            id: 'apply',
+            label: tagIsActive ? t('menuClear') : t('menuApply'),
+            onClick: () => onApplyTag?.(tag.id),
+          },
+          {
+            id: 'rename',
+            label: t('menuRename'),
+            onClick: () => onRenameTag?.(tag),
+          },
+          {
+            id: 'delete',
+            label: t('menuDelete'),
+            destructive: true,
+            onClick: () => onDeleteTag?.(tag.id, tag.name),
+          },
+        ],
+      });
+    },
+    [activeTagSet, closeOverflowMenu, onApplyTag, onDeleteTag, onRenameTag, overflowMenu?.tagId, t]
   );
 
   if (tags.length === 0) {
@@ -153,7 +127,7 @@ export default function TagSidebarSection({
           {hasSearchQuery ? t('noTagMatches', { query: searchQuery.trim() }) : t('noTags')}
         </p>
       ) : (
-        <div onMouseDown={handleListMouseDown} onClick={handleListClick}>
+        <div>
           {filteredTags.map((tag, index) => {
             const tagId = String(tag.id);
             const tagIsActive = activeTagSet.has(Number(tag.id));
@@ -167,8 +141,9 @@ export default function TagSidebarSection({
                 isActive={tagIsActive}
                 disabled={disabled}
                 title={tagIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
-                showMenu
-                isMenuOpen={overflowMenu?.tagId === tagId}
+                onClick={handleItemActivate(index)}
+                menu={{ open: overflowMenu?.tagId === tagId, visible: true }}
+                onMenuToggle={handleMenuToggle(tag)}
               />
             );
           })}

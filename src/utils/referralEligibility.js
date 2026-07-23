@@ -1,4 +1,5 @@
 import { REFERRAL_CODE } from '@/config/referral';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { isReferralAppliedForKey } from '@/utils/referralApplied';
 import {
   isReferralReminderDismissed,
@@ -175,15 +176,15 @@ export async function applyReferralToAccount(apiKey, referralCode) {
     body: JSON.stringify({ referral: referralCode }),
   });
 
-  const data = await response.json().catch(() => ({}));
+  const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
   // TorBox API: { success: true, error: null, detail: "Successfully added referral.", data: null }
-  if (response.ok && data.success === true) {
+  if (responseOk && data.success === true) {
     return { success: true, detail: data.detail };
   }
 
   const { alreadyHasReferrer, isSelfReferral } = classifyReferralApplyError(data);
-  const skipFutureAttempts = alreadyHasReferrer || isSelfReferral || response.status === 409;
+  const skipFutureAttempts = alreadyHasReferrer || isSelfReferral || responseStatus === 409;
 
   return {
     success: false,

@@ -94,11 +94,7 @@ function applyLinkHistoryToDownloads(downloads, lookupOrHistory) {
  * @param {(downloads: Array) => Array} mapTagsToDownloads
  * @param {Array|{ itemDownloads: Set, fileDownloads: Set }} downloadHistoryOrLookup
  */
-export function enrichDownloadsWithTbm(
-  torboxDownloads,
-  mapTagsToDownloads,
-  downloadHistoryOrLookup
-) {
+function enrichDownloadsWithTbm(torboxDownloads, mapTagsToDownloads, downloadHistoryOrLookup) {
   if (!torboxDownloads?.length) return torboxDownloads || [];
   const tagged = mapTagsToDownloads(torboxDownloads);
   return applyLinkHistoryToDownloads(tagged, downloadHistoryOrLookup);

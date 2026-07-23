@@ -252,7 +252,8 @@
       "uploadSpeed": "Vitesse d'envoi actuelle",
       "uploadSpeedDescription": "Vitesse instantanée actuelle d'envoi",
       "uploadStalledTime": "Temps d'arrêt de l'envoi",
-      "uploadStalledTimeDescription": "Temps écoulé depuis l'arrêt de l'activité d'envoi (en minutes)"
+      "uploadStalledTimeDescription": "Temps écoulé depuis l'arrêt de l'activité d'envoi (en minutes)",
+      "value": "Valeur"
     },
     "delete": "Supprimer",
     "details": "Détails",
@@ -438,6 +439,7 @@
     "of": "sur",
     "previous": "Précédent",
     "protected": "Protégé",
+    "selectAll": "Tout sélectionner",
     "selectRow": "Sélectionner {name}",
     "showing": "Affichage",
     "time": {
@@ -1080,6 +1082,7 @@
       "title": "Aucun lien de téléchargement"
     },
     "expired": "Expiré",
+    "searchLabel": "Rechercher dans l’historique des liens",
     "status": {
       "failed": "Échec"
     },
@@ -1413,6 +1416,7 @@
       "linear": "Linéaire",
       "logarithmic": "Logarithmique"
     },
+    "timeRange": "Plage temporelle",
     "timeRanges": {
       "10m": "Dernier 10m",
       "1h": "Dernier 1h",
@@ -1654,6 +1658,7 @@
     "moreOptions": "Plus d'options",
     "mute": "Couper le son",
     "play": "Lire",
+    "playbackProgress": "Rechercher la position de lecture",
     "playbackSpeed": "Vitesse de lecture",
     "playbackSpeedNormal": "Normale",
     "retry": "Réessayer",

@@ -65,6 +65,7 @@ function FileRow({
   style,
 }) {
   const t = useTranslations('FileActions');
+  const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
   const selectionId = getDownloadSelectionId(item);
   const isItemSelected = useIsItemBlockingFileSelect(selectionId);
@@ -181,6 +182,7 @@ function FileRowInner({
           type="checkbox"
           checked={isChecked}
           disabled={isDisabled}
+          aria-label={commonT('selectRow', { name: file.short_name || file.name })}
           onChange={(e) =>
             handleFileSelection(selectionId, actualIndex, file, e.target.checked, e.shiftKey)
           }
@@ -237,12 +239,7 @@ function FileRowInner({
       <td
         className={`${tableActionsCell} ${actionsSurfaceClass} relative z-[2] [transform:translateZ(0)] [&_button]:md:p-1`}
       >
-        <div
-          className={tableActionsCellInner}
-          data-file-actions
-          onClick={stopRowActivation}
-          onPointerDown={stopRowActivation}
-        >
+        <div className={tableActionsCellInner} data-file-actions>
           <span className={FILE_ACTION_SLOT_CLASS}>
             {isVideoFile(file) && handleFileStream ? (
               <button

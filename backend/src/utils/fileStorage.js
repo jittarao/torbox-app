@@ -245,7 +245,7 @@ async function getFileStats(filePath) {
  * @param {string} authId - User authentication ID
  * @returns {Promise<number>} Total size in bytes
  */
-export async function calculateUserUploadDirSize(authId) {
+async function calculateUserUploadDirSize(authId) {
   try {
     const userUploadDir = getUserUploadDir(authId);
     let totalSize = 0;
@@ -292,24 +292,28 @@ export async function getUserUploadFiles(authId) {
     try {
       const entries = await readdir(dirPath, { withFileTypes: true });
       const subDirPromises = [];
+      const fileStatPromises = [];
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
         if (entry.isDirectory()) {
           subDirPromises.push(scanDirectory(fullPath, baseDir));
         } else if (entry.isFile()) {
-          try {
-            const stats = await stat(fullPath);
-            const relativePath = path.relative(baseDir, fullPath);
-            files.push({
-              relativePath,
-              absolutePath: fullPath,
-              size: stats.size,
-              mtime: stats.mtime,
-            });
-          } catch {}
+          fileStatPromises.push(
+            stat(fullPath)
+              .then((stats) => {
+                const relativePath = path.relative(baseDir, fullPath);
+                files.push({
+                  relativePath,
+                  absolutePath: fullPath,
+                  size: stats.size,
+                  mtime: stats.mtime,
+                });
+              })
+              .catch(() => {})
+          );
         }
       }
-      await Promise.all(subDirPromises);
+      await Promise.all([...subDirPromises, ...fileStatPromises]);
     } catch {}
   }
 

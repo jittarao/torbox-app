@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { POLLING_CONFIG } from './pollingConfig';
 
 /**
@@ -18,6 +18,133 @@ export function parseAutomationSseEvent(line) {
   } catch {
     return null;
   }
+}
+
+/**
+ * @param {Object} options
+ * @param {string} options.apiKey
+ * @param {import('react').RefObject<(() => void | Promise<void>) | undefined>} options.onTagsChangedRef
+ * @param {import('react').RefObject<(() => void | Promise<void>) | undefined>} options.onProtectionChangedRef
+ * @param {import('react').RefObject<ReturnType<typeof setTimeout> | null>} options.tagsDebounceRef
+ * @param {import('react').RefObject<ReturnType<typeof setTimeout> | null>} options.protectionDebounceRef
+ */
+function subscribeAutomationEvents({
+  apiKey,
+  onTagsChangedRef,
+  onProtectionChangedRef,
+  tagsDebounceRef,
+  protectionDebounceRef,
+}) {
+  const ac = new AbortController();
+  let buffer = '';
+  let reconnectTimer = null;
+  let retryCount = 0;
+
+  const scheduleTagsRefetch = () => {
+    if (!onTagsChangedRef.current) return;
+    if (tagsDebounceRef.current) clearTimeout(tagsDebounceRef.current);
+    tagsDebounceRef.current = setTimeout(() => {
+      tagsDebounceRef.current = null;
+      onTagsChangedRef.current();
+    }, POLLING_CONFIG.sseDebounceMs);
+  };
+
+  const scheduleProtectionRefetch = () => {
+    if (!onProtectionChangedRef.current) return;
+    if (protectionDebounceRef.current) clearTimeout(protectionDebounceRef.current);
+    protectionDebounceRef.current = setTimeout(() => {
+      protectionDebounceRef.current = null;
+      onProtectionChangedRef.current();
+    }, POLLING_CONFIG.sseDebounceMs);
+  };
+
+  const handleSseLine = (line) => {
+    const event = parseAutomationSseEvent(line);
+    if (event === 'tags_changed') {
+      scheduleTagsRefetch();
+    }
+    if (event === 'protection_changed') {
+      scheduleProtectionRefetch();
+    }
+  };
+
+  const isPermanentError = (status) => status === 401 || status === 403 || status === 503;
+
+  const reconnect = () => {
+    if (ac.signal.aborted) return;
+    const delay = Math.min(5000 * Math.pow(2, retryCount), 60_000);
+    retryCount++;
+    reconnectTimer = setTimeout(connect, delay);
+  };
+
+  const connect = () => {
+    if (ac.signal.aborted) return;
+    fetch('/api/automation/events', {
+      headers: { 'x-api-key': apiKey },
+      signal: ac.signal,
+    })
+      .then((res) => {
+        if (!res.ok || !res.body) {
+          if (isPermanentError(res.status)) return;
+          reconnect();
+          return;
+        }
+        retryCount = 0;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        const read = () => {
+          reader
+            .read()
+            .then(({ done, value }) => {
+              if (ac.signal.aborted) return;
+              if (done) {
+                retryCount = 0;
+                reconnect();
+                return;
+              }
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+              for (const line of lines) {
+                handleSseLine(line);
+              }
+              read();
+            })
+            .catch((err) => {
+              if (err?.name !== 'AbortError' && !ac.signal.aborted) reconnect();
+            });
+        };
+        read();
+      })
+      .catch((err) => {
+        if (err?.name !== 'AbortError' && !ac.signal.aborted) {
+          console.debug('SSE automation/events closed or failed', err?.message);
+          reconnect();
+        }
+      });
+  };
+
+  connect();
+
+  return () => {
+    ac.abort();
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    if (tagsDebounceRef.current) {
+      clearTimeout(tagsDebounceRef.current);
+      tagsDebounceRef.current = null;
+    }
+    if (protectionDebounceRef.current) {
+      clearTimeout(protectionDebounceRef.current);
+      protectionDebounceRef.current = null;
+    }
+  };
+}
+
+function getAutomationEventsServerSnapshot() {
+  return false;
 }
 
 /**
@@ -43,111 +170,22 @@ export function useAutomationEvents({ enabled, apiKey, onTagsChanged, onProtecti
     onProtectionChangedRef.current = onProtectionChanged;
   }, [onProtectionChanged]);
 
-  useEffect(() => {
-    if (!enabled || !apiKey || (!onTagsChanged && !onProtectionChanged)) return;
+  const isSubscribed = Boolean(enabled && apiKey && (onTagsChanged || onProtectionChanged));
 
-    const ac = new AbortController();
-    let buffer = '';
-    let reconnectTimer = null;
-    let retryCount = 0;
+  const subscribe = useCallback(() => {
+    if (!isSubscribed) return () => {};
+    return subscribeAutomationEvents({
+      apiKey,
+      onTagsChangedRef,
+      onProtectionChangedRef,
+      tagsDebounceRef,
+      protectionDebounceRef,
+    });
+  }, [isSubscribed, apiKey]);
 
-    const scheduleTagsRefetch = () => {
-      if (!onTagsChangedRef.current) return;
-      if (tagsDebounceRef.current) clearTimeout(tagsDebounceRef.current);
-      tagsDebounceRef.current = setTimeout(() => {
-        tagsDebounceRef.current = null;
-        onTagsChangedRef.current();
-      }, POLLING_CONFIG.sseDebounceMs);
-    };
-
-    const scheduleProtectionRefetch = () => {
-      if (!onProtectionChangedRef.current) return;
-      if (protectionDebounceRef.current) clearTimeout(protectionDebounceRef.current);
-      protectionDebounceRef.current = setTimeout(() => {
-        protectionDebounceRef.current = null;
-        onProtectionChangedRef.current();
-      }, POLLING_CONFIG.sseDebounceMs);
-    };
-
-    const handleSseLine = (line) => {
-      const event = parseAutomationSseEvent(line);
-      if (event === 'tags_changed') {
-        scheduleTagsRefetch();
-      }
-      if (event === 'protection_changed') {
-        scheduleProtectionRefetch();
-      }
-    };
-
-    const isPermanentError = (status) => status === 401 || status === 403 || status === 503;
-
-    const reconnect = () => {
-      if (ac.signal.aborted) return;
-      const delay = Math.min(5000 * Math.pow(2, retryCount), 60_000);
-      retryCount++;
-      reconnectTimer = setTimeout(connect, delay);
-    };
-
-    const connect = () => {
-      if (ac.signal.aborted) return;
-      fetch('/api/automation/events', {
-        headers: { 'x-api-key': apiKey },
-        signal: ac.signal,
-      })
-        .then((res) => {
-          if (!res.ok || !res.body) {
-            if (isPermanentError(res.status)) return;
-            reconnect();
-            return;
-          }
-          retryCount = 0;
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          const read = () => {
-            reader
-              .read()
-              .then(({ done, value }) => {
-                if (ac.signal.aborted) return;
-                if (done) {
-                  retryCount = 0;
-                  reconnect();
-                  return;
-                }
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-                for (const line of lines) {
-                  handleSseLine(line);
-                }
-                read();
-              })
-              .catch((err) => {
-                if (err?.name !== 'AbortError' && !ac.signal.aborted) reconnect();
-              });
-          };
-          read();
-        })
-        .catch((err) => {
-          if (err?.name !== 'AbortError' && !ac.signal.aborted) {
-            console.debug('SSE automation/events closed or failed', err?.message);
-            reconnect();
-          }
-        });
-    };
-
-    connect();
-
-    return () => {
-      ac.abort();
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (tagsDebounceRef.current) {
-        clearTimeout(tagsDebounceRef.current);
-        tagsDebounceRef.current = null;
-      }
-      if (protectionDebounceRef.current) {
-        clearTimeout(protectionDebounceRef.current);
-        protectionDebounceRef.current = null;
-      }
-    };
-  }, [enabled, apiKey, onTagsChanged, onProtectionChanged]);
+  useSyncExternalStore(
+    subscribe,
+    () => (isSubscribed ? apiKey : null),
+    getAutomationEventsServerSnapshot
+  );
 }

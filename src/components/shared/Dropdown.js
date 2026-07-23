@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { UpArrow, DownArrow } from '@/components/icons';
 
-export default function Dropdown({ options, value, onChange, className = '', sortDir }) {
+export default function Dropdown({ id, options, value, onChange, className = '', sortDir }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -33,6 +33,7 @@ export default function Dropdown({ options, value, onChange, className = '', sor
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        id={id}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between w-full p-2 text-sm rounded 

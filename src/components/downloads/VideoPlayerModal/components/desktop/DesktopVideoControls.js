@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import { useTranslations } from 'next-intl';
 import { formatTime } from '../../../utils/formatters';
 import ProgressBar from '../ProgressBar';
 import VolumeControl from '../VolumeControl';
@@ -9,22 +10,18 @@ import TrackSelector from '../TrackSelector';
 const EMPTY_ARRAY = [];
 
 function DesktopVideoControls({
+  visibility,
+  playback,
+  menus,
   currentTime,
   duration,
   progress,
-  isPlaying,
-  isSeeking,
   volume,
-  isMuted,
-  showVolumeSlider,
   audios = EMPTY_ARRAY,
   subtitles = EMPTY_ARRAY,
   selectedAudioIndex,
   selectedSubtitleIndex,
-  showAudioMenu,
-  showSubtitleMenu,
   playbackSpeed = 1.0,
-  showPlaybackSpeedMenu = false,
   onPlaybackSpeedChange,
   onPlaybackSpeedMenuToggle,
   onPlayPause,
@@ -42,15 +39,27 @@ function DesktopVideoControls({
   onSubtitleMenuToggle,
   onInfoToggle,
   onFullscreen,
-  isFullscreen,
   audioMenuRef,
   subtitleMenuRef,
   playbackSpeedMenuRef,
   volumeRef,
   seekBarRef,
   controlsBarRef,
-  isVisible = true,
 }) {
+  const { controls: isVisible = true } = visibility ?? {};
+  const {
+    playing: isPlaying,
+    seeking: isSeeking,
+    muted: isMuted,
+    fullscreen: isFullscreen,
+  } = playback;
+  const {
+    volumeSlider: showVolumeSlider,
+    audio: showAudioMenu,
+    subtitle: showSubtitleMenu,
+    playbackSpeed: showPlaybackSpeedMenu,
+  } = menus;
+  const videoPlayerT = useTranslations('VideoPlayer');
   const displayTime = isSeeking && currentTime !== null ? currentTime : currentTime;
 
   return (
@@ -75,6 +84,7 @@ function DesktopVideoControls({
           isSeeking={isSeeking}
           onSeek={onSeek}
           onSeekStart={onSeekStart}
+          ariaLabel={videoPlayerT('playbackProgress')}
         />
 
         <div className="px-4 sm:px-6 py-4 flex items-center gap-2 sm:gap-4">
@@ -86,7 +96,7 @@ function DesktopVideoControls({
               onRewind();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label="Rewind 30 seconds"
             title="Rewind 30s (Left Arrow)"
@@ -104,7 +114,7 @@ function DesktopVideoControls({
               onPlayPause();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
@@ -127,7 +137,7 @@ function DesktopVideoControls({
               onForward();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label="Forward 30 seconds"
             title="Forward 30s (Right Arrow)"
@@ -189,7 +199,7 @@ function DesktopVideoControls({
                 onVolumeSliderHide();
               }}
               className="relative p-2 rounded-full bg-white/10 hover:bg-white/20 
-              backdrop-blur-sm text-white transition-all duration-200
+              backdrop-blur-sm text-white transition-colors transition-transform duration-200
               hover:scale-110 active:scale-95"
               aria-label="Playback Speed"
               title={`Playback Speed: ${playbackSpeed}x`}
@@ -255,7 +265,7 @@ function DesktopVideoControls({
               onVolumeSliderHide();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label="Info"
           >
@@ -272,7 +282,7 @@ function DesktopVideoControls({
               onFullscreen();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label="Fullscreen"
           >

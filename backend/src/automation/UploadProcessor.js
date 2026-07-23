@@ -701,8 +701,10 @@ class UploadProcessor {
       return { hash: null, torrentId: null, authId: null };
     }
 
-    const expectedHash = await getExpectedTorrentHash(upload);
-    const torrents = await apiClient.getTorrents(true);
+    const [expectedHash, torrents] = await Promise.all([
+      getExpectedTorrentHash(upload),
+      apiClient.getTorrents(true),
+    ]);
     return matchTorboxResource(upload, torrents, expectedHash);
   }
 
@@ -1553,51 +1555,53 @@ class UploadProcessor {
       let recoveredToQueued = 0;
       let completedAfterApiSuccess = 0;
 
-      for (const upload of stuckUploads) {
-        const successAttempt = userDb.db
-          .prepare(
-            `
+      const recoveryOutcomes = await Promise.all(
+        stuckUploads.map(async (upload) => {
+          const successAttempt = userDb.db
+            .prepare(
+              `
             SELECT 1 AS ok
             FROM upload_attempts
             WHERE upload_id = ?
               AND success = 1
             LIMIT 1
           `
-          )
-          .get(upload.id);
+            )
+            .get(upload.id);
 
-        if (successAttempt) {
-          try {
-            const apiClient = await this.getApiClient(authId);
-            const completed = await this.handleIdempotentDuplicate(
-              { ...upload, authId },
-              userDb,
-              upload.type,
-              {
-                status: 200,
-                data: {
-                  success: false,
-                  error: 'DUPLICATE_ITEM',
-                  detail: 'Recovered stuck upload after successful TorBox submission',
+          if (successAttempt) {
+            try {
+              const apiClient = await this.getApiClient(authId);
+              const completed = await this.handleIdempotentDuplicate(
+                { ...upload, authId },
+                userDb,
+                upload.type,
+                {
+                  status: 200,
+                  data: {
+                    success: false,
+                    error: 'DUPLICATE_ITEM',
+                    detail: 'Recovered stuck upload after successful TorBox submission',
+                  },
                 },
-              },
-              apiClient
-            );
-            if (completed) {
-              completedAfterApiSuccess++;
+                apiClient
+              );
+              return {
+                recoveredToQueued: 0,
+                completedAfterApiSuccess: completed ? 1 : 0,
+              };
+            } catch (error) {
+              logger.error('Failed to complete stuck upload after successful API attempt', error, {
+                authId,
+                uploadId: upload.id,
+              });
+              return { recoveredToQueued: 0, completedAfterApiSuccess: 0 };
             }
-          } catch (error) {
-            logger.error('Failed to complete stuck upload after successful API attempt', error, {
-              authId,
-              uploadId: upload.id,
-            });
           }
-          continue;
-        }
 
-        const result = userDb.db
-          .prepare(
-            `
+          const result = userDb.db
+            .prepare(
+              `
             UPDATE uploads
             SET status = 'queued',
                 error_message = NULL,
@@ -1606,12 +1610,19 @@ class UploadProcessor {
             WHERE id = ?
               AND status = 'processing'
           `
-          )
-          .run(upload.id);
+            )
+            .run(upload.id);
 
-        if (result.changes > 0) {
-          recoveredToQueued++;
-        }
+          return {
+            recoveredToQueued: result.changes > 0 ? 1 : 0,
+            completedAfterApiSuccess: 0,
+          };
+        })
+      );
+
+      for (const outcome of recoveryOutcomes) {
+        recoveredToQueued += outcome.recoveredToQueued;
+        completedAfterApiSuccess += outcome.completedAfterApiSuccess;
       }
 
       if (recoveredToQueued > 0 || completedAfterApiSuccess > 0) {

@@ -12,7 +12,7 @@ import {
 } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
-import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useEffectiveExpandedById } from '@/components/downloads/hooks/useDownloadRowExpansion';
 import { getItemFileCount } from '@/utils/downloadEntityFiles';
 import { setItem } from '@/utils/storage';
 
@@ -67,7 +67,7 @@ export default function ViewControls({
   unfilteredItems,
 }) {
   const t = useTranslations('ViewControls');
-  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+  const expandedById = useEffectiveExpandedById(unfilteredItems ?? []);
 
   const handleViewModeChange = (mode) => {
     onViewModeChange(mode);

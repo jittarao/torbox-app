@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, Fragment } from 'react';
+import { useState, useRef, useEffect, Fragment, useCallback } from 'react';
 import { getItemTypeName } from './utils/statusHelpers';
 import ActionBarSearch from './components/ActionBarSearch';
 import ActionBarStatus from './components/ActionBarStatus';
@@ -114,10 +114,12 @@ export default function ActionBar() {
     };
   }, [isFullscreen, scrollContainerRef, viewMode]);
 
-  useLayoutOnTabVisible(() => {
+  const handleTabVisible = useCallback(() => {
     if (!stickyRef.current) return;
     refreshStickyLayoutRef.current();
-  });
+  }, []);
+
+  useLayoutOnTabVisible(handleTabVisible);
 
   return (
     <Fragment>

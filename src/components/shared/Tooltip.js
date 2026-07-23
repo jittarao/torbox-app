@@ -1,4 +1,12 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useId,
+  useSyncExternalStore,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 const activeTooltips = new Map();
@@ -9,20 +17,24 @@ function closeOtherTooltips(exceptId) {
   });
 }
 
+function subscribeCanHover(callback) {
+  const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+  const onChange = () => callback();
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+}
+
+function getCanHoverSnapshot() {
+  if (typeof window === 'undefined') return true;
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+}
+
+function getCanHoverServerSnapshot() {
+  return true;
+}
+
 function useCanHover() {
-  const [canHover, setCanHover] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  });
-
-  useEffect(() => {
-    const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const onChange = (e) => setCanHover(e.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-
-  return canHover;
+  return useSyncExternalStore(subscribeCanHover, getCanHoverSnapshot, getCanHoverServerSnapshot);
 }
 
 export default function Tooltip({ children, content, position = 'top' }) {

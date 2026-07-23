@@ -1023,17 +1023,26 @@ class PollingScheduler {
       let successCount = 0;
       let errorCount = 0;
       let protectedSkippedCount = 0;
+      const actionChunks = [];
       for (let i = 0; i < torrentsToProcess.length; i += ACTION_BATCH_CHUNK_SIZE) {
-        const chunk = torrentsToProcess.slice(i, i + ACTION_BATCH_CHUNK_SIZE);
+        actionChunks.push(torrentsToProcess.slice(i, i + ACTION_BATCH_CHUNK_SIZE));
+      }
+
+      const processActionChunk = async (chunkIndex) => {
+        if (chunkIndex >= actionChunks.length) return;
+        const chunk = actionChunks[chunkIndex];
         const chunkResult = await withTimeout(
           engine.ruleExecutor.executeActions(rule, chunk),
           actionBatchTimeoutMs,
-          `Action batch timed out after ${actionBatchTimeoutMs / 1000}s (chunk ${Math.floor(i / ACTION_BATCH_CHUNK_SIZE) + 1})`
+          `Action batch timed out after ${actionBatchTimeoutMs / 1000}s (chunk ${chunkIndex + 1})`
         );
         successCount += chunkResult.successCount;
         errorCount += chunkResult.errorCount;
         protectedSkippedCount += chunkResult.protectedSkippedCount ?? 0;
-      }
+        await processActionChunk(chunkIndex + 1);
+      };
+
+      await processActionChunk(0);
       const batchResult = { successCount, errorCount, protectedSkippedCount };
       if (shouldRecordRuleExecution(batchResult)) {
         await engine.ruleRepository.recordExecution(

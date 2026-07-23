@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useSyncExternalStore, use } from 'react';
+import { createContext, useCallback, useMemo, useSyncExternalStore, use } from 'react';
 import { setItem } from '@/utils/storage';
 
 const ThemeContext = createContext();
@@ -40,10 +40,13 @@ export function ThemeProvider({ children }) {
     setItem('darkMode', String(newValue));
   }, []);
 
-  const value = {
-    darkMode,
-    toggleDarkMode,
-  };
+  const value = useMemo(
+    () => ({
+      darkMode,
+      toggleDarkMode,
+    }),
+    [darkMode, toggleDarkMode]
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

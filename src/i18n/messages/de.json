@@ -253,7 +253,8 @@
       "uploadSpeed": "Upload-Geschwindigkeit",
       "uploadSpeedDescription": "Aktuelle instantane Upload-Geschwindigkeit",
       "uploadStalledTime": "Upload-Blockiert-Zeit",
-      "uploadStalledTimeDescription": "Zeit seit der Upload-Aktivität gestoppt wurde (in Minuten)"
+      "uploadStalledTimeDescription": "Zeit seit der Upload-Aktivität gestoppt wurde (in Minuten)",
+      "value": "Wert"
     },
     "delete": "Löschen",
     "emptyState": {
@@ -450,6 +451,7 @@
     "of": "von",
     "previous": "Zurück",
     "protected": "Geschützt",
+    "selectAll": "Alles auswählen",
     "selectRow": "{name} auswählen",
     "showing": "Anzeige",
     "time": {
@@ -1098,6 +1100,7 @@
       "title": "Keine Download-Links"
     },
     "expired": "Abgelaufen",
+    "searchLabel": "Link-Verlauf durchsuchen",
     "status": {
       "failed": "Fehlgeschlagen"
     },
@@ -1427,6 +1430,7 @@
     "scale": {
       "logarithmic": "Logarithmisch"
     },
+    "timeRange": "Zeitraum",
     "timeRanges": {
       "10m": "Letzte 10m",
       "1h": "Letzte 1h",
@@ -1666,6 +1670,7 @@
     "moreOptions": "Weitere Optionen",
     "mute": "Stummschalten",
     "play": "Abspielen",
+    "playbackProgress": "Wiedergabeposition suchen",
     "playbackSpeed": "Wiedergabegeschwindigkeit",
     "retry": "Erneut versuchen",
     "seekBack10": "10 Sekunden zurückspulen",

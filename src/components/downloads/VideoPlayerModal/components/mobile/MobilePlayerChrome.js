@@ -10,13 +10,12 @@ import PlayerInfoSheet from './PlayerInfoSheet';
 function MobilePlayerChrome({
   formFactor,
   fileName,
-  isVisible,
+  playback,
+  sheets,
   onClose,
   currentTime,
   duration,
   progress,
-  isPlaying,
-  isSeeking,
   previewTime,
   seekBarRef,
   controlsBarRef,
@@ -27,7 +26,6 @@ function MobilePlayerChrome({
   onPlayPause,
   onSeekBack,
   onSeekForward,
-  showSettingsSheet,
   onOpenSettings,
   onCloseSettings,
   playbackSpeed,
@@ -39,16 +37,21 @@ function MobilePlayerChrome({
   onAudioSelect,
   onSubtitleSelect,
   volume,
-  isMuted,
   onVolumeChange,
   onMuteToggle,
-  showInfoSheet,
   onOpenInfo,
   onCloseInfo,
   metadata,
   onFullscreen,
-  isFullscreen,
 }) {
+  const {
+    visible: isVisible,
+    playing: isPlaying,
+    seeking: isSeeking,
+    muted: isMuted,
+    fullscreen: isFullscreen,
+  } = playback;
+  const { settings: showSettingsSheet, info: showInfoSheet } = sheets;
   const isLandscape = formFactor === 'landscape';
 
   return (
