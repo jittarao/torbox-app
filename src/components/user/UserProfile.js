@@ -5,22 +5,20 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { formatSize, SIZE_BASE_DECIMAL } from '@/components/downloads/utils/formatters';
 import Spinner from '@/components/shared/Spinner';
-import {
-  AlertCircle,
-  BarChart3,
-  Check,
-  CheckCircle,
-  Copy,
-  CreditCard,
-  Download,
-  User,
-} from '@/components/icons';
+import { AlertCircle, CheckCircle, User } from '@/components/icons';
 import AirlockUsage from '@/components/user/AirlockUsage';
 import BandwidthChart from '@/components/user/BandwidthChart';
 import { useUserStats } from '@/hooks/useUserStats';
 import { useSessionStore } from '@/store/sessionStore';
 import { getPlanName as getPlanNameUtil } from '@/utils/userProfile';
 import { buildTorboxSubscriptionReferralUrl } from '@/utils/referralLinks';
+import UserProfileHeader from '@/components/user/UserProfileHeader';
+import UserProfileBasicInfo from '@/components/user/UserProfileBasicInfo';
+import {
+  UserProfileAccountStatus,
+  UserProfileUsageStats,
+  UserProfileDownloadBreakdown,
+} from '@/components/user/UserProfileCards';
 
 export default function UserProfile({ apiKey, setToast }) {
   const t = useTranslations('User');
@@ -92,21 +90,18 @@ export default function UserProfile({ apiKey, setToast }) {
         month: 'short',
         day: 'numeric',
       });
-    } catch (err) {
+    } catch {
       return 'Invalid Date';
     }
   };
 
   const formatTransferBytes = (bytes) => formatSize(bytes ?? 0, locale, SIZE_BASE_DECIMAL);
 
-  const getPlanName = (planId) => {
-    return getPlanNameUtil(planId, t);
-  };
+  const getPlanName = (planId) => getPlanNameUtil(planId, t);
 
-  const getStatusDisplay = (userData) => {
-    // Check if user has a premium plan and it's not expired
-    if (userData.plan > 0) {
-      const expiryDate = new Date(userData.premium_expires_at);
+  const getStatusDisplay = (profile) => {
+    if (profile.plan > 0) {
+      const expiryDate = new Date(profile.premium_expires_at);
       const now = new Date();
       if (expiryDate > now) {
         return {
@@ -114,23 +109,20 @@ export default function UserProfile({ apiKey, setToast }) {
           color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
           icon: CheckCircle,
         };
-      } else {
-        return {
-          status: t('status.expired'),
-          color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-          icon: AlertCircle,
-        };
       }
-    } else {
       return {
-        status: t('status.free'),
-        color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-        icon: User,
+        status: t('status.expired'),
+        color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+        icon: AlertCircle,
       };
     }
+    return {
+      status: t('status.free'),
+      color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+      icon: User,
+    };
   };
 
-  // Wrap the entire render in try-catch to prevent crashes
   try {
     if (!apiKey) {
       return (
@@ -190,230 +182,33 @@ export default function UserProfile({ apiKey, setToast }) {
 
     return (
       <div className="space-y-6">
-        {/* Header Card with Status */}
-        <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="size-16 rounded-full bg-accent/10 dark:bg-accent-dark/10 flex items-center justify-center">
-                <User className="size-8 text-accent dark:text-accent-dark" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-primary-text dark:text-primary-text-dark mb-1">
-                  {userData.email || 'User Profile'}
-                </h2>
-                <p className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.userId')}: {userData.id || 'N/A'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {StatusIcon && <StatusIcon className="size-5" />}
-              <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${statusInfo.color}`}>
-                {statusInfo.status}
-              </span>
-            </div>
-          </div>
-        </div>
+        <UserProfileHeader
+          userData={userData}
+          statusInfo={statusInfo}
+          StatusIcon={StatusIcon}
+          userIdLabel={t('profile.userId')}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Basic Information Card */}
-          <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <User className="size-5 text-accent dark:text-accent-dark" />
-              <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
-                {t('profile.basicInfo')}
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.email')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-medium break-all">
-                  {userData.email || 'N/A'}
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.referralCode')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-medium font-mono text-sm">
-                  {userData.user_referral || 'N/A'}
-                </span>
-              </div>
-
-              {/* Referral Link */}
-              {userData.user_referral && (
-                <div className="pt-2 border-t border-border dark:border-border-dark">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-sm text-muted dark:text-muted-dark">
-                      {t('referralLink')}
-                    </span>
-                    <div className="flex items-center gap-2 p-3 bg-surface-alt dark:bg-surface-alt-dark rounded-lg border border-border dark:border-border-dark">
-                      <span className="text-primary-text dark:text-primary-text-dark font-mono text-xs break-all flex-1">
-                        {buildTorboxSubscriptionReferralUrl(userData.user_referral)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={copyReferralLink}
-                        className="p-2 text-accent dark:text-accent-dark hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded transition-colors flex-shrink-0"
-                        title={t('copyLink')}
-                        aria-label={t('copyLink')}
-                      >
-                        {copiedLink ? <Check className="size-5" /> : <Copy className="size-5" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.createdAt')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-medium">
-                  {formatDate(userData.created_at)}
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.lastLogin')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-medium">
-                  {formatDate(userData.updated_at)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Account Status Card */}
-          <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <CreditCard className="size-5 text-accent dark:text-accent-dark" />
-              <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
-                {t('profile.accountStatus')}
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">{t('profile.plan')}</span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
-                  {getPlanName(userData.plan)}
-                </span>
-              </div>
-
-              {userData.plan > 0 && (
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                  <span className="text-sm text-muted dark:text-muted-dark">
-                    {t('profile.planExpiry')}
-                  </span>
-                  <span className="text-primary-text dark:text-primary-text-dark font-medium">
-                    {formatDate(userData.premium_expires_at)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Usage Statistics Card */}
-          <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <BarChart3 className="size-5 text-accent dark:text-accent-dark" />
-              <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
-                {t('profile.usage')}
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.totalDownloads')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold text-lg">
-                  {userData.total_downloaded || 0}
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.totalSize')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
-                  {formatTransferBytes(userData.total_bytes_downloaded || 0)}
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.totalUploaded')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
-                  {formatTransferBytes(userData.total_bytes_uploaded || 0)}
-                </span>
-              </div>
-
-              {/* Ratio Calculation */}
-              <div className="pt-2 border-t border-border dark:border-border-dark">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                  <span className="text-sm text-muted dark:text-muted-dark">
-                    {t('profile.ratio')}
-                  </span>
-                  <span className="text-primary-text dark:text-primary-text-dark font-semibold text-lg">
-                    {(() => {
-                      const downloaded = userData.total_bytes_downloaded || 0;
-                      const uploaded = userData.total_bytes_uploaded || 0;
-                      if (downloaded === 0) return '∞';
-                      const ratio = uploaded / downloaded;
-                      return ratio.toFixed(2);
-                    })()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Download Breakdown Card */}
-          <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <Download className="size-5 text-accent dark:text-accent-dark" />
-              <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
-                {t('profile.downloadBreakdown')}
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.torrentDownloads')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
-                  {userData.torrents_downloaded || 0}
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.webDownloads')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
-                  {userData.web_downloads_downloaded || 0}
-                </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                <span className="text-sm text-muted dark:text-muted-dark">
-                  {t('profile.usenetDownloads')}
-                </span>
-                <span className="text-primary-text dark:text-primary-text-dark font-semibold">
-                  {userData.usenet_downloads_downloaded || 0}
-                </span>
-              </div>
-            </div>
-          </div>
+          <UserProfileBasicInfo
+            userData={userData}
+            t={t}
+            copiedLink={copiedLink}
+            onCopyReferralLink={copyReferralLink}
+            formatDate={formatDate}
+          />
+          <UserProfileAccountStatus
+            userData={userData}
+            t={t}
+            getPlanName={getPlanName}
+            formatDate={formatDate}
+          />
+          <UserProfileUsageStats
+            userData={userData}
+            t={t}
+            formatTransferBytes={formatTransferBytes}
+          />
+          <UserProfileDownloadBreakdown userData={userData} t={t} />
         </div>
 
         <AirlockUsage
