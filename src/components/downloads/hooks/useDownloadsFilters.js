@@ -10,6 +10,7 @@ import { useTags } from '@/components/shared/hooks/useTags';
 import { filtersFromView } from '@/components/downloads/FiltersSidebar';
 import {
   EMPTY_FILTERS,
+  cloneFilters,
   buildTagFilter,
   buildTrackerFilter,
   buildSourceFilter,
@@ -86,9 +87,7 @@ export function useDownloadsFilters({
     setSearchInput(value);
   }, []);
 
-  const [columnFilters, setColumnFilters] = useState(() =>
-    JSON.parse(JSON.stringify(EMPTY_FILTERS))
-  );
+  const [columnFilters, setColumnFilters] = useState(() => cloneFilters(EMPTY_FILTERS));
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [filterModalMode, setFilterModalMode] = useState(null);
   const [editingView, setEditingView] = useState(null);
@@ -125,7 +124,7 @@ export function useDownloadsFilters({
       return mergeViewAssetTypeFilter(view.filters, view.asset_type);
     }
     if (activeViews.length > 1) {
-      return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+      return cloneFilters(EMPTY_FILTERS);
     }
     if (activeView) {
       return mergeViewAssetTypeFilter(activeView.filters, activeView.asset_type);
@@ -184,7 +183,7 @@ export function useDownloadsFilters({
     suppressUrlViewSyncRef.current = true;
     lastSyncedUrlViewIdsRef.current = urlViewIds ?? [];
     clearView();
-    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    const empty = cloneFilters(EMPTY_FILTERS);
     setColumnFilters(empty);
     clearAllFilterCriteria();
   }, [clearView, clearAllFilterCriteria, urlViewIds]);
@@ -261,7 +260,7 @@ export function useDownloadsFilters({
       }
 
       applyView(first);
-      setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
+      setColumnFilters(cloneFilters(EMPTY_FILTERS));
 
       const criteriaPatch = {
         statusFilter: 'all',
@@ -567,7 +566,7 @@ export function useDownloadsFilters({
 
     pendingSidebarFilterRef.current = { kind: 'clear' };
     suppressUrlViewSyncRef.current = true;
-    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    const empty = cloneFilters(EMPTY_FILTERS);
     setColumnFilters(empty);
     patchFilterCriteria({
       trackerUrls: null,
@@ -585,7 +584,7 @@ export function useDownloadsFilters({
 
     pendingSidebarFilterRef.current = { kind: 'clear' };
     suppressUrlViewSyncRef.current = true;
-    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    const empty = cloneFilters(EMPTY_FILTERS);
     setColumnFilters(empty);
     patchFilterCriteria({
       sourceHosts: null,
@@ -731,7 +730,7 @@ export function useDownloadsFilters({
   const handleOpenNewView = () => {
     clearView();
     setEditingView(null);
-    setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
+    setColumnFilters(cloneFilters(EMPTY_FILTERS));
     setFilterModalMode('create');
     setFilterModalOpen(true);
     setMobileFiltersOpen(false);

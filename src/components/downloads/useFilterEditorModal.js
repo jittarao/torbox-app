@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { useAppAlert } from '@/hooks/useAppAlert';
 import {
   EMPTY_FILTERS,
+  cloneFilters,
   hasActiveFilters,
   normalizeFilters,
   stampFilterSchemaVersion,
@@ -23,7 +24,7 @@ function ensureStructure(prev) {
       groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
     };
   }
-  return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+  return cloneFilters(EMPTY_FILTERS);
 }
 
 export function useFilterEditorModal({
@@ -140,7 +141,7 @@ export function useFilterEditorModal({
       !Array.isArray(columnFilters.groups) ||
       columnFilters.groups.length === 0
     ) {
-      setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
+      setColumnFilters(cloneFilters(EMPTY_FILTERS));
     }
     // columnFilters, normalizeFilters, EMPTY_FILTERS intentionally omitted to
     // avoid resetting filters on every change — effect should only run on open/close.
@@ -369,7 +370,7 @@ export function useFilterEditorModal({
   };
 
   const handleClear = () => {
-    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    const empty = cloneFilters(EMPTY_FILTERS);
     setColumnFilters(empty);
     onApply?.(empty);
     onClose();
