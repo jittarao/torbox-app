@@ -164,7 +164,9 @@ export function useDownloads(
     fetchDownloadHistory,
     onBulkComplete,
   });
-  depsRef.current = { downloadHistory, apiKey, assetType, fetchDownloadHistory, onBulkComplete };
+  useEffect(() => {
+    depsRef.current = { downloadHistory, apiKey, assetType, fetchDownloadHistory, onBulkComplete };
+  }, [downloadHistory, apiKey, assetType, fetchDownloadHistory, onBulkComplete]);
 
   useEffect(() => {
     return () => {

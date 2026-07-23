@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useEffect } from 'react';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useFileInteractionStore } from '@/store/fileInteractionStore';
@@ -50,9 +50,12 @@ export function useDownloadRowInteractions({
   const lastClickedItemIndexRef = useRef(null);
   const lastClickedFileIndexRef = useRef(null);
   const entityKeysRef = useRef(entityKeys);
-  entityKeysRef.current = entityKeys;
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+
+  useEffect(() => {
+    entityKeysRef.current = entityKeys;
+    itemsRef.current = items;
+  }, [entityKeys, items]);
 
   const getItemAtIndex = useCallback((index) => {
     const keys = entityKeysRef.current;

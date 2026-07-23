@@ -43,9 +43,11 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
   const apiKeyRef = useRef(apiKey);
   const searchRef = useRef(search);
   const setPaginationRef = useRef(setPagination);
-  apiKeyRef.current = apiKey;
-  searchRef.current = search;
-  setPaginationRef.current = setPagination;
+  useEffect(() => {
+    apiKeyRef.current = apiKey;
+    searchRef.current = search;
+    setPaginationRef.current = setPagination;
+  }, [apiKey, search, setPagination]);
 
   const usesExternalPagination = Boolean(pagination && setPagination);
   const page = pagination?.page ?? 1;
@@ -138,7 +140,9 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
   );
 
   const loadArchivedRef = useRef(loadArchivedDownloads);
-  loadArchivedRef.current = loadArchivedDownloads;
+  useEffect(() => {
+    loadArchivedRef.current = loadArchivedDownloads;
+  }, [loadArchivedDownloads]);
 
   useEffect(() => {
     archivedLengthRef.current = archivedDownloads.length;

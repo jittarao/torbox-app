@@ -151,14 +151,16 @@ export function useDownloadsFilters({
     sortField,
     sortDirection,
   });
-  filterDepsRef.current = {
-    filterModalMode,
-    editingView,
-    activeType,
-    search: searchInput,
-    sortField,
-    sortDirection,
-  };
+  useEffect(() => {
+    filterDepsRef.current = {
+      filterModalMode,
+      editingView,
+      activeType,
+      search: searchInput,
+      sortField,
+      sortDirection,
+    };
+  }, [filterModalMode, editingView, activeType, searchInput, sortField, sortDirection]);
 
   /** Prevents URL ?view= from re-applying after the user clears the active view. */
   const suppressUrlViewSyncRef = useRef(false);
@@ -166,7 +168,10 @@ export function useDownloadsFilters({
   /** @type {import('react').MutableRefObject<{ kind: string, viewIds?: (number|string)[], tagIds?: number[], trackers?: string[] }|null>} */
   const pendingSidebarFilterRef = useRef(null);
   const viewsRef = useRef(views);
-  viewsRef.current = views;
+
+  useEffect(() => {
+    viewsRef.current = views;
+  }, [views]);
 
   useEffect(() => {
     if (isBackendAvailable && apiKey && !viewsHasLoaded && !viewsLoading) {
@@ -288,9 +293,12 @@ export function useDownloadsFilters({
   );
 
   const applyViewFiltersRef = useRef(applyViewFilters);
-  applyViewFiltersRef.current = applyViewFilters;
   const applyMultiViewFiltersRef = useRef(applyMultiViewFilters);
-  applyMultiViewFiltersRef.current = applyMultiViewFilters;
+
+  useEffect(() => {
+    applyViewFiltersRef.current = applyViewFilters;
+    applyMultiViewFiltersRef.current = applyMultiViewFilters;
+  }, [applyViewFilters, applyMultiViewFilters]);
 
   // Sync store from URL when ?view= / ?views= changes (e.g. shared link). Sidebar clicks set
   // pendingSidebarFilterRef until replaceState catches up — do not re-apply a stale selection.

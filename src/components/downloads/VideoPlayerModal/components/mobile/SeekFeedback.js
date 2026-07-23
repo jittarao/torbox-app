@@ -2,12 +2,12 @@
 
 import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useLatestRef } from '@/hooks/useLatestRef';
 
 function SeekFeedback({ side, seconds, onDone }) {
   const t = useTranslations('VideoPlayer');
   const [visible, setVisible] = useState(true);
-  const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  const onDoneRef = useLatestRef(onDone);
 
   useEffect(() => {
     const timer = setTimeout(() => {
