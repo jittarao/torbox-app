@@ -3,6 +3,241 @@
 import { useEffect, useRef } from 'react';
 
 /**
+ * @param {HTMLVideoElement} video
+ * @param {Object} callbacks
+ * @param {import('react').RefObject<boolean>} isSeekingRef
+ */
+function subscribeVideoDomEvents(
+  video,
+  { onTimeUpdate, onDurationChange, onPlayStateChange, onLoadingChange },
+  isSeekingRef
+) {
+  const handleTimeUpdate = () => {
+    if (video && !isSeekingRef.current) {
+      onTimeUpdate?.(video.currentTime);
+    }
+    if (video && video.duration > 0) {
+      onDurationChange?.(video.duration);
+    }
+  };
+
+  const handlePlay = () => onPlayStateChange?.(true);
+  const handlePause = () => onPlayStateChange?.(false);
+
+  const handleLoadedMetadata = () => {
+    if (video && video.duration > 0) {
+      onDurationChange?.(video.duration);
+      onTimeUpdate?.(video.currentTime || 0);
+    }
+    onLoadingChange?.(false);
+  };
+
+  const handleCanPlay = () => {
+    if (video && video.duration > 0) {
+      onDurationChange?.(video.duration);
+      onTimeUpdate?.(video.currentTime || 0);
+    }
+    onLoadingChange?.(false);
+  };
+
+  const handleVolumeChange = () => {};
+
+  video.addEventListener('timeupdate', handleTimeUpdate);
+  video.addEventListener('play', handlePlay);
+  video.addEventListener('pause', handlePause);
+  video.addEventListener('loadedmetadata', handleLoadedMetadata);
+  video.addEventListener('canplay', handleCanPlay);
+  video.addEventListener('volumechange', handleVolumeChange);
+
+  return () => {
+    video.removeEventListener('timeupdate', handleTimeUpdate);
+    video.removeEventListener('play', handlePlay);
+    video.removeEventListener('pause', handlePause);
+    video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    video.removeEventListener('canplay', handleCanPlay);
+    video.removeEventListener('volumechange', handleVolumeChange);
+  };
+}
+
+/**
+ * @param {Object} options
+ * @param {HTMLVideoElement} options.video
+ * @param {string} options.streamUrl
+ * @param {number|null} options.initialSeekTime
+ * @param {boolean} options.shouldAutoPlay
+ * @param {import('react').RefObject<import('shaka-player').Player | null>} options.playerRef
+ * @param {import('react').RefObject<boolean>} options.isCancelledRef
+ * @param {Object} options.callbacks
+ */
+function subscribeShakaVideoPlayer({
+  video,
+  streamUrl,
+  initialSeekTime,
+  shouldAutoPlay,
+  playerRef,
+  isCancelledRef,
+  callbacks: { onTimeUpdate, onDurationChange, onError, onLoadingChange },
+}) {
+  isCancelledRef.current = false;
+
+  const timeouts = [];
+  const safeTimeout = (fn, ms) => {
+    const id = setTimeout(fn, ms);
+    timeouts.push(id);
+    return id;
+  };
+
+  let shakaPlayer = null;
+  let seekMetadataListener = null;
+
+  const initPlayer = async () => {
+    try {
+      onLoadingChange?.(true);
+      onError?.(null);
+
+      if (isCancelledRef.current) return;
+
+      const shaka = await import('shaka-player');
+
+      if (isCancelledRef.current) return;
+
+      shaka.polyfill.installAll();
+
+      if (!shaka.Player.isBrowserSupported()) {
+        onError?.('Video player is not supported in this browser');
+        onLoadingChange?.(false);
+        return;
+      }
+
+      const player = new shaka.Player(video);
+      playerRef.current = player;
+      shakaPlayer = player;
+
+      video.controls = false;
+
+      player.configure({
+        streaming: {
+          bufferingGoal: 30,
+          rebufferingGoal: 2,
+          bufferBehind: 30,
+          retryParameters: {
+            timeout: 30000,
+            maxAttempts: 3,
+            baseDelay: 1000,
+            backoffFactor: 2,
+            fuzzFactor: 0.5,
+          },
+        },
+        abr: {
+          enabled: true,
+          useNetworkInformation: true,
+        },
+        manifest: {
+          retryParameters: {
+            timeout: 30000,
+            maxAttempts: 3,
+            baseDelay: 1000,
+            backoffFactor: 2,
+            fuzzFactor: 0.5,
+          },
+        },
+      });
+
+      player.addEventListener('loading', () => {
+        if (isCancelledRef.current) return;
+        onLoadingChange?.(true);
+        onError?.(null);
+      });
+
+      player.addEventListener('loaded', () => {
+        if (isCancelledRef.current) return;
+        onLoadingChange?.(false);
+        onError?.(null);
+
+        if (video && video.duration > 0) {
+          onDurationChange?.(video.duration);
+          onTimeUpdate?.(video.currentTime || 0);
+        }
+
+        if (initialSeekTime !== null && initialSeekTime > 0 && video) {
+          const seekToTime = () => {
+            if (isCancelledRef.current) return;
+            if (video && video.readyState >= 2 && video.duration > 0) {
+              const seekTime = Math.min(initialSeekTime, video.duration);
+              video.currentTime = seekTime;
+              onTimeUpdate?.(seekTime);
+
+              if (shouldAutoPlay) {
+                safeTimeout(() => {
+                  if (isCancelledRef.current) return;
+                  if (video && video.paused) {
+                    video.play().catch(() => {});
+                  }
+                }, 300);
+              }
+            } else if (video) {
+              safeTimeout(seekToTime, 200);
+            }
+          };
+
+          seekMetadataListener = seekToTime;
+          video.addEventListener('loadedmetadata', seekMetadataListener, { once: true });
+          safeTimeout(seekToTime, 500);
+        } else if (shouldAutoPlay) {
+          safeTimeout(() => {
+            if (isCancelledRef.current) return;
+            if (video && video.paused) {
+              video.play().catch(() => {});
+            }
+          }, 500);
+        }
+      });
+
+      player.addEventListener('error', (event) => {
+        if (isCancelledRef.current) return;
+        onLoadingChange?.(false);
+        const error = event.detail;
+        const errorMessage = error?.message || 'Failed to load stream';
+        onError?.(errorMessage);
+        console.error('Shaka Player error:', error);
+      });
+
+      if (isCancelledRef.current) return;
+
+      await player.load(streamUrl);
+    } catch (error) {
+      if (isCancelledRef.current) return;
+      onLoadingChange?.(false);
+      const errorMessage = error?.message || error?.toString() || 'Failed to load stream';
+      onError?.(errorMessage);
+      console.error('Error initializing player:', error);
+    }
+  };
+
+  void initPlayer();
+
+  return () => {
+    isCancelledRef.current = true;
+    timeouts.forEach(clearTimeout);
+    timeouts.length = 0;
+
+    if (seekMetadataListener) {
+      video.removeEventListener('loadedmetadata', seekMetadataListener);
+      seekMetadataListener = null;
+    }
+
+    if (shakaPlayer) {
+      shakaPlayer.destroy();
+      shakaPlayer = null;
+    }
+    if (playerRef.current) {
+      playerRef.current.destroy();
+      playerRef.current = null;
+    }
+  };
+}
+
+/**
  * VideoPlayer - Shaka Player wrapper component
  * @param {Object} props
  * @param {string} props.streamUrl - HLS stream URL
@@ -37,216 +272,28 @@ export default function VideoPlayer({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (video && streamUrl) {
-      const handleTimeUpdate = () => {
-        if (video && !isSeekingRef.current) {
-          onTimeUpdate?.(video.currentTime);
-        }
-        if (video && video.duration > 0) {
-          onDurationChange?.(video.duration);
-        }
-      };
+    if (!video || !streamUrl) return;
 
-      const handlePlay = () => onPlayStateChange?.(true);
-      const handlePause = () => onPlayStateChange?.(false);
-
-      const handleLoadedMetadata = () => {
-        if (video && video.duration > 0) {
-          onDurationChange?.(video.duration);
-          onTimeUpdate?.(video.currentTime || 0);
-        }
-        onLoadingChange?.(false);
-      };
-
-      const handleCanPlay = () => {
-        if (video && video.duration > 0) {
-          onDurationChange?.(video.duration);
-          onTimeUpdate?.(video.currentTime || 0);
-        }
-        onLoadingChange?.(false);
-      };
-
-      const handleVolumeChange = () => {};
-
-      video.addEventListener('timeupdate', handleTimeUpdate);
-      video.addEventListener('play', handlePlay);
-      video.addEventListener('pause', handlePause);
-      video.addEventListener('loadedmetadata', handleLoadedMetadata);
-      video.addEventListener('canplay', handleCanPlay);
-      video.addEventListener('volumechange', handleVolumeChange);
-
-      return () => {
-        video.removeEventListener('timeupdate', handleTimeUpdate);
-        video.removeEventListener('play', handlePlay);
-        video.removeEventListener('pause', handlePause);
-        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        video.removeEventListener('canplay', handleCanPlay);
-        video.removeEventListener('volumechange', handleVolumeChange);
-      };
-    }
+    return subscribeVideoDomEvents(
+      video,
+      { onTimeUpdate, onDurationChange, onPlayStateChange, onLoadingChange },
+      isSeekingRef
+    );
   }, [streamUrl, onTimeUpdate, onDurationChange, onPlayStateChange, onLoadingChange]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (video && streamUrl) {
-      isCancelledRef.current = false;
+    if (!video || !streamUrl) return;
 
-      const timeouts = [];
-      const safeTimeout = (fn, ms) => {
-        const id = setTimeout(fn, ms);
-        timeouts.push(id);
-        return id;
-      };
-
-      let shakaPlayer = null;
-      let seekMetadataListener = null;
-
-      const initPlayer = async () => {
-        try {
-          onLoadingChange?.(true);
-          onError?.(null);
-
-          if (isCancelledRef.current) return;
-
-          const shaka = await import('shaka-player');
-
-          if (isCancelledRef.current) return;
-
-          shaka.polyfill.installAll();
-
-          if (!shaka.Player.isBrowserSupported()) {
-            onError?.('Video player is not supported in this browser');
-            onLoadingChange?.(false);
-            return;
-          }
-
-          const player = new shaka.Player(video);
-          playerRef.current = player;
-          shakaPlayer = player;
-
-          video.controls = false;
-
-          player.configure({
-            streaming: {
-              bufferingGoal: 30,
-              rebufferingGoal: 2,
-              bufferBehind: 30,
-              retryParameters: {
-                timeout: 30000,
-                maxAttempts: 3,
-                baseDelay: 1000,
-                backoffFactor: 2,
-                fuzzFactor: 0.5,
-              },
-            },
-            abr: {
-              enabled: true,
-              useNetworkInformation: true,
-            },
-            manifest: {
-              retryParameters: {
-                timeout: 30000,
-                maxAttempts: 3,
-                baseDelay: 1000,
-                backoffFactor: 2,
-                fuzzFactor: 0.5,
-              },
-            },
-          });
-
-          player.addEventListener('loading', () => {
-            if (isCancelledRef.current) return;
-            onLoadingChange?.(true);
-            onError?.(null);
-          });
-
-          player.addEventListener('loaded', () => {
-            if (isCancelledRef.current) return;
-            onLoadingChange?.(false);
-            onError?.(null);
-
-            if (video && video.duration > 0) {
-              onDurationChange?.(video.duration);
-              onTimeUpdate?.(video.currentTime || 0);
-            }
-
-            if (initialSeekTime !== null && initialSeekTime > 0 && video) {
-              const seekToTime = () => {
-                if (isCancelledRef.current) return;
-                if (video && video.readyState >= 2 && video.duration > 0) {
-                  const seekTime = Math.min(initialSeekTime, video.duration);
-                  video.currentTime = seekTime;
-                  onTimeUpdate?.(seekTime);
-
-                  if (shouldAutoPlay) {
-                    safeTimeout(() => {
-                      if (isCancelledRef.current) return;
-                      if (video && video.paused) {
-                        video.play().catch(() => {});
-                      }
-                    }, 300);
-                  }
-                } else if (video) {
-                  safeTimeout(seekToTime, 200);
-                }
-              };
-
-              seekMetadataListener = seekToTime;
-              video.addEventListener('loadedmetadata', seekMetadataListener, { once: true });
-              safeTimeout(seekToTime, 500);
-            } else if (shouldAutoPlay) {
-              safeTimeout(() => {
-                if (isCancelledRef.current) return;
-                if (video && video.paused) {
-                  video.play().catch(() => {});
-                }
-              }, 500);
-            }
-          });
-
-          player.addEventListener('error', (event) => {
-            if (isCancelledRef.current) return;
-            onLoadingChange?.(false);
-            const error = event.detail;
-            const errorMessage = error?.message || 'Failed to load stream';
-            onError?.(errorMessage);
-            console.error('Shaka Player error:', error);
-          });
-
-          if (isCancelledRef.current) return;
-
-          await player.load(streamUrl);
-        } catch (error) {
-          if (isCancelledRef.current) return;
-          onLoadingChange?.(false);
-          const errorMessage = error?.message || error?.toString() || 'Failed to load stream';
-          onError?.(errorMessage);
-          console.error('Error initializing player:', error);
-        }
-      };
-
-      initPlayer();
-
-      return () => {
-        isCancelledRef.current = true;
-        timeouts.forEach(clearTimeout);
-        timeouts.length = 0;
-
-        if (seekMetadataListener) {
-          video.removeEventListener('loadedmetadata', seekMetadataListener);
-          seekMetadataListener = null;
-        }
-
-        if (shakaPlayer) {
-          shakaPlayer.destroy();
-          shakaPlayer = null;
-        }
-        if (playerRef.current) {
-          playerRef.current.destroy();
-          playerRef.current = null;
-        }
-      };
-    }
+    return subscribeShakaVideoPlayer({
+      video,
+      streamUrl,
+      initialSeekTime,
+      shouldAutoPlay,
+      playerRef,
+      isCancelledRef,
+      callbacks: { onTimeUpdate, onDurationChange, onError, onLoadingChange },
+    });
   }, [
     streamUrl,
     initialSeekTime,
