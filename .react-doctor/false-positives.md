@@ -20,7 +20,7 @@
 
 ## `react-doctor/unused-dev-dependency`
 
-`react-doctor` is listed as a devDependency and used in CI (`.github/workflows/react-doctor.yml`) via `npx react-doctor`. Not importable as a module — only used via CLI.
+`react-doctor` is listed as a devDependency and used locally via `bun run doctor` (and in CI via `.github/workflows/react-doctor.yml`). Not importable as a module — only used via CLI.
 
 - `package.json` — `react-doctor` devDependency
 
