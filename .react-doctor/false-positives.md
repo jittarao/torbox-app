@@ -21,6 +21,20 @@ Static, non-user-controlled inline scripts required before React hydrates. No XS
 
 - `package.json` — `react-doctor` devDependency
 
+## Native `<dialog>` / `showModal` inside `ModalOverlay`
+
+Do **not** convert `ModalSheet` (or other `ModalOverlay` panels) to native `<dialog showModal()>`.
+`showModal()` promotes the panel to the browser top layer and escapes the shared stacking
+context that `ModalOverlay` uses for backdrop + panel. Chromium often still paints; WKWebView
+(Tauri macOS) does not — modals appear empty or show only solid button chrome.
+
+Keep `div[role="dialog"][aria-modal="true"]` inside `ModalOverlay`. Standalone native dialogs
+(e.g. `DesktopConfirmDialog`, `ui-confirm-dialog`) without `ModalOverlay` remain fine.
+
+- `src/components/shared/ModalSheet.js`
+- `src/components/downloads/MoreOptionsMenuPanel.js`
+- `src/components/navigation/MobileMoreSheet.js`
+
 ## `react-doctor/async-await-in-loop`
 
 Sequential `await` is required: each iteration depends on the prior result (backoff retries, keyset cursors, ordered migrations, early-return search).
