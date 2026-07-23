@@ -121,7 +121,7 @@ export function useSpeedData(itemsOrGetter, timeRange = '10m') {
         clearInterval(intervalRef.current);
       }
     };
-  }, []);
+  }, [getItemsRef]);
 
   // Filter data based on time range for display
   const now = Date.now();

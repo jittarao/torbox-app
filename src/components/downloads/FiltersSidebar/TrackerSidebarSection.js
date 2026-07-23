@@ -6,10 +6,13 @@ import SidebarListItem from './SidebarListItem';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
 
+const EMPTY_ENTRIES = [];
+const EMPTY_ACTIVE_TRACKERS = [];
+
 export default function TrackerSidebarSection({
-  entries = [],
+  entries = EMPTY_ENTRIES,
   searchQuery = '',
-  activeTrackers = [],
+  activeTrackers = EMPTY_ACTIVE_TRACKERS,
   onApplyTracker,
   onApplyTrackerRange,
   onClearTrackers,
