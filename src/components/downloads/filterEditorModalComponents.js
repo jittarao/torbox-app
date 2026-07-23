@@ -1,4 +1,4 @@
-export function SaveOptionToggle({ checked, disabled, onChange, label, hint }) {
+function SaveOptionToggle({ checked, disabled, onChange, label, hint }) {
   return (
     <label
       className={`flex min-w-0 flex-1 basis-[calc(50%-0.25rem)] cursor-pointer flex-col gap-0.5 rounded-xl border px-3 py-2 transition-colors sm:min-w-[7.5rem] sm:basis-auto ${

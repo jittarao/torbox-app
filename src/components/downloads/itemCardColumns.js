@@ -115,7 +115,7 @@ export function getItemCardColumnIcon(column) {
   }
 }
 
-export function ItemCardDownloadProgress({ item, commonT }) {
+function ItemCardDownloadProgress({ item, commonT }) {
   if (!item.active || item.download_finished) {
     return null;
   }

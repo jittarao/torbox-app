@@ -25,6 +25,7 @@ export function useControlsVisibility({
   isTouchPlayer = false,
 }) {
   const [showControls, setShowControls] = useState(true);
+  const [wasOpen, setWasOpen] = useState(false);
   const hideTimeoutRef = useRef(null);
   const isHoveringControlsRef = useRef(false);
   const lastPointerMoveRef = useRef(0);
@@ -37,6 +38,15 @@ export function useControlsVisibility({
     showPlaybackSpeedMenu ||
     showSettingsSheet ||
     showInfoSheet;
+
+  if (isOpen && !wasOpen) {
+    setWasOpen(true);
+    setShowControls(true);
+  } else if (!isOpen && wasOpen) {
+    setWasOpen(false);
+  }
+
+  const controlsVisible = showControls || hasOpenMenu || !isPlaying || isSeeking;
 
   useEffect(() => {
     stateRef.current = { isPlaying, hasOpenMenu, isSeeking };
@@ -131,7 +141,6 @@ export function useControlsVisibility({
 
     if (hasOpenMenu) {
       clearHideTimeout();
-      setShowControls(true);
       return;
     }
 
@@ -158,7 +167,6 @@ export function useControlsVisibility({
 
     if (!isPlaying || isSeeking) {
       clearHideTimeout();
-      setShowControls(true);
       return;
     }
 
@@ -249,5 +257,11 @@ export function useControlsVisibility({
     isTouchPlayer,
   ]);
 
-  return { showControls, setShowControls, revealControls, hideControlsNow, toggleControls };
+  return {
+    showControls: controlsVisible,
+    setShowControls,
+    revealControls,
+    hideControlsNow,
+    toggleControls,
+  };
 }
