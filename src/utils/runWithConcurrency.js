@@ -13,12 +13,12 @@ export async function runWithConcurrency(items, concurrency, fn) {
   const limit = Math.max(1, Math.min(concurrency, items.length));
   let nextIndex = 0;
 
-  const workers = Array.from({ length: limit }, async () => {
-    while (nextIndex < items.length) {
-      const index = nextIndex++;
-      await fn(items[index], index);
-    }
-  });
+  async function worker() {
+    const index = nextIndex++;
+    if (index >= items.length) return;
+    await fn(items[index], index);
+    await worker();
+  }
 
-  await Promise.all(workers);
+  await Promise.all(Array.from({ length: limit }, () => worker()));
 }

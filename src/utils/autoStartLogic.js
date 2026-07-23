@@ -81,13 +81,17 @@ export function computeAutoStartPlan(items, limit, processedMap, now, processedT
     return { slotsAvailable: 0, activeCount, queuedCount, toStart: [] };
   }
 
-  const toStart = items
-    .filter(isQueuedItem)
-    .filter(
-      (item) => item.id != null && !isRecentlyProcessed(processedMap, item.id, now, processedTtlMs)
-    )
-    .slice(0, slotsAvailable)
-    .map((item) => item.id);
+  const toStart = [];
+  for (const item of items) {
+    if (toStart.length >= slotsAvailable) break;
+    if (
+      isQueuedItem(item) &&
+      item.id != null &&
+      !isRecentlyProcessed(processedMap, item.id, now, processedTtlMs)
+    ) {
+      toStart.push(item.id);
+    }
+  }
 
   return { slotsAvailable, activeCount, queuedCount, toStart };
 }
