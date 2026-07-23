@@ -49,8 +49,8 @@ function flattenNavSections(sections) {
 export function buildNavItems(ctx = {}) {
   return {
     sections: [
-      { items: filterVisible(MAIN_NAV_ITEMS, ctx) },
-      { items: filterVisible(ACCOUNT_NAV_ITEMS, ctx) },
+      { id: 'main', items: filterVisible(MAIN_NAV_ITEMS, ctx) },
+      { id: 'account', items: filterVisible(ACCOUNT_NAV_ITEMS, ctx) },
     ],
   };
 }

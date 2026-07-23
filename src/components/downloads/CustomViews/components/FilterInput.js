@@ -236,8 +236,8 @@ export default function FilterInput({
           onChange={(e) => handleFieldChange('operator', e.target.value)}
           className="w-full sm:min-w-[100px] sm:w-auto"
         >
-          {operatorOptions.map((opt, idx) => (
-            <option key={`op-${idx}-${opt.value}`} value={opt.value}>
+          {operatorOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
           ))}

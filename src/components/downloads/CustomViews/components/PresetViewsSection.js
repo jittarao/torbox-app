@@ -37,14 +37,10 @@ export default function PresetViewsSection({ onApplyPreset, onSavePreset, isSavi
 
       {expanded && (
         <div className="border-t border-border/40 px-2 pb-2 pt-1.5 dark:border-border-dark/40">
-          <div
-            className="grid max-h-40 grid-cols-2 gap-1 overflow-y-auto overscroll-contain sm:max-h-44 sm:grid-cols-3"
-            role="list"
-          >
+          <ul className="m-0 grid max-h-40 list-none grid-cols-2 gap-1 overflow-y-auto overscroll-contain p-0 sm:max-h-44 sm:grid-cols-3">
             {presets.map((preset) => (
-              <div
+              <li
                 key={preset.id}
-                role="listitem"
                 title={preset.description}
                 className="flex min-w-0 items-stretch overflow-hidden rounded-lg border border-border/60 bg-surface-alt/60 dark:border-border-dark/60 dark:bg-surface-alt-dark/50"
               >
@@ -70,9 +66,9 @@ export default function PresetViewsSection({ onApplyPreset, onSavePreset, isSavi
                 >
                   {t('presets.save')}
                 </button>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
     </div>

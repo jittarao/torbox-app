@@ -22,6 +22,11 @@ export const EMPTY_FILTERS = {
 
 const EMPTY_FILTERS_JSON = JSON.stringify(EMPTY_FILTERS);
 
+/** Deep-clone filter state so editor mutations do not affect shared references. */
+export function cloneFilters(filters) {
+  return structuredClone(filters);
+}
+
 export const FILTER_SCHEMA_VERSION = 2;
 
 /** Legacy custom views stored file size in MB; values at or above this are converted to GB. */
@@ -147,7 +152,7 @@ export function normalizeFilterStructure(raw) {
   }
 
   if (filters.groups && Array.isArray(filters.groups)) {
-    return JSON.parse(JSON.stringify(filters));
+    return cloneFilters(filters);
   }
 
   if (Array.isArray(filters)) {
@@ -162,7 +167,7 @@ export function normalizeFilterStructure(raw) {
     };
   }
 
-  return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+  return cloneFilters(EMPTY_FILTERS);
 }
 
 /**
@@ -562,7 +567,7 @@ function countDownloadsPerView(views, enrichedDownloads, activeAssetType = 'all'
  * Load view filters into editor state shape.
  */
 export function filtersFromView(view) {
-  if (!view?.filters) return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+  if (!view?.filters) return cloneFilters(EMPTY_FILTERS);
   return normalizeFilters(view.filters);
 }
 

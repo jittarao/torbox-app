@@ -89,7 +89,7 @@ function PlayerSettingsSheet({
               <SectionTitle>{t('audioTracks')}</SectionTitle>
               {audios.map((track, idx) => (
                 <SheetRow
-                  key={`${track.language || ''}-${idx}`}
+                  key={track.index ?? track.id ?? `${track.language}-${track.language_full}`}
                   label={track.language_full || track.language || `Track ${idx + 1}`}
                   description={track.default ? t('defaultTrack') : undefined}
                   selected={selectedAudioIndex === idx}
@@ -115,7 +115,7 @@ function PlayerSettingsSheet({
               />
               {subtitles.map((track, idx) => (
                 <SheetRow
-                  key={`${track.language || ''}-${idx}`}
+                  key={track.index ?? track.id ?? `${track.language}-${track.language_full}`}
                   label={track.language_full || track.language || `Track ${idx + 1}`}
                   selected={selectedSubtitleIndex === idx}
                   onClick={() => {
