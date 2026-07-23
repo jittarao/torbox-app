@@ -107,6 +107,7 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
   };
 
   const handleKeyDown = (e) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter') {
       handleSearch();
     } else if (e.key === 'Escape') {

@@ -22,6 +22,8 @@ import useStoredAssetType from '@/hooks/useStoredAssetType';
 import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
 import { useBulkExport } from '@/components/downloads/hooks/useBulkExport';
 import { useDownloadsSearchExpand } from '@/components/downloads/hooks/useDownloadsSearchExpand';
+import { shouldAutoExpandItemForSearch } from '@/components/downloads/utils/downloadSearch';
+import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { hasDownloadAccess } from '@/utils/userProfile';
 import { buildSelectionIdMap } from '@/utils/downloadSelectionId';
 import { formatSize } from '@/components/downloads/utils/formatters';
@@ -47,11 +49,10 @@ export function useDownloadsPageState(apiKey) {
   const downloadPanelT = useTranslations('DownloadPanel');
   const pollingPaused = usePollingPauseStore(selectIsPaused);
   const permissions = useSessionStore((state) => state.permissions);
-  const { expandIds, collapseAllExpanded, toggleExpanded, setExpanded } = useDownloadsUiStore(
+  const { expandIds, collapseAllExpanded, setExpanded } = useDownloadsUiStore(
     useShallow((s) => ({
       expandIds: s.expandIds,
       collapseAllExpanded: s.collapseAll,
-      toggleExpanded: s.toggleExpanded,
       setExpanded: s.setExpanded,
     }))
   );
@@ -244,23 +245,24 @@ export function useDownloadsPageState(apiKey) {
     setToast
   );
 
-  const { searchExpandedItemIdsRef, collapseAllFiles, notifySearchToggleFiles } =
-    useDownloadsSearchExpand({
-      search: filterData.debouncedSearch,
-      sortedItems,
-      selectedItems,
-      setExpanded,
-      collapseAllExpanded,
-    });
+  const {
+    searchUserCollapsedIds,
+    resetSearchCollapsePrefs,
+    collapseAllFiles,
+    notifySearchToggleFiles,
+  } = useDownloadsSearchExpand({
+    search: filterData.debouncedSearch,
+    collapseAllExpanded,
+  });
 
   const expandAllFiles = useCallback(() => {
-    searchExpandedItemIdsRef.current = new Set();
+    resetSearchCollapsePrefs();
     const itemIds = viewItems.reduce((ids, item) => {
       if (getItemFileCount(item) > 0) ids.push(item.id);
       return ids;
     }, []);
     expandIds(itemIds);
-  }, [viewItems, expandIds, searchExpandedItemIdsRef]);
+  }, [viewItems, expandIds, resetSearchCollapsePrefs]);
 
   const { isExporting, handleBulkExport } = useBulkExport(
     apiKey,
@@ -283,10 +285,25 @@ export function useDownloadsPageState(apiKey) {
   const toggleFiles = useCallback(
     (itemId) => {
       const expandedById = useDownloadsUiStore.getState().expandedById;
-      notifySearchToggleFiles(itemId, Boolean(expandedById[itemId]));
-      toggleExpanded(itemId);
+      const item = viewItems.find((entry) => entry.id === itemId);
+      const query = filterData.debouncedSearch?.trim() ?? '';
+      let effectivelyExpanded = Boolean(expandedById[itemId]);
+
+      if (!effectivelyExpanded && query && item && !searchUserCollapsedIds.has(itemId)) {
+        const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
+        effectivelyExpanded = shouldAutoExpandItemForSearch(item, query, filesByEntityKey);
+      }
+
+      notifySearchToggleFiles(itemId, effectivelyExpanded);
+      setExpanded(itemId, !effectivelyExpanded);
     },
-    [toggleExpanded, notifySearchToggleFiles]
+    [
+      viewItems,
+      filterData.debouncedSearch,
+      searchUserCollapsedIds,
+      notifySearchToggleFiles,
+      setExpanded,
+    ]
   );
 
   useEffect(() => {
@@ -351,6 +368,7 @@ export function useDownloadsPageState(apiKey) {
   } = useDownloadsProviderValues({
     apiKey,
     filterData,
+    searchUserCollapsedIds,
     tags,
     tagsLoading,
     sidebarCountsLoading,

@@ -72,20 +72,29 @@ export function useDownloadsFilters({
 
   const [searchInput, setSearchInput] = useState(urlSearch);
   const debouncedSearch = useDebouncedValue(searchInput, 250);
+  const urlSearchDebounceRef = useRef(null);
 
   useEffect(() => {
     setSearchInput(urlSearch);
   }, [urlSearch]);
 
-  useEffect(() => {
-    if (debouncedSearch !== urlSearch) {
-      setUrlSearch(debouncedSearch);
-    }
-  }, [debouncedSearch, urlSearch, setUrlSearch]);
+  useEffect(
+    () => () => {
+      if (urlSearchDebounceRef.current) clearTimeout(urlSearchDebounceRef.current);
+    },
+    []
+  );
 
-  const setSearch = useCallback((value) => {
-    setSearchInput(value);
-  }, []);
+  const setSearch = useCallback(
+    (value) => {
+      setSearchInput(value);
+      if (urlSearchDebounceRef.current) clearTimeout(urlSearchDebounceRef.current);
+      urlSearchDebounceRef.current = setTimeout(() => {
+        setUrlSearch(value);
+      }, 250);
+    },
+    [setUrlSearch]
+  );
 
   const [columnFilters, setColumnFilters] = useState(() => cloneFilters(EMPTY_FILTERS));
   const [filterModalOpen, setFilterModalOpen] = useState(false);

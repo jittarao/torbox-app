@@ -8,6 +8,7 @@ import { useMemo } from 'react';
 export function useDownloadsProviderValues({
   apiKey,
   filterData,
+  searchUserCollapsedIds,
   tags,
   tagsLoading,
   sidebarCountsLoading,
@@ -182,6 +183,7 @@ export function useDownloadsProviderValues({
       handleColumnChange,
       search: filterData.search,
       debouncedSearch: filterData.debouncedSearch,
+      searchUserCollapsedIds,
       setSearch: filterData.setSearch,
       statusFilter: filterData.statusFilter,
       setStatusFilter: filterData.setStatusFilter,
@@ -201,6 +203,7 @@ export function useDownloadsProviderValues({
       handleColumnChange,
       filterData.search,
       filterData.debouncedSearch,
+      searchUserCollapsedIds,
       filterData.setSearch,
       filterData.statusFilter,
       filterData.setStatusFilter,
