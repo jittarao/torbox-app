@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 import { useSessionStore } from '@/store/sessionStore';
 import { useBackendMode } from '@/hooks/useBackendMode';
 
@@ -69,6 +69,10 @@ function subscribeActivityBeacon({ apiKey, lastPingAtRef }) {
   };
 }
 
+function getActivityBeaconServerSnapshot() {
+  return false;
+}
+
 /**
  * Periodically POST user activity to the backend when a session API key is present.
  * Aligns with server online window (2 min) while respecting client debounce (90s).
@@ -84,8 +88,12 @@ export function useActivityBeacon() {
     backendMode === 'backend' &&
     typeof document !== 'undefined';
 
-  useEffect(() => {
-    if (!isActive) return;
-    return subscribeActivityBeacon({ apiKey, lastPingAtRef });
-  }, [apiKey, isActive]);
+  useSyncExternalStore(
+    () => {
+      if (!isActive) return () => {};
+      return subscribeActivityBeacon({ apiKey, lastPingAtRef });
+    },
+    () => (isActive ? apiKey : null),
+    getActivityBeaconServerSnapshot
+  );
 }

@@ -27,6 +27,45 @@ export function cloneFilters(filters) {
   return structuredClone(filters);
 }
 
+/**
+ * Tracker/source sidebar filters only apply on torrents and webdl tabs.
+ * Returns a column-filter reset + URL patch when the active tab makes them invalid.
+ * @returns {{ empty: object, patch: object } | null}
+ */
+export function getIncompatibleAssetTypeFilterReset(activeType, urlAppliedFilters) {
+  const needsTrackerClear =
+    activeType !== 'all' && activeType !== 'torrents' && getActiveTrackers(urlAppliedFilters);
+  const needsSourceClear =
+    activeType !== 'all' && activeType !== 'webdl' && getActiveSources(urlAppliedFilters);
+
+  if (!needsTrackerClear && !needsSourceClear) return null;
+
+  const empty = cloneFilters(EMPTY_FILTERS);
+
+  if (needsTrackerClear) {
+    return {
+      empty,
+      patch: {
+        trackerUrls: null,
+        sourceHosts: null,
+        appliedFilters: empty,
+        viewIds: null,
+        tagIds: null,
+      },
+    };
+  }
+
+  return {
+    empty,
+    patch: {
+      sourceHosts: null,
+      appliedFilters: empty,
+      viewIds: null,
+      tagIds: null,
+    },
+  };
+}
+
 export const FILTER_SCHEMA_VERSION = 2;
 
 /** Legacy custom views stored file size in MB; values at or above this are converted to GB. */
