@@ -122,6 +122,7 @@ function ItemCard({
 
   return (
     <div
+      role="button"
       onMouseDown={(e) => {
         if (e.shiftKey) {
           e.preventDefault();

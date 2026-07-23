@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useEffectEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRssFeeds } from '@/components/shared/hooks/useRssFeeds';
 import { ExclamationTriangle, Plus, Refresh } from '@/components/icons';
@@ -60,15 +60,17 @@ export default function RssFeedManager({ apiKey, setToast }) {
     }
   }, [feeds, fetchItemCounts]);
 
+  const fetchItemCountsEvent = useEffectEvent(fetchItemCounts);
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (feeds.length > 0) {
-        fetchItemCounts();
+        fetchItemCountsEvent();
       }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [feeds, fetchItemCounts]);
+  }, [feeds]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

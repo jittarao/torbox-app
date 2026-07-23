@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -130,103 +130,31 @@ export default function ViewSidebarSection({
     })
   );
 
+  const onExitSortModeEvent = useEffectEvent(() => {
+    onExitSortMode?.();
+  });
+
   useEffect(() => {
     if (!sortMode) return undefined;
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        onExitSortMode?.();
+        onExitSortModeEvent();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sortMode, onExitSortMode]);
+  }, [sortMode]);
 
   const closeOverflowMenu = useCallback(() => setOverflowMenu(null), []);
 
-  const handleListMouseDown = useCallback((event) => {
-    if (event.shiftKey && event.target.closest('[data-sidebar-item]')) {
-      event.preventDefault();
-    }
-  }, []);
-
-  const handleDragEnd = useCallback(
-    async (event) => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
-
-      const oldIndex = sortableIds.indexOf(String(active.id));
-      const newIndex = sortableIds.indexOf(String(over.id));
-      if (oldIndex === -1 || newIndex === -1) return;
-
-      const nextIds = arrayMove(sortableIds, oldIndex, newIndex).map((id) => Number(id));
-      try {
-        await onReorderViews?.(nextIds);
-      } catch {
-        // Parent shows toast; keep sort mode open for retry.
-      }
-    },
-    [sortableIds, onReorderViews]
-  );
-
-  const handleListClick = useCallback(
-    (event) => {
+  const handleItemActivate = useCallback(
+    (index) => (event) => {
       if (sortMode) return;
 
-      const menuButton = event.target.closest('[data-sidebar-menu]');
-      if (menuButton) {
-        event.stopPropagation();
-        const row = menuButton.closest('[data-sidebar-item]');
-        if (!row) return;
-        const index = Number(row.dataset.index);
-        const view = filteredViews[index];
-        if (!view || String(view.id) !== row.dataset.id) return;
-        const viewId = String(view.id);
-        if (effectiveOverflowMenu?.viewId === viewId) {
-          closeOverflowMenu();
-          return;
-        }
-        const viewIsActive = activeViewIdSet.has(viewId);
-        setOverflowMenu({
-          viewId,
-          anchorRef: { current: menuButton },
-          items: [
-            {
-              id: 'apply',
-              label: viewIsActive ? t('menuClear') : t('menuApply'),
-              onClick: () => onApplyView?.(view),
-            },
-            {
-              id: 'edit',
-              label: t('menuEdit'),
-              onClick: () => onEditView?.(view),
-            },
-            {
-              id: 'rename',
-              label: t('menuRename'),
-              onClick: () => onRenameView?.(view),
-            },
-            {
-              id: 'delete',
-              label: t('menuDelete'),
-              destructive: true,
-              onClick: () => onDeleteView?.(view.id, view.name),
-            },
-          ],
-        });
-        return;
-      }
-
-      const activateButton = event.target.closest('[data-sidebar-activate]');
-      if (!activateButton || disabled) return;
-
-      const row = activateButton.closest('[data-sidebar-item]');
-      if (!row) return;
-
-      const index = Number(row.dataset.index);
       const view = filteredViews[index];
-      if (!view || String(view.id) !== row.dataset.id) return;
+      if (!view || disabled) return;
 
       const viewIsActive = activeViewIdSet.has(String(view.id));
 
@@ -248,14 +176,75 @@ export default function ViewSidebarSection({
       activeViewIdSet,
       onApplyView,
       onApplyViewRange,
+      lastIndexRef,
+    ]
+  );
+
+  const handleMenuToggle = useCallback(
+    (view) => (_isOpen, menuButtonRef) => {
+      const viewId = String(view.id);
+      if (effectiveOverflowMenu?.viewId === viewId) {
+        closeOverflowMenu();
+        return;
+      }
+      const viewIsActive = activeViewIdSet.has(viewId);
+      setOverflowMenu({
+        viewId,
+        anchorRef: menuButtonRef,
+        items: [
+          {
+            id: 'apply',
+            label: viewIsActive ? t('menuClear') : t('menuApply'),
+            onClick: () => onApplyView?.(view),
+          },
+          {
+            id: 'edit',
+            label: t('menuEdit'),
+            onClick: () => onEditView?.(view),
+          },
+          {
+            id: 'rename',
+            label: t('menuRename'),
+            onClick: () => onRenameView?.(view),
+          },
+          {
+            id: 'delete',
+            label: t('menuDelete'),
+            destructive: true,
+            onClick: () => onDeleteView?.(view.id, view.name),
+          },
+        ],
+      });
+    },
+    [
+      activeViewIdSet,
+      closeOverflowMenu,
+      effectiveOverflowMenu?.viewId,
+      onApplyView,
+      onDeleteView,
       onEditView,
       onRenameView,
-      onDeleteView,
-      lastIndexRef,
-      effectiveOverflowMenu,
-      closeOverflowMenu,
       t,
     ]
+  );
+
+  const handleDragEnd = useCallback(
+    async (event) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = sortableIds.indexOf(String(active.id));
+      const newIndex = sortableIds.indexOf(String(over.id));
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const nextIds = arrayMove(sortableIds, oldIndex, newIndex).map((id) => Number(id));
+      try {
+        await onReorderViews?.(nextIds);
+      } catch {
+        // Parent shows toast; keep sort mode open for retry.
+      }
+    },
+    [sortableIds, onReorderViews]
   );
 
   if (views.length === 0) {
@@ -267,7 +256,7 @@ export default function ViewSidebarSection({
   }
 
   const renderNormalList = () => (
-    <div onMouseDown={handleListMouseDown} onClick={handleListClick}>
+    <div>
       {filteredViews.map((view, index) => {
         const viewId = String(view.id);
         const viewIsActive = activeViewIdSet.has(viewId);
@@ -281,7 +270,9 @@ export default function ViewSidebarSection({
             isActive={viewIsActive}
             disabled={disabled}
             title={viewIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
+            onClick={handleItemActivate(index)}
             menu={{ open: effectiveOverflowMenu?.viewId === viewId, visible: true }}
+            onMenuToggle={handleMenuToggle(view)}
           />
         );
       })}
