@@ -1,10 +1,15 @@
 'use client';
 
-import { forwardRef, useCallback, useEffect, useRef } from 'react';
+import { forwardRef } from 'react';
 import ModalOverlay from '@/components/shared/ModalOverlay';
 
 /**
  * Bottom sheet on mobile, centered dialog on sm+.
+ *
+ * Intentionally a div[role=dialog] inside ModalOverlay — not a native <dialog>
+ * with showModal(). Native dialogs escape to the top layer and break the shared
+ * stacking context ModalOverlay relies on; WKWebView/Tauri then fails to paint
+ * sheet content (or only paints solid-colored buttons).
  */
 const ModalSheet = forwardRef(function ModalSheet(
   {
@@ -24,37 +29,6 @@ const ModalSheet = forwardRef(function ModalSheet(
   },
   ref
 ) {
-  const dialogRef = useRef(null);
-
-  const setDialogRef = useCallback(
-    (node) => {
-      dialogRef.current = node;
-      if (typeof ref === 'function') {
-        ref(node);
-      } else if (ref) {
-        ref.current = node;
-      }
-    },
-    [ref]
-  );
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog || !open) {
-      return undefined;
-    }
-
-    if (!dialog.open) {
-      dialog.showModal();
-    }
-
-    return () => {
-      if (dialog.open) {
-        dialog.close();
-      }
-    };
-  }, [open]);
-
   const panelClass = [
     'ui-modal-sheet',
     wide ? 'ui-modal-sheet--wide' : '',
@@ -73,22 +47,17 @@ const ModalSheet = forwardRef(function ModalSheet(
       lockScroll={lockScroll}
       closeOnEscape={closeOnEscape}
     >
-      <dialog
-        ref={setDialogRef}
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
         aria-label={ariaLabel}
         className={panelClass}
-        onCancel={(event) => {
-          // Prevent the native dialog from closing independently of React open state.
-          event.preventDefault();
-          if (closeOnEscape) {
-            onClose?.();
-          }
-        }}
       >
         {children}
-      </dialog>
+      </div>
     </ModalOverlay>
   );
 });

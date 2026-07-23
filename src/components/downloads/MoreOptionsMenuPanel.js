@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import ModalOverlay from '@/components/shared/ModalOverlay';
 
@@ -21,36 +21,17 @@ export default function MoreOptionsMenuPanel({
     () => false
   );
 
-  useEffect(() => {
-    const dialog = menuRef?.current;
-    if (!dialog || !isMenuOpen || !mobileBar) {
-      return undefined;
-    }
-
-    if (!dialog.open) {
-      dialog.showModal();
-    }
-
-    return () => {
-      if (dialog.open) {
-        dialog.close();
-      }
-    };
-  }, [isMenuOpen, mobileBar, menuRef]);
-
   if (!isMenuOpen || !isMounted) return null;
 
   if (mobileBar) {
     return (
       <ModalOverlay open={isMenuOpen} onClose={onClose} closeLabel={closeLabel}>
-        <dialog
+        <div
           ref={menuRef}
+          role="dialog"
+          aria-modal="true"
           aria-label={title}
           className="ui-bottom-sheet fixed bottom-0 left-0 right-0 z-[1] flex max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border-0 border-t border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark"
-          onCancel={(event) => {
-            event.preventDefault();
-            onClose?.();
-          }}
         >
           <div className="flex shrink-0 justify-center pt-2.5 pb-1">
             <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" aria-hidden />
@@ -85,7 +66,7 @@ export default function MoreOptionsMenuPanel({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] pt-1">
             {children}
           </div>
-        </dialog>
+        </div>
       </ModalOverlay>
     );
   }
