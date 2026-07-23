@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { POLLING_CONFIG } from './pollingConfig';
 
 /**
@@ -172,17 +172,19 @@ export function useAutomationEvents({ enabled, apiKey, onTagsChanged, onProtecti
 
   const isSubscribed = Boolean(enabled && apiKey && (onTagsChanged || onProtectionChanged));
 
+  const subscribe = useCallback(() => {
+    if (!isSubscribed) return () => {};
+    return subscribeAutomationEvents({
+      apiKey,
+      onTagsChangedRef,
+      onProtectionChangedRef,
+      tagsDebounceRef,
+      protectionDebounceRef,
+    });
+  }, [isSubscribed, apiKey]);
+
   useSyncExternalStore(
-    () => {
-      if (!isSubscribed) return () => {};
-      return subscribeAutomationEvents({
-        apiKey,
-        onTagsChangedRef,
-        onProtectionChangedRef,
-        tagsDebounceRef,
-        protectionDebounceRef,
-      });
-    },
+    subscribe,
     () => (isSubscribed ? apiKey : null),
     getAutomationEventsServerSnapshot
   );

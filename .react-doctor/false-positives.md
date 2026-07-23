@@ -52,6 +52,18 @@ MigrationRunner dynamically imports migration files by their path — the path p
 
 - `backend/src/database/MigrationRunner.js:200,276,357` — dynamic migration loading
 
+## `deslop/unused-file` / unused default Icons export
+
+`export default Icons` in `src/components/icons/index.js` is required by the barrel `src/components/icons.js` (`export { default } from './icons/index'`). Removing the default breaks Bun module evaluation (`export default cannot be used with export *` / missing default) for every consumer of `@/components/icons`.
+
+- `src/components/icons/index.js` — default Icons map for legacy/barrel re-export
+
+## `react-doctor/no-impure-state-updater`
+
+`pendingWidthsRef.current = updated` inside the `setColumnWidths` updater is intentional. Rapid column-resize `mousemove` events must chain via a functional updater; the ref must observe that same chained value immediately so debounced `localStorage` writes and `storageKey` cleanup never flush a one-commit-stale snapshot. Moving the ref write to an effect reintroduces that lag window.
+
+- `src/hooks/useColumnWidths.js` — sync `pendingWidthsRef` inside the functional width updater
+
 ## `react-doctor/effect-needs-cleanup`
 
 **Resolved:** Subscription/timer setup moved into module-level `subscribe*` helpers (same pattern as `backendRequest.js`) so react-doctor’s static analyzer can pair registrations with their teardown. Previously flagged as false positives when cleanup lived inside nested helpers within `useEffect`.

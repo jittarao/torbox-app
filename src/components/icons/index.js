@@ -181,6 +181,7 @@ const Icons = {
   Shield: ShieldIcon,
 };
 
+export default Icons;
 export { default as Link } from './Link';
 export { default as MagnifyingGlass } from './MagnifyingGlass';
 export { default as Files } from './Files';

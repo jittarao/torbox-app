@@ -2,7 +2,7 @@
 
 import { readJsonFromResponse } from '@/utils/fetchResponse';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import {
   getPlanFloorBytes,
   getUsageLevel,
@@ -90,7 +90,7 @@ export function useBandwidthUsage(apiKey, planId) {
   const canFetch = Boolean(apiKey && apiKey.length >= 20 && planId != null && limitBytes != null);
   const subscriptionKey = canFetch ? `${apiKey}:${planId}:${limitBytes}` : 'idle';
 
-  useSyncExternalStore(
+  const subscribe = useCallback(
     (onStoreChange) =>
       subscribeBandwidthUsage(apiKey, planId, limitBytes, (patch) => {
         setFetchState((prev) => {
@@ -102,9 +102,10 @@ export function useBandwidthUsage(apiKey, planId) {
           return next;
         });
       }),
-    () => subscriptionKey,
-    getBandwidthUsageServerSnapshot
+    [apiKey, planId, limitBytes]
   );
+
+  useSyncExternalStore(subscribe, () => subscriptionKey, getBandwidthUsageServerSnapshot);
 
   const percent = getUsagePercent(usedBytes, planId);
   const level = loading ? null : getUsageLevel(percent);

@@ -8,29 +8,23 @@ export default function MultiSelectTrigger({
   onToggle,
   onRemoveOption,
 }) {
+  const showChips = selectedOptions.length > 0 && selectedOptions.length <= 2;
+
   return (
-    <button
+    <div
       ref={selectRef}
-      type="button"
-      onClick={onToggle}
-      disabled={disabled}
+      tabIndex={-1}
       className={`
           flex items-center justify-between w-full px-3 py-1.5 text-sm
           text-primary-text dark:text-primary-text-dark
           border border-border dark:border-border-dark rounded-md
           bg-surface dark:bg-surface-dark
-          hover:border-accent/50 dark:hover:border-accent-dark/50
-          focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
-          transition-colors
-          disabled:opacity-50 disabled:cursor-not-allowed
-          touch-manipulation
+          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
           ${className}
         `}
-      aria-haspopup="listbox"
-      aria-expanded={isOpen}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        {selectedOptions.length > 0 && selectedOptions.length <= 2 ? (
+        {showChips ? (
           <div className="flex items-center gap-1 flex-wrap">
             {selectedOptions.map((opt) => (
               <span
@@ -38,30 +32,51 @@ export default function MultiSelectTrigger({
                 className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-accent/10 dark:bg-accent-dark/10 text-accent dark:text-accent-dark"
               >
                 {opt.label}
-                <span
+                <button
+                  type="button"
+                  disabled={disabled}
                   onClick={(e) => onRemoveOption(opt.value, e)}
                   onMouseDown={(e) => e.preventDefault()}
-                  className="hover:text-accent/80 dark:hover:text-accent-dark/80 cursor-pointer"
-                  aria-hidden="true"
+                  className="hover:text-accent/80 dark:hover:text-accent-dark/80 focus:outline-none focus:ring-1 focus:ring-accent dark:focus:ring-accent-dark rounded-sm cursor-pointer disabled:cursor-not-allowed"
+                  aria-label={`Remove ${opt.label}`}
                 >
                   ×
-                </span>
+                </button>
               </span>
             ))}
           </div>
         ) : (
-          <span className="truncate">{displayText}</span>
+          <button
+            type="button"
+            onClick={onToggle}
+            disabled={disabled}
+            className="truncate text-left flex-1 min-w-0 bg-transparent border-0 p-0 focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset rounded-sm disabled:cursor-not-allowed touch-manipulation"
+            aria-haspopup="listbox"
+            aria-expanded={isOpen}
+          >
+            {displayText}
+          </button>
         )}
       </div>
-      <svg
-        className={`size-4 ml-2 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={disabled}
+        className="ml-2 flex-shrink-0 rounded-sm focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset touch-manipulation disabled:cursor-not-allowed"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={showChips ? displayText : undefined}
       >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
+        <svg
+          className={`size-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+    </div>
   );
 }
