@@ -5,16 +5,9 @@ import DesktopVideoControls from './components/desktop/DesktopVideoControls';
 
 export default function VideoPlayerModalDesktopChrome({
   t,
-  controlsVisible,
-  isPlaying,
-  isSeeking,
-  isMuted,
-  isFullscreen,
-  showVolumeSlider,
-  showAudioMenu,
-  showSubtitleMenu,
-  showPlaybackSpeedMenu,
-  showInfo,
+  visibility,
+  playback,
+  menus,
   displayTime,
   duration,
   progress,
@@ -49,6 +42,8 @@ export default function VideoPlayerModalDesktopChrome({
   seekBarRef,
   controlsBarRef,
 }) {
+  const { controls: controlsVisible } = visibility;
+
   return (
     <>
       <button
@@ -72,19 +67,9 @@ export default function VideoPlayerModalDesktopChrome({
         <X className="size-5 transition-transform duration-300 group-hover:rotate-90" />
       </button>
       <DesktopVideoControls
-        visibility={{ controls: controlsVisible }}
-        playback={{
-          playing: isPlaying,
-          seeking: isSeeking,
-          muted: isMuted,
-          fullscreen: isFullscreen,
-        }}
-        menus={{
-          volumeSlider: showVolumeSlider,
-          audio: showAudioMenu,
-          subtitle: showSubtitleMenu,
-          playbackSpeed: showPlaybackSpeedMenu,
-        }}
+        visibility={visibility}
+        playback={playback}
+        menus={menus}
         currentTime={displayTime}
         duration={duration}
         progress={progress}
@@ -105,15 +90,15 @@ export default function VideoPlayerModalDesktopChrome({
         onVolumeSliderHide={() => setShowVolumeSlider(false)}
         onAudioSelect={handleAudioTrackSelect}
         onSubtitleSelect={handleSubtitleTrackSelect}
-        onAudioMenuToggle={(open) => setShowAudioMenu(open !== undefined ? open : !showAudioMenu)}
+        onAudioMenuToggle={(open) => setShowAudioMenu(open !== undefined ? open : !menus.audio)}
         onSubtitleMenuToggle={(open) =>
-          setShowSubtitleMenu(open !== undefined ? open : !showSubtitleMenu)
+          setShowSubtitleMenu(open !== undefined ? open : !menus.subtitle)
         }
         onPlaybackSpeedChange={handlePlaybackSpeedChange}
         onPlaybackSpeedMenuToggle={(open) =>
-          setShowPlaybackSpeedMenu(open !== undefined ? open : !showPlaybackSpeedMenu)
+          setShowPlaybackSpeedMenu(open !== undefined ? open : !menus.playbackSpeed)
         }
-        onInfoToggle={() => setShowInfo(!showInfo)}
+        onInfoToggle={() => setShowInfo(!menus.info)}
         onFullscreen={toggleFullscreen}
         audioMenuRef={audioMenuRef}
         subtitleMenuRef={subtitleMenuRef}

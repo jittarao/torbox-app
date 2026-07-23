@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useLatestRef } from '@/hooks/useLatestRef';
 import {
   DndContext,
   closestCenter,
@@ -107,10 +108,8 @@ export default function UploadManager({ apiKey }) {
     [resetPaginationPage, clearUploadSelection]
   );
 
-  const paginationRef = useRef(pagination);
-  paginationRef.current = pagination;
-  const filtersRef = useRef(filters);
-  filtersRef.current = filters;
+  const paginationRef = useLatestRef(pagination);
+  const filtersRef = useLatestRef(filters);
 
   const handlePaginationChange = useCallback(
     (updater) => {

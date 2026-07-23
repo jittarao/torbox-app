@@ -15,7 +15,7 @@ import {
   useIsDownloadSelected,
   useItemHasSelectedFiles,
 } from '@/components/shared/hooks/useSelection';
-import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useIsDownloadRowExpanded } from '@/components/downloads/hooks/useDownloadRowExpansion';
 import ItemRowCell from './ItemRowCell';
 
 function ItemRow({
@@ -39,7 +39,7 @@ function ItemRow({
   commonT,
 }) {
   const isMobile = useIsMobile();
-  const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
+  const isExpanded = useIsDownloadRowExpanded(item);
 
   // For mobile, we'll only show the name column
   const visibleColumns = isMobile ? ['name'] : activeColumns;

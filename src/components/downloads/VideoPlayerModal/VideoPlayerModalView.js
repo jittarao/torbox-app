@@ -174,16 +174,20 @@ export default function VideoPlayerModalView({
         {!isLoading && !error && !isTouchPlayer && (
           <VideoPlayerModalDesktopChrome
             t={t}
-            controlsVisible={controlsVisible}
-            isPlaying={isPlaying}
-            isSeeking={isSeeking}
-            isMuted={isMuted}
-            isFullscreen={isFullscreen}
-            showVolumeSlider={showVolumeSlider}
-            showAudioMenu={showAudioMenu}
-            showSubtitleMenu={showSubtitleMenu}
-            showPlaybackSpeedMenu={showPlaybackSpeedMenu}
-            showInfo={showInfo}
+            visibility={{ controls: controlsVisible }}
+            playback={{
+              playing: isPlaying,
+              seeking: isSeeking,
+              muted: isMuted,
+              fullscreen: isFullscreen,
+            }}
+            menus={{
+              volumeSlider: showVolumeSlider,
+              audio: showAudioMenu,
+              subtitle: showSubtitleMenu,
+              playbackSpeed: showPlaybackSpeedMenu,
+              info: showInfo,
+            }}
             displayTime={displayTime}
             duration={duration}
             progress={progress}
