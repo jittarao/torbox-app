@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { useTranslations } from 'next-intl';
 import { Copy, Refresh, Trash } from '@/components/icons';
 import BulkActionButton from '@/components/shared/BulkActionButton';
@@ -17,9 +17,14 @@ const SearchBar = memo(
     ariaLabel = 'Link history actions',
   }) => {
     const linkHistoryT = useTranslations('LinkHistory');
+    const inputId = useId();
     return (
       <div className={compactToolbarClass} role="toolbar" aria-label={ariaLabel}>
+        <label htmlFor={inputId} className="sr-only">
+          {linkHistoryT('searchLabel')}
+        </label>
         <input
+          id={inputId}
           type="text"
           placeholder="Search..."
           value={search}

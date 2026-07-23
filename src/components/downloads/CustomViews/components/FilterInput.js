@@ -303,6 +303,7 @@ export default function FilterInput({
                 type="number"
                 value={filter.value ?? ''}
                 onChange={(e) => handleFieldChange('value', parseFloat(e.target.value) || 0)}
+                aria-label={customViewsT('enterValuePlaceholder')}
                 className="flex-1 min-w-0 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
                 min="0"
                 step={filter.column === 'ratio' ? '0.1' : '1'}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import DesktopLaunchAtLoginPanel from '@/components/desktop/DesktopLaunchAtLoginPanel';
@@ -61,6 +61,7 @@ export default function DesktopSettingsGeneralTab({
   const [syncingKey, setSyncingKey] = useState(false);
   const [clearingKey, setClearingKey] = useState(false);
   const [showCustomUrl, setShowCustomUrl] = useState(false);
+  const instanceUrlInputId = useId();
 
   const notify = (message: string, type: 'success' | 'error') => {
     setToast?.({ message, type });
@@ -251,7 +252,11 @@ export default function DesktopSettingsGeneralTab({
                         {t('instanceUrlHelp')}
                       </p>
                     </div>
+                    <label htmlFor={instanceUrlInputId} className="sr-only">
+                      {t('instanceUrlTitle')}
+                    </label>
                     <input
+                      id={instanceUrlInputId}
                       type="url"
                       value={customUrl}
                       onChange={(e) => setCustomUrl(e.target.value)}

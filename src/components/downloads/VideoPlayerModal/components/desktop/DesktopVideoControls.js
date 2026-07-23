@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import { useTranslations } from 'next-intl';
 import { formatTime } from '../../../utils/formatters';
 import ProgressBar from '../ProgressBar';
 import VolumeControl from '../VolumeControl';
@@ -51,6 +52,7 @@ function DesktopVideoControls({
   controlsBarRef,
   isVisible = true,
 }) {
+  const videoPlayerT = useTranslations('VideoPlayer');
   const displayTime = isSeeking && currentTime !== null ? currentTime : currentTime;
 
   return (
@@ -75,6 +77,7 @@ function DesktopVideoControls({
           isSeeking={isSeeking}
           onSeek={onSeek}
           onSeekStart={onSeekStart}
+          ariaLabel={videoPlayerT('playbackProgress')}
         />
 
         <div className="px-4 sm:px-6 py-4 flex items-center gap-2 sm:gap-4">

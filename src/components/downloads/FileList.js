@@ -48,6 +48,7 @@ function FileListFile({
   isFileLinkFailed,
 }) {
   const t = useTranslations('FileActions');
+  const commonT = useTranslations('Common');
   const isChecked = useIsFileSelected(selectionId, file.id);
   const isDisabled = useIsItemBlockingFileSelect(selectionId);
   const storeFileKey = `${String(itemId)}-${String(file.id)}`;
@@ -171,6 +172,7 @@ function FileListFile({
               type="checkbox"
               checked={isChecked}
               disabled={isDisabled}
+              aria-label={commonT('selectRow', { name: file.short_name || file.name })}
               onChange={(e) => {
                 e.stopPropagation();
                 onFileSelect(selectionId, fileIndex, file, e.target.checked, e.shiftKey);
@@ -235,6 +237,7 @@ function FileListFile({
               type="checkbox"
               checked={isChecked}
               disabled={isDisabled}
+              aria-label={commonT('selectRow', { name: file.short_name || file.name })}
               onChange={(e) => {
                 e.stopPropagation();
                 onFileSelect(selectionId, fileIndex, file, e.target.checked, e.shiftKey);

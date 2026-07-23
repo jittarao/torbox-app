@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { readJsonFromResponse } from '@/utils/fetchResponse';
+import { resetFlagsIfRequestCurrent } from '@/utils/asyncLoadingReset';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
 import { normalizeUploadId } from '../utils';
@@ -114,10 +115,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
           console.error('Error fetching uploads:', err);
         }
       } finally {
-        if (requestId === uploadsRequestIdRef.current) {
-          setLoading(false);
-          setRefreshing(false);
-        }
+        resetFlagsIfRequestCurrent(requestId, uploadsRequestIdRef, setLoading, setRefreshing);
       }
     },
     [

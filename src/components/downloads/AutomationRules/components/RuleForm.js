@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { LOGIC_OPERATORS, ACTION_TYPES } from '../constants';
 import ConditionFilterGroup from './ConditionFilterGroup';
 import AssetTypesSelector from './AssetTypesSelector';
@@ -30,6 +31,7 @@ export default function RuleForm({
   const ruleAssetTypes = rule.assetTypes?.length ? rule.assetTypes : ['torrent'];
   const actionOptions = getSupportedActionOptions(t, ruleAssetTypes);
   const automationRulesT = useTranslations('AutomationRules');
+  const triggerValueId = useId();
   return (
     <div className="mt-4 p-4 border border-border dark:border-border-dark rounded-lg">
       <div className="space-y-4">
@@ -55,11 +57,15 @@ export default function RuleForm({
 
         {/* Trigger */}
         <div>
-          <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+          <label
+            htmlFor={triggerValueId}
+            className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+          >
             {t('checkEvery')}
           </label>
           <div className="flex items-center gap-2">
             <input
+              id={triggerValueId}
               type="number"
               value={rule.trigger.value}
               onChange={(e) =>

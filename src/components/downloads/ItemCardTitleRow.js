@@ -23,6 +23,7 @@ export default function ItemCardTitleRow({
       <input
         type="checkbox"
         checked={isSelected}
+        aria-label={commonT('selectRow', { name: item.name || item.id })}
         onChange={(e) => onItemSelection(selectionId, e.target.checked, index, e.shiftKey)}
         onClick={(e) => e.stopPropagation()}
         disabled={hasSelectedFiles}

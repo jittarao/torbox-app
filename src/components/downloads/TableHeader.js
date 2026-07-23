@@ -26,6 +26,7 @@ function TableHeader({
 }) {
   const selectedItems = useDownloadsSelectionStore(useShallow((s) => s.selectedItems));
   const columnT = useTranslations('Columns');
+  const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
 
   const visibleColumns = isMobile ? ['name'] : activeColumns;
@@ -51,6 +52,7 @@ function TableHeader({
           <input
             type="checkbox"
             onChange={(e) => onSelectAll(items, e.target.checked)}
+            aria-label={commonT('selectAll')}
             checked={
               items.length > 0 &&
               items.every((item) => selectedItems.items?.has(getDownloadSelectionId(item)))

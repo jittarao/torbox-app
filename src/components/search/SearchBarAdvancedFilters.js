@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslations } from 'next-intl';
 import Dropdown from '@/components/shared/Dropdown';
 
@@ -19,6 +20,8 @@ export default function SearchBarAdvancedFilters({
   clearFilters,
 }) {
   const t = useTranslations('SearchBar');
+  const minSizeInputId = useId();
+  const minSeedersInputId = useId();
 
   const QUALITY_OPTIONS = [
     { value: '', label: t('qualityAll') },
@@ -84,10 +87,14 @@ export default function SearchBarAdvancedFilters({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+        <label
+          htmlFor={minSizeInputId}
+          className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+        >
           {t('minSize') || 'Min Size (GB)'}
         </label>
         <input
+          id={minSizeInputId}
           type="number"
           min="0"
           step="0.1"
@@ -99,10 +106,14 @@ export default function SearchBarAdvancedFilters({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+        <label
+          htmlFor={minSeedersInputId}
+          className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+        >
           {t('minSeeders') || 'Min Seeders'}
         </label>
         <input
+          id={minSeedersInputId}
           type="number"
           min="0"
           value={seedersFilter}

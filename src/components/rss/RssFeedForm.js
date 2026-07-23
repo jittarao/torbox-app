@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Check } from '@/components/icons';
 import Spinner from '@/components/shared/Spinner';
 
@@ -10,6 +11,9 @@ export default function RssFeedForm({
   onCancel,
   isSubmitting,
 }) {
+  const downloadTypeId = useId();
+  const torrentSeedingId = useId();
+
   return (
     <div className="bg-surface-alt dark:bg-surface-alt-dark p-6 rounded-lg border border-border dark:border-border-dark">
       <h3 className="text-lg font-medium mb-4 text-primary-text dark:text-primary-text-dark">
@@ -47,10 +51,14 @@ export default function RssFeedForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <label
+              htmlFor={downloadTypeId}
+              className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+            >
               {t('downloadType')}
             </label>
             <select
+              id={downloadTypeId}
               value={formData.rss_type}
               onChange={(e) => onFormDataChange({ ...formData, rss_type: e.target.value })}
               className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
@@ -61,10 +69,14 @@ export default function RssFeedForm({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <label
+              htmlFor={torrentSeedingId}
+              className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+            >
               {t('torrentSeeding')}
             </label>
             <select
+              id={torrentSeedingId}
               value={formData.torrent_seeding}
               onChange={(e) =>
                 onFormDataChange({ ...formData, torrent_seeding: parseInt(e.target.value) })

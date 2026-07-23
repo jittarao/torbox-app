@@ -48,6 +48,7 @@ export default function SpeedChartToolbar({
           <select
             value={timeRange}
             onChange={(e) => onTimeRangeChange(e.target.value)}
+            aria-label={t('timeRange')}
             className="text-xs lg:text-sm bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded px-2 py-1 text-primary-text dark:text-primary-text-dark focus:outline-none"
           >
             <option value="1m">{t('timeRanges.1m')}</option>

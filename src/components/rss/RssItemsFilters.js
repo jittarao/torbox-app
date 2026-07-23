@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 export default function RssItemsFilters({
   t,
   feeds,
@@ -12,13 +14,22 @@ export default function RssItemsFilters({
   sortOrder,
   onSortOrderChange,
 }) {
+  const feedSelectId = useId();
+  const filterTypeId = useId();
+  const sortById = useId();
+  const sortOrderId = useId();
+
   return (
     <>
       <div className="bg-surface-alt dark:bg-surface-alt-dark p-4 rounded-lg border border-border dark:border-border-dark">
-        <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+        <label
+          htmlFor={feedSelectId}
+          className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+        >
           {t('selectFeed')}
         </label>
         <select
+          id={feedSelectId}
           value={selectedFeed || ''}
           onChange={(e) => onFeedSelect(e.target.value)}
           className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
@@ -48,10 +59,14 @@ export default function RssItemsFilters({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+              <label
+                htmlFor={filterTypeId}
+                className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+              >
                 {t('type')}
               </label>
               <select
+                id={filterTypeId}
                 value={filterType}
                 onChange={(e) => onFilterTypeChange(e.target.value)}
                 className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
@@ -63,10 +78,14 @@ export default function RssItemsFilters({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+              <label
+                htmlFor={sortById}
+                className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+              >
                 {t('sortBy')}
               </label>
               <select
+                id={sortById}
                 value={sortBy}
                 onChange={(e) => onSortByChange(e.target.value)}
                 className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
@@ -77,10 +96,14 @@ export default function RssItemsFilters({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+              <label
+                htmlFor={sortOrderId}
+                className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+              >
                 {t('sortOrder')}
               </label>
               <select
+                id={sortOrderId}
                 value={sortOrder}
                 onChange={(e) => onSortOrderChange(e.target.value)}
                 className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
