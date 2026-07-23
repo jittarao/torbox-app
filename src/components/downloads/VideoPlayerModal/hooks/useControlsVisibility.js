@@ -46,6 +46,13 @@ export function useControlsVisibility({
     setWasOpen(false);
   }
 
+  // Persist base visibility while rendering when menus open or playback
+  // pauses/seeks, so closing a menu / resuming still fades from a true
+  // showControls without a one-frame stale effect update.
+  if (isOpen && !showControls && (hasOpenMenu || !isPlaying || isSeeking)) {
+    setShowControls(true);
+  }
+
   const controlsVisible = showControls || hasOpenMenu || !isPlaying || isSeeking;
 
   useEffect(() => {
@@ -141,8 +148,6 @@ export function useControlsVisibility({
 
     if (hasOpenMenu) {
       clearHideTimeout();
-      // Persist visibility so closing a menu still has a true base state for scheduleHide().
-      setShowControls(true);
       return;
     }
 
@@ -154,23 +159,13 @@ export function useControlsVisibility({
     if (isPlaying) {
       scheduleHide();
     }
-  }, [
-    isOpen,
-    hasOpenMenu,
-    isPlaying,
-    showControls,
-    clearHideTimeout,
-    scheduleHide,
-    setShowControls,
-  ]);
+  }, [isOpen, hasOpenMenu, isPlaying, showControls, clearHideTimeout, scheduleHide]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     if (!isPlaying || isSeeking) {
       clearHideTimeout();
-      // Persist visibility so resume/play still fades out from a true base state.
-      setShowControls(true);
       return;
     }
 
@@ -179,16 +174,7 @@ export function useControlsVisibility({
     }
 
     return clearHideTimeout;
-  }, [
-    isOpen,
-    isPlaying,
-    isSeeking,
-    hasOpenMenu,
-    showControls,
-    clearHideTimeout,
-    scheduleHide,
-    setShowControls,
-  ]);
+  }, [isOpen, isPlaying, isSeeking, hasOpenMenu, showControls, clearHideTimeout, scheduleHide]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
