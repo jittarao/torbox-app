@@ -123,10 +123,14 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
       if (successfulIds.length > 0) {
         applyLocalRemovals(successfulIds, allowed);
 
+        const successfulIdSet = new Set(successfulIds);
         const removedSelectionIds = new Set(
-          allowed
-            .filter((item) => successfulIds.includes(item.id))
-            .map((item) => getDownloadSelectionId(item))
+          allowed.reduce((acc, item) => {
+            if (successfulIdSet.has(item.id)) {
+              acc.push(getDownloadSelectionId(item));
+            }
+            return acc;
+          }, [])
         );
 
         setSelectedItems((prev) => ({

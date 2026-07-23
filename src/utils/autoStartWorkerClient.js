@@ -81,7 +81,7 @@ function ensureWorkerPort() {
   }
 }
 
-export function isAutoStartWorkerSupported() {
+function isAutoStartWorkerSupported() {
   return typeof SharedWorker !== 'undefined' && !workerFailed;
 }
 
@@ -168,7 +168,7 @@ export function stopAutoStartWorker() {
 }
 
 /** @internal — test helper */
-export function resetAutoStartWorkerClientForTests() {
+function resetAutoStartWorkerClientForTests() {
   workerPort = null;
   workerFailed = false;
   workerConfigured = false;

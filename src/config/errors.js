@@ -28,3 +28,13 @@ export const NON_RETRYABLE_ERRORS = {
  * until the user removes Airlocked downloads or upgrades their plan.
  */
 export const AIRLOCK_LIMIT_REACHED_ERROR = 'AIRLOCK_LIMIT_REACHED';
+
+const NON_RETRYABLE_ERROR_STRINGS = Object.values(NON_RETRYABLE_ERRORS);
+
+/** True when a TorBox API response body matches a non-retryable error code. */
+export function isNonRetryableResponse(data) {
+  if (!data) return false;
+  const error = data.error ?? '';
+  const detail = data.detail ?? '';
+  return NON_RETRYABLE_ERROR_STRINGS.some((err) => error.includes(err) || detail.includes(err));
+}
