@@ -922,7 +922,7 @@
     "tagAssignmentSubmitRemove": "Remove tags",
     "tagAssignmentSubmittingAdd": "Adding…",
     "tagAssignmentSubmittingRemove": "Removing…",
-    "tagAssignmentTitle": "Manage tags on downloads",
+    "tagAssignmentTitle": "Manage tags",
     "tagCountBadge": "{count, plural, one {# tag} other {# tags}}",
     "tagManagerDescription": "Create, rename, or remove tags used to filter and organize downloads.",
     "tagManagerEmptyHint": "Add a tag above to start grouping downloads.",
