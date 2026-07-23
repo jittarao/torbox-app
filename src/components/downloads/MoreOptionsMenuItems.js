@@ -187,9 +187,7 @@ export default function MoreOptionsMenuItems({
   }
 
   if (items.length > 0) {
-    items.push(
-      <div key="primary-divider" className={menuDividerClass(menuVariant)} role="separator" />
-    );
+    items.push(<hr key="primary-divider" className={menuDividerClass(menuVariant)} />);
   }
 
   items.push(

@@ -113,9 +113,12 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
         />
       ) : (
         <div className="space-y-4">
-          {rules.map((rule, index) => (
+          {rules.map((rule) => (
             <RuleCard
-              key={rule.id || `temp-${index}`}
+              key={
+                rule.id ??
+                `rule-${rule.name}-${rule.metadata?.created_at ?? rule.metadata?.lastEnabledAt ?? ''}`
+              }
               rule={rule}
               onToggle={handleToggleRule}
               onEdit={handleEditRule}

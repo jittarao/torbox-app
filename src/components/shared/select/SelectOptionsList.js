@@ -9,11 +9,11 @@ export default function SelectOptionsList({
   const items = [];
   let optionIndex = 0;
 
-  options.forEach((opt, idx) => {
+  options.forEach((opt) => {
     const isSelected = String(opt.value) === String(value);
     items.push(
       <button
-        key={`opt-standalone-${idx}-${opt.value}`}
+        key={`opt-${opt.value}`}
         ref={(el) => {
           if (el) optionsRef.current[optionIndex] = el;
         }}
