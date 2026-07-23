@@ -10,13 +10,13 @@ Scans React codebases for security, performance, correctness, and architecture i
 
 ## After making React code changes:
 
-Run `npx react-doctor@latest --verbose --diff` and check the score did not regress.
+Run `bun run doctor -- --verbose --diff` and check the score did not regress.
 
 If the score dropped, fix the regressions before committing.
 
 ## For general cleanup or code improvement:
 
-Run `npx react-doctor@latest --verbose` (without `--diff`) to scan the full codebase. Fix issues by severity — errors first, then warnings.
+Run `bun run doctor -- --verbose` (without `--diff`) to scan the full codebase. Fix issues by severity — errors first, then warnings.
 
 ## /doctor — full local triage workflow
 
@@ -35,7 +35,7 @@ Pair it with the matching per-rule prompts at `https://www.react.doctor/prompts/
 ## Command
 
 ```bash
-npx react-doctor@latest --verbose --diff
+bun run doctor -- --verbose --diff
 ```
 
 | Flag        | Purpose                                       |

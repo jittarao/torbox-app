@@ -25,7 +25,7 @@
     "version:all:patch": "bun scripts/update-version.js patch --all",
     "version:all:minor": "bun scripts/update-version.js minor --all",
     "version:all:major": "bun scripts/update-version.js major --all",
-    "doctor": "npx react-doctor@latest",
+    "doctor": "react-doctor",
     "test": "bun test --preload ./test-setup-dom.js src/store/__tests__ src/store/notifications/__tests__ src/utils/__tests__ src/hooks/__tests__ src/desktop/__tests__ src/components/downloads src/components/shared src/app/api/lib/__tests__ src/app/api/downloads src/app/api/torrents scripts/__tests__ && bun run i18n:verify",
     "test:dom": "bun test --preload ./test-setup-dom.js src/components/notifications/__tests__ src/components/downloads/__tests__",
     "i18n:translate": "bun scripts/i18n.js translate",
