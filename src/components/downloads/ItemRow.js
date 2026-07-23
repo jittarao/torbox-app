@@ -412,7 +412,6 @@ function ItemRow({
     <tr
       ref={measureRef}
       data-index={dataIndex}
-      role="row"
       aria-selected={isSelected}
       id={isExpanded ? filesRegionId : undefined}
       className={`${rowSurfaceClass} ${tableRowFocusClasses} ${!hasSelectedFiles && 'cursor-pointer'}`}

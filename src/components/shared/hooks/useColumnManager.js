@@ -20,6 +20,16 @@ function getDefaultColumns(activeType) {
   return defaults[activeType] || defaults.torrents;
 }
 
+function columnAppliesToType(column, activeType) {
+  if (!column) return false;
+  if (!column.assetTypes) return true;
+  const assetTypes = new Set(column.assetTypes);
+  if (activeType === 'all') {
+    return assetTypes.has('all') || assetTypes.has(activeType);
+  }
+  return assetTypes.has(activeType);
+}
+
 function loadColumns(activeType) {
   if (typeof window === 'undefined') return getDefaultColumns(activeType);
 
@@ -28,18 +38,9 @@ function loadColumns(activeType) {
   if (!storedColumns) return getDefaultColumns(activeType);
 
   try {
-    const validColumns = storedColumns.filter((col) => {
-      const column = COLUMNS[col];
-      if (activeType === 'all') {
-        return (
-          column &&
-          (!column.assetTypes ||
-            column.assetTypes.includes('all') ||
-            column.assetTypes.includes(activeType))
-        );
-      }
-      return column && (!column.assetTypes || column.assetTypes.includes(activeType));
-    });
+    const validColumns = storedColumns.filter((col) =>
+      columnAppliesToType(COLUMNS[col], activeType)
+    );
 
     if (validColumns.length === 0) return getDefaultColumns(activeType);
     setJSON(storageKey, validColumns);
@@ -62,19 +63,7 @@ export function useColumnManager(activeType = 'torrents') {
     if (typeof window === 'undefined') return;
 
     // Filter for valid columns that are applicable to this asset type
-    const validColumns = newColumns.filter((col) => {
-      const column = COLUMNS[col];
-      // For "all" tab, include columns that are either universal or specifically allowed for "all"
-      if (activeType === 'all') {
-        return (
-          column &&
-          (!column.assetTypes ||
-            column.assetTypes.includes('all') ||
-            column.assetTypes.includes(activeType))
-        );
-      }
-      return column && (!column.assetTypes || column.assetTypes.includes(activeType));
-    });
+    const validColumns = newColumns.filter((col) => columnAppliesToType(COLUMNS[col], activeType));
 
     setActiveColumns(validColumns);
 

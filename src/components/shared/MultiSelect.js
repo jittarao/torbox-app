@@ -38,6 +38,7 @@ export default function MultiSelect({
   const optionsRef = useRef([]);
 
   const selectedValues = useMemo(() => (Array.isArray(value) ? value : []), [value]);
+  const selectedValueSet = useMemo(() => new Set(selectedValues), [selectedValues]);
 
   const filteredOptions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -46,8 +47,8 @@ export default function MultiSelect({
   }, [options, searchQuery]);
 
   const selectedOptions = useMemo(() => {
-    return options.filter((opt) => selectedValues.includes(opt.value));
-  }, [options, selectedValues]);
+    return options.filter((opt) => selectedValueSet.has(opt.value));
+  }, [options, selectedValueSet]);
 
   const updateDropdownPosition = useCallback(() => {
     const el = selectRef.current;
@@ -262,7 +263,7 @@ export default function MultiSelect({
             </div>
           ) : (
             filteredOptions.map((opt, index) => {
-              const isSelected = selectedValues.includes(opt.value);
+              const isSelected = selectedValueSet.has(opt.value);
               return (
                 <button
                   key={opt.value}

@@ -45,7 +45,7 @@ for (const opt of STATUS_OPTIONS) {
   statusJsonToSlug.set(json, slug);
 }
 
-export const STATUS_FILTER_SLUGS = [...slugToStatusJson.keys()];
+const STATUS_FILTER_SLUGS = [...slugToStatusJson.keys()];
 
 export const FILTER_SHORTCUT_PARAM_KEYS = [
   'tag',
@@ -80,7 +80,10 @@ export function parseStatusFilterParam(raw) {
       .split(',')
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);
-    const mapped = slugs.map((slug) => slugToStatusJson.get(slug)).filter(Boolean);
+    const mapped = slugs.flatMap((slug) => {
+      const value = slugToStatusJson.get(slug);
+      return value ? [value] : [];
+    });
     if (mapped.length > 0) return mapped;
   }
 
@@ -326,17 +329,19 @@ export function compactFiltersToUrl(filters) {
     return out;
   };
 
-  const groups = (normalized.groups || [])
-    .map((group) => {
-      const rows = (group.filters || []).filter((f) => f.column).map(compactRow);
-      if (rows.length === 0) return null;
-      const cg = { f: rows };
-      if (group.logicOperator && group.logicOperator !== LOGIC_OPERATORS.AND) {
-        cg.lo = group.logicOperator;
-      }
-      return cg;
-    })
-    .filter(Boolean);
+  const groups = (normalized.groups || []).reduce((acc, group) => {
+    const rows = [];
+    for (const f of group.filters || []) {
+      if (f.column) rows.push(compactRow(f));
+    }
+    if (rows.length === 0) return acc;
+    const cg = { f: rows };
+    if (group.logicOperator && group.logicOperator !== LOGIC_OPERATORS.AND) {
+      cg.lo = group.logicOperator;
+    }
+    acc.push(cg);
+    return acc;
+  }, []);
 
   const compact = { g: groups };
   if (normalized.logicOperator && normalized.logicOperator !== LOGIC_OPERATORS.AND) {

@@ -99,7 +99,7 @@ export default function RssPageClient() {
   // Don't render anything until client-side hydration is complete
   if (!hydrated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface dark:bg-surface-dark font-sans">
+      <div className="flex min-h-dvh items-center justify-center bg-surface dark:bg-surface-dark font-sans">
         <Spinner size="lg" className="text-primary-text dark:text-primary-text-dark" />
       </div>
     );
@@ -107,8 +107,8 @@ export default function RssPageClient() {
 
   if (!apiKey) {
     return (
-      <div className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}>
-        <div className="flex min-h-screen items-center justify-center">
+      <div className={`min-h-dvh bg-surface dark:bg-surface-dark font-sans`}>
+        <div className="flex min-h-dvh items-center justify-center">
           <div className="text-center">
             <h1 className="mb-4 text-2xl font-bold">API Key Required</h1>
             <p className="text-gray-600 dark:text-gray-400">
@@ -126,7 +126,7 @@ export default function RssPageClient() {
   }
 
   return (
-    <AppShell apiKey={apiKey} className={`min-h-screen bg-surface dark:bg-surface-dark font-sans`}>
+    <AppShell apiKey={apiKey} className={`min-h-dvh bg-surface dark:bg-surface-dark font-sans`}>
       <div className="container mx-auto p-4">
         <div className="mx-auto max-w-6xl">
           {checkingPlan ? (

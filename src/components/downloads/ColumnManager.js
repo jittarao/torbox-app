@@ -127,6 +127,8 @@ export default function ColumnManager({
     });
   }, [columns, activeType]);
 
+  const activeColumnSet = useMemo(() => new Set(activeColumns), [activeColumns]);
+
   return (
     <div className="relative">
       <button
@@ -198,7 +200,7 @@ export default function ColumnManager({
                     <label key={id} className="flex items-center gap-x-2">
                       <input
                         type="checkbox"
-                        checked={activeColumns.includes(id)}
+                        checked={activeColumnSet.has(id)}
                         onChange={() => toggleColumn(id)}
                         className="accent-accent dark:accent-accent-dark"
                       />

@@ -20,7 +20,7 @@ export default function RootError({ error, reset }) {
   return (
     <html lang="en">
       <body className="bg-surface text-primary-text dark:bg-surface-dark dark:text-primary-text-dark antialiased">
-        <div className="flex min-h-screen items-center justify-center p-8">
+        <div className="flex min-h-dvh items-center justify-center p-8">
           <SectionErrorFallbackView
             error={error}
             onRetry={reset}

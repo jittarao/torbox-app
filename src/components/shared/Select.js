@@ -245,12 +245,13 @@ export default function Select({
 
     const matches = (opt) => String(opt.label).toLowerCase().includes(q);
     const nextOptions = options.filter(matches);
-    const nextOptgroups = optgroups
-      .map((group) => ({
-        ...group,
-        options: group.options.filter(matches),
-      }))
-      .filter((group) => group.options.length > 0);
+    const nextOptgroups = optgroups.reduce((acc, group) => {
+      const options = group.options.filter(matches);
+      if (options.length > 0) {
+        acc.push({ ...group, options });
+      }
+      return acc;
+    }, []);
     const count = nextOptions.length + nextOptgroups.reduce((n, g) => n + g.options.length, 0);
 
     return {
