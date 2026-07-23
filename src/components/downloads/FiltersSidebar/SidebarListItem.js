@@ -24,8 +24,7 @@ function SidebarListItem({
   count,
   isActive,
   onClick,
-  isMenuOpen = false,
-  showMenu = false,
+  menu = { open: false, visible: false },
   onMenuToggle,
   ariaLabel,
   title,
@@ -34,6 +33,8 @@ function SidebarListItem({
   disabled = false,
 }) {
   const menuButtonRef = useRef(null);
+  const isMenuOpen = menu.open;
+  const showMenu = menu.visible;
 
   return (
     <div

@@ -7,17 +7,18 @@ import Shield from '@/components/icons/Shield';
 
 export default function ItemCardTitleRow({
   item,
-  isBlurred,
-  isMobile,
-  isSelected,
-  hasSelectedFiles,
-  isAirlocked,
-  isProtected,
+  display,
+  selection,
+  badges,
   commonT,
   selectionId,
   index,
   onItemSelection,
 }) {
+  const { blurred: isBlurred, mobile: isMobile } = display;
+  const { selected: isSelected, hasFiles: hasSelectedFiles } = selection;
+  const { airlocked: isAirlocked, protected: isProtected } = badges;
+
   return (
     <div className={isMobile ? 'flex items-start gap-2' : 'flex items-center gap-2 md:gap-2.5'}>
       <input

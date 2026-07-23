@@ -25,33 +25,17 @@ export default function ActionButtonsToolbar({
   activeType,
   selectedItemCount,
   hasSelectedFiles,
-  isDownloading,
-  isDeleting,
-  isExporting,
-  isArchiving,
-  isForceStarting,
-  isBulkRetrying,
-  isStoppingSeeding,
-  isUpdatingProtection,
+  bulkProgress,
+  bulkActionVisibility,
+  confirmDialogs,
   bulkAirlockPendingAction,
   deleteSelectionBlocked,
   deleteParentDownloads,
   onDeleteParentDownloadsChange,
-  showBulkForceStart,
-  showBulkRetry,
-  showBulkAirlockLock,
-  showBulkAirlockUnlock,
-  showBulkProtect,
-  showBulkUnprotect,
-  showBulkStopSeeding,
-  showBulkArchive,
-  showArchiveConfirm,
   onShowArchiveConfirm,
   onCloseArchiveConfirm,
-  showDeleteConfirm,
   onShowDeleteConfirm,
   onCloseDeleteConfirm,
-  showTagAssignment,
   onShowTagAssignment,
   onCloseTagAssignment,
   selectedArchivableTorrents,
@@ -66,8 +50,7 @@ export default function ActionButtonsToolbar({
   onBulkUnprotect,
   onBulkStopSeeding,
   onClearSelection,
-  isDownloadPanelOpen,
-  setIsDownloadPanelOpen,
+  downloadPanel,
   apiKey,
   allItems,
   getSelectedItems,
@@ -75,6 +58,33 @@ export default function ActionButtonsToolbar({
   itemTypeName,
   itemTypePlural,
 }) {
+  const {
+    downloading: isDownloading,
+    deleting: isDeleting,
+    exporting: isExporting,
+    archiving: isArchiving,
+    forceStarting: isForceStarting,
+    bulkRetrying: isBulkRetrying,
+    stoppingSeeding: isStoppingSeeding,
+    updatingProtection: isUpdatingProtection,
+  } = bulkProgress;
+  const {
+    forceStart: showBulkForceStart,
+    retry: showBulkRetry,
+    airlockLock: showBulkAirlockLock,
+    airlockUnlock: showBulkAirlockUnlock,
+    protect: showBulkProtect,
+    unprotect: showBulkUnprotect,
+    stopSeeding: showBulkStopSeeding,
+    archive: showBulkArchive,
+  } = bulkActionVisibility;
+  const {
+    archive: showArchiveConfirm,
+    delete: showDeleteConfirm,
+    tagAssignment: showTagAssignment,
+  } = confirmDialogs;
+  const { open: isDownloadPanelOpen, setOpen: setIsDownloadPanelOpen } = downloadPanel;
+
   const t = useTranslations('ActionButtons');
 
   const handleDownloadClick = () => {
@@ -247,7 +257,7 @@ export default function ActionButtonsToolbar({
       />
 
       <ActionButtonsConfirmModals
-        showArchiveConfirm={showArchiveConfirm}
+        archiveModal={{ open: showArchiveConfirm, inProgress: isArchiving }}
         onCloseArchiveConfirm={onCloseArchiveConfirm}
         onConfirmArchive={() =>
           confirmArchive({
@@ -256,9 +266,12 @@ export default function ActionButtonsToolbar({
             selectedArchivableCount: selectedArchivableTorrents.length,
           })
         }
-        isArchiving={isArchiving}
         selectedArchivableCount={selectedArchivableTorrents.length}
-        showDeleteConfirm={showDeleteConfirm}
+        deleteModal={{
+          open: showDeleteConfirm,
+          inProgress: isDeleting,
+          hasSelectedFiles,
+        }}
         onCloseDeleteConfirm={onCloseDeleteConfirm}
         onConfirmDelete={() =>
           confirmDelete({
@@ -267,10 +280,8 @@ export default function ActionButtonsToolbar({
             deleteParentDownloads,
           })
         }
-        isDeleting={isDeleting}
         selectedItemCount={selectedItemCount}
         deleteParentFileCount={deleteParentFileCount}
-        hasSelectedFiles={hasSelectedFiles}
         deleteParentDownloads={deleteParentDownloads}
         onDeleteParentDownloadsChange={onDeleteParentDownloadsChange}
         itemTypeName={itemTypeName}

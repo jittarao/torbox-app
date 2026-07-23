@@ -12,7 +12,9 @@ import VideoInfoOverlay from './components/VideoInfoOverlay';
 
 export default function VideoPlayerModalView({
   t,
-  isTouchPlayer,
+  playerFlags,
+  playbackState,
+  menuState,
   formFactor,
   containerRef,
   playerAreaRef,
@@ -30,12 +32,9 @@ export default function VideoPlayerModalView({
   setIsLoading,
   seekFeedback,
   handleSeekFeedbackDone,
-  isInIntroRange,
   handleSkipIntro,
-  isLoading,
   error,
   handleErrorRetry,
-  showInfo,
   setShowInfo,
   metadata,
   fileName,
@@ -46,17 +45,10 @@ export default function VideoPlayerModalView({
   displayTime,
   duration,
   progress,
-  isPlaying,
-  isSeeking,
   volume,
-  isMuted,
-  showVolumeSlider,
   selectedAudioIndex,
   selectedSubtitleIndex,
-  showAudioMenu,
-  showSubtitleMenu,
   playbackSpeed,
-  showPlaybackSpeedMenu,
   handlePlayPause,
   handleRewind,
   handleForward,
@@ -71,7 +63,6 @@ export default function VideoPlayerModalView({
   setShowSubtitleMenu,
   handlePlaybackSpeedChange,
   setShowPlaybackSpeedMenu,
-  isFullscreen,
   audioMenuRef,
   subtitleMenuRef,
   playbackSpeedMenuRef,
@@ -82,9 +73,7 @@ export default function VideoPlayerModalView({
   handleSeekPointerMove,
   handleSeekPointerUp,
   handleSeekClick,
-  showSettingsSheet,
   setShowSettingsSheet,
-  showInfoSheet,
   setShowInfoSheet,
   seekTime,
   handleSeekBack10,
@@ -92,6 +81,23 @@ export default function VideoPlayerModalView({
   setVolume,
   setIsMuted,
 }) {
+  const { touch: isTouchPlayer, inIntroRange: isInIntroRange, loading: isLoading } = playerFlags;
+  const {
+    playing: isPlaying,
+    seeking: isSeeking,
+    muted: isMuted,
+    fullscreen: isFullscreen,
+  } = playbackState;
+  const {
+    volumeSlider: showVolumeSlider,
+    audio: showAudioMenu,
+    subtitle: showSubtitleMenu,
+    playbackSpeed: showPlaybackSpeedMenu,
+    info: showInfo,
+    settingsSheet: showSettingsSheet,
+    infoSheet: showInfoSheet,
+  } = menuState;
+
   return (
     <div
       className={`z-50 bg-neutral-950 ${
@@ -189,23 +195,28 @@ export default function VideoPlayerModalView({
               <X className="size-5 transition-transform duration-300 group-hover:rotate-90" />
             </button>
             <DesktopVideoControls
-              isVisible={controlsVisible}
+              visibility={{ controls: controlsVisible }}
+              playback={{
+                playing: isPlaying,
+                seeking: isSeeking,
+                muted: isMuted,
+                fullscreen: isFullscreen,
+              }}
+              menus={{
+                volumeSlider: showVolumeSlider,
+                audio: showAudioMenu,
+                subtitle: showSubtitleMenu,
+                playbackSpeed: showPlaybackSpeedMenu,
+              }}
               currentTime={displayTime}
               duration={duration}
               progress={progress}
-              isPlaying={isPlaying}
-              isSeeking={isSeeking}
               volume={volume}
-              isMuted={isMuted}
-              showVolumeSlider={showVolumeSlider}
               audios={audios}
               subtitles={subtitles}
               selectedAudioIndex={selectedAudioIndex}
               selectedSubtitleIndex={selectedSubtitleIndex}
-              showAudioMenu={showAudioMenu}
-              showSubtitleMenu={showSubtitleMenu}
               playbackSpeed={playbackSpeed}
-              showPlaybackSpeedMenu={showPlaybackSpeedMenu}
               onPlayPause={handlePlayPause}
               onRewind={handleRewind}
               onForward={handleForward}
@@ -229,7 +240,6 @@ export default function VideoPlayerModalView({
               }
               onInfoToggle={() => setShowInfo(!showInfo)}
               onFullscreen={toggleFullscreen}
-              isFullscreen={isFullscreen}
               audioMenuRef={audioMenuRef}
               subtitleMenuRef={subtitleMenuRef}
               playbackSpeedMenuRef={playbackSpeedMenuRef}
@@ -244,13 +254,18 @@ export default function VideoPlayerModalView({
           <MobilePlayerChrome
             formFactor={formFactor}
             fileName={fileName}
-            isVisible={controlsVisible}
+            playback={{
+              visible: controlsVisible,
+              playing: isPlaying,
+              seeking: isSeeking,
+              muted: isMuted,
+              fullscreen: isFullscreen,
+            }}
+            sheets={{ settings: showSettingsSheet, info: showInfoSheet }}
             onClose={onClose}
             currentTime={displayTime}
             duration={duration}
             progress={progress}
-            isPlaying={isPlaying}
-            isSeeking={isSeeking}
             previewTime={seekTime}
             seekBarRef={seekBarRef}
             controlsBarRef={controlsBarRef}
@@ -261,7 +276,6 @@ export default function VideoPlayerModalView({
             onPlayPause={handlePlayPause}
             onSeekBack={handleSeekBack10}
             onSeekForward={handleSeekForward10}
-            showSettingsSheet={showSettingsSheet}
             onOpenSettings={() => setShowSettingsSheet(true)}
             onCloseSettings={() => setShowSettingsSheet(false)}
             playbackSpeed={playbackSpeed}
@@ -273,10 +287,8 @@ export default function VideoPlayerModalView({
             onAudioSelect={handleAudioTrackSelect}
             onSubtitleSelect={handleSubtitleTrackSelect}
             volume={volume}
-            isMuted={isMuted}
             onVolumeChange={handleVolumeChange}
             onMuteToggle={handleMuteToggle}
-            showInfoSheet={showInfoSheet}
             onOpenInfo={() => {
               setShowSettingsSheet(false);
               setShowInfoSheet(true);
@@ -284,7 +296,6 @@ export default function VideoPlayerModalView({
             onCloseInfo={() => setShowInfoSheet(false)}
             metadata={metadata}
             onFullscreen={toggleFullscreen}
-            isFullscreen={isFullscreen}
           />
         )}
 

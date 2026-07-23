@@ -168,12 +168,9 @@ function ItemCard({
         <div className="flex flex-col justify-center gap-1.5 md:gap-2 min-w-0 flex-1">
           <ItemCardTitleRow
             item={item}
-            isBlurred={isBlurred}
-            isMobile={isMobile}
-            isSelected={isSelected}
-            hasSelectedFiles={hasSelectedFiles}
-            isAirlocked={isAirlocked}
-            isProtected={isProtected}
+            display={{ blurred: isBlurred, mobile: isMobile }}
+            selection={{ selected: isSelected, hasFiles: hasSelectedFiles }}
+            badges={{ airlocked: isAirlocked, protected: isProtected }}
             commonT={commonT}
             selectionId={selectionId}
             index={index}
@@ -267,14 +264,16 @@ function ItemCard({
           selectionId={selectionId}
           itemId={item.id}
           itemName={item.name}
-          isBlurred={isBlurred}
+          display={{
+            blurred: isBlurred,
+            mobile: isMobile,
+            fileDownloaded: isFileDownloaded,
+            fileLinkFailed: isFileLinkFailed,
+          }}
           onFileSelect={handleFileSelection}
           onFileDownload={onFileDownload}
           onFileStream={handleFileStream}
           onAudioPlay={handleAudioPlay}
-          isMobile={isMobile}
-          isFileDownloaded={isFileDownloaded}
-          isFileLinkFailed={isFileLinkFailed}
         />
       )}
 

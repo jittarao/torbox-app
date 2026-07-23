@@ -23,29 +23,24 @@ export default function AudioPlayerView({
   onClose,
   onRefreshUrl,
   audioUrl,
-  hasChaptersSupport,
+  playback,
   audioRef,
-  isPlaying,
   currentTime,
   duration,
   buffered,
   volume,
   playbackSpeed,
-  isSeekingInProgress,
   seekValue,
   status,
   errorMessage,
   chapters,
   chaptersLoading,
-  showSpeedMenu,
+  menus,
   setShowSpeedMenu,
-  showTimerMenu,
   setShowTimerMenu,
-  showVolumeSlider,
   setShowVolumeSlider,
   sleepTimer,
   setSleepTimer,
-  showChaptersPanel,
   setShowChaptersPanel,
   handlePlayPause,
   skip,
@@ -65,6 +60,18 @@ export default function AudioPlayerView({
   handleProgressBarSeekStart,
   handleProgressBarSeekEnd,
 }) {
+  const {
+    playing: isPlaying,
+    seeking: isSeekingInProgress,
+    chaptersSupport: hasChaptersSupport,
+  } = playback;
+  const {
+    speed: showSpeedMenu,
+    timer: showTimerMenu,
+    volume: showVolumeSlider,
+    chapters: showChaptersPanel,
+  } = menus;
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0d1117] text-gray-100">
       <audio ref={audioRef} preload="auto" crossOrigin="anonymous">

@@ -14,7 +14,6 @@ type DesktopWatchRuleCardHeaderProps = {
   ruleStatus: WatchRuleStatus | null;
   ruleIndex: number;
   expanded: boolean;
-  canRemove: boolean;
   hasCredential: boolean;
   saving: boolean;
   t: (key: string, values?: Record<string, string | number>) => string;
@@ -28,7 +27,6 @@ export default function DesktopWatchRuleCardHeader({
   ruleStatus,
   ruleIndex,
   expanded,
-  canRemove,
   hasCredential,
   saving,
   t,
@@ -106,18 +104,27 @@ export default function DesktopWatchRuleCardHeader({
           label={t('enabledToggleLabel')}
           compact
         />
-        {canRemove ? (
+        {ruleStatus?.active ? (
+          <button
+            type="button"
+            disabled
+            title={t('removeRuleWhileActive')}
+            className={`${desktopBtnDanger} px-2.5 py-1.5 opacity-50`}
+          >
+            <Trash className="size-3.5" />
+            <span className="sr-only">{t('removeRule')}</span>
+          </button>
+        ) : (
           <button
             type="button"
             onClick={onRemoveRule}
-            disabled={saving || ruleStatus?.active}
-            title={ruleStatus?.active ? t('removeRuleWhileActive') : undefined}
+            disabled={saving}
             className={`${desktopBtnDanger} px-2.5 py-1.5`}
           >
             <Trash className="size-3.5" />
             <span className="sr-only">{t('removeRule')}</span>
           </button>
-        ) : null}
+        )}
       </div>
     </div>
   );

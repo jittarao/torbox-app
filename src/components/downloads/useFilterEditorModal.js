@@ -90,11 +90,10 @@ export function useFilterEditorModal({
   }, [isOpen, isCreateMode]);
 
   const modeKey = isCreateMode ? 'create' : isEditMode ? `edit-${editingView?.id || ''}` : null;
-  const prevModeKeyRef = useRef(null);
+  const [prevModeKey, setPrevModeKey] = useState(modeKey);
 
-  useEffect(() => {
-    if (!isOpen || prevModeKeyRef.current === modeKey) return;
-    prevModeKeyRef.current = modeKey;
+  if (isOpen && modeKey !== prevModeKey) {
+    setPrevModeKey(modeKey);
     setSaveViewName('');
     setShowSaveInput(isCreateMode);
     setSaveSort(isEditMode ? !!editingView?.sort_field : false);
@@ -102,16 +101,7 @@ export function useFilterEditorModal({
     setSaveSearch(
       isCreateMode ? !!search?.trim() : isEditMode ? !!editingView?.search_query : false
     );
-  }, [
-    isOpen,
-    modeKey,
-    isCreateMode,
-    isEditMode,
-    editingView?.sort_field,
-    editingView?.visible_columns,
-    editingView?.search_query,
-    search,
-  ]);
+  }
 
   useEffect(() => {
     if (!isOpen || !columnFilters?.groups) return;
