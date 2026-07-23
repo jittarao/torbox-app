@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Question, X } from '@/components/icons';
 import VideoInfoContent from './VideoInfoContent';
@@ -15,24 +16,37 @@ export default function VideoInfoOverlay({
   subtitles = EMPTY_ARRAY,
 }) {
   const t = useTranslations('VideoPlayer');
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return undefined;
+    }
+
+    if (isOpen && !dialog.open) {
+      dialog.showModal();
+    } else if (!isOpen && dialog.open) {
+      dialog.close();
+    }
+
+    return undefined;
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
       aria-label={t('videoInfo')}
-      className="absolute inset-0 z-30 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
+      className="m-0 box-border flex max-h-none max-w-none items-center justify-center border-0 bg-black/90 p-4 backdrop-blur-sm open:flex open:absolute open:inset-0 open:z-30"
+      onClose={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
       }}
     >
-      <div
-        className="bg-black/90 backdrop-blur-md rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative border border-white/20 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="bg-black/90 backdrop-blur-md rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative border border-white/20 shadow-2xl">
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
           <h3 className="text-2xl font-bold text-white flex items-center gap-2">
             <Question className="size-6 text-accent dark:text-accent-dark" />
@@ -55,6 +69,6 @@ export default function VideoInfoOverlay({
           subtitles={subtitles}
         />
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -86,6 +86,23 @@ export default function ResizableColumn({
 
   const pixelWidth = Math.max(minWidth, parseInt(width, 10) || minWidth);
 
+  const handleActivate = (e) => {
+    if (wasResizingRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClick?.(e);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!sortable) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleActivate(e);
+    }
+  };
+
   return (
     <th
       className={`relative group select-none overflow-hidden ${className} ${
@@ -100,14 +117,9 @@ export default function ResizableColumn({
               maxWidth: `${pixelWidth}px`,
             }
       }
-      onClick={(e) => {
-        if (wasResizingRef.current) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        onClick?.(e);
-      }}
+      onClick={sortable ? handleActivate : undefined}
+      onKeyDown={sortable ? handleKeyDown : undefined}
+      tabIndex={sortable ? 0 : undefined}
     >
       <div className="flex items-center min-w-0 pr-3">{children}</div>
       {!(isMobile && columnId === 'name') && (
