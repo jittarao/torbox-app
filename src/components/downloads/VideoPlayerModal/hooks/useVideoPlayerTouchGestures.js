@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { usePlayerGestures } from './usePlayerGestures';
 
 export function useVideoPlayerTouchGestures({
@@ -48,7 +48,7 @@ export function useVideoPlayerTouchGestures({
     onClose();
   }, [isFullscreen, exitFullscreen, onClose]);
 
-  const { bindGestures } = usePlayerGestures({
+  usePlayerGestures({
     enabled: isOpen && isTouchPlayer && !isLoading && !error,
     targetRef: playerAreaRef,
     onToggleControls: toggleControls,
@@ -56,11 +56,6 @@ export function useVideoPlayerTouchGestures({
     onSwipeDown: handleSwipeDown,
     isBlocked: () => isSeeking || showSettingsSheet || showInfoSheet || showInfo,
   });
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    return bindGestures();
-  }, [isOpen, bindGestures]);
 
   return { handleSeekFeedbackDone };
 }

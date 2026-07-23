@@ -73,6 +73,7 @@ export function usePollTimer({
     let pollTimeoutId = null;
     let safetyTimeoutId = null;
     let graceStopTimeoutId = null;
+    let staggerTimeoutIds = [];
     let cancelled = false;
 
     const presence = () => getUserPresenceRef.current();
@@ -126,6 +127,7 @@ export function usePollTimer({
     const pollAllAssetTypes = () => {
       let anySkipped = false;
       let completed = 0;
+      const staggerTimeoutIds = [];
 
       const finishIfDone = () => {
         completed += 1;
@@ -148,14 +150,18 @@ export function usePollTimer({
         if (index === 0) {
           runPoll();
         } else {
-          setTimeout(runPoll, index * POLLING_CONFIG.allTabStaggerMs);
+          const staggerId = setTimeout(runPoll, index * POLLING_CONFIG.allTabStaggerMs);
+          staggerTimeoutIds.push(staggerId);
         }
       });
+
+      return staggerTimeoutIds;
     };
 
     const runImmediateRefresh = () => {
       if (type === 'all') {
-        pollAllAssetTypes();
+        clearStaggerTimeouts();
+        staggerTimeoutIds = pollAllAssetTypes();
         return;
       }
       if (isRateLimitedRef.current(type)) {
@@ -176,7 +182,8 @@ export function usePollTimer({
       }
 
       if (type === 'all') {
-        pollAllAssetTypes();
+        clearStaggerTimeouts();
+        staggerTimeoutIds = pollAllAssetTypes();
         return;
       }
 
@@ -207,6 +214,11 @@ export function usePollTimer({
 
     const resetLastTickTime = () => {
       // Reserved for sleep-wake detection if reintroduced.
+    };
+
+    const clearStaggerTimeouts = () => {
+      staggerTimeoutIds.forEach(clearTimeout);
+      staggerTimeoutIds = [];
     };
 
     const clearSafetyTimeout = () => {
@@ -266,6 +278,7 @@ export function usePollTimer({
 
     const stopPolling = () => {
       clearSafetyTimeout();
+      clearStaggerTimeouts();
       if (workerPort) {
         workerPort.postMessage({ type: 'poll:stop' });
       }
@@ -369,6 +382,7 @@ export function usePollTimer({
       stopPolling();
       clearSafetyTimeout();
       clearGraceStopTimeout();
+      clearStaggerTimeouts();
       if (workerPort) {
         try {
           workerPort.close();

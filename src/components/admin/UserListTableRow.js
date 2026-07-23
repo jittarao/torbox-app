@@ -1,4 +1,4 @@
-import { adminRowHoverClass } from './AdminUi';
+import { AdminBadge, adminRowHoverClass } from './AdminUi';
 import { formatLastSeen } from '@/utils/formatLastSeen';
 
 const userTdClass = 'whitespace-nowrap px-3 py-2.5 text-sm text-text dark:text-text-dark lg:px-4';
