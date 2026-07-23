@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useLatestRef } from '@/hooks/useLatestRef';
 import { useTranslations } from 'next-intl';
 import { archiveAndRemoveItem, batchArchiveAndRemove } from '@/utils/archiveHelpers';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
@@ -14,8 +15,7 @@ export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetTyp
   const { partition, toastAllBlocked, skipSuffix, mapProtectedError, guardSingle } =
     useDestructiveActionGuard(setToast);
 
-  const setIsArchivingRef = useRef(setIsArchiving);
-  setIsArchivingRef.current = setIsArchiving;
+  const setIsArchivingRef = useLatestRef(setIsArchiving);
 
   const applyLocalRemovals = (successfulIds) => {
     if (successfulIds.length === 0) return;

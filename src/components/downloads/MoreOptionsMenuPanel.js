@@ -1,3 +1,6 @@
+'use client';
+
+import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import ModalOverlay from '@/components/shared/ModalOverlay';
 
@@ -12,6 +15,12 @@ export default function MoreOptionsMenuPanel({
   onClose,
   children,
 }) {
+  const portalMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
   if (!isMenuOpen || !isMounted) return null;
 
   if (mobileBar) {
@@ -60,6 +69,10 @@ export default function MoreOptionsMenuPanel({
         </div>
       </ModalOverlay>
     );
+  }
+
+  if (!portalMounted || typeof document === 'undefined') {
+    return null;
   }
 
   return createPortal(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 /**
  * Apply single-row or shift+click range selection to a Set of row ids.
@@ -57,7 +57,10 @@ export function applyShiftRangeToSet(
 export function useShiftRangeRowSelection(items, getRowId) {
   const lastClickedIndexRef = useRef(null);
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const resetAnchor = useCallback(() => {
     lastClickedIndexRef.current = null;

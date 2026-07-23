@@ -51,3 +51,13 @@ The backend automation files use sequential iteration because operations depend 
 MigrationRunner dynamically imports migration files by their path — the path pattern is intentionally dynamic because migration filenames are not known at build time.
 
 - `backend/src/database/MigrationRunner.js:200,276,357` — dynamic migration loading
+
+## `react-doctor/effect-needs-cleanup`
+
+The rule’s matcher does not trace teardown through local helpers, positive `if` branches, or async/nested callbacks, even when the effect returns a cleanup that releases every registered timer, listener, or subscription. Verified manually — no leak on unmount or dep change.
+
+- `src/components/downloads/VideoPlayer.js` — DOM listeners and Shaka init each return `removeEventListener` / `clearTimeout` / `player.destroy()` teardown; seek listener registered inside async `initPlayer` is cleared in the same effect’s returned cleanup.
+- `src/components/shared/hooks/useActivityBeacon.js` — `visibilitychange` listener and `setInterval` cleared in the effect return (`stopInterval` + `removeEventListener`).
+- `src/components/shared/hooks/useAutomationEvents.js` — SSE uses `AbortController.abort()` plus `clearTimeout` for reconnect/debounce timers in the effect return (no `addEventListener`; rule message is generic).
+- `src/components/shared/hooks/usePollTimer.js` — poll `setTimeout`s, SharedWorker `message` listener, and `useTorboxDownloadsStore.subscribe` all torn down in the returned cleanup (`clearTimeout`, `removeEventListener`, `unsubscribeQueue`).
+- `src/components/shared/hooks/usePresenceAwarePollTimer.js` — poll `setTimeout` and presence/pause store unsubscribes cleared in the effect return.

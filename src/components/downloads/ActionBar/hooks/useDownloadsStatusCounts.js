@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { STATUS_OPTIONS } from '@/components/constants';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
@@ -45,17 +45,17 @@ export function useDownloadsStatusCounts(activeType) {
       return { counts: cache.counts, total: cache.total };
     }
 
-    const result = selectStatusCountsFromIds({ entities, order }, activeType);
+    return selectStatusCountsFromIds({ entities, order }, activeType);
+  }, [entities, order, viewIds, activeType]);
 
+  useLayoutEffect(() => {
     countsCacheRef.current = {
       ids: viewIds.slice(),
       rowRefs: viewIds.map((id) => entities[id]),
-      counts: result.counts,
-      total: result.total,
+      counts,
+      total,
     };
-
-    return result;
-  }, [entities, order, viewIds, activeType]);
+  }, [viewIds, entities, counts, total]);
 
   const statusOptions = useMemo(() => {
     return STATUS_OPTIONS.reduce((acc, option) => {

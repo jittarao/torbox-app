@@ -15,69 +15,69 @@ export function useActivityBeacon() {
   const apiKey = useSessionStore((s) => s.apiKey);
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
   const lastPingAtRef = useRef(0);
-  const intervalIdRef = useRef(null);
+
+  const isActive =
+    Boolean(apiKey) &&
+    !backendIsLoading &&
+    backendMode === 'backend' &&
+    typeof document !== 'undefined';
 
   useEffect(() => {
-    if (
-      !apiKey ||
-      backendIsLoading ||
-      backendMode !== 'backend' ||
-      typeof document === 'undefined'
-    ) {
-      return undefined;
-    }
+    if (isActive) {
+      const ping = async () => {
+        if (document.visibilityState !== 'visible') return;
+        const now = Date.now();
+        if (now - lastPingAtRef.current < MIN_PING_GAP_MS) return;
 
-    const ping = async () => {
-      if (document.visibilityState !== 'visible') return;
-      const now = Date.now();
-      if (now - lastPingAtRef.current < MIN_PING_GAP_MS) return;
-
-      try {
-        const response = await fetch('/api/backend/activity', {
-          method: 'POST',
-          headers: { 'x-api-key': apiKey },
-        });
-        if (response.ok) {
-          lastPingAtRef.current = now;
+        try {
+          const response = await fetch('/api/backend/activity', {
+            method: 'POST',
+            headers: { 'x-api-key': apiKey },
+          });
+          if (response.ok) {
+            lastPingAtRef.current = now;
+          }
+        } catch {
+          // Non-critical; next interval will retry
         }
-      } catch {
-        // Non-critical; next interval will retry
-      }
-    };
+      };
 
-    const startInterval = () => {
-      if (intervalIdRef.current != null) return;
-      intervalIdRef.current = setInterval(() => {
-        void ping();
-      }, BEACON_INTERVAL_MS);
-    };
+      let intervalId = null;
 
-    const stopInterval = () => {
-      if (intervalIdRef.current != null) {
-        clearInterval(intervalIdRef.current);
-        intervalIdRef.current = null;
-      }
-    };
+      const startInterval = () => {
+        if (intervalId != null) return;
+        intervalId = setInterval(() => {
+          void ping();
+        }, BEACON_INTERVAL_MS);
+      };
 
-    const handleVisibility = () => {
+      const stopInterval = () => {
+        if (intervalId != null) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      };
+
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          void ping();
+          startInterval();
+        } else {
+          stopInterval();
+        }
+      };
+
       if (document.visibilityState === 'visible') {
         void ping();
         startInterval();
-      } else {
-        stopInterval();
       }
-    };
 
-    if (document.visibilityState === 'visible') {
-      void ping();
-      startInterval();
+      document.addEventListener('visibilitychange', handleVisibility);
+
+      return () => {
+        stopInterval();
+        document.removeEventListener('visibilitychange', handleVisibility);
+      };
     }
-
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      stopInterval();
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, [apiKey, backendMode, backendIsLoading]);
+  }, [apiKey, isActive]);
 }
