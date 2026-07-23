@@ -78,7 +78,7 @@ export default function MoreOptionsMenuPanel({
   return createPortal(
     <div
       ref={menuRef}
-      className="fixed z-50 w-48 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg animate-in fade-in-0 zoom-in-95 duration-100"
+      className="fixed z-50 w-48 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-md shadow-lg"
       style={{
         top: `${menuPosition.top}px`,
         left: `${menuPosition.left}px`,

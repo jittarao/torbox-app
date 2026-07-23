@@ -143,6 +143,16 @@ const sanitizeFilename = (filename) => {
   return actualFilename.replace(/[<>:"\\|?*\x00-\x1F]/g, '_');
 };
 
+function extractDownloadUrl(data) {
+  // Handle different response formats from different API endpoints
+  if (data.data) {
+    return data.data; // Torrents and WebDL format
+  } else if (data.download_url) {
+    return data.download_url; // Usenet format
+  }
+  return null;
+}
+
 export function useDownloads(
   apiKey,
   assetType = 'torrents',
@@ -203,16 +213,6 @@ export function useDownloads(
       default:
         return 'torrent_id';
     }
-  };
-
-  const extractDownloadUrl = (data) => {
-    // Handle different response formats from different API endpoints
-    if (data.data) {
-      return data.data; // Torrents and WebDL format
-    } else if (data.download_url) {
-      return data.download_url; // Usenet format
-    }
-    return null;
   };
 
   const requestDownloadLink = useCallback(

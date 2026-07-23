@@ -86,7 +86,7 @@ function DesktopVideoControls({
               onRewind();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label="Rewind 30 seconds"
             title="Rewind 30s (Left Arrow)"
@@ -104,7 +104,7 @@ function DesktopVideoControls({
               onPlayPause();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
@@ -127,7 +127,7 @@ function DesktopVideoControls({
               onForward();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label="Forward 30 seconds"
             title="Forward 30s (Right Arrow)"
@@ -189,7 +189,7 @@ function DesktopVideoControls({
                 onVolumeSliderHide();
               }}
               className="relative p-2 rounded-full bg-white/10 hover:bg-white/20 
-              backdrop-blur-sm text-white transition-all duration-200
+              backdrop-blur-sm text-white transition-colors transition-transform duration-200
               hover:scale-110 active:scale-95"
               aria-label="Playback Speed"
               title={`Playback Speed: ${playbackSpeed}x`}
@@ -255,7 +255,7 @@ function DesktopVideoControls({
               onVolumeSliderHide();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label="Info"
           >
@@ -272,7 +272,7 @@ function DesktopVideoControls({
               onFullscreen();
             }}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-            backdrop-blur-sm text-white transition-all duration-200
+            backdrop-blur-sm text-white transition-colors transition-transform duration-200
             hover:scale-110 active:scale-95"
             aria-label="Fullscreen"
           >

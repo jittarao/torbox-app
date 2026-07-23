@@ -14,7 +14,7 @@ function DistributionBar({ label, value, max }) {
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-surface-alt dark:bg-surface-alt-dark">
         <div
-          className="h-full rounded-full bg-accent transition-all dark:bg-accent-dark"
+          className="h-full rounded-full bg-accent transition-[width] dark:bg-accent-dark"
           style={{ width: `${pct}%` }}
           role="presentation"
         />

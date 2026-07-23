@@ -15,6 +15,17 @@ import {
 import { clonePresetFilters } from './CustomViews/presets';
 import { LOGIC_OPERATORS } from './AutomationRules/constants';
 
+function ensureStructure(prev) {
+  if (prev?.groups && Array.isArray(prev.groups)) return prev;
+  if (Array.isArray(prev)) {
+    return {
+      logicOperator: LOGIC_OPERATORS.AND,
+      groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
+    };
+  }
+  return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+}
+
 export function useFilterEditorModal({
   isOpen,
   onClose,
@@ -154,17 +165,6 @@ export function useFilterEditorModal({
 
   const groupLogicOperator = columnFilters?.logicOperator || LOGIC_OPERATORS.AND;
   const filtersActive = hasActiveFilters(columnFilters);
-
-  const ensureStructure = (prev) => {
-    if (prev?.groups && Array.isArray(prev.groups)) return prev;
-    if (Array.isArray(prev)) {
-      return {
-        logicOperator: LOGIC_OPERATORS.AND,
-        groups: [{ logicOperator: LOGIC_OPERATORS.AND, filters: prev }],
-      };
-    }
-    return JSON.parse(JSON.stringify(EMPTY_FILTERS));
-  };
 
   const handleAddGroup = () => {
     setColumnFilters((prev) => {

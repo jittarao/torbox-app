@@ -1,6 +1,12 @@
 import { useTranslations } from 'next-intl';
 import { getMatchingStatus } from '@/components/downloads/ActionBar/utils/statusHelpers';
 
+const SIZE_CLASSES = {
+  xs: 'px-1.5 py-0.5 text-[10px] leading-4 font-medium',
+  sm: 'px-1.5 py-0.5 text-xs leading-4 font-medium',
+  default: 'px-2 py-0.5 text-xs leading-5 font-semibold',
+};
+
 export default function DownloadStateBadge({ item, size = 'default' }) {
   const t = useTranslations('Statuses');
 
@@ -42,16 +48,9 @@ export default function DownloadStateBadge({ item, size = 'default' }) {
       : null) ||
     t('unknown');
 
-  // Size variants
-  const sizeClasses = {
-    xs: 'px-1.5 py-0.5 text-[10px] leading-4 font-medium',
-    sm: 'px-1.5 py-0.5 text-xs leading-4 font-medium',
-    default: 'px-2 py-0.5 text-xs leading-5 font-semibold',
-  };
-
   return (
     <span
-      className={`inline-flex rounded-full w-fit ${badgeStyle} ${sizeClasses[size] || sizeClasses.default}`}
+      className={`inline-flex rounded-full w-fit ${badgeStyle} ${SIZE_CLASSES[size] || SIZE_CLASSES.default}`}
     >
       {statusText}
     </span>
