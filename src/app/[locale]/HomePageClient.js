@@ -11,7 +11,7 @@ import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { useAppAlert } from '@/hooks/useAppAlert';
 
-const landingShell = <div className="min-h-screen bg-[#0a0a0b]" aria-hidden />;
+const landingShell = <div className="min-h-dvh bg-[#0a0a0b]" aria-hidden />;
 
 const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
   loading: () => (
@@ -93,7 +93,7 @@ export default function HomePageClient() {
   };
 
   if (!isClient || !hydrated) {
-    return <div className="min-h-screen bg-[#0a0a0b] font-sans" aria-hidden inert />;
+    return <div className="min-h-dvh bg-[#0a0a0b] font-sans" aria-hidden inert />;
   }
 
   if (!apiKey) {
@@ -108,7 +108,7 @@ export default function HomePageClient() {
   }
 
   return (
-    <AppShell apiKey={apiKey} className="min-h-screen bg-surface dark:bg-surface-dark font-sans">
+    <AppShell apiKey={apiKey} className="min-h-dvh bg-surface dark:bg-surface-dark font-sans">
       <div
         ref={mainRef}
         tabIndex={-1}

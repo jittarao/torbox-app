@@ -78,19 +78,20 @@ export function useTorboxNativeNotifications(apiKey) {
     }
 
     const payloads = buildTorboxNativeNotificationPayloads(itemsToNotify);
-    const shownIds = [];
 
     void (async () => {
-      for (const payload of payloads) {
-        try {
-          const shown = await showTorboxNotification(payload.title, payload.body);
-          if (shown && payload.id != null) {
-            shownIds.push(payload.id);
+      const results = await Promise.all(
+        payloads.map(async (payload) => {
+          try {
+            const shown = await showTorboxNotification(payload.title, payload.body);
+            return shown && payload.id != null ? payload.id : null;
+          } catch (error) {
+            console.error('Failed to show TorBox native notification:', error);
+            return null;
           }
-        } catch (error) {
-          console.error('Failed to show TorBox native notification:', error);
-        }
-      }
+        })
+      );
+      const shownIds = results.filter((id) => id != null);
 
       if (shownIds.length > 0) {
         persistOsNotifiedIds(shownIds);

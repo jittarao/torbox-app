@@ -257,7 +257,8 @@
       "uploadSpeed": "Velocidad de carga actual",
       "uploadSpeedDescription": "Velocidad de carga instantánea actual",
       "uploadStalledTime": "Tiempo de bloqueo de carga",
-      "uploadStalledTimeDescription": "Tiempo desde que la actividad de carga se detuvo (en minutos)"
+      "uploadStalledTimeDescription": "Tiempo desde que la actividad de carga se detuvo (en minutos)",
+      "value": "Valor"
     },
     "delete": "Eliminar",
     "details": "Detalles",
@@ -446,6 +447,7 @@
     "of": "de",
     "previous": "Anterior",
     "protected": "Protegido",
+    "selectAll": "Seleccionar todo",
     "selectRow": "Seleccionar {name}",
     "showing": "Mostrando",
     "time": {
@@ -1091,6 +1093,7 @@
       "title": "No hay enlaces de descarga"
     },
     "expired": "Expirado",
+    "searchLabel": "Buscar historial de enlaces",
     "status": {
       "failed": "Fallido"
     },
@@ -1427,6 +1430,7 @@
       "linear": "Lineal",
       "logarithmic": "Logarítmico"
     },
+    "timeRange": "Intervalo de tiempo",
     "timeRanges": {
       "10m": "Último 10m",
       "1h": "Último 1h",
@@ -1669,6 +1673,7 @@
     "mute": "Silenciar",
     "pause": "Pausar",
     "play": "Reproducir",
+    "playbackProgress": "Buscar posición de reproducción",
     "playbackSpeed": "Velocidad de reproducción",
     "retry": "Reintentar",
     "seekBack10": "Retroceder 10 segundos",

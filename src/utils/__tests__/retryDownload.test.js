@@ -145,6 +145,8 @@ describe('retryDownload', () => {
     }));
 
     globalThis.fetch = mock(async () => ({
+      ok: true,
+      status: 200,
       json: async () => ({
         success: true,
         data: 'magnet:?xt=urn:btih:full',

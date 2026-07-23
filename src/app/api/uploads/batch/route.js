@@ -7,6 +7,7 @@ import {
   jsonWithRateLimitHeaders,
   mergeRateLimitHeaders,
 } from '@/app/api/lib/forwardRateLimitHeaders';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -149,9 +150,9 @@ export async function POST(request) {
     });
 
     const rateLimitHeaders = extractRateLimitHeaders(response);
-    const data = await response.json().catch(() => ({}));
+    const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-    if (response.status === 429) {
+    if (responseStatus === 429) {
       return rateLimitedUploadResponse(
         rateLimitHeaders,
         data.error || 'Too many upload requests, please try again later.',
@@ -159,7 +160,7 @@ export async function POST(request) {
       );
     }
 
-    if (!response.ok) {
+    if (!responseOk) {
       // Clean up all successfully uploaded files if batch creation failed
       const cleanupPromises = Array.from(filePathMap.values()).map((filePath) =>
         fetch(`${BACKEND_URL}/api/uploads/file`, {
@@ -185,11 +186,11 @@ export async function POST(request) {
       return jsonWithRateLimitHeaders(
         {
           success: false,
-          error: data.error || `Backend responded with status: ${response.status}`,
+          error: data.error || `Backend responded with status: ${responseStatus}`,
           detail: data.detail,
         },
         {
-          status: response.status,
+          status: responseStatus,
           headers: rateLimitHeaders,
         }
       );

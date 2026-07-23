@@ -1,9 +1,21 @@
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { STATUS_OPTIONS } from '@/components/constants';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { selectStatusCountsFromIds } from '@/store/downloadsDerivedSelectors';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
+
+function isStatusSelected(status, statusFilter) {
+  if (statusFilter === 'all') return false;
+
+  const targetValue = STATUS_OPTIONS.find((opt) => opt.label === status)?.value;
+  if (!targetValue) return false;
+
+  const stringifiedTarget = JSON.stringify(targetValue);
+  return Array.isArray(statusFilter)
+    ? statusFilter.includes(stringifiedTarget)
+    : statusFilter === stringifiedTarget;
+}
 
 /**
  * Status tab counts from the current view (unfiltered).
@@ -45,17 +57,17 @@ export function useDownloadsStatusCounts(activeType) {
       return { counts: cache.counts, total: cache.total };
     }
 
-    const result = selectStatusCountsFromIds({ entities, order }, activeType);
+    return selectStatusCountsFromIds({ entities, order }, activeType);
+  }, [entities, order, viewIds, activeType]);
 
+  useLayoutEffect(() => {
     countsCacheRef.current = {
       ids: viewIds.slice(),
       rowRefs: viewIds.map((id) => entities[id]),
-      counts: result.counts,
-      total: result.total,
+      counts,
+      total,
     };
-
-    return result;
-  }, [entities, order, viewIds, activeType]);
+  }, [viewIds, entities, counts, total]);
 
   const statusOptions = useMemo(() => {
     return STATUS_OPTIONS.reduce((acc, option) => {
@@ -68,18 +80,6 @@ export function useDownloadsStatusCounts(activeType) {
       return acc;
     }, []);
   }, [counts, total]);
-
-  const isStatusSelected = (status, statusFilter) => {
-    if (statusFilter === 'all') return false;
-
-    const targetValue = STATUS_OPTIONS.find((opt) => opt.label === status)?.value;
-    if (!targetValue) return false;
-
-    const stringifiedTarget = JSON.stringify(targetValue);
-    return Array.isArray(statusFilter)
-      ? statusFilter.includes(stringifiedTarget)
-      : statusFilter === stringifiedTarget;
-  };
 
   return {
     statusCounts: counts,

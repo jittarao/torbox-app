@@ -4,26 +4,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
-import { selectDisplayResults, TORBOX_NATIVE_TRACKERS } from '@/store/searchSelectors';
+import { selectDisplayResults } from '@/store/searchSelectors';
 import { useSearchFilterParams } from '@/hooks/useSearchFilterParams';
-import Dropdown from '@/components/shared/Dropdown';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import { useUpload } from '@/components/shared/hooks/useUpload';
-import { Bolt, Clock, EyeOff, Layers, Tracker, UpArrow } from '@/components/icons';
-import { formatSize } from '@/components/downloads/utils/formatters';
-
-const SORT_OPTIONS = {
-  torrents: [
-    { value: 'seeders', label: 'Most Seeders' },
-    { value: 'size', label: 'Largest Size' },
-    { value: 'age', label: 'Most Recent' },
-  ],
-  usenet: [
-    { value: 'size', label: 'Largest Size' },
-    { value: 'age', label: 'Most Recent' },
-  ],
-};
+import SearchResultsToolbar from './SearchResultsToolbar';
+import SearchResultRow from './SearchResultRow';
 
 export default function SearchResults({ apiKey }) {
   const searchState = useSearchStore(
@@ -70,12 +57,10 @@ export default function SearchResults({ apiKey }) {
     ]
   );
 
-  // Clear results when API key changes
   useEffect(() => {
     clearResults();
   }, [apiKey, clearResults]);
 
-  // Update sort key when search type changes
   useEffect(() => {
     if (searchType === 'usenet' && sortKey === 'seeders') {
       setSortKey('age');
@@ -136,10 +121,6 @@ export default function SearchResults({ apiKey }) {
     }
   };
 
-  const handleSortChange = (newSortKey) => {
-    setSortKey(newSortKey);
-  };
-
   const showNoResults =
     hasSearchCompleted && Boolean(query) && !loading && !error && results.length === 0;
   const hasContent = loading || error || showNoResults || results.length > 0;
@@ -150,219 +131,30 @@ export default function SearchResults({ apiKey }) {
     <div>
       {results.length > 0 && (
         <>
-          {/* Search results actions */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
-            <div className="flex items-center gap-4">
-              <h2 className="text-lg md:text-xl font-semibold text-primary-text dark:text-primary-text-dark">
-                {t('results', { count: displayResults.length })}
-              </h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer order-2 md:order-1">
-                <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  {t('cachedOnly')}
-                </span>
+          <SearchResultsToolbar
+            resultCount={displayResults.length}
+            searchType={searchType}
+            showCachedOnly={showCachedOnly}
+            onShowCachedOnlyChange={setShowCachedOnly}
+            hideTorBoxIndexers={hideTorBoxIndexers}
+            onHideTorBoxIndexersChange={setHideTorBoxIndexers}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSortKeyChange={setSortKey}
+            onSortDirToggle={() => setSortDir(sortDir === 'desc' ? 'asc' : 'desc')}
+          />
 
-                <div
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors
-                      ${
-                        showCachedOnly
-                          ? 'bg-accent dark:bg-accent-dark'
-                          : 'bg-border dark:bg-border-dark'
-                      }`}
-                  onClick={() => setShowCachedOnly(!showCachedOnly)}
-                  role="switch"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setShowCachedOnly(!showCachedOnly);
-                    }
-                  }}
-                  aria-checked={showCachedOnly}
-                >
-                  <span
-                    className={`inline-block size-4 transform rounded-full bg-white transition-transform
-                        ${showCachedOnly ? 'translate-x-4' : 'translate-x-1'}`}
-                  />
-                </div>
-              </label>
-
-              {/* Hide TorBox Trackers */}
-              {searchType === 'usenet' && (
-                <label className="flex items-center gap-2">
-                  <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-                    <EyeOff />
-                    {t('hideTorBoxIndexers')}
-                  </span>
-
-                  <div
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
-              ${
-                hideTorBoxIndexers
-                  ? 'bg-accent dark:bg-accent-dark'
-                  : 'bg-border dark:bg-border-dark'
-              }`}
-                    onClick={() => setHideTorBoxIndexers(!hideTorBoxIndexers)}
-                    role="switch"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setHideTorBoxIndexers(!hideTorBoxIndexers);
-                      }
-                    }}
-                    aria-checked={hideTorBoxIndexers}
-                  >
-                    <span
-                      className={`inline-block size-4 transform rounded-full bg-white transition-transform
-                ${hideTorBoxIndexers ? 'translate-x-4' : 'translate-x-1'}`}
-                    />
-                  </div>
-                </label>
-              )}
-
-              <div className="flex items-center gap-2 flex-1 md:flex-none order-1 md:order-2">
-                <Dropdown
-                  options={SORT_OPTIONS[searchType]}
-                  value={sortKey}
-                  onChange={handleSortChange}
-                  className="w-full md:w-40"
-                />
-                <button
-                  type="button"
-                  onClick={() => setSortDir(sortDir === 'desc' ? 'asc' : 'desc')}
-                  className="p-2 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
-                >
-                  {sortDir === 'desc' ? '↓' : '↑'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Search results list */}
           <div className="min-w-0 space-y-4">
             {displayResults.map((item) => (
-              <div
+              <SearchResultRow
                 key={item.hash}
-                className="min-w-0 overflow-hidden p-4 rounded-lg border border-border dark:border-border-dark 
-                         bg-surface dark:bg-surface-dark
-                         hover:bg-surface-hover dark:hover:bg-surface-hover-dark space-y-3"
-              >
-                <div className="flex min-w-0 flex-col gap-2">
-                  <div className="flex min-w-0 flex-col gap-2">
-                    <h3 className="min-w-0 break-words text-sm font-medium md:text-lg dark:text-white">
-                      {item.raw_title || item.title}
-                    </h3>
-                    {item.title_parsed_data && (
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span
-                          className="bg-surface-alt dark:bg-surface-alt-dark 
-                                       text-primary-text dark:text-primary-text-dark 
-                                       px-1.5 py-0.5 rounded"
-                        >
-                          {item.title_parsed_data.resolution}
-                        </span>
-                        {item.title_parsed_data.quality && (
-                          <span className="bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark px-1.5 py-0.5 rounded">
-                            {item.title_parsed_data.quality}
-                          </span>
-                        )}
-                        {item.title_parsed_data.year && (
-                          <span className="bg-surface-alt dark:bg-surface-alt-dark text-primary-text dark:text-primary-text-dark px-1.5 py-0.5 rounded">
-                            {item.title_parsed_data.year}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex min-w-0 flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
-                  <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-1.5">
-                      <Layers />
-                      {formatSize(item.size)}
-                    </div>
-                    {searchType === 'torrents' && (
-                      <div className="flex items-center gap-1.5">
-                        <UpArrow />
-                        {item.last_known_seeders}
-                        {item.last_known_peers > 0 && ` / ${item.last_known_peers}`}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1.5">
-                      <Clock />
-                      {String(item.age).replace('d', ` ${t('metadata.days')}`)}
-                    </div>
-                    {item.tracker && item.tracker !== 'Unknown' && (
-                      <div className="flex items-center gap-1.5">
-                        <Tracker />
-                        {item.tracker}
-                      </div>
-                    )}
-                    {item.cached && (
-                      <span className="text-green-600 dark:text-green-400 flex items-center gap-1.5">
-                        <Bolt />
-                        {t('metadata.cached')}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 md:gap-4">
-                    {/* Show copy button if search type is torrents or usenet and not a native tracker */}
-                    {(searchType === 'torrents' ||
-                      (searchType === 'usenet' &&
-                        !TORBOX_NATIVE_TRACKERS.includes(item.tracker))) && (
-                      <button
-                        type="button"
-                        onClick={() => copyLink(item)}
-                        className="shrink-0 px-3 py-1 text-sm bg-accent hover:bg-accent/90 
-                              dark:bg-accent-dark dark:hover:bg-accent-dark/90
-                              text-white rounded-md transition-colors"
-                      >
-                        {t(`actions.${searchType === 'usenet' ? 'copyLink' : 'copyMagnet'}`)}
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => handleUpload(item)}
-                      disabled={
-                        isUploading[item.hash] ||
-                        addedItems.some((addedItem) => addedItem.hash === item.hash)
-                      }
-                      className={`shrink-0 px-3 py-1 text-sm text-white rounded-md transition-colors
-                        ${
-                          isUploading[item.hash]
-                            ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                            : addedItems.some((addedItem) => addedItem.hash === item.hash)
-                              ? 'bg-label-default-text dark:bg-label-default-text-dark cursor-not-allowed'
-                              : 'bg-label-success-text dark:bg-label-success-text-dark hover:bg-label-success-text/90 dark:hover:bg-label-success-text-dark/90'
-                        }`}
-                    >
-                      {isUploading[item.hash] ? (
-                        <span className="flex items-center gap-2">
-                          <Spinner size="sm" className="text-white" />
-                          {t('actions.adding')}
-                        </span>
-                      ) : addedItems.some((addedItem) => addedItem.hash === item.hash) ? (
-                        t('actions.added')
-                      ) : (
-                        t('actions.addToTorBox')
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+                item={item}
+                searchType={searchType}
+                isUploading={Boolean(isUploading[item.hash])}
+                isAdded={addedItems.some((addedItem) => addedItem.hash === item.hash)}
+                onCopyLink={copyLink}
+                onUpload={handleUpload}
+              />
             ))}
           </div>
         </>

@@ -6,7 +6,7 @@ import { forwardRef } from 'react';
  * ProgressBar - Video progress bar with seeking capability
  */
 const ProgressBar = forwardRef(function ProgressBar(
-  { progress, isSeeking, onSeek, onSeekStart },
+  { progress, isSeeking, onSeek, onSeekStart, ariaLabel = 'Seek playback position' },
   ref
 ) {
   return (
@@ -14,6 +14,7 @@ const ProgressBar = forwardRef(function ProgressBar(
       type="button"
       ref={ref}
       data-seekbar
+      aria-label={ariaLabel}
       className="w-full h-1.5 bg-white/20 cursor-pointer group pointer-events-auto touch-manipulation"
       onClick={(e) => {
         e.stopPropagation();
@@ -32,7 +33,7 @@ const ProgressBar = forwardRef(function ProgressBar(
       }}
     >
       <div
-        className="h-full bg-accent dark:bg-accent-dark transition-all duration-150
+        className="h-full bg-accent dark:bg-accent-dark transition-[width] duration-150 transition-colors
           group-hover:bg-accent/90 dark:group-hover:bg-accent-dark/90
           relative pointer-events-none"
         style={{ width: `${progress}%` }}

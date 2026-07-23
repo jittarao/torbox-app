@@ -4,6 +4,7 @@ import { uploadItem } from '@/utils/uploadActions';
 import { buildShortMagnetLink } from '@/utils/retryDownload';
 import fetch from '@/utils/fetch';
 import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
+import { resetLoadingIfGenerationCurrent } from '@/utils/asyncLoadingReset';
 
 function transformArchivedItem(item) {
   return {
@@ -43,9 +44,11 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
   const apiKeyRef = useRef(apiKey);
   const searchRef = useRef(search);
   const setPaginationRef = useRef(setPagination);
-  apiKeyRef.current = apiKey;
-  searchRef.current = search;
-  setPaginationRef.current = setPagination;
+  useEffect(() => {
+    apiKeyRef.current = apiKey;
+    searchRef.current = search;
+    setPaginationRef.current = setPagination;
+  }, [apiKey, search, setPagination]);
 
   const usesExternalPagination = Boolean(pagination && setPagination);
   const page = pagination?.page ?? 1;
@@ -129,16 +132,16 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
         setError(err.message);
         setArchivedDownloads((prev) => (prev.length === 0 ? prev : []));
       } finally {
-        if (!signal?.aborted && generation === requestGenerationRef.current) {
-          setLoading(false);
-        }
+        resetLoadingIfGenerationCurrent(signal, generation, requestGenerationRef, setLoading);
       }
     },
     [limit, usesExternalPagination]
   );
 
   const loadArchivedRef = useRef(loadArchivedDownloads);
-  loadArchivedRef.current = loadArchivedDownloads;
+  useEffect(() => {
+    loadArchivedRef.current = loadArchivedDownloads;
+  }, [loadArchivedDownloads]);
 
   useEffect(() => {
     archivedLengthRef.current = archivedDownloads.length;
@@ -277,7 +280,10 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
   };
 
   const clearArchive = async () => {
-    const ids = archivedDownloads.map((item) => item.archiveId).filter(Boolean);
+    const ids = archivedDownloads.flatMap((item) => {
+      const archiveId = item.archiveId;
+      return archiveId ? [archiveId] : [];
+    });
     if (ids.length === 0) return [];
 
     const response = await fetch('/api/archived-downloads/bulk', {

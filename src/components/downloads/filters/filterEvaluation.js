@@ -279,6 +279,7 @@ function evaluateFilter(filter, item) {
   if (isTagsColumn(columnKey)) {
     const itemTags = item.tags || [];
     const itemTagIds = itemTags.map((tag) => tag.id);
+    const itemTagIdSet = new Set(itemTagIds);
     const filterTagIds = Array.isArray(filterValue)
       ? filterValue.reduce((acc, v) => {
           const id = typeof v === 'number' ? v : parseInt(v, 10);
@@ -291,14 +292,14 @@ function evaluateFilter(filter, item) {
       case TAG_OPERATORS.IS_ANY_OF:
       case MULTI_SELECT_OPERATORS.IS_ANY_OF:
         if (filterTagIds.length === 0) return true;
-        return filterTagIds.some((tagId) => itemTagIds.includes(tagId));
+        return filterTagIds.some((tagId) => itemTagIdSet.has(tagId));
       case TAG_OPERATORS.IS_NONE_OF:
       case MULTI_SELECT_OPERATORS.IS_NONE_OF:
         if (filterTagIds.length === 0) return true;
-        return !filterTagIds.some((tagId) => itemTagIds.includes(tagId));
+        return !filterTagIds.some((tagId) => itemTagIdSet.has(tagId));
       case TAG_OPERATORS.IS_ALL_OF:
         if (filterTagIds.length === 0) return true;
-        return filterTagIds.every((tagId) => itemTagIds.includes(tagId));
+        return filterTagIds.every((tagId) => itemTagIdSet.has(tagId));
       case TAG_OPERATORS.IS_SET:
         return itemTagIds.length > 0;
       case TAG_OPERATORS.IS_NOT_SET:

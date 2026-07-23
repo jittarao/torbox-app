@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
+import { resetFlagsIfRequestCurrent } from '@/utils/asyncLoadingReset';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
 import { normalizeUploadId } from '../utils';
@@ -24,6 +26,11 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   const [uploadStatistics, setUploadStatistics] = useState(null);
   const uploadsRequestIdRef = useRef(0);
   const statusCountsRequestIdRef = useRef(0);
+  const listQueryRef = useRef({
+    activeTab,
+    type: filters.type,
+    search: filters.search,
+  });
 
   // Subscribe to backend mode store to react to changes
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
@@ -51,6 +58,22 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       }
 
       const requestId = ++uploadsRequestIdRef.current;
+      const queryChanged =
+        listQueryRef.current.activeTab !== activeTab ||
+        listQueryRef.current.type !== filters.type ||
+        listQueryRef.current.search !== filters.search;
+
+      if (queryChanged) {
+        listQueryRef.current = {
+          activeTab,
+          type: filters.type,
+          search: filters.search,
+        };
+        setUploads([]);
+        setError(null);
+        uploadsLengthRef.current = 0;
+      }
+
       const showFullPageLoader = uploadsLengthRef.current === 0;
       try {
         if (showFullPageLoader) {
@@ -78,13 +101,13 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
           return;
         }
 
-        const data = await response.json();
+        const { ok: responseOk, data } = await readJsonFromResponse(response);
 
         if (requestId !== uploadsRequestIdRef.current) {
           return;
         }
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to fetch uploads');
         }
 
@@ -113,10 +136,7 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
           console.error('Error fetching uploads:', err);
         }
       } finally {
-        if (requestId === uploadsRequestIdRef.current) {
-          setLoading(false);
-          setRefreshing(false);
-        }
+        resetFlagsIfRequestCurrent(requestId, uploadsRequestIdRef, setLoading, setRefreshing);
       }
     },
     [
@@ -163,9 +183,13 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
         return;
       }
 
-      const data = await response.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
       if (requestId !== statusCountsRequestIdRef.current) {
+        return;
+      }
+
+      if (!responseOk) {
         return;
       }
 
@@ -184,12 +208,6 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   useEffect(() => {
     uploadsLengthRef.current = uploads.length;
   }, [uploads]);
-
-  // Avoid showing the previous tab's rows while a new tab/filter fetch is in flight
-  useEffect(() => {
-    setUploads([]);
-    setError(null);
-  }, [activeTab, filters.type, filters.search]);
 
   useEffect(() => {
     fetchUploads();

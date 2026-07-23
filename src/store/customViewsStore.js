@@ -17,7 +17,10 @@ async function readApiError(response, fallback) {
 
 export function reorderViewsByIds(views, orderedIds) {
   const viewById = new Map(views.map((view) => [String(view.id), view]));
-  return orderedIds.map((id) => viewById.get(String(id))).filter(Boolean);
+  return orderedIds.flatMap((id) => {
+    const view = viewById.get(String(id));
+    return view ? [view] : [];
+  });
 }
 
 export function normalizeLoadedViews(views) {

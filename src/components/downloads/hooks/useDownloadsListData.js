@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useEffect } from 'react';
+import { useLayoutEffect, useMemo, useRef, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useDownloadHistoryStore } from '@/store/downloadHistoryStore';
@@ -17,14 +17,6 @@ import { downloadSearchNeedsFileCache } from '@/components/downloads/utils/downl
 import { useTags } from '@/components/shared/hooks/useTags';
 import { useDownloadTags } from '@/components/shared/hooks/useDownloadTags';
 import { useProtectedDownloads } from '@/components/shared/hooks/useProtectedDownloads';
-
-function useStableShallow(value) {
-  const ref = useRef(value);
-  if (value !== ref.current) {
-    ref.current = value;
-  }
-  return ref.current;
-}
 
 function buildFilterCacheKey(criteria) {
   const orViewIds =
@@ -130,10 +122,6 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     }),
     [search, statusFilter, appliedFilters, orViewFilters, viewCombineMode, sortField, sortDirection]
   );
-  const stableTagMappings = useStableShallow(tagMappings);
-  const stableProtectedMap = useStableShallow(protectedMap);
-  const stableDownloadHistory = useStableShallow(downloadHistory);
-
   const deriveCacheRef = useRef({
     filterKey: '',
     tagMappings: null,
@@ -166,9 +154,9 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
   const { allRows, enrichedMap, visibleIds, sortedItems } = useMemo(() => {
     const cache = deriveCacheRef.current;
     const metaUnchanged =
-      cache.tagMappings === stableTagMappings &&
-      cache.protectedMap === stableProtectedMap &&
-      cache.downloadHistory === stableDownloadHistory &&
+      cache.tagMappings === tagMappings &&
+      cache.protectedMap === protectedMap &&
+      cache.downloadHistory === downloadHistory &&
       cache.activeType === activeType;
 
     const dirtyKeys =
@@ -183,13 +171,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
       !metaUnchanged || dirtyKeys === null || dirtyKeys.length === viewIds.length;
 
     if (needsFullListRebuild) {
-      rows = idsToRows(
-        viewIds,
-        entities,
-        stableTagMappings,
-        stableDownloadHistory,
-        stableProtectedMap
-      );
+      rows = idsToRows(viewIds, entities, tagMappings, downloadHistory, protectedMap);
       map = new Map();
       for (let i = 0; i < rows.length; i++) {
         map.set(getDownloadSelectionId(rows[i]), rows[i]);
@@ -200,12 +182,7 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
       for (let d = 0; d < dirtyKeys.length; d++) {
         const key = dirtyKeys[d];
         const entity = entities[key];
-        const row = enrichRowForFilter(
-          entity,
-          stableTagMappings,
-          stableDownloadHistory,
-          stableProtectedMap
-        );
+        const row = enrichRowForFilter(entity, tagMappings, downloadHistory, protectedMap);
         if (!row) continue;
         const selectionId = getDownloadSelectionId(row);
         map.set(selectionId, row);
@@ -238,29 +215,9 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
         if (items[i] === undefined) needsFallback = true;
       }
       if (needsFallback) {
-        items = idsToRows(
-          ids,
-          entities,
-          stableTagMappings,
-          stableDownloadHistory,
-          stableProtectedMap
-        );
+        items = idsToRows(ids, entities, tagMappings, downloadHistory, protectedMap);
       }
     }
-
-    deriveCacheRef.current = {
-      filterKey,
-      tagMappings: stableTagMappings,
-      protectedMap: stableProtectedMap,
-      downloadHistory: stableDownloadHistory,
-      activeType,
-      viewIds,
-      rowSigs: cache.rowSigs,
-      allRows: rows,
-      enrichedMap: map,
-      visibleIds: ids,
-      sortedItems: items,
-    };
 
     return { allRows: rows, enrichedMap: map, visibleIds: ids, sortedItems: items };
   }, [
@@ -268,13 +225,40 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
     entities,
     filterKey,
     filterCriteria,
-    stableTagMappings,
-    stableProtectedMap,
-    stableDownloadHistory,
+    tagMappings,
+    protectedMap,
+    downloadHistory,
     activeType,
     viewIdIndexMap,
     needsFileCacheForSearch,
     filesByEntityKey,
+  ]);
+
+  useLayoutEffect(() => {
+    deriveCacheRef.current = {
+      filterKey,
+      tagMappings,
+      protectedMap,
+      downloadHistory,
+      activeType,
+      viewIds,
+      rowSigs: deriveCacheRef.current.rowSigs,
+      allRows,
+      enrichedMap,
+      visibleIds,
+      sortedItems,
+    };
+  }, [
+    filterKey,
+    tagMappings,
+    protectedMap,
+    downloadHistory,
+    activeType,
+    viewIds,
+    allRows,
+    enrichedMap,
+    visibleIds,
+    sortedItems,
   ]);
 
   return {

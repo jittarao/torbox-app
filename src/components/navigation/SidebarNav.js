@@ -10,7 +10,7 @@ export default function SidebarNav({ nav, isActive, getLabel, onNavigate }) {
   return (
     <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain py-2">
       {nav.sections.map((section, index) => (
-        <Fragment key={section.labelKey ?? index}>
+        <Fragment key={section.id}>
           {index > 0 ? (
             <div
               role="separator"

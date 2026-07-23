@@ -1,6 +1,6 @@
 'use client';
 
-import { NON_RETRYABLE_ERRORS } from '@/config/errors';
+import { isNonRetryableResponse } from '@/config/errors';
 import { retryFetch } from '@/utils/retryFetch';
 import { scheduleForceStartReconcile } from '@/store/downloadListReconcile';
 import {
@@ -88,12 +88,7 @@ export function useUploadActions(apiKey, queue) {
         'x-api-key': apiKey,
       },
       body: JSON.stringify({ uploads }),
-      permanent: [
-        (data) =>
-          Object.values(NON_RETRYABLE_ERRORS).some(
-            (err) => data.error?.includes(err) || data.detail?.includes(err)
-          ),
-      ],
+      permanent: [(data) => isNonRetryableResponse(data)],
     });
   };
 

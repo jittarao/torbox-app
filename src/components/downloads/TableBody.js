@@ -20,6 +20,7 @@ import { useTranslations } from 'next-intl';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import { buildFlattenedTableRows } from './utils/flattenTableRows';
 import FileOverflowRow from './FileOverflowRow';
+import { useEffectiveExpandedById } from '@/components/downloads/hooks/useDownloadRowExpansion';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { useDownloadsVirtualRowSync } from './hooks/useDownloadsVirtualRowSync';
@@ -97,7 +98,7 @@ function useTableBodyState(props) {
   useLayoutOnTabVisible(updateTableOffset);
 
   const deferredItems = useDeferredValue(items);
-  const expandedById = useDownloadsUiStore((state) => state.expandedById);
+  const expandedById = useEffectiveExpandedById(deferredItems);
   const uncappedFileExpandById = useDownloadsUiStore((state) => state.uncappedFileExpandById);
   const deferredExpandedById = useDeferredValue(expandedById);
   const deferredUncappedFileExpandById = useDeferredValue(uncappedFileExpandById);

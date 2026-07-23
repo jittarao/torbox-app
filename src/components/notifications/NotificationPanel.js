@@ -16,6 +16,34 @@ import { useNotifications } from '@/components/shared/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { parseUtcDate } from '@/utils/parseUtcDate';
 
+function getNotificationIcon(type) {
+  switch (type) {
+    case 'success':
+      return <CheckCircle className="size-4 text-green-600 dark:text-green-400" />;
+    case 'warning':
+      return <ExclamationTriangle className="size-4 text-yellow-600 dark:text-yellow-400" />;
+    case 'error':
+      return <XCircle className="size-4 text-red-600 dark:text-red-400" />;
+    case 'info':
+    default:
+      return <AlertCircle className="size-4 text-amber-600 dark:text-amber-400" />;
+  }
+}
+
+function getNotificationColor(type) {
+  switch (type) {
+    case 'success':
+      return 'border-l-green-500 dark:border-l-green-400';
+    case 'warning':
+      return 'border-l-yellow-500 dark:border-l-yellow-400';
+    case 'error':
+      return 'border-l-red-500 dark:border-l-red-400';
+    case 'info':
+    default:
+      return 'border-l-amber-500 dark:border-l-amber-400';
+  }
+}
+
 export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' }) {
   const isDesktop = variant === 'desktop';
   const {
@@ -73,34 +101,6 @@ export default function NotificationPanel({ apiKey, onClose, variant = 'mobile' 
 
   const panelRef = useRef(null);
   const t = useTranslations('Notifications');
-
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'success':
-        return <CheckCircle className="size-4 text-green-600 dark:text-green-400" />;
-      case 'warning':
-        return <ExclamationTriangle className="size-4 text-yellow-600 dark:text-yellow-400" />;
-      case 'error':
-        return <XCircle className="size-4 text-red-600 dark:text-red-400" />;
-      case 'info':
-      default:
-        return <AlertCircle className="size-4 text-amber-600 dark:text-amber-400" />;
-    }
-  };
-
-  const getNotificationColor = (type) => {
-    switch (type) {
-      case 'success':
-        return 'border-l-green-500 dark:border-l-green-400';
-      case 'warning':
-        return 'border-l-yellow-500 dark:border-l-yellow-400';
-      case 'error':
-        return 'border-l-red-500 dark:border-l-red-400';
-      case 'info':
-      default:
-        return 'border-l-amber-500 dark:border-l-amber-400';
-    }
-  };
 
   const headerActionClass =
     'ui-header-icon-btn !h-8 !w-8 !min-w-8 text-zinc-500 dark:text-zinc-400';

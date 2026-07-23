@@ -1,11 +1,14 @@
 'use client';
 
+import { useId } from 'react';
 import { Question } from '@/components/icons';
 import Tooltip from '@/components/shared/Tooltip';
 import { useTranslations } from 'next-intl';
 
 export default function TorrentOptions({ showOptions, globalOptions, updateGlobalOptions }) {
   const t = useTranslations('TorrentOptions');
+  const seedingPreferenceId = useId();
+  const autoStartLimitId = useId();
 
   return (
     <div
@@ -26,12 +29,14 @@ export default function TorrentOptions({ showOptions, globalOptions, updateGloba
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
               <div className="max-w-[200px]">
                 <label
+                  htmlFor={seedingPreferenceId}
                   className="block text-xs text-primary-text/70 dark:text-primary-text-dark/70 
                     uppercase tracking-wide mb-1"
                 >
                   {t('seedingPreference.label')}
                 </label>
                 <select
+                  id={seedingPreferenceId}
                   value={globalOptions.seed}
                   onChange={(e) => updateGlobalOptions({ seed: Number(e.target.value) })}
                   className="w-full px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md 
@@ -93,7 +98,7 @@ export default function TorrentOptions({ showOptions, globalOptions, updateGloba
           <div className="hidden xl:block w-px bg-border dark:bg-border-dark mx-6" />
 
           {/* Horizontal Divider - Only visible on mobile */}
-          <div className="block xl:hidden h-px w-full bg-border dark:bg-border-dark my-4" />
+          <div className="xl:hidden h-px w-full bg-border dark:bg-border-dark my-4" />
 
           {/* Right Section - Auto Start Options */}
           <div className="flex-1 xl:pl-6">
@@ -127,10 +132,12 @@ export default function TorrentOptions({ showOptions, globalOptions, updateGloba
                   {t('autoStart.limit')}
                 </span>
                 <input
+                  id={autoStartLimitId}
                   type="number"
                   min="1"
                   max="10"
                   value={globalOptions.autoStartLimit ?? 3}
+                  aria-label={t('autoStart.limit')}
                   onChange={(e) => {
                     const value = Math.max(1, Math.min(999, parseInt(e.target.value) || 1));
                     updateGlobalOptions({ autoStartLimit: value });

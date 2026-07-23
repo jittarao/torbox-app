@@ -9,7 +9,10 @@ import { useEffect, useRef } from 'react';
  */
 export function useLayoutOnTabVisible(callback) {
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   useEffect(() => {
     const run = () => {

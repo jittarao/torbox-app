@@ -4,7 +4,7 @@ import {
 } from '@/store/notifications/notificationStorage';
 
 export const MIN_NOTIFICATION_FETCH_INTERVAL_MS = 60_000;
-export const NOTIFICATION_POLL_INTERVAL_MS = 120_000;
+const NOTIFICATION_POLL_INTERVAL_MS = 120_000;
 const RATE_LIMIT_BACKOFF_BASE_MS = 60_000;
 const MAX_RATE_LIMIT_BACKOFF_MS = 600_000;
 
@@ -52,15 +52,17 @@ export function parseNotificationResponse(response) {
     notificationData = response;
   }
 
-  const clearedNotifications = getClearedNotifications();
-  const readNotifications = getReadNotifications();
+  const clearedNotificationIds = new Set(getClearedNotifications());
+  const readNotificationIds = new Set(getReadNotifications());
 
-  return notificationData
-    .filter((n) => !clearedNotifications.includes(n.id))
-    .map((n) => ({
+  return notificationData.reduce((acc, n) => {
+    if (clearedNotificationIds.has(n.id)) return acc;
+    acc.push({
       ...n,
-      read: n.read || readNotifications.includes(n.id),
-    }));
+      read: n.read || readNotificationIds.has(n.id),
+    });
+    return acc;
+  }, []);
 }
 
 export function shouldSkipNotificationFetch(state, { force = false } = {}) {

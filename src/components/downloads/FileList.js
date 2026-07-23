@@ -38,16 +38,20 @@ function FileListFile({
   selectionId,
   itemId,
   itemName,
-  isBlurred,
+  display,
   onFileSelect,
   onFileDownload,
   onFileStream,
   onAudioPlay,
-  isMobile,
-  isFileDownloaded,
-  isFileLinkFailed,
 }) {
+  const {
+    blurred: isBlurred,
+    mobile: isMobile,
+    fileDownloaded: isFileDownloaded,
+    fileLinkFailed: isFileLinkFailed,
+  } = display;
   const t = useTranslations('FileActions');
+  const commonT = useTranslations('Common');
   const isChecked = useIsFileSelected(selectionId, file.id);
   const isDisabled = useIsItemBlockingFileSelect(selectionId);
   const storeFileKey = `${String(itemId)}-${String(file.id)}`;
@@ -60,12 +64,7 @@ function FileListFile({
     const showAudioPlay = isAudioFile(file) && onAudioPlay;
 
     return (
-      <div
-        className={FILE_LIST_ACTIONS_CLASS}
-        data-file-actions
-        onClick={stopRowActivation}
-        onPointerDown={stopRowActivation}
-      >
+      <div className={FILE_LIST_ACTIONS_CLASS} data-file-actions>
         <span className={FILE_ACTION_SLOT_CLASS}>
           {showVideoPlay ? (
             <button
@@ -157,6 +156,8 @@ function FileListFile({
       {isMobile ? (
         <>
           <div
+            role="button"
+            tabIndex={isDisabled ? -1 : 0}
             className={`flex min-w-0 items-start gap-3 ${!isDisabled ? 'cursor-pointer' : ''}`}
             onMouseDown={(e) => {
               if (e.shiftKey) e.preventDefault();
@@ -166,11 +167,22 @@ function FileListFile({
               if (e.target.closest('button, input, a, select, textarea') || isDisabled) return;
               handleSelectRow(e);
             }}
+            onKeyDown={(e) => {
+              if (
+                (e.key === 'Enter' || e.key === ' ') &&
+                !isDisabled &&
+                !e.target.closest('button, input, a, select, textarea')
+              ) {
+                e.preventDefault();
+                handleSelectRow(e);
+              }
+            }}
           >
             <input
               type="checkbox"
               checked={isChecked}
               disabled={isDisabled}
+              aria-label={commonT('selectRow', { name: file.short_name || file.name })}
               onChange={(e) => {
                 e.stopPropagation();
                 onFileSelect(selectionId, fileIndex, file, e.target.checked, e.shiftKey);
@@ -198,6 +210,7 @@ function FileListFile({
         </>
       ) : (
         <div
+          role="button"
           className={`flex items-center justify-between gap-3 min-w-0 ${tableRowFocusClasses} ${!isDisabled && 'cursor-pointer'}`}
           tabIndex={isDisabled ? -1 : 0}
           onMouseDown={(e) => {
@@ -235,6 +248,7 @@ function FileListFile({
               type="checkbox"
               checked={isChecked}
               disabled={isDisabled}
+              aria-label={commonT('selectRow', { name: file.short_name || file.name })}
               onChange={(e) => {
                 e.stopPropagation();
                 onFileSelect(selectionId, fileIndex, file, e.target.checked, e.shiftKey);
@@ -276,14 +290,11 @@ function FileList({
   selectionId,
   itemId,
   itemName,
-  isBlurred,
+  display,
   onFileSelect,
   onFileDownload,
   onFileStream,
   onAudioPlay,
-  isMobile,
-  isFileDownloaded,
-  isFileLinkFailed,
 }) {
   return (
     <div className="mt-3 md:mt-2.5 lg:mt-4 border-t border-border/50 dark:border-border-dark/50 pt-3 md:pt-2.5 lg:pt-4">
@@ -296,14 +307,11 @@ function FileList({
             selectionId={selectionId}
             itemId={itemId}
             itemName={itemName}
-            isBlurred={isBlurred}
+            display={display}
             onFileSelect={onFileSelect}
             onFileDownload={onFileDownload}
             onFileStream={onFileStream}
             onAudioPlay={onAudioPlay}
-            isMobile={isMobile}
-            isFileDownloaded={isFileDownloaded}
-            isFileLinkFailed={isFileLinkFailed}
           />
         ))}
       </div>

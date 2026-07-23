@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 const IDLE_HIDE_MS = 2500;
 const POINTER_MOVE_THROTTLE_MS = 100;
@@ -10,8 +10,6 @@ export function useControlsVisibility({
   isOpen,
   isPlaying,
   isSeeking = false,
-  showControls,
-  setShowControls,
   playerRef,
   controlsBarRef,
   showVolumeSlider = false,
@@ -26,6 +24,8 @@ export function useControlsVisibility({
   playbackSpeedMenuRef = null,
   isTouchPlayer = false,
 }) {
+  const [showControls, setShowControls] = useState(true);
+  const [wasOpen, setWasOpen] = useState(false);
   const hideTimeoutRef = useRef(null);
   const isHoveringControlsRef = useRef(false);
   const lastPointerMoveRef = useRef(0);
@@ -39,7 +39,25 @@ export function useControlsVisibility({
     showSettingsSheet ||
     showInfoSheet;
 
-  stateRef.current = { isPlaying, hasOpenMenu, isSeeking };
+  if (isOpen && !wasOpen) {
+    setWasOpen(true);
+    setShowControls(true);
+  } else if (!isOpen && wasOpen) {
+    setWasOpen(false);
+  }
+
+  // Persist base visibility while rendering when menus open or playback
+  // pauses/seeks, so closing a menu / resuming still fades from a true
+  // showControls without a one-frame stale effect update.
+  if (isOpen && !showControls && (hasOpenMenu || !isPlaying || isSeeking)) {
+    setShowControls(true);
+  }
+
+  const controlsVisible = showControls || hasOpenMenu || !isPlaying || isSeeking;
+
+  useEffect(() => {
+    stateRef.current = { isPlaying, hasOpenMenu, isSeeking };
+  }, [isPlaying, hasOpenMenu, isSeeking]);
 
   const clearHideTimeout = useCallback(() => {
     if (hideTimeoutRef.current) {
@@ -122,51 +140,41 @@ export function useControlsVisibility({
   }, [clearHideTimeout, setShowControls]);
 
   const toggleControls = useCallback(() => {
-    setShowControls((prev) => {
-      const next = !prev;
-      if (next) scheduleHide();
-      else clearHideTimeout();
-      return next;
-    });
-  }, [setShowControls, scheduleHide, clearHideTimeout]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    if (!isPlaying || isSeeking) {
-      clearHideTimeout();
-      setShowControls(true);
-      return;
-    }
-
-    if (!hasOpenMenu) {
-      scheduleHide();
-    }
-
-    return clearHideTimeout;
-  }, [isOpen, isPlaying, isSeeking, hasOpenMenu, clearHideTimeout, scheduleHide, setShowControls]);
+    setShowControls((prev) => !prev);
+  }, [setShowControls]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     if (hasOpenMenu) {
       clearHideTimeout();
-      setShowControls(true);
       return;
     }
 
-    if (isPlaying && showControls) {
+    if (!showControls) {
+      clearHideTimeout();
+      return;
+    }
+
+    if (isPlaying) {
       scheduleHide();
     }
-  }, [
-    isOpen,
-    hasOpenMenu,
-    isPlaying,
-    showControls,
-    clearHideTimeout,
-    scheduleHide,
-    setShowControls,
-  ]);
+  }, [isOpen, hasOpenMenu, isPlaying, showControls, clearHideTimeout, scheduleHide]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (!isPlaying || isSeeking) {
+      clearHideTimeout();
+      return;
+    }
+
+    if (!hasOpenMenu && showControls) {
+      scheduleHide();
+    }
+
+    return clearHideTimeout;
+  }, [isOpen, isPlaying, isSeeking, hasOpenMenu, showControls, clearHideTimeout, scheduleHide]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -239,5 +247,11 @@ export function useControlsVisibility({
     isTouchPlayer,
   ]);
 
-  return { revealControls, hideControlsNow, toggleControls };
+  return {
+    showControls: controlsVisible,
+    setShowControls,
+    revealControls,
+    hideControlsNow,
+    toggleControls,
+  };
 }

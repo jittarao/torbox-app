@@ -261,7 +261,10 @@ export function mergeDownloadEntities(
   assetType,
   prevFilesCache = {}
 ) {
-  const prevList = (prevOrderKeys || []).map((key) => prevEntities[key]).filter(Boolean);
+  const prevList = (prevOrderKeys || []).flatMap((key) => {
+    const entity = prevEntities[key];
+    return entity ? [entity] : [];
+  });
   const mergedList = mergeDownloadList(prevList, payload, assetType);
   return mergeListIntoEntities(prevEntities, prevOrderKeys, mergedList, assetType, prevFilesCache);
 }

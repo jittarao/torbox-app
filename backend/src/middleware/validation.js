@@ -99,7 +99,7 @@ export function validateNumericIdMiddleware(paramName = 'id') {
  * Middleware to extract authId from API key if authId not provided
  * This allows routes to accept either an API key (x-api-key header) or direct authId
  */
-export function extractAuthIdMiddleware(req, res, next) {
+function extractAuthIdMiddleware(req, res, next) {
   // If authId already validated, use it
   if (req.validatedAuthId) {
     return next();
@@ -132,7 +132,7 @@ export function extractAuthIdMiddleware(req, res, next) {
  * limit is enforced by express.json() / body parser. Use this as an early rejection for
  * obviously oversized declared payloads.
  */
-export function validateJsonPayloadSize(maxSizeBytes = 10 * 1024 * 1024) {
+function validateJsonPayloadSize(maxSizeBytes = 10 * 1024 * 1024) {
   return (req, res, next) => {
     if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
       const contentLength = parseInt(req.headers['content-length'], 10);

@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useCallback, useEffect, useRef } from 'react';
 import ModalOverlay from '@/components/shared/ModalOverlay';
 
 /**
@@ -24,6 +24,37 @@ const ModalSheet = forwardRef(function ModalSheet(
   },
   ref
 ) {
+  const dialogRef = useRef(null);
+
+  const setDialogRef = useCallback(
+    (node) => {
+      dialogRef.current = node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    },
+    [ref]
+  );
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || !open) {
+      return undefined;
+    }
+
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+
+    return () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+    };
+  }, [open]);
+
   const panelClass = [
     'ui-modal-sheet',
     wide ? 'ui-modal-sheet--wide' : '',
@@ -42,17 +73,22 @@ const ModalSheet = forwardRef(function ModalSheet(
       lockScroll={lockScroll}
       closeOnEscape={closeOnEscape}
     >
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
+      <dialog
+        ref={setDialogRef}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
         aria-label={ariaLabel}
         className={panelClass}
+        onCancel={(event) => {
+          // Prevent the native dialog from closing independently of React open state.
+          event.preventDefault();
+          if (closeOnEscape) {
+            onClose?.();
+          }
+        }}
       >
         {children}
-      </div>
+      </dialog>
     </ModalOverlay>
   );
 });

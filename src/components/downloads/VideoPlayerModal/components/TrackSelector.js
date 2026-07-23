@@ -65,7 +65,7 @@ export default function TrackSelector({
           onToggle(e);
         }}
         className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-          backdrop-blur-sm text-white transition-all duration-200
+          backdrop-blur-sm text-white transition-colors transition-transform duration-200
           hover:scale-110 active:scale-95"
         aria-label={isAudio ? 'Audio Tracks' : 'Subtitles'}
       >
@@ -94,7 +94,7 @@ export default function TrackSelector({
             {tracks.map((track, idx) => (
               <button
                 type="button"
-                key={`${track.language || ''}-${track.language_full || ''}-${track.index || track.id || idx}`}
+                key={track.index ?? track.id ?? `${track.language}-${track.language_full}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onSelect(idx);

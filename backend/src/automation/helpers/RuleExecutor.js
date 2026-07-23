@@ -45,9 +45,10 @@ class RuleExecutor {
     const actionType = rule.action?.type;
     let protectedSet = null;
     if (isDestructiveOperation(actionType)) {
-      const downloadIds = torrents
-        .map((torrent) => ruleEvaluator.extractDownloadId(torrent))
-        .filter(Boolean);
+      const downloadIds = torrents.flatMap((torrent) => {
+        const id = ruleEvaluator.extractDownloadId(torrent);
+        return id ? [id] : [];
+      });
       protectedSet = ruleEvaluator.protectionService.getProtectedSet(downloadIds);
     }
 

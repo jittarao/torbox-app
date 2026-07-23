@@ -13,14 +13,14 @@ export default function UploadsPageClient() {
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface dark:bg-surface-dark">
+      <div className="flex min-h-dvh items-center justify-center bg-surface dark:bg-surface-dark">
         <Spinner size="lg" className="text-primary-text dark:text-primary-text-dark" />
       </div>
     );
   }
 
   return (
-    <AppShell apiKey={apiKey} className="min-h-screen bg-surface dark:bg-surface-dark font-sans">
+    <AppShell apiKey={apiKey} className="min-h-dvh bg-surface dark:bg-surface-dark font-sans">
       <div className="container mx-auto p-4">
         <UploadManager apiKey={apiKey} />
       </div>

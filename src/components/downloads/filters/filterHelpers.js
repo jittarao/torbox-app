@@ -22,6 +22,50 @@ export const EMPTY_FILTERS = {
 
 const EMPTY_FILTERS_JSON = JSON.stringify(EMPTY_FILTERS);
 
+/** Deep-clone filter state so editor mutations do not affect shared references. */
+export function cloneFilters(filters) {
+  return structuredClone(filters);
+}
+
+/**
+ * Tracker/source sidebar filters only apply on torrents and webdl tabs.
+ * Returns a column-filter reset + URL patch when the active tab makes them invalid.
+ * @returns {{ empty: object, patch: object } | null}
+ */
+export function getIncompatibleAssetTypeFilterReset(activeType, urlAppliedFilters) {
+  const needsTrackerClear =
+    activeType !== 'all' && activeType !== 'torrents' && getActiveTrackers(urlAppliedFilters);
+  const needsSourceClear =
+    activeType !== 'all' && activeType !== 'webdl' && getActiveSources(urlAppliedFilters);
+
+  if (!needsTrackerClear && !needsSourceClear) return null;
+
+  const empty = cloneFilters(EMPTY_FILTERS);
+
+  if (needsTrackerClear) {
+    return {
+      empty,
+      patch: {
+        trackerUrls: null,
+        sourceHosts: null,
+        appliedFilters: empty,
+        viewIds: null,
+        tagIds: null,
+      },
+    };
+  }
+
+  return {
+    empty,
+    patch: {
+      sourceHosts: null,
+      appliedFilters: empty,
+      viewIds: null,
+      tagIds: null,
+    },
+  };
+}
+
 export const FILTER_SCHEMA_VERSION = 2;
 
 /** Legacy custom views stored file size in MB; values at or above this are converted to GB. */
@@ -147,7 +191,7 @@ export function normalizeFilterStructure(raw) {
   }
 
   if (filters.groups && Array.isArray(filters.groups)) {
-    return JSON.parse(JSON.stringify(filters));
+    return cloneFilters(filters);
   }
 
   if (Array.isArray(filters)) {
@@ -162,7 +206,7 @@ export function normalizeFilterStructure(raw) {
     };
   }
 
-  return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+  return cloneFilters(EMPTY_FILTERS);
 }
 
 /**
@@ -476,7 +520,7 @@ export function getSourceCombineMode(filters) {
 /**
  * Count downloads per tag ID from TBM-enriched download items.
  */
-export function countDownloadsPerTag(enrichedDownloads) {
+function countDownloadsPerTag(enrichedDownloads) {
   const counts = {};
   if (!enrichedDownloads?.length) return counts;
 
@@ -528,7 +572,7 @@ export function countDownloadsMatchingFilters(
  * Count downloads matching each saved view (uses TBM-enriched items for filters).
  * Uses the same filters as apply (including view asset_type). Skips views scoped to another tab.
  */
-export function countDownloadsPerView(views, enrichedDownloads, activeAssetType = 'all') {
+function countDownloadsPerView(views, enrichedDownloads, activeAssetType = 'all') {
   const counts = {};
   if (!views?.length) return counts;
 
@@ -562,7 +606,7 @@ export function countDownloadsPerView(views, enrichedDownloads, activeAssetType 
  * Load view filters into editor state shape.
  */
 export function filtersFromView(view) {
-  if (!view?.filters) return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+  if (!view?.filters) return cloneFilters(EMPTY_FILTERS);
   return normalizeFilters(view.filters);
 }
 

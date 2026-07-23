@@ -1160,16 +1160,18 @@ class RuleEvaluator {
           return false; // No valid tag IDs — do not match any torrent
         }
 
+        const downloadTagIdSet = new Set(downloadTagIds);
+
         switch (condition.operator) {
           case 'has_any':
           case 'is_any_of':
-            return conditionTagIds.some((tagId) => downloadTagIds.includes(tagId));
+            return conditionTagIds.some((tagId) => downloadTagIdSet.has(tagId));
           case 'has_all':
           case 'is_all_of':
-            return conditionTagIds.every((tagId) => downloadTagIds.includes(tagId));
+            return conditionTagIds.every((tagId) => downloadTagIdSet.has(tagId));
           case 'has_none':
           case 'is_none_of':
-            return !conditionTagIds.some((tagId) => downloadTagIds.includes(tagId));
+            return !conditionTagIds.some((tagId) => downloadTagIdSet.has(tagId));
           default:
             return false;
         }

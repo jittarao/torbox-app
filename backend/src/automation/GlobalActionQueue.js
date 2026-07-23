@@ -295,7 +295,7 @@ class GlobalActionQueue {
                 {
                   errorMessage: err.message,
                   authId: merged.authId,
-                  ruleId: merged.rule?.id,
+                  ruleId,
                   ruleName: merged.rule?.name,
                   retryCount,
                 }
@@ -306,7 +306,7 @@ class GlobalActionQueue {
               logger.warn('GlobalActionQueue action batch failed, will retry', {
                 errorMessage: err.message,
                 authId: merged.authId,
-                ruleId: merged.rule?.id,
+                ruleId,
                 retryCount,
                 nextRetryInMs: backoffMs,
               });
@@ -317,7 +317,6 @@ class GlobalActionQueue {
                 rule: merged.rule,
                 torrentsToProcess: merged.torrentsToProcess,
               });
-              const ruleId = merged.rule?.id ?? null;
               let newPendingIds = [];
               if (masterDb?.insertPendingAction) {
                 try {

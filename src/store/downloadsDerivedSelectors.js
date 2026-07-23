@@ -76,9 +76,12 @@ function getStatusPriority(torrent) {
     if (option.value === 'all' || option.value.is_queued) return false;
     return Object.entries(option.value).every(([key, value]) => {
       if (key === 'download_state') {
-        return (Array.isArray(value) ? value : [value]).some((state) =>
-          torrent.download_state?.includes(state)
-        );
+        const downloadState = (torrent.download_state ?? '').toLowerCase();
+        const states = Array.isArray(value) ? value : [value];
+        for (const state of states) {
+          if (downloadState.includes(String(state).toLowerCase())) return true;
+        }
+        return false;
       }
       return torrent[key] === value;
     });
@@ -392,10 +395,13 @@ export function idsToRows(
 ) {
   if (!ids?.length) return [];
   const lookup = buildDownloadHistoryLookup(downloadHistory);
-  return ids
-    .map((id) => entities[id])
-    .filter(Boolean)
-    .map((entity) => enrichRowForFilter(entity, tagMappings, lookup, protectedMap));
+  const rows = [];
+  for (const id of ids) {
+    const entity = entities[id];
+    if (!entity) continue;
+    rows.push(enrichRowForFilter(entity, tagMappings, lookup, protectedMap));
+  }
+  return rows;
 }
 
 /**
@@ -531,7 +537,7 @@ export function countDownloadsPerSourceFromStore(torboxState) {
   return counts;
 }
 
-export function findEntityBySelectionId(entities, ids, selectionId) {
+function findEntityBySelectionId(entities, ids, selectionId) {
   for (const id of ids) {
     const item = entities[id];
     if (!item) continue;

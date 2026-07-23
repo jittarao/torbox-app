@@ -1,5 +1,7 @@
 'use client';
 
+import { readJsonFromResponse } from '@/utils/fetchResponse';
+
 import { useState, useCallback, memo } from 'react';
 import { useDownloadsActions } from './DownloadsActionsContext';
 import { useDownloadsContext } from './DownloadsContext';
@@ -205,9 +207,9 @@ function ItemActions({
           airlocked: nextAirlocked,
         }),
       });
-      const data = await response.json().catch(() => ({}));
+      const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-      if (!response.ok || data.success === false) {
+      if (!responseOk || data.success === false) {
         if (data.error === AIRLOCK_LIMIT_REACHED_ERROR) {
           patchItem(uiAssetType, item.id, { airlocked: !nextAirlocked });
           setToast({
@@ -247,17 +249,19 @@ function ItemActions({
     <ItemActionButtons
       item={item}
       onDelete={handleDelete}
-      isDeleting={isDeleting}
+      itemState={{
+        deleting: isDeleting,
+        expanded: isExpanded,
+        protected: itemProtected,
+        showRetry,
+        retrying: isRetrying,
+      }}
       toggleFiles={toggleFiles}
-      isExpanded={isExpanded}
       activeType={activeType}
       onStopSeeding={handleStopSeeding}
       onForceStart={handleForceStart}
       onRetry={handleRetry}
-      showRetry={showRetry}
-      isRetrying={isRetrying}
       onDownload={handleDownload}
-      isProtected={itemProtected}
       compact={compact || mobileBar}
       mobileBar={mobileBar}
     />
@@ -271,25 +275,28 @@ function ItemActions({
       activeType={activeType}
       compact={compact && !mobileBar}
       mobileBar={mobileBar}
-      showDownload={compact && !mobileBar && item.download_present}
+      actionVisibility={{
+        download: compact && !mobileBar && item.download_present,
+        delete: compact || mobileBar,
+        archive: showArchive,
+        protection: showProtection,
+        retry: showRetry,
+        airlock: showAirlock,
+      }}
+      actionProgress={{
+        deleting: isDeleting,
+        archiving: isArchiving,
+        retrying: isRetrying,
+        protectionUpdating: isUpdatingProtection,
+        airlockUpdating: isAirlockUpdating,
+      }}
+      itemFlags={{ protected: itemProtected, airlocked: itemAirlocked }}
       onDownload={handleDownload}
-      showDelete={compact || mobileBar}
       onDelete={handleDelete}
-      isDeleting={isDeleting}
-      showArchive={showArchive}
       onArchive={handleArchive}
-      isArchiving={isArchiving}
-      showProtection={showProtection}
-      isProtected={itemProtected}
       onToggleProtection={handleToggleProtection}
-      isProtectionUpdating={isUpdatingProtection}
-      showRetry={showRetry}
       onRetry={handleRetry}
-      isRetrying={isRetrying}
-      showAirlock={showAirlock}
-      airlocked={itemAirlocked}
       onToggleAirlock={handleToggleAirlock}
-      isAirlockUpdating={isAirlockUpdating}
     />
   );
 

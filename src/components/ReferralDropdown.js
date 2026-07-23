@@ -17,6 +17,11 @@ import {
 } from '@/utils/referralDismissal';
 import { REFERRAL_HELP_URL } from '@/components/constants';
 
+function truncateCode(code) {
+  if (code.length <= 20) return code;
+  return `${code.slice(0, 8)}…${code.slice(-8)}`;
+}
+
 export default function ReferralDropdown({
   apiKey,
   onToast,
@@ -48,11 +53,6 @@ export default function ReferralDropdown({
     clearReferralDismissal(REFERRAL_CALLOUT_DISMISS_KEY);
     clearReferralDismissal(REFERRAL_PANEL_DISMISS_KEY);
     refresh();
-  };
-
-  const truncateCode = (code) => {
-    if (code.length <= 20) return code;
-    return `${code.slice(0, 8)}…${code.slice(-8)}`;
   };
 
   const sidebarVariant = variant === 'sidebar' || variant === 'sidebar-subtle';
@@ -175,9 +175,9 @@ export default function ReferralDropdown({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+            <span className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
               {t('referralCode')}
-            </label>
+            </span>
             <div className="flex items-center gap-2 rounded-lg border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark px-3 py-2">
               <code className="flex-1 min-w-0 text-xs font-mono text-zinc-800 dark:text-zinc-200 truncate">
                 {truncateCode(actions.referralCode)}

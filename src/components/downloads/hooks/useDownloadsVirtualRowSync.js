@@ -17,7 +17,10 @@ export function useDownloadsVirtualRowSync({
 }) {
   const [virtualRows, setVirtualRows] = useState([]);
   const virtualizerRef = useRef(virtualizer);
-  virtualizerRef.current = virtualizer;
+
+  useEffect(() => {
+    virtualizerRef.current = virtualizer;
+  }, [virtualizer]);
 
   const prevViewModeRef = useRef(viewMode);
   const prevIsFullscreenRef = useRef(isFullscreen);
