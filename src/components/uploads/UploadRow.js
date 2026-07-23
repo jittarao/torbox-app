@@ -67,7 +67,6 @@ export default function UploadRow({
   return (
     <tr
       {...rowProps}
-      role="row"
       aria-selected={selected}
       className={`border-b border-border dark:border-border-dark cursor-pointer hover:bg-surface-alt dark:hover:bg-surface-alt-dark ${
         selected

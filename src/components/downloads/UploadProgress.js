@@ -17,7 +17,7 @@ export default function UploadProgress({ progress, uploading }) {
       {/* Progress bar */}
       <div className="w-full bg-surface-alt dark:bg-surface-alt-dark rounded-full overflow-hidden">
         <div
-          className="bg-accent dark:bg-accent-dark rounded-full h-1.5 transition-all duration-300"
+          className="bg-accent dark:bg-accent-dark rounded-full h-1.5 transition-[width] duration-300"
           style={{ width: `${percentage}%` }}
         ></div>
       </div>

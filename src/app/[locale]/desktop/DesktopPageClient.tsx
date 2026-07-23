@@ -48,7 +48,7 @@ export default function DesktopPageClient() {
   const tCommon = useTranslations('Common');
 
   if (!hydrated) {
-    return <div className="min-h-screen bg-surface dark:bg-surface-dark font-sans" />;
+    return <div className="min-h-dvh bg-surface dark:bg-surface-dark font-sans" />;
   }
 
   const version = appVersion ?? hello?.appVersion;
@@ -58,7 +58,7 @@ export default function DesktopPageClient() {
     hello.minimumSupportedWebBridgeVersion > WEB_BRIDGE_VERSION;
 
   return (
-    <AppShell apiKey={apiKey} className="min-h-screen bg-surface dark:bg-surface-dark font-sans">
+    <AppShell apiKey={apiKey} className="min-h-dvh bg-surface dark:bg-surface-dark font-sans">
       <div className="container mx-auto max-w-6xl px-4 py-8">
         <header className="mb-8">
           <div className="flex flex-col gap-5 border-b border-border/50 pb-6 dark:border-border-dark/50 sm:flex-row sm:items-start sm:justify-between">

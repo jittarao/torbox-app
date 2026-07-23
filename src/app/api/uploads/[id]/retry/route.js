@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 // POST /api/uploads/[id]/retry - Retry failed upload
@@ -28,16 +29,16 @@ export async function POST(request, { params }) {
       },
     });
 
-    const data = await response.json().catch(() => ({}));
+    const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-    if (!response.ok) {
+    if (!responseOk) {
       return NextResponse.json(
         {
           success: false,
-          error: data.error || `Backend responded with status: ${response.status}`,
+          error: data.error || `Backend responded with status: ${responseStatus}`,
           detail: data.detail,
         },
-        { status: response.status }
+        { status: responseStatus }
       );
     }
 

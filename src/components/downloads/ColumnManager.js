@@ -127,13 +127,16 @@ export default function ColumnManager({
     });
   }, [columns, activeType]);
 
+  const activeColumnSet = useMemo(() => new Set(activeColumns), [activeColumns]);
+
   return (
     <div className="relative">
       <button
         type="button"
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md 
+        aria-label={t('manageColumns')}
+        className="px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md
           hover:border-accent/50 dark:hover:border-accent-dark/50 
           bg-transparent text-primary-text dark:text-primary-text-dark
           flex items-center gap-2 transition-colors"
@@ -198,7 +201,7 @@ export default function ColumnManager({
                     <label key={id} className="flex items-center gap-x-2">
                       <input
                         type="checkbox"
-                        checked={activeColumns.includes(id)}
+                        checked={activeColumnSet.has(id)}
                         onChange={() => toggleColumn(id)}
                         className="accent-accent dark:accent-accent-dark"
                       />

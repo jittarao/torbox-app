@@ -5,7 +5,7 @@ import {
   MULTI_SELECT_OPERATORS,
   TAG_OPERATORS,
 } from '../AutomationRules/constants';
-import { FILTER_SCHEMA_VERSION } from '../filters/filterHelpers';
+import { cloneFilters, FILTER_SCHEMA_VERSION } from '../filters/filterHelpers';
 
 const RECENT_HOURS = 7 * 24;
 const TEN_GB = 10;
@@ -170,7 +170,7 @@ export function createViewPresets(t) {
 
 /** Deep-clone preset filters so editor mutations do not affect definitions. */
 export function clonePresetFilters(preset) {
-  const cloned = JSON.parse(JSON.stringify(preset.filters));
+  const cloned = cloneFilters(preset.filters);
   cloned._filterSchemaVersion = FILTER_SCHEMA_VERSION;
   return cloned;
 }

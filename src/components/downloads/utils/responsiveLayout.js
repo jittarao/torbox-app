@@ -112,7 +112,7 @@ export const tableContainerClass =
 export const cardContainerPad =
   'px-3 py-3 md:px-3.5 md:py-3 lg:p-4 rounded-lg md:rounded-xl border border-border/80 dark:border-border-dark/80 md:border-border/50 dark:md:border-border-dark/50 md:shadow-sm md:shadow-black/[0.04] dark:md:shadow-black/25';
 
-export const cardListItemGap = 'mb-1.5 md:mb-1 lg:mb-1.5';
+const cardListItemGap = 'mb-1.5 md:mb-1 lg:mb-1.5';
 
 /** px gap after each card — keep in sync with cardListItemGap Tailwind classes */
 export function getCardListItemGapPx() {

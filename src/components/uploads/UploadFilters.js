@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { compactControlClass, compactSearchInputClass } from '@/components/shared/compactToolbar';
 
 export default function UploadFilters({
@@ -8,6 +9,9 @@ export default function UploadFilters({
   searchInput,
   onSearchChange,
 }) {
+  const searchInputId = useId();
+  const typeSelectId = useId();
+
   // Use searchInput if provided (for debouncing), otherwise fall back to filters.search
   const searchValue = searchInput !== undefined ? searchInput : filters.search || '';
   const handleSearchChange =
@@ -20,7 +24,11 @@ export default function UploadFilters({
   if (compact) {
     return (
       <div className="flex gap-1.5 items-center">
+        <label htmlFor={searchInputId} className="sr-only">
+          Search uploads
+        </label>
         <input
+          id={searchInputId}
           type="text"
           placeholder="Search..."
           value={searchValue}
@@ -33,7 +41,11 @@ export default function UploadFilters({
           }}
           className={compactSearchInputClass}
         />
+        <label htmlFor={typeSelectId} className="sr-only">
+          Filter by upload type
+        </label>
         <select
+          id={typeSelectId}
           value={filters.type}
           onChange={(e) => {
             setFilters((prev) => ({ ...prev, type: e.target.value }));
@@ -53,7 +65,11 @@ export default function UploadFilters({
   // Full-width version (legacy, if needed)
   return (
     <div className="flex gap-4 items-center">
+      <label htmlFor={searchInputId} className="sr-only">
+        Search uploads
+      </label>
       <input
+        id={searchInputId}
         type="text"
         placeholder="Search uploads..."
         value={searchValue}
@@ -66,7 +82,11 @@ export default function UploadFilters({
         }}
         className="px-3 py-2 bg-surface-alt dark:bg-surface-alt-dark border border-border dark:border-border-dark rounded-lg text-primary-text dark:text-primary-text-dark placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50 flex-1 max-w-md"
       />
+      <label htmlFor={typeSelectId} className="sr-only">
+        Filter by upload type
+      </label>
       <select
+        id={typeSelectId}
         value={filters.type}
         onChange={(e) => {
           setFilters((prev) => ({ ...prev, type: e.target.value }));

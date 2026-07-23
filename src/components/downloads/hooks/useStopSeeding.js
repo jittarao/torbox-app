@@ -74,10 +74,8 @@ export function useStopSeeding({ apiKey, assetType = 'torrents', setToast }) {
       let successCount = 0;
       setIsStoppingSeeding(true);
       try {
-        for (const item of eligible) {
-          const result = await stopSeedingItem(item);
-          if (result?.success) successCount++;
-        }
+        const results = await Promise.all(eligible.map((item) => stopSeedingItem(item)));
+        successCount = results.filter((result) => result?.success).length;
       } finally {
         setIsStoppingSeeding(false);
       }

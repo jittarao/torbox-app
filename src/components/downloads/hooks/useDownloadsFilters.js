@@ -10,12 +10,14 @@ import { useTags } from '@/components/shared/hooks/useTags';
 import { filtersFromView } from '@/components/downloads/FiltersSidebar';
 import {
   EMPTY_FILTERS,
+  cloneFilters,
   buildTagFilter,
   buildTrackerFilter,
   buildSourceFilter,
   normalizeFilters,
   stampFilterSchemaVersion,
   mergeViewAssetTypeFilter,
+  getIncompatibleAssetTypeFilterReset,
   getActiveTagIds,
   getActiveTrackers,
   getActiveSources,
@@ -70,25 +72,33 @@ export function useDownloadsFilters({
   } = filterParams;
 
   const [searchInput, setSearchInput] = useState(urlSearch);
-  const debouncedSearch = useDebouncedValue(searchInput, 250);
-
-  useEffect(() => {
+  const [prevUrlSearch, setPrevUrlSearch] = useState(urlSearch);
+  if (urlSearch !== prevUrlSearch) {
+    setPrevUrlSearch(urlSearch);
     setSearchInput(urlSearch);
-  }, [urlSearch]);
+  }
+  const debouncedSearch = useDebouncedValue(searchInput, 250);
+  const urlSearchDebounceRef = useRef(null);
 
-  useEffect(() => {
-    if (debouncedSearch !== urlSearch) {
-      setUrlSearch(debouncedSearch);
-    }
-  }, [debouncedSearch, urlSearch, setUrlSearch]);
-
-  const setSearch = useCallback((value) => {
-    setSearchInput(value);
-  }, []);
-
-  const [columnFilters, setColumnFilters] = useState(() =>
-    JSON.parse(JSON.stringify(EMPTY_FILTERS))
+  useEffect(
+    () => () => {
+      if (urlSearchDebounceRef.current) clearTimeout(urlSearchDebounceRef.current);
+    },
+    []
   );
+
+  const setSearch = useCallback(
+    (value) => {
+      setSearchInput(value);
+      if (urlSearchDebounceRef.current) clearTimeout(urlSearchDebounceRef.current);
+      urlSearchDebounceRef.current = setTimeout(() => {
+        setUrlSearch(value);
+      }, 250);
+    },
+    [setUrlSearch]
+  );
+
+  const [columnFilters, setColumnFilters] = useState(() => cloneFilters(EMPTY_FILTERS));
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [filterModalMode, setFilterModalMode] = useState(null);
   const [editingView, setEditingView] = useState(null);
@@ -111,7 +121,10 @@ export function useDownloadsFilters({
 
   const activeViews = useMemo(() => {
     if (!activeViewIds.length || !views?.length) return [];
-    return activeViewIds.map((id) => views.find((v) => sameViewId(v.id, id))).filter(Boolean);
+    return activeViewIds.flatMap((id) => {
+      const view = views.find((v) => sameViewId(v.id, id));
+      return view ? [view] : [];
+    });
   }, [activeViewIds, views]);
 
   const orViewFilters = activeViews.length > 1 ? activeViews : null;
@@ -122,7 +135,7 @@ export function useDownloadsFilters({
       return mergeViewAssetTypeFilter(view.filters, view.asset_type);
     }
     if (activeViews.length > 1) {
-      return JSON.parse(JSON.stringify(EMPTY_FILTERS));
+      return cloneFilters(EMPTY_FILTERS);
     }
     if (activeView) {
       return mergeViewAssetTypeFilter(activeView.filters, activeView.asset_type);
@@ -148,14 +161,16 @@ export function useDownloadsFilters({
     sortField,
     sortDirection,
   });
-  filterDepsRef.current = {
-    filterModalMode,
-    editingView,
-    activeType,
-    search: searchInput,
-    sortField,
-    sortDirection,
-  };
+  useEffect(() => {
+    filterDepsRef.current = {
+      filterModalMode,
+      editingView,
+      activeType,
+      search: searchInput,
+      sortField,
+      sortDirection,
+    };
+  }, [filterModalMode, editingView, activeType, searchInput, sortField, sortDirection]);
 
   /** Prevents URL ?view= from re-applying after the user clears the active view. */
   const suppressUrlViewSyncRef = useRef(false);
@@ -163,7 +178,10 @@ export function useDownloadsFilters({
   /** @type {import('react').MutableRefObject<{ kind: string, viewIds?: (number|string)[], tagIds?: number[], trackers?: string[] }|null>} */
   const pendingSidebarFilterRef = useRef(null);
   const viewsRef = useRef(views);
-  viewsRef.current = views;
+
+  useEffect(() => {
+    viewsRef.current = views;
+  }, [views]);
 
   useEffect(() => {
     if (isBackendAvailable && apiKey && !viewsHasLoaded && !viewsLoading) {
@@ -176,7 +194,7 @@ export function useDownloadsFilters({
     suppressUrlViewSyncRef.current = true;
     lastSyncedUrlViewIdsRef.current = urlViewIds ?? [];
     clearView();
-    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
+    const empty = cloneFilters(EMPTY_FILTERS);
     setColumnFilters(empty);
     clearAllFilterCriteria();
   }, [clearView, clearAllFilterCriteria, urlViewIds]);
@@ -239,9 +257,10 @@ export function useDownloadsFilters({
       viewIds,
       { fromUrlSync = false, reapplyPreset = false, combineMode = COMBINE_MODES.ANY } = {}
     ) => {
-      const resolved = viewIds
-        .map((id) => viewsRef.current.find((v) => sameViewId(v.id, id)))
-        .filter(Boolean);
+      const resolved = viewIds.flatMap((id) => {
+        const view = viewsRef.current.find((v) => sameViewId(v.id, id));
+        return view ? [view] : [];
+      });
       if (resolved.length === 0) return;
 
       const first = resolved[0];
@@ -252,7 +271,7 @@ export function useDownloadsFilters({
       }
 
       applyView(first);
-      setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
+      setColumnFilters(cloneFilters(EMPTY_FILTERS));
 
       const criteriaPatch = {
         statusFilter: 'all',
@@ -284,9 +303,12 @@ export function useDownloadsFilters({
   );
 
   const applyViewFiltersRef = useRef(applyViewFilters);
-  applyViewFiltersRef.current = applyViewFilters;
   const applyMultiViewFiltersRef = useRef(applyMultiViewFilters);
-  applyMultiViewFiltersRef.current = applyMultiViewFilters;
+
+  useEffect(() => {
+    applyViewFiltersRef.current = applyViewFilters;
+    applyMultiViewFiltersRef.current = applyMultiViewFilters;
+  }, [applyViewFilters, applyMultiViewFilters]);
 
   // Sync store from URL when ?view= / ?views= changes (e.g. shared link). Sidebar clicks set
   // pendingSidebarFilterRef until replaceState catches up — do not re-apply a stale selection.
@@ -308,9 +330,10 @@ export function useDownloadsFilters({
     if (suppressUrlViewSyncRef.current) return;
     if (sameViewIdList(lastSyncedUrlViewIdsRef.current, urlViewIds)) return;
 
-    const resolved = urlViewIds
-      .map((id) => viewsRef.current.find((v) => sameViewId(v.id, id)))
-      .filter(Boolean);
+    const resolved = urlViewIds.flatMap((id) => {
+      const view = viewsRef.current.find((v) => sameViewId(v.id, id));
+      return view ? [view] : [];
+    });
     if (resolved.length === 0) return;
 
     lastSyncedUrlViewIdsRef.current = urlViewIds;
@@ -547,40 +570,18 @@ export function useDownloadsFilters({
     setMobileFiltersOpen(false);
   }, [appliedFilters, activeSources.length, handleClearFilters]);
 
-  useEffect(() => {
-    if (activeType === 'all' || activeType === 'torrents') return;
-    const trackers = getActiveTrackers(urlAppliedFilters);
-    if (!trackers) return;
+  const syncFiltersForAssetType = useCallback(
+    (type) => {
+      const reset = getIncompatibleAssetTypeFilterReset(type, urlAppliedFilters);
+      if (!reset) return;
 
-    pendingSidebarFilterRef.current = { kind: 'clear' };
-    suppressUrlViewSyncRef.current = true;
-    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
-    setColumnFilters(empty);
-    patchFilterCriteria({
-      trackerUrls: null,
-      sourceHosts: null,
-      appliedFilters: empty,
-      viewIds: null,
-      tagIds: null,
-    });
-  }, [activeType, urlAppliedFilters, patchFilterCriteria]);
-
-  useEffect(() => {
-    if (activeType === 'all' || activeType === 'webdl') return;
-    const sources = getActiveSources(urlAppliedFilters);
-    if (!sources) return;
-
-    pendingSidebarFilterRef.current = { kind: 'clear' };
-    suppressUrlViewSyncRef.current = true;
-    const empty = JSON.parse(JSON.stringify(EMPTY_FILTERS));
-    setColumnFilters(empty);
-    patchFilterCriteria({
-      sourceHosts: null,
-      appliedFilters: empty,
-      viewIds: null,
-      tagIds: null,
-    });
-  }, [activeType, urlAppliedFilters, patchFilterCriteria]);
+      pendingSidebarFilterRef.current = { kind: 'clear' };
+      suppressUrlViewSyncRef.current = true;
+      setColumnFilters(reset.empty);
+      patchFilterCriteria(reset.patch);
+    },
+    [urlAppliedFilters, patchFilterCriteria]
+  );
 
   const handleCloseFilterModal = useCallback(() => {
     setFilterModalOpen(false);
@@ -718,7 +719,7 @@ export function useDownloadsFilters({
   const handleOpenNewView = () => {
     clearView();
     setEditingView(null);
-    setColumnFilters(JSON.parse(JSON.stringify(EMPTY_FILTERS)));
+    setColumnFilters(cloneFilters(EMPTY_FILTERS));
     setFilterModalMode('create');
     setFilterModalOpen(true);
     setMobileFiltersOpen(false);
@@ -839,6 +840,7 @@ export function useDownloadsFilters({
     handleApplySource,
     handleApplySourceRange,
     handleClearSources,
+    syncFiltersForAssetType,
     handleSetViewCombineMode,
     handleSetTagCombineMode,
     handleSetTrackerCombineMode,

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { arrayMove } from '@dnd-kit/sortable';
 import { normalizeUploadId } from '../utils';
 
@@ -40,9 +41,13 @@ export function useUploadActions(
           },
         });
 
-        const data = await response.json();
+        const {
+          ok: responseOk,
+          status: responseStatus,
+          data,
+        } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to retry upload');
         }
 
@@ -87,9 +92,13 @@ export function useUploadActions(
           },
         });
 
-        const data = await response.json();
+        const {
+          ok: responseOk,
+          status: responseStatus,
+          data,
+        } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to delete upload');
         }
 
@@ -223,9 +232,13 @@ export function useUploadActions(
           body: JSON.stringify({ ids }),
         });
 
-        const data = await response.json();
+        const {
+          ok: responseOk,
+          status: responseStatus,
+          data,
+        } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to delete uploads');
         }
 
@@ -258,7 +271,7 @@ export function useUploadActions(
         `Are you sure you want to delete ${count} upload${count > 1 ? 's' : ''}? This action cannot be undone.`
       );
     },
-    [bulkDeleteIds]
+    [bulkDeleteIds, showAlert]
   );
 
   const handleClearAllFailed = useCallback(
@@ -277,9 +290,13 @@ export function useUploadActions(
           },
         });
 
-        const data = await response.json();
+        const {
+          ok: responseOk,
+          status: responseStatus,
+          data,
+        } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to fetch failed uploads');
         }
 
@@ -304,7 +321,7 @@ export function useUploadActions(
         showAlert(err.message);
       }
     },
-    [apiKey, bulkDeleteIds]
+    [apiKey, bulkDeleteIds, showAlert]
   );
 
   const handleBulkRetry = useCallback(
@@ -350,9 +367,13 @@ export function useUploadActions(
           body: JSON.stringify({ ids }),
         });
 
-        const data = await response.json();
+        const {
+          ok: responseOk,
+          status: responseStatus,
+          data,
+        } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to retry uploads');
         }
 
@@ -414,9 +435,13 @@ export function useUploadActions(
           }),
         });
 
-        const data = await response.json();
+        const {
+          ok: responseOk,
+          status: responseStatus,
+          data,
+        } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to reorder uploads');
         }
 

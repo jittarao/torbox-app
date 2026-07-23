@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FETCH_TIMEOUT_MS, NON_RETRYABLE_ERRORS } from '@/components/constants';
+import { FETCH_TIMEOUT_MS } from '@/components/constants';
+import { isNonRetryableResponse } from '@/config/errors';
 import { retryFetch } from '@/utils/retryFetch';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
 import { buildSelectionIdMap } from '@/utils/downloadSelectionId';
@@ -142,6 +143,16 @@ const sanitizeFilename = (filename) => {
   return actualFilename.replace(/[<>:"\\|?*\x00-\x1F]/g, '_');
 };
 
+function extractDownloadUrl(data) {
+  // Handle different response formats from different API endpoints
+  if (data.data) {
+    return data.data; // Torrents and WebDL format
+  } else if (data.download_url) {
+    return data.download_url; // Usenet format
+  }
+  return null;
+}
+
 export function useDownloads(
   apiKey,
   assetType = 'torrents',
@@ -163,7 +174,9 @@ export function useDownloads(
     fetchDownloadHistory,
     onBulkComplete,
   });
-  depsRef.current = { downloadHistory, apiKey, assetType, fetchDownloadHistory, onBulkComplete };
+  useEffect(() => {
+    depsRef.current = { downloadHistory, apiKey, assetType, fetchDownloadHistory, onBulkComplete };
+  }, [downloadHistory, apiKey, assetType, fetchDownloadHistory, onBulkComplete]);
 
   useEffect(() => {
     return () => {
@@ -200,16 +213,6 @@ export function useDownloads(
       default:
         return 'torrent_id';
     }
-  };
-
-  const extractDownloadUrl = (data) => {
-    // Handle different response formats from different API endpoints
-    if (data.data) {
-      return data.data; // Torrents and WebDL format
-    } else if (data.download_url) {
-      return data.download_url; // Usenet format
-    }
-    return null;
   };
 
   const requestDownloadLink = useCallback(
@@ -289,12 +292,7 @@ export function useDownloads(
         maxRetries: 1,
         timeout: FETCH_TIMEOUT_MS,
         headers: { 'x-api-key': apiKey },
-        permanent: [
-          (data) =>
-            Object.values(NON_RETRYABLE_ERRORS).some(
-              (err) => data.error?.includes(err) || data.detail?.includes(err)
-            ),
-        ],
+        permanent: [(data) => isNonRetryableResponse(data)],
       });
 
       if (result.success) {
@@ -417,7 +415,7 @@ export function useDownloads(
               }
             }
           } else {
-            window.open(result.data.url, '_blank');
+            window.open(result.data.url, '_blank', 'noopener');
           }
 
           // Fetch updated history from backend after single download completes
@@ -456,149 +454,151 @@ export function useDownloads(
       setDownloadLinks([]);
       setDownloadProgress({ current: 0, total });
 
-      const itemSelectionMap = buildSelectionIdMap(items);
-      const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
+      try {
+        const itemSelectionMap = buildSelectionIdMap(items);
+        const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
 
-      // Create array of all download tasks
-      const downloadTasks = [
-        ...Array.from(selectedItems.items).flatMap((selectionId) => {
-          const item = itemSelectionMap.get(selectionId);
-          const itemId = item?.id ?? selectionId;
-          const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
-          const itemFiles = resolveItemFiles(item, filesByEntityKey);
-          if (itemFiles.length === 1) {
-            // If there's exactly one file, create a file task
-            return {
+        // Create array of all download tasks
+        const downloadTasks = [
+          ...Array.from(selectedItems.items).flatMap((selectionId) => {
+            const item = itemSelectionMap.get(selectionId);
+            const itemId = item?.id ?? selectionId;
+            const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
+            const itemFiles = resolveItemFiles(item, filesByEntityKey);
+            if (itemFiles.length === 1) {
+              // If there's exactly one file, create a file task
+              return {
+                type: 'file',
+                itemId,
+                fileId: itemFiles[0].id,
+                name: itemFiles[0].name || `File ${itemFiles[0].id}`,
+                metadata: {
+                  assetType: taskAssetType,
+                  item: item ? { ...item, files: itemFiles } : item,
+                },
+              };
+            } else {
+              // Otherwise, create an item task
+              return {
+                type: 'item',
+                id: itemId,
+                name:
+                  item?.name ||
+                  `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${itemId}`,
+                metadata: {
+                  assetType: taskAssetType,
+                  item,
+                },
+              };
+            }
+          }),
+          ...Array.from(selectedItems.files.entries()).flatMap(([selectionId, fileIds]) => {
+            const item = itemSelectionMap.get(selectionId);
+            const itemId = item?.id ?? selectionId;
+            const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
+            const itemFiles = resolveItemFiles(item, filesByEntityKey);
+            return Array.from(fileIds).map((fileId) => ({
               type: 'file',
               itemId,
-              fileId: itemFiles[0].id,
-              name: itemFiles[0].name || `File ${itemFiles[0].id}`,
+              fileId,
+              name: itemFiles.find((f) => f.id === fileId)?.name || `File ${fileId}`,
               metadata: {
                 assetType: taskAssetType,
-                item: item ? { ...item, files: itemFiles } : item,
+                item: item
+                  ? {
+                      ...item,
+                      files: itemFiles.filter((f) => f.id === fileId),
+                    }
+                  : undefined,
               },
-            };
-          } else {
-            // Otherwise, create an item task
-            return {
-              type: 'item',
-              id: itemId,
-              name:
-                item?.name ||
-                `${assetType.charAt(0).toUpperCase() + assetType.slice(1, -1)} ${itemId}`,
-              metadata: {
-                assetType: taskAssetType,
-                item,
-              },
-            };
-          }
-        }),
-        ...Array.from(selectedItems.files.entries()).flatMap(([selectionId, fileIds]) => {
-          const item = itemSelectionMap.get(selectionId);
-          const itemId = item?.id ?? selectionId;
-          const taskAssetType = resolveDownloadAssetType(assetType, { item, assetType });
-          const itemFiles = resolveItemFiles(item, filesByEntityKey);
-          return Array.from(fileIds).map((fileId) => ({
-            type: 'file',
-            itemId,
-            fileId,
-            name: itemFiles.find((f) => f.id === fileId)?.name || `File ${fileId}`,
-            metadata: {
-              assetType: taskAssetType,
-              item: item
-                ? {
-                    ...item,
-                    files: itemFiles.filter((f) => f.id === fileId),
-                  }
-                : undefined,
-            },
+            }));
+          }),
+        ];
+
+        // Collect all link history entries for bulk save
+        const linkHistoryEntries = [];
+        const failures = [];
+
+        const bumpProgress = () => {
+          setDownloadProgress((prev) => ({
+            ...prev,
+            current: Math.min(prev.current + 1, prev.total),
           }));
-        }),
-      ];
+        };
 
-      // Collect all link history entries for bulk save
-      const linkHistoryEntries = [];
-      const failures = [];
+        // Bounded concurrency pool — slow/timed-out tasks do not block other slots
+        await runWithConcurrency(downloadTasks, CONCURRENT_DOWNLOADS, async (task) => {
+          try {
+            const result =
+              task.type === 'item'
+                ? await requestDownloadLink(task.id, {}, null, task.metadata, true)
+                : await requestDownloadLink(
+                    task.itemId,
+                    { fileId: task.fileId },
+                    null,
+                    task.metadata,
+                    true
+                  );
 
-      const bumpProgress = () => {
-        setDownloadProgress((prev) => ({
-          ...prev,
-          current: Math.min(prev.current + 1, prev.total),
-        }));
-      };
+            if (result?.success) {
+              const filename = task.type === 'item' ? `${task.name}.zip` : task.name;
+              const sanitizedFilename = sanitizeFilename(filename);
 
-      // Bounded concurrency pool — slow/timed-out tasks do not block other slots
-      await runWithConcurrency(downloadTasks, CONCURRENT_DOWNLOADS, async (task) => {
-        try {
-          const result =
-            task.type === 'item'
-              ? await requestDownloadLink(task.id, {}, null, task.metadata, true)
-              : await requestDownloadLink(
-                  task.itemId,
-                  { fileId: task.fileId },
-                  null,
-                  task.metadata,
-                  true
-                );
+              const url = new URL(result.data.url);
+              const encodedFilename = encodeURIComponent(sanitizedFilename);
+              const separator = url.search ? '&' : '?';
+              const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
 
-          if (result?.success) {
-            const filename = task.type === 'item' ? `${task.name}.zip` : task.name;
-            const sanitizedFilename = sanitizeFilename(filename);
+              setDownloadLinks((prev) => [
+                ...prev,
+                { ...result.data, url: urlWithFilename, name: task.name },
+              ]);
 
-            const url = new URL(result.data.url);
-            const encodedFilename = encodeURIComponent(sanitizedFilename);
-            const separator = url.search ? '&' : '?';
-            const urlWithFilename = `${url.toString()}${separator}filename=${encodedFilename}`;
-
-            setDownloadLinks((prev) => [
-              ...prev,
-              { ...result.data, url: urlWithFilename, name: task.name },
-            ]);
+              if (result.linkHistory) {
+                linkHistoryEntries.push(result.linkHistory);
+              }
+              return;
+            }
 
             if (result.linkHistory) {
               linkHistoryEntries.push(result.linkHistory);
             }
-            return;
+
+            failures.push({
+              name: task.name,
+              error: result?.error || 'Unknown error',
+            });
+          } catch (error) {
+            console.error('Bulk download link error:', error);
+            failures.push({
+              name: task.name,
+              error: error?.message || 'Unknown error',
+            });
+          } finally {
+            bumpProgress();
           }
-
-          if (result.linkHistory) {
-            linkHistoryEntries.push(result.linkHistory);
-          }
-
-          failures.push({
-            name: task.name,
-            error: result?.error || 'Unknown error',
-          });
-        } catch (error) {
-          console.error('Bulk download link error:', error);
-          failures.push({
-            name: task.name,
-            error: error?.message || 'Unknown error',
-          });
-        } finally {
-          bumpProgress();
-        }
-      });
-
-      setIsDownloading(false);
-
-      if (onBulkComplete) {
-        onBulkComplete({
-          succeeded: downloadTasks.length - failures.length,
-          failed: failures.length,
-          total: downloadTasks.length,
-          failures,
         });
-      }
 
-      // Save all link history entries in bulk after all downloads complete
-      if (linkHistoryEntries.length > 0 && apiKey) {
-        await addBulkToDownloadHistory(linkHistoryEntries, apiKey);
-      }
+        if (onBulkComplete) {
+          onBulkComplete({
+            succeeded: downloadTasks.length - failures.length,
+            failed: failures.length,
+            total: downloadTasks.length,
+            failures,
+          });
+        }
 
-      // Fetch updated history from backend after all bulk downloads complete
-      if (fetchDownloadHistory && apiKey) {
-        fetchDownloadHistory(apiKey);
+        // Save all link history entries in bulk after all downloads complete
+        if (linkHistoryEntries.length > 0 && apiKey) {
+          await addBulkToDownloadHistory(linkHistoryEntries, apiKey);
+        }
+
+        // Fetch updated history from backend after all bulk downloads complete
+        if (fetchDownloadHistory && apiKey) {
+          fetchDownloadHistory(apiKey);
+        }
+      } finally {
+        setIsDownloading(false);
       }
     },
     [requestDownloadLink]

@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useSyncExternalStore } from 'react';
 import { getItem, setItem } from '@/utils/storage';
+import { useLatestRef } from '@/hooks/useLatestRef';
 
 /**
  * Hydration-safe localStorage preference with server default until client mounts.
@@ -30,15 +31,17 @@ export function useLocalStoragePreference(
     () => false
   );
 
+  const serializeRef = useLatestRef(serialize);
+
   const setPreference = useCallback(
     (next) => {
       setValue((prev) => {
         const resolved = typeof next === 'function' ? next(prev) : next;
-        setItem(storageKey, serialize(resolved));
+        setItem(storageKey, serializeRef.current(resolved));
         return resolved;
       });
     },
-    [storageKey, serialize]
+    [storageKey, serializeRef]
   );
 
   return {

@@ -9,7 +9,7 @@ export const adminCardClass =
 
 export const adminCardPadding = 'p-5 sm:p-6';
 
-export const adminTableWrapClass = `${adminCardClass} overflow-hidden`;
+const adminTableWrapClass = `${adminCardClass} overflow-hidden`;
 
 export const adminTableClass = 'min-w-full divide-y divide-border/60 dark:divide-border-dark/60';
 
@@ -128,16 +128,19 @@ export function AdminBadge({ status, children, className = '' }) {
   );
 }
 
+const ADMIN_ALERT_STYLES = {
+  warning:
+    'border-label-warning-text/20 bg-label-warning-bg text-label-warning-text dark:border-label-warning-text-dark/30 dark:bg-label-warning-bg-dark dark:text-label-warning-text-dark',
+  danger:
+    'border-label-danger-text/20 bg-label-danger-bg text-label-danger-text dark:border-label-danger-text-dark/30 dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark',
+  info: 'border-label-active-text/20 bg-label-active-bg text-label-active-text dark:border-label-active-text-dark/30 dark:bg-label-active-bg-dark dark:text-label-active-text-dark',
+};
+
 export function AdminAlert({ variant = 'warning', children }) {
-  const styles = {
-    warning:
-      'border-label-warning-text/20 bg-label-warning-bg text-label-warning-text dark:border-label-warning-text-dark/30 dark:bg-label-warning-bg-dark dark:text-label-warning-text-dark',
-    danger:
-      'border-label-danger-text/20 bg-label-danger-bg text-label-danger-text dark:border-label-danger-text-dark/30 dark:bg-label-danger-bg-dark dark:text-label-danger-text-dark',
-    info: 'border-label-active-text/20 bg-label-active-bg text-label-active-text dark:border-label-active-text-dark/30 dark:bg-label-active-bg-dark dark:text-label-active-text-dark',
-  };
   return (
-    <div className={`rounded-lg border px-4 py-3 text-sm ${styles[variant] || styles.warning}`}>
+    <div
+      className={`rounded-lg border px-4 py-3 text-sm ${ADMIN_ALERT_STYLES[variant] || ADMIN_ALERT_STYLES.warning}`}
+    >
       {children}
     </div>
   );

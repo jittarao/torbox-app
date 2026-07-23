@@ -1,0 +1,581 @@
+'use client';
+
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useAutomationRules } from '@/components/shared/hooks/useAutomationRules';
+import { useBackendMode } from '@/hooks/useBackendMode';
+import { isBackendAvailable } from '@/utils/backendModeCache';
+import { getItem } from '@/utils/storage';
+import { CONDITION_TYPES, LOGIC_OPERATORS } from './constants';
+import { getSupportedConditions } from './capabilities';
+import { getDefaultOperatorForConditionType, getDefaultValueForConditionType } from './utils';
+import { pruneRuleForAssetTypes } from './pruneRule';
+import { getDefaultNewRule } from './defaultNewRule';
+
+export function useAutomationRulesPage(apiKeyProp = '') {
+  const t = useTranslations('AutomationRules');
+  const commonT = useTranslations('Common');
+  const { mode: backendMode } = useBackendMode();
+  const [isAddingRule, setIsAddingRule] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState(null);
+  const [viewingLogsRuleId, setViewingLogsRuleId] = useState(null);
+  const [ruleLogs, setRuleLogs] = useState({});
+  const [runningRuleId, setRunningRuleId] = useState(null);
+  const [executionResult, setExecutionResult] = useState(null);
+  const apiKey = apiKeyProp || getItem('torboxApiKey');
+  const [newRule, setNewRule] = useState(() => getDefaultNewRule());
+  const { rules, saveRules, loading } = useAutomationRules(apiKey);
+
+  // Backend mode indicator
+  const isBackendMode = backendMode === 'backend';
+
+  // Apply a preset rule
+  const applyPreset = async (preset) => {
+    const ruleWithoutId = {
+      ...preset,
+      enabled: true,
+      metadata: {
+        created_at: Date.now(),
+        execution_count: 0,
+        last_execution: null,
+      },
+    };
+
+    // Update state via store (backend will assign ID)
+    const updatedRules = [...rules, ruleWithoutId];
+    await saveRules(updatedRules);
+  };
+
+  const handleAddRule = async () => {
+    if (!newRule.name) return;
+
+    if (editingRuleId) {
+      // Update existing rule
+      const updatedRules = rules.map((rule) =>
+        rule.id === editingRuleId
+          ? {
+              ...newRule,
+              id: editingRuleId,
+              metadata: {
+                ...rule.metadata,
+                updatedAt: Date.now(),
+              },
+            }
+          : rule
+      );
+      await saveRules(updatedRules);
+      setEditingRuleId(null);
+    } else {
+      // Add new rule with metadata (backend will assign ID)
+      const now = Date.now();
+      const updatedRules = [
+        ...rules,
+        {
+          ...newRule,
+          metadata: {
+            executionCount: 0,
+            lastExecutedAt: null,
+            triggeredCount: 0,
+            lastTriggeredAt: null,
+            lastEnabledAt: now,
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+      ];
+      await saveRules(updatedRules);
+    }
+
+    setIsAddingRule(false);
+    setNewRule(getDefaultNewRule());
+  };
+
+  const handleRuleChange = (nextRule) => {
+    setNewRule((prev) => {
+      const prevTypes = JSON.stringify(prev.assetTypes || ['torrent']);
+      const nextTypes = JSON.stringify(nextRule.assetTypes || ['torrent']);
+      if (prevTypes !== nextTypes) {
+        return pruneRuleForAssetTypes(nextRule, nextRule.assetTypes || ['torrent']);
+      }
+      return nextRule;
+    });
+  };
+
+  const handleEditRule = async (rule) => {
+    // Rules from backend are always in group structure
+    setNewRule({
+      ...rule,
+      assetTypes: rule.assetTypes?.length ? rule.assetTypes : ['torrent'],
+    });
+    setEditingRuleId(rule.id);
+    setIsAddingRule(true);
+  };
+
+  const handleDeleteRule = async (ruleId) => {
+    try {
+      if (isBackendMode) {
+        // Validate and convert ruleId to a positive integer
+        // Backend expects a positive integer ID
+        const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;
+        if (numericId && !isNaN(numericId) && numericId > 0) {
+          // Use backend API for individual rule deletion
+          const response = await fetch(`/api/automation/rules/${numericId}`, {
+            method: 'DELETE',
+            headers: {
+              'x-api-key': apiKey,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to delete rule: ${response.status}`);
+          }
+        }
+        // If ID is invalid, skip API call (likely a local-only rule)
+      }
+
+      // Update state via store
+      const updatedRules = rules.filter((rule) => rule.id !== ruleId);
+      await saveRules(updatedRules);
+    } catch (error) {
+      console.error('Error deleting rule:', error);
+      // Update state even on error
+      const updatedRules = rules.filter((rule) => rule.id !== ruleId);
+      await saveRules(updatedRules);
+    }
+  };
+
+  const handleToggleRule = async (ruleId) => {
+    try {
+      const rule = rules.find((r) => r.id === ruleId);
+      if (!rule) return;
+
+      const newEnabled = !rule.enabled;
+
+      if (isBackendAvailable()) {
+        // Validate and convert ruleId to a positive integer
+        // Backend expects a positive integer ID
+        const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;
+        if (numericId && !isNaN(numericId) && numericId > 0) {
+          // Use backend API for individual rule update
+          const response = await fetch(`/api/automation/rules/${numericId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+            },
+            body: JSON.stringify({ enabled: newEnabled }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to update rule: ${response.status}`);
+          }
+        }
+        // If ID is invalid, skip API call (likely a local-only rule)
+      }
+
+      // Update local state
+      const updatedRules = rules.map((rule) => {
+        if (rule.id === ruleId) {
+          const now = Date.now();
+          return {
+            ...rule,
+            enabled: newEnabled,
+            metadata: {
+              ...rule.metadata,
+              lastEnabledAt: rule.enabled ? null : now,
+              updatedAt: now,
+            },
+          };
+        }
+        return rule;
+      });
+
+      await saveRules(updatedRules);
+    } catch (error) {
+      console.error('Error toggling rule:', error);
+      // Update state even on error
+      const updatedRules = rules.map((rule) => {
+        if (rule.id === ruleId) {
+          const now = Date.now();
+          return {
+            ...rule,
+            enabled: !rule.enabled,
+            metadata: {
+              ...rule.metadata,
+              lastEnabledAt: rule.enabled ? null : now,
+              updatedAt: now,
+            },
+          };
+        }
+        return rule;
+      });
+      await saveRules(updatedRules);
+    }
+  };
+
+  const handleViewLogs = async (ruleId) => {
+    setViewingLogsRuleId(ruleId);
+    loadRuleLogs(ruleId);
+  };
+
+  const loadRuleLogs = async (ruleId) => {
+    try {
+      if (!isBackendMode) {
+        // No backend available, show empty logs
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
+      // Validate and convert ruleId to a positive integer
+      // Backend expects a positive integer ID
+      if (ruleId === null || ruleId === undefined || ruleId === '') {
+        // Invalid ID - likely a local-only rule, skip API call
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
+      // Convert to number if it's a string, otherwise use as-is
+      const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : Number(ruleId);
+
+      // Validate it's a positive integer
+      if (isNaN(numericId) || !Number.isInteger(numericId) || numericId <= 0) {
+        // Invalid ID - likely a local-only rule, skip API call
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
+      // Load logs from backend
+      const response = await fetch(`/api/automation/rules/${numericId}/logs`, {
+        headers: {
+          'x-api-key': apiKey,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Find the rule to get its action type
+        const rule = rules.find((r) => r.id === ruleId || r.id === numericId);
+        const ruleActionType = rule?.action?.type;
+
+        // Transform backend log format to frontend format
+        const transformedLogs = (data.logs || []).map((log) => {
+          return {
+            timestamp: log.executed_at, // Backend uses executed_at
+            action: ruleActionType || log.execution_type || 'execution', // Pass action type for translation
+            actionType: ruleActionType, // Keep original action type for translation
+            itemsAffected: log.items_processed || 0, // Backend uses items_processed
+            success: log.success === 1 || log.success === true, // Convert 1/0 to boolean
+            error: log.error_message || null, // Backend uses error_message
+            details: log.items_processed > 0 ? `${log.items_processed} items processed` : null,
+          };
+        });
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: transformedLogs }));
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        // Only log error if it's not the expected "invalid id" error for local rules
+        if (!errorData.error || !errorData.error.includes('Invalid id')) {
+          console.error('Error loading rule logs:', errorData.error || `HTTP ${response.status}`);
+        }
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
+      }
+    } catch (error) {
+      console.error('Error loading rule logs:', error);
+      setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
+    }
+  };
+
+  const clearRuleLogs = async (ruleId) => {
+    try {
+      if (!isBackendMode) {
+        // No backend available, just clear local state
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
+      // Validate and convert ruleId to a positive integer
+      // Backend expects a positive integer ID
+      const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;
+      if (!numericId || isNaN(numericId) || numericId <= 0) {
+        // Invalid ID - likely a local-only rule, just clear local state
+        setRuleLogs((prev) => ({ ...prev, [ruleId]: [] }));
+        return;
+      }
+
+      // Clear logs in backend
+      const response = await fetch(`/api/automation/rules/${numericId}/logs`, {
+        method: 'DELETE',
+        headers: {
+          'x-api-key': apiKey,
+        },
+      });
+
+      if (response.ok) {
+        // Reload logs to ensure UI is in sync (should be empty now)
+        await loadRuleLogs(ruleId);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to clear logs: HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error clearing rule logs:', error);
+      // Optionally show error to user - for now just log it
+      // The logs will remain in local state if backend call fails
+    }
+  };
+
+  const handleRunRule = async (ruleId) => {
+    if (runningRuleId === ruleId) {
+      // Already running, prevent duplicate execution
+      return;
+    }
+
+    try {
+      setRunningRuleId(ruleId);
+
+      if (!isBackendMode) {
+        console.warn(
+          '[Automation Rule Execution] Backend is not available. Rule execution requires backend mode.'
+        );
+        return;
+      }
+
+      // Validate and convert ruleId to a positive integer
+      const numericId = typeof ruleId === 'string' ? parseInt(ruleId, 10) : ruleId;
+      if (!numericId || isNaN(numericId) || numericId <= 0) {
+        console.warn('[Automation Rule Execution] Invalid rule ID:', ruleId);
+        return;
+      }
+
+      const rule = rules.find((r) => r.id === ruleId);
+      const ruleName = rule?.name || 'Unknown Rule';
+
+      console.log(
+        `[Automation Rule Execution] Starting execution for rule: "${ruleName}" (ID: ${ruleId})`
+      );
+
+      const startTime = Date.now();
+      const response = await fetch(`/api/automation/rules/${numericId}/run`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+        },
+      });
+
+      const executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP ${response.status}`;
+        console.error(`[Automation Rule Execution] Rule: "${ruleName}" (ID: ${ruleId})`);
+        console.error(`  - Status: ❌ Failed`);
+        console.error(`  - Error: ${errorMessage}`);
+        console.error(`  - Execution time: ${executionTime}s`);
+        return;
+      }
+
+      const data = await response.json();
+      const result = data.result || {};
+
+      // Format console output
+      console.group(
+        `[Automation Rule Execution] Rule: "${result.ruleName || ruleName}" (ID: ${result.ruleId || ruleId})`
+      );
+      console.log(`  - Torrents evaluated: ${result.totalTorrents || 0}`);
+      console.log(`  - Torrents matched: ${result.matchedTorrents || 0}`);
+      console.log(`  - Torrents processed: ${result.processedTorrents || 0}`);
+      console.log(`  - Actions succeeded: ${result.successCount || 0}`);
+      console.log(`  - Actions failed: ${result.errorCount || 0}`);
+      console.log(`  - Execution time: ${result.executionTime || executionTime}s`);
+
+      if (result.error) {
+        console.error(`  - Error: ${result.error}`);
+        console.log(`  - Status: ❌ Error`);
+      } else if (result.skipped) {
+        console.log(`  - Reason: ${result.reason || 'Rule was skipped'}`);
+        console.log(`  - Status: ⏭️ Skipped`);
+      } else if (result.executed) {
+        const status = result.errorCount > 0 ? '⚠️ Partial Success' : '✅ Success';
+        console.log(`  - Status: ${status}`);
+      } else {
+        console.log(`  - Status: ⏭️ Not Executed`);
+      }
+      console.groupEnd();
+
+      // Store execution result for display
+      setExecutionResult({
+        ruleName: result.ruleName || ruleName,
+        matchedTorrents: result.matchedTorrents || 0,
+        successCount: result.successCount || 0,
+        errorCount: result.errorCount || 0,
+        skipped: result.skipped || false,
+        executed: result.executed || false,
+        rateLimited: result.rateLimited || false,
+        reason: result.reason || null,
+      });
+    } catch (error) {
+      console.error('[Automation Rule Execution] Error running rule:', error);
+      const rule = rules.find((r) => r.id === ruleId);
+      const ruleName = rule?.name || 'Unknown Rule';
+      console.error(`  - Rule: "${ruleName}" (ID: ${ruleId})`);
+      console.error(`  - Error: ${error.message}`);
+    } finally {
+      setRunningRuleId(null);
+    }
+  };
+
+  // Helper functions for managing groups and conditions
+  const handleAddGroup = () => {
+    setNewRule((prevRule) => {
+      return {
+        ...prevRule,
+        groups: [
+          ...(prevRule.groups || []),
+          {
+            _key: Math.random().toString(36).substring(2, 15),
+            logicOperator: LOGIC_OPERATORS.AND,
+            conditions: [],
+          },
+        ],
+      };
+    });
+  };
+
+  const handleRemoveGroup = (groupIndex) => {
+    setNewRule((prevRule) => {
+      const newGroups = (prevRule.groups || []).filter((_, i) => i !== groupIndex);
+      if (newGroups.length === 0) {
+        // Ensure at least one group exists
+        return {
+          ...prevRule,
+          groups: [
+            {
+              logicOperator: LOGIC_OPERATORS.AND,
+              conditions: [],
+            },
+          ],
+        };
+      }
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
+  };
+
+  const handleUpdateGroup = (groupIndex, field, value) => {
+    setNewRule((prevRule) => {
+      const newGroups = [...(prevRule.groups || [])];
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        [field]: value,
+      };
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
+  };
+
+  const handleAddCondition = (groupIndex) => {
+    setNewRule((prevRule) => {
+      const assetTypes = prevRule.assetTypes?.length ? prevRule.assetTypes : ['torrent'];
+      const defaultType = getSupportedConditions(assetTypes)[0] || CONDITION_TYPES.STATUS;
+      const newGroups = [...(prevRule.groups || [])];
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        conditions: [
+          ...(newGroups[groupIndex].conditions || []),
+          {
+            _key: Math.random().toString(36).substring(2, 15),
+            type: defaultType,
+            operator: getDefaultOperatorForConditionType(defaultType),
+            value: getDefaultValueForConditionType(defaultType),
+          },
+        ],
+      };
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
+  };
+
+  const handleRemoveCondition = (groupIndex, conditionIndex) => {
+    setNewRule((prevRule) => {
+      const newGroups = [...(prevRule.groups || [])];
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        conditions: (newGroups[groupIndex].conditions || []).filter((_, i) => i !== conditionIndex),
+      };
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
+  };
+
+  const handleUpdateCondition = (groupIndex, conditionIndex, field, value) => {
+    setNewRule((prevRule) => {
+      const newGroups = [...(prevRule.groups || [])];
+      const newConditions = [...(newGroups[groupIndex].conditions || [])];
+      newConditions[conditionIndex] = {
+        ...newConditions[conditionIndex],
+        [field]: value,
+      };
+      newGroups[groupIndex] = {
+        ...newGroups[groupIndex],
+        conditions: newConditions,
+      };
+      return {
+        ...prevRule,
+        groups: newGroups,
+      };
+    });
+  };
+
+  const handleCancelForm = () => {
+    setIsAddingRule(false);
+    setEditingRuleId(null);
+    setNewRule(getDefaultNewRule());
+  };
+
+  const activeRules = rules.filter((rule) => rule.enabled);
+  const viewingRule = rules.find((r) => r.id === viewingLogsRuleId);
+
+  return {
+    t,
+    commonT,
+    isBackendMode,
+    isAddingRule,
+    setIsAddingRule,
+    editingRuleId,
+    viewingLogsRuleId,
+    setViewingLogsRuleId,
+    ruleLogs,
+    runningRuleId,
+    executionResult,
+    setExecutionResult,
+    apiKey,
+    newRule,
+    rules,
+    loading,
+    applyPreset,
+    handleAddRule,
+    handleRuleChange,
+    handleEditRule,
+    handleDeleteRule,
+    handleToggleRule,
+    handleViewLogs,
+    clearRuleLogs,
+    handleRunRule,
+    handleAddGroup,
+    handleRemoveGroup,
+    handleUpdateGroup,
+    handleAddCondition,
+    handleRemoveCondition,
+    handleUpdateCondition,
+    handleCancelForm,
+    activeRules,
+    viewingRule,
+  };
+}

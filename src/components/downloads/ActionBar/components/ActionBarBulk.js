@@ -52,18 +52,19 @@ export default function ActionBarBulk({ itemTypeName, itemTypePlural }) {
     <ActionButtons
       setSelectedItems={setSelectedItems}
       hasSelectedFiles={hasSelectedFiles}
-      isDownloading={isDownloading}
-      isDeleting={isDeleting}
-      isArchiving={isArchiving}
-      isExporting={isExporting}
+      bulkProgress={{
+        downloading: isDownloading,
+        deleting: isDeleting,
+        archiving: isArchiving,
+        exporting: isExporting,
+      }}
       onBulkDownload={onBulkDownloadWrapper}
       onBulkDelete={onBulkDeleteWrapper}
       onBulkArchive={onBulkArchiveWrapper}
       onBulkExport={onBulkExport}
       itemTypeName={itemTypeName}
       itemTypePlural={itemTypePlural}
-      isDownloadPanelOpen={isDownloadPanelOpen}
-      setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+      downloadPanel={{ open: isDownloadPanelOpen, setOpen: setIsDownloadPanelOpen }}
       activeType={activeType}
       apiKey={apiKey}
       setToast={setToast}

@@ -229,15 +229,14 @@ export const getRuleConditionText = (rule, t, commonT) => {
   const groups = rule?.groups || [];
   if (groups.length === 0) return '';
 
-  const groupTexts = groups
-    .map((group) => {
-      const conditions = group.conditions || [];
-      if (conditions.length === 0) return '';
-      const groupLogic = group.logicOperator || LOGIC_OPERATORS.AND;
-      const inner = getConditionText(conditions, groupLogic, t, commonT);
-      return conditions.length > 1 ? `(${inner})` : inner;
-    })
-    .filter(Boolean);
+  const groupTexts = groups.flatMap((group) => {
+    const conditions = group.conditions || [];
+    if (conditions.length === 0) return [];
+    const groupLogic = group.logicOperator || LOGIC_OPERATORS.AND;
+    const inner = getConditionText(conditions, groupLogic, t, commonT);
+    const text = conditions.length > 1 ? `(${inner})` : inner;
+    return text ? [text] : [];
+  });
 
   if (groupTexts.length === 0) return '';
   if (groupTexts.length === 1) return groupTexts[0];
@@ -251,8 +250,7 @@ export const getConditionUnit = (conditionType) => {
   return getConditionUnitFromRegistry(conditionType);
 };
 
-// Get column key for a condition type (if applicable)
-export { getColumnKeyForConditionType as getColumnKeyForCondition };
+// Get column key for a condition type (if applicable) — use getColumnKeyForConditionType from filterFieldRegistry
 
 // Get available operators for a condition type
 export const getOperatorsForConditionType = (conditionType) => {
@@ -321,12 +319,13 @@ export const getConditionTypeOptions = (t, assetTypes = null) => {
 
   if (!allowedSet) return groups;
 
-  return groups
-    .map((group) => ({
-      ...group,
-      options: group.options.filter((opt) => allowedSet.has(opt.value)),
-    }))
-    .filter((group) => group.options.length > 0);
+  return groups.reduce((acc, group) => {
+    const options = group.options.filter((opt) => allowedSet.has(opt.value));
+    if (options.length > 0) {
+      acc.push({ ...group, options });
+    }
+    return acc;
+  }, []);
 };
 
 // Flatten condition type options for simple dropdown

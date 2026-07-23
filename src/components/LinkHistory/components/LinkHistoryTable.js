@@ -36,6 +36,7 @@ const LinkHistoryTable = memo(
                   type="checkbox"
                   checked={allSelected}
                   onChange={(e) => onSelectAll(e.target.checked)}
+                  aria-label={t('selectAll')}
                   className="size-4 accent-accent dark:accent-accent-dark cursor-pointer"
                 />
               </th>

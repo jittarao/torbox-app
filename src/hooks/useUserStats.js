@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchUserStats } from '@/utils/userStats';
+import { resetBusyUnlessAborted } from '@/utils/asyncLoadingReset';
 
 /**
  * @param {string|null|undefined} apiKey
@@ -42,10 +43,9 @@ export function useUserStats(apiKey, grouping = 'week') {
       setGeneral(null);
       setBandwidth([]);
     } finally {
-      if (!abortController.signal.aborted) {
-        setLoading(false);
+      resetBusyUnlessAborted(abortController.signal, setLoading, () => {
         fetchingRef.current = false;
-      }
+      });
     }
   }, [apiKey, grouping]);
 

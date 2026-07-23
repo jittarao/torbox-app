@@ -1,4 +1,4 @@
-import { NON_RETRYABLE_ERRORS } from '@/config/errors';
+import { isNonRetryableResponse } from '@/config/errors';
 import { FETCH_TIMEOUT_MS } from '@/config/apiConstants';
 import { retryFetch } from '@/utils/retryFetch';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
@@ -27,10 +27,7 @@ export const deleteItemHelper = async (id, apiKey, assetType = 'torrents', fetch
       body: { id },
       timeout: FETCH_TIMEOUT_MS,
       permanent: [
-        (data) =>
-          Object.values(NON_RETRYABLE_ERRORS).some(
-            (err) => data.error?.includes(err) || data.detail?.includes(err)
-          ) && data.error !== 'DATABASE_ERROR', // Allow retries for DATABASE_ERROR
+        (data) => isNonRetryableResponse(data) && data.error !== 'DATABASE_ERROR', // Allow retries for DATABASE_ERROR
       ],
       ...fetchOptions,
     });

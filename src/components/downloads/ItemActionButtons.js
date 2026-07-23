@@ -27,20 +27,23 @@ const mobileFilesButtonClass =
 export default function ItemActionButtons({
   item,
   onDelete,
-  isDeleting,
+  itemState,
   toggleFiles,
-  isExpanded = false,
   activeType = 'torrents',
   onStopSeeding,
   onForceStart,
   onRetry,
-  showRetry = false,
-  isRetrying = false,
   onDownload,
   compact = false,
   mobileBar = false,
-  isProtected = false,
 }) {
+  const {
+    deleting: isDeleting,
+    expanded: isExpanded = false,
+    protected: isProtected = false,
+    showRetry = false,
+    retrying: isRetrying = false,
+  } = itemState;
   const [isDownloading, setIsDownloading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const t = useTranslations('ItemActionButtons');

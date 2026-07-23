@@ -23,10 +23,10 @@ export default function AssetTypesSelector({ value = ['torrent'], onChange, t })
   };
 
   return (
-    <div>
-      <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+    <fieldset className="border-0 p-0 m-0 min-w-0">
+      <legend className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
         {t('assetTypes.label')}
-      </label>
+      </legend>
       <p className="text-xs text-primary-text/60 dark:text-primary-text-dark/60 mb-2">
         {t('assetTypes.hint')}
       </p>
@@ -50,6 +50,6 @@ export default function AssetTypesSelector({ value = ['torrent'], onChange, t })
           );
         })}
       </div>
-    </div>
+    </fieldset>
   );
 }

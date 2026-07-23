@@ -230,7 +230,10 @@ export async function fetchDownloadType(
       const listKey = getListKeyForAssetType(assetType);
       const torboxState = useTorboxDownloadsStore.getState();
       const orderKeys = torboxState.order[listKey] || [];
-      const sortedItems = orderKeys.map((key) => torboxState.entities[key]).filter(Boolean);
+      const sortedItems = orderKeys.flatMap((key) => {
+        const entity = torboxState.entities[key];
+        return entity ? [entity] : [];
+      });
 
       if (affectsCurrentView(activeType, viewType)) {
         store.setError(null);
@@ -323,7 +326,10 @@ export async function fetchDownloadType(
         torboxState.filesByEntityKey
       );
 
-      const sortedItems = orderKeys.map((key) => entities[key]).filter(Boolean);
+      const sortedItems = orderKeys.flatMap((key) => {
+        const entity = entities[key];
+        return entity ? [entity] : [];
+      });
 
       const nextRev =
         data.rev ??

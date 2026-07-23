@@ -1,11 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const MENU_MIN_WIDTH = 140;
 const MENU_ITEM_HEIGHT = 30;
 const MENU_PADDING = 8;
+
+function stopMenuEvent(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
 
 export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items }) {
   const menuRef = useRef(null);
@@ -56,6 +61,8 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
     };
   }, [isOpen, updateMenuPosition]);
 
+  const onCloseEvent = useEffectEvent(onClose);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -66,12 +73,12 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
         anchorRef?.current &&
         !anchorRef.current.contains(e.target)
       ) {
-        onClose();
+        onCloseEvent();
       }
     };
 
     const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseEvent();
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -80,16 +87,11 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen, onClose, anchorRef]);
+  }, [isOpen, anchorRef]);
 
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
 
   if (!isOpen || !portalTarget || !menuLayout) return null;
-
-  const stopMenuEvent = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
 
   const handleItemActivate = (item) => {
     item.onClick();

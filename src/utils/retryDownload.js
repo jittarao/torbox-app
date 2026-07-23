@@ -1,4 +1,5 @@
 import { isInactiveOrFailed } from '@/components/downloads/ActionBar/utils/statusHelpers';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { DEFAULT_UPLOAD_OPTIONS } from '@/components/shared/hooks/useUploadQueue';
 import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { uploadItem } from '@/utils/uploadActions';
@@ -46,9 +47,9 @@ async function resolveMagnetForTorrentRetry(apiKey, item) {
       'x-api-key': apiKey,
     },
   });
-  const data = await response.json().catch(() => null);
+  const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-  if (data?.success && data.data) {
+  if (responseOk && data?.success && data.data) {
     return data.data;
   }
 

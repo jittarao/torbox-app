@@ -23,7 +23,7 @@ export default function AutomationPageClient() {
   }
 
   return (
-    <AppShell apiKey={apiKey} className="min-h-screen bg-surface dark:bg-surface-dark font-sans">
+    <AppShell apiKey={apiKey} className="min-h-dvh bg-surface dark:bg-surface-dark font-sans">
       <div className="container mx-auto p-4">
         <AutomationRules apiKey={apiKey} />
       </div>

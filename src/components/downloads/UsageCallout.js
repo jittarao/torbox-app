@@ -92,8 +92,8 @@ export default function UsageCallout({ apiKey, planId }) {
         <div
           className={
             isDanger
-              ? 'h-full rounded-full bg-label-danger-text dark:bg-label-danger-text-dark transition-all'
-              : 'h-full rounded-full bg-label-warning-text dark:bg-label-warning-text-dark transition-all'
+              ? 'h-full rounded-full bg-label-danger-text dark:bg-label-danger-text-dark transition-[width]'
+              : 'h-full rounded-full bg-label-warning-text dark:bg-label-warning-text-dark transition-[width]'
           }
           style={{ width: `${barPercent}%` }}
         />

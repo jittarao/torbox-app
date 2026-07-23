@@ -2,12 +2,12 @@
 
 import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useLatestRef } from '@/hooks/useLatestRef';
 
 function SeekFeedback({ side, seconds, onDone }) {
   const t = useTranslations('VideoPlayer');
   const [visible, setVisible] = useState(true);
-  const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  const onDoneRef = useLatestRef(onDone);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -15,7 +15,7 @@ function SeekFeedback({ side, seconds, onDone }) {
       onDoneRef.current?.();
     }, 700);
     return () => clearTimeout(timer);
-  }, [side, seconds]);
+  }, [side, seconds, onDoneRef]);
 
   if (!visible) return null;
 
@@ -31,10 +31,7 @@ function SeekFeedback({ side, seconds, onDone }) {
       aria-live="polite"
       role="status"
     >
-      <div
-        className={`flex size-20 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm
-          motion-reduce:animate-none animate-in fade-in zoom-in-95 duration-200`}
-      >
+      <div className="flex size-20 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm">
         <div className="text-center text-white">
           <svg
             className={`mx-auto size-8 ${isLeft ? 'rotate-180' : ''}`}

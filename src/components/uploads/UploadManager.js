@@ -1,23 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { useState, useEffect, useCallback, useEffectEvent } from 'react';
+import { useLatestRef } from '@/hooks/useLatestRef';
 import Spinner from '../shared/Spinner';
 import { useUploads } from './hooks/useUploads';
 import { useUploadActions } from './hooks/useUploadActions';
 import UploadTabs from './UploadTabs';
-import UploadPagination from './UploadPagination';
 import UploadStatistics from './UploadStatistics';
 import UploadFilters from './UploadFilters';
-import UploadTable from './UploadTable';
+import UploadManagerTableSection from './UploadManagerTableSection';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import BulkActionButton from '@/components/shared/BulkActionButton';
 import { compactToolbarClass } from '@/components/shared/compactToolbar';
@@ -31,9 +22,7 @@ export default function UploadManager({ apiKey }) {
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
   const isBackendAvailable = backendMode === 'backend';
   const [activeTab, setActiveTab] = useState('queued');
-  // Input value (immediate updates for UI responsiveness)
   const [searchInput, setSearchInput] = useState('');
-  // Debounced search value (triggers API calls)
   const [filters, setFilters] = useState({
     type: '',
     search: '',
@@ -78,35 +67,67 @@ export default function UploadManager({ apiKey }) {
     handleDragEnd,
   } = useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirm, alert);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+  const getUploadRowId = useCallback((upload) => normalizeUploadId(upload.id), []);
+  const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(uploads, getUploadRowId);
+
+  const clearUploadSelection = useCallback(() => {
+    setSelectedUploads(new Set());
+    resetAnchor();
+  }, [resetAnchor]);
+
+  const resetPaginationPage = useCallback(() => {
+    setPagination((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
+  }, []);
+
+  const handleActiveTabChange = useCallback(
+    (tab) => {
+      setActiveTab(tab);
+      resetPaginationPage();
+      clearUploadSelection();
+    },
+    [resetPaginationPage, clearUploadSelection]
   );
 
-  // Debounce search input - update search value after 500ms of no typing
+  const paginationRef = useLatestRef(pagination);
+  const filtersRef = useLatestRef(filters);
+
+  const handlePaginationChange = useCallback(
+    (updater) => {
+      const prev = paginationRef.current;
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (next.page !== prev.page) {
+        clearUploadSelection();
+      }
+      setPagination(next);
+    },
+    [clearUploadSelection, paginationRef]
+  );
+
+  const handleFiltersChange = useCallback(
+    (updater) => {
+      const prev = filtersRef.current;
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const scopeChanged = next.type !== prev.type || next.search !== prev.search;
+      setFilters(next);
+      if (scopeChanged) {
+        resetPaginationPage();
+        clearUploadSelection();
+      }
+    },
+    [resetPaginationPage, clearUploadSelection, filtersRef]
+  );
+
+  const handleFiltersChangeEvent = useEffectEvent(handleFiltersChange);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFilters((prev) => ({ ...prev, search: searchInput }));
+      handleFiltersChangeEvent((prev) =>
+        prev.search === searchInput ? prev : { ...prev, search: searchInput }
+      );
     }, 500);
 
     return () => clearTimeout(timer);
   }, [searchInput]);
-
-  // Reset to page 1 when tab or search changes
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [activeTab, filters.search]);
-
-  const getUploadRowId = useCallback((upload) => normalizeUploadId(upload.id), []);
-  const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(uploads, getUploadRowId);
-
-  // Drop selection from other tabs/pages so bulk actions match visible checkboxes
-  useEffect(() => {
-    setSelectedUploads(new Set());
-    resetAnchor();
-  }, [activeTab, filters.type, filters.search, pagination.page, resetAnchor]);
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -141,8 +162,8 @@ export default function UploadManager({ apiKey }) {
         <div className={compactToolbarClass} role="toolbar" aria-label="Upload actions">
           <UploadFilters
             filters={filters}
-            setFilters={setFilters}
-            setPagination={setPagination}
+            setFilters={handleFiltersChange}
+            setPagination={handlePaginationChange}
             searchInput={searchInput}
             onSearchChange={setSearchInput}
             compact={true}
@@ -202,7 +223,11 @@ export default function UploadManager({ apiKey }) {
         </div>
       )}
 
-      <UploadTabs activeTab={activeTab} setActiveTab={setActiveTab} statusCounts={statusCounts} />
+      <UploadTabs
+        activeTab={activeTab}
+        setActiveTab={handleActiveTabChange}
+        statusCounts={statusCounts}
+      />
 
       {error && (
         <div className="p-4 bg-red-500/20 text-red-500 dark:bg-red-400/20 dark:text-red-400 rounded-lg">
@@ -216,72 +241,34 @@ export default function UploadManager({ apiKey }) {
         </div>
       )}
 
-      {loading && uploads.length === 0 && (
+      {loading && uploads.length === 0 ? (
         <div className="flex justify-center py-8">
           <Spinner />
         </div>
-      )}
-
-      {(!loading || uploads.length > 0) && (
-        <>
-          {!backendIsLoading && !isBackendAvailable ? (
-            <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
-              Upload logs are not available when backend is disabled.
-            </div>
-          ) : uploads.length === 0 ? (
-            <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
-              {filters.search
-                ? 'No uploads match your search criteria'
-                : `No ${activeTab} uploads found`}
-            </div>
-          ) : (
-            <div className="relative">
-              {activeTab === 'queued' ? (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={onDragEnd}
-                >
-                  <UploadTable
-                    uploads={uploads}
-                    enableDnd={true}
-                    onRetry={handleRetry}
-                    onDelete={handleDelete}
-                    onDownload={handleDownload}
-                    onCopy={handleCopy}
-                    retrying={retrying}
-                    deleting={deleting}
-                    downloading={downloading}
-                    copying={copying}
-                    selectedUploads={selectedUploads}
-                    onSelect={handleSelectUpload}
-                    onSelectAll={handleSelectAll}
-                    copySuccess={copySuccess}
-                  />
-                </DndContext>
-              ) : (
-                <UploadTable
-                  uploads={uploads}
-                  enableDnd={false}
-                  onRetry={handleRetry}
-                  onDelete={handleDelete}
-                  onDownload={handleDownload}
-                  onCopy={handleCopy}
-                  retrying={retrying}
-                  deleting={deleting}
-                  downloading={downloading}
-                  copying={copying}
-                  selectedUploads={selectedUploads}
-                  onSelect={handleSelectUpload}
-                  onSelectAll={handleSelectAll}
-                  copySuccess={copySuccess}
-                />
-              )}
-            </div>
-          )}
-
-          <UploadPagination pagination={pagination} setPagination={setPagination} />
-        </>
+      ) : (
+        <UploadManagerTableSection
+          activeTab={activeTab}
+          loading={loading}
+          uploads={uploads}
+          filters={filters}
+          backendIsLoading={backendIsLoading}
+          isBackendAvailable={isBackendAvailable}
+          onDragEnd={onDragEnd}
+          onRetry={handleRetry}
+          onDelete={handleDelete}
+          onDownload={handleDownload}
+          onCopy={handleCopy}
+          retrying={retrying}
+          deleting={deleting}
+          downloading={downloading}
+          copying={copying}
+          selectedUploads={selectedUploads}
+          onSelect={handleSelectUpload}
+          onSelectAll={handleSelectAll}
+          copySuccess={copySuccess}
+          pagination={pagination}
+          onPaginationChange={handlePaginationChange}
+        />
       )}
 
       <ConfirmDialog />

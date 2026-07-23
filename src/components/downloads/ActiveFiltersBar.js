@@ -30,9 +30,9 @@ export default function ActiveFiltersBar({
 }) {
   const t = useTranslations('DownloadsFilters');
 
-  const combineSuffix = (mode) => (isAllCombineMode(mode) ? t('combineAll') : t('combineAny'));
-
   const summary = useMemo(() => {
+    const combineSuffix = (mode) => (isAllCombineMode(mode) ? t('combineAll') : t('combineAny'));
+
     if (activeViewIds.length > 1) {
       const base = t('activeViews', { count: activeViewIds.length });
       const withMode = `${base} · ${combineSuffix(viewCombineMode)}`;

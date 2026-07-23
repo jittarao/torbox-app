@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useLatestRef } from '@/hooks/useLatestRef';
 import { useTranslations } from 'next-intl';
 import { deleteItemHelper, batchDeleteHelper } from '@/utils/deleteHelpers';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
@@ -13,8 +14,7 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
   const { partition, toastAllBlocked, skipSuffix, mapProtectedError, guardSingle } =
     useDestructiveActionGuard(setToast);
 
-  const setIsDeletingRef = useRef(setIsDeleting);
-  setIsDeletingRef.current = setIsDeleting;
+  const setIsDeletingRef = useLatestRef(setIsDeleting);
 
   const applyLocalRemovals = (successfulIds, itemsForGrouping = []) => {
     const store = useTorboxDownloadsStore.getState();
@@ -123,10 +123,14 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
       if (successfulIds.length > 0) {
         applyLocalRemovals(successfulIds, allowed);
 
+        const successfulIdSet = new Set(successfulIds);
         const removedSelectionIds = new Set(
-          allowed
-            .filter((item) => successfulIds.includes(item.id))
-            .map((item) => getDownloadSelectionId(item))
+          allowed.reduce((acc, item) => {
+            if (successfulIdSet.has(item.id)) {
+              acc.push(getDownloadSelectionId(item));
+            }
+            return acc;
+          }, [])
         );
 
         setSelectedItems((prev) => ({

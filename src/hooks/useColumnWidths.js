@@ -30,6 +30,10 @@ export function useColumnWidths(activeType) {
   }, [storageKey]);
 
   useEffect(() => {
+    pendingWidthsRef.current = columnWidths;
+  }, [columnWidths]);
+
+  useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
@@ -45,16 +49,19 @@ export function useColumnWidths(activeType) {
     if (typeof window === 'undefined') return;
 
     const newWidth = Math.max(width, getColumnMinWidth(columnId));
-    setColumnWidths((prev) => {
-      const updated = { ...prev, [columnId]: newWidth };
-      pendingWidthsRef.current = updated;
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => {
-        saveTimerRef.current = null;
-        setJSON(storageKey, updated);
-      }, SAVE_DEBOUNCE_MS);
-      return updated;
-    });
+    // Chain through the ref so rapid resize events in one tick keep every
+    // column change, without side effects inside the state updater.
+    const updated = {
+      ...(pendingWidthsRef.current ?? columnWidths),
+      [columnId]: newWidth,
+    };
+    pendingWidthsRef.current = updated;
+    setColumnWidths(updated);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      setJSON(storageKey, pendingWidthsRef.current);
+    }, SAVE_DEBOUNCE_MS);
   };
 
   return { columnWidths, updateColumnWidth };
