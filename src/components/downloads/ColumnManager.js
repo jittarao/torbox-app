@@ -135,7 +135,8 @@ export default function ColumnManager({
         type="button"
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md 
+        aria-label={t('manageColumns')}
+        className="px-3 py-1.5 text-sm border border-border dark:border-border-dark rounded-md
           hover:border-accent/50 dark:hover:border-accent-dark/50 
           bg-transparent text-primary-text dark:text-primary-text-dark
           flex items-center gap-2 transition-colors"

@@ -303,6 +303,7 @@ export default function ConditionFilterInput({
                 type="number"
                 value={condition.value ?? ''}
                 onChange={(e) => handleFieldChange('value', parseFloat(e.target.value) || 0)}
+                aria-label={t('conditions.value')}
                 className="flex-1 min-w-0 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
                 min="0"
                 step={
@@ -332,6 +333,7 @@ export default function ConditionFilterInput({
             type="number"
             value={condition.hours || 1}
             onChange={(e) => handleFieldChange('hours', Math.max(1, parseInt(e.target.value) || 1))}
+            aria-label={t('conditions.hours')}
             className="w-20 px-3 py-1.5 text-sm text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md bg-transparent"
             min="1"
             max="24"

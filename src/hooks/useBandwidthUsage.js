@@ -1,6 +1,7 @@
 'use client';
 
 import { readJsonFromResponse } from '@/utils/fetchResponse';
+import { resetLoadingUnlessAborted } from '@/utils/asyncLoadingReset';
 
 import { useState, useEffect } from 'react';
 import {
@@ -58,7 +59,7 @@ export function useBandwidthUsage(apiKey, planId) {
       } catch {
         if (!abortController.signal.aborted) setUsedBytes(0);
       } finally {
-        if (!abortController.signal.aborted) setLoading(false);
+        resetLoadingUnlessAborted(abortController.signal, setLoading);
       }
     };
 

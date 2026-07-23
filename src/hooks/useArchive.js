@@ -4,6 +4,7 @@ import { uploadItem } from '@/utils/uploadActions';
 import { buildShortMagnetLink } from '@/utils/retryDownload';
 import fetch from '@/utils/fetch';
 import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
+import { resetLoadingIfGenerationCurrent } from '@/utils/asyncLoadingReset';
 
 function transformArchivedItem(item) {
   return {
@@ -131,9 +132,7 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
         setError(err.message);
         setArchivedDownloads((prev) => (prev.length === 0 ? prev : []));
       } finally {
-        if (!signal?.aborted && generation === requestGenerationRef.current) {
-          setLoading(false);
-        }
+        resetLoadingIfGenerationCurrent(signal, generation, requestGenerationRef, setLoading);
       }
     },
     [limit, usesExternalPagination]

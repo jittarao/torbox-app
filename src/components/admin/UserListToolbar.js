@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { AdminCard, AdminFilterChip, adminInputClass } from './AdminUi';
 
 export default function UserListToolbar({
@@ -10,11 +11,17 @@ export default function UserListToolbar({
   reactivating,
   onReactivateAllInactive,
 }) {
+  const searchInputId = useId();
+
   return (
     <AdminCard bodyClassName="!py-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         <form onSubmit={onSearchSubmit} className="min-w-0 flex-1">
+          <label htmlFor={searchInputId} className="sr-only">
+            Search users by auth ID or key name
+          </label>
           <input
+            id={searchInputId}
             type="search"
             placeholder="Search by auth ID or key name…"
             value={searchValue}
