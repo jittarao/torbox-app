@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import Spinner from '@/components/shared/Spinner';
 import DesktopLaunchAtLoginPanel from '@/components/desktop/DesktopLaunchAtLoginPanel';
 import DesktopTrayPanel from '@/components/desktop/DesktopTrayPanel';
+import DesktopUpdaterPanel from '@/components/desktop/DesktopUpdaterPanel';
 import DesktopSettingsSection from '@/components/desktop/DesktopSettingsSection';
 import {
   desktopBtnDanger,
@@ -15,7 +16,7 @@ import {
   DesktopMetaRow,
   DesktopStatusBadge,
 } from '@/components/desktop/DesktopUi';
-import { Bolt, Cloud, Key, Layers } from '@/components/icons';
+import { Bolt, Cloud, CloudDownload, Key, Layers } from '@/components/icons';
 import { formatDate } from '@/components/uploads/utils';
 import type { CredentialStatus } from '@/desktop/capabilities';
 
@@ -144,6 +145,15 @@ export default function DesktopSettingsGeneralTab({
           <DesktopTrayPanel embedded setToast={setToast} />
         </DesktopSettingsSection>
       ) : null}
+
+      <DesktopSettingsSection
+        title={t('updater.title')}
+        description={t('updater.description')}
+        icon={CloudDownload}
+        compact
+      >
+        <DesktopUpdaterPanel embedded setToast={setToast} />
+      </DesktopSettingsSection>
 
       {canStoreApiKey ? (
         <DesktopSettingsSection
