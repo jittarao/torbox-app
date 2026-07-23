@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslations } from 'next-intl';
 import Dropdown from '@/components/shared/Dropdown';
 import { EyeOff } from '@/components/icons';
@@ -29,6 +30,8 @@ export default function SearchResultsToolbar({
   onSortDirToggle,
 }) {
   const t = useTranslations('SearchResults');
+  const cachedOnlySwitchId = useId();
+  const hideTorBoxIndexersSwitchId = useId();
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
@@ -38,7 +41,10 @@ export default function SearchResultsToolbar({
         </h2>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 cursor-pointer order-2 md:order-1">
+        <label
+          htmlFor={cachedOnlySwitchId}
+          className="flex items-center gap-2 cursor-pointer order-2 md:order-1"
+        >
           <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
             <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -52,6 +58,7 @@ export default function SearchResultsToolbar({
           </span>
 
           <div
+            id={cachedOnlySwitchId}
             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors
                       ${
                         showCachedOnly
@@ -77,13 +84,14 @@ export default function SearchResultsToolbar({
         </label>
 
         {searchType === 'usenet' && (
-          <label className="flex items-center gap-2">
+          <label htmlFor={hideTorBoxIndexersSwitchId} className="flex items-center gap-2">
             <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
               <EyeOff />
               {t('hideTorBoxIndexers')}
             </span>
 
             <div
+              id={hideTorBoxIndexersSwitchId}
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
               ${
                 hideTorBoxIndexers

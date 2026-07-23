@@ -13,6 +13,12 @@ export default function RssFeedForm({
 }) {
   const downloadTypeId = useId();
   const torrentSeedingId = useId();
+  const feedNameId = useId();
+  const feedUrlId = useId();
+  const doRegexId = useId();
+  const dontRegexId = useId();
+  const scanIntervalId = useId();
+  const dontOlderThanId = useId();
 
   return (
     <div className="bg-surface-alt dark:bg-surface-alt-dark p-6 rounded-lg border border-border dark:border-border-dark">
@@ -22,10 +28,14 @@ export default function RssFeedForm({
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <label
+              htmlFor={feedNameId}
+              className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+            >
               {t('feedName')}
             </label>
             <input
+              id={feedNameId}
               type="text"
               value={formData.name}
               onChange={(e) => onFormDataChange({ ...formData, name: e.target.value })}
@@ -35,10 +45,14 @@ export default function RssFeedForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <label
+              htmlFor={feedUrlId}
+              className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+            >
               {t('feedUrl')}
             </label>
             <input
+              id={feedUrlId}
               type="url"
               value={formData.url}
               onChange={(e) => onFormDataChange({ ...formData, url: e.target.value })}
@@ -92,10 +106,14 @@ export default function RssFeedForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <label
+              htmlFor={doRegexId}
+              className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+            >
               {t('doRegex')}
             </label>
             <input
+              id={doRegexId}
               type="text"
               value={formData.do_regex}
               onChange={(e) => onFormDataChange({ ...formData, do_regex: e.target.value })}
@@ -104,10 +122,14 @@ export default function RssFeedForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <label
+              htmlFor={dontRegexId}
+              className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+            >
               {t('dontRegex')}
             </label>
             <input
+              id={dontRegexId}
               type="text"
               value={formData.dont_regex}
               onChange={(e) => onFormDataChange({ ...formData, dont_regex: e.target.value })}
@@ -119,10 +141,14 @@ export default function RssFeedForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <label
+              htmlFor={scanIntervalId}
+              className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+            >
               {t('scanInterval')}
             </label>
             <input
+              id={scanIntervalId}
               type="number"
               min="1"
               value={formData.scan_interval}
@@ -134,10 +160,14 @@ export default function RssFeedForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+            <label
+              htmlFor={dontOlderThanId}
+              className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+            >
               {t('dontOlderThan')}
             </label>
             <input
+              id={dontOlderThanId}
               type="number"
               min="0"
               value={formData.dont_older_than}

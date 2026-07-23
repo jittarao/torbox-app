@@ -14,6 +14,7 @@ import {
  * Supports optgroups and provides better UX than native select
  */
 export default function Select({
+  id,
   value,
   onChange,
   children,
@@ -172,6 +173,7 @@ export default function Select({
   return (
     <div className="relative">
       <button
+        id={id}
         ref={selectRef}
         type="button"
         onClick={handleToggle}

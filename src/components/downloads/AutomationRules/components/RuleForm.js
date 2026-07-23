@@ -32,15 +32,21 @@ export default function RuleForm({
   const actionOptions = getSupportedActionOptions(t, ruleAssetTypes);
   const automationRulesT = useTranslations('AutomationRules');
   const triggerValueId = useId();
+  const ruleNameId = useId();
+  const actionSelectId = useId();
   return (
     <div className="mt-4 p-4 border border-border dark:border-border-dark rounded-lg">
       <div className="space-y-4">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+          <label
+            htmlFor={ruleNameId}
+            className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+          >
             {t('ruleName')}
           </label>
           <input
+            id={ruleNameId}
             type="text"
             value={rule.name}
             onChange={(e) => onRuleChange({ ...rule, name: e.target.value })}
@@ -89,9 +95,9 @@ export default function RuleForm({
         {/* Conditions */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark">
+            <span className="block text-sm font-medium text-primary-text dark:text-primary-text-dark">
               {t('condition')}
-            </label>
+            </span>
             <button
               type="button"
               onClick={onAddGroup}
@@ -162,11 +168,15 @@ export default function RuleForm({
 
         {/* Action */}
         <div>
-          <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+          <label
+            htmlFor={actionSelectId}
+            className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+          >
             {t('action')}
           </label>
           <div className="w-48">
             <Select
+              id={actionSelectId}
               value={rule.action.type}
               onChange={(e) => {
                 const newActionType = e.target.value;
@@ -208,10 +218,10 @@ export default function RuleForm({
           {/* Tag Selector for add_tag and remove_tag actions */}
           {(rule.action.type === ACTION_TYPES.ADD_TAG ||
             rule.action.type === ACTION_TYPES.REMOVE_TAG) && (
-            <div className="mt-2">
-              <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+            <fieldset className="mt-2 border-0 p-0 m-0 min-w-0">
+              <legend className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
                 {t('actions.selectTags')}
-              </label>
+              </legend>
               <TagSelector
                 value={rule.action.tagIds || []}
                 onChange={(tagIds) =>
@@ -226,7 +236,7 @@ export default function RuleForm({
                 apiKey={apiKey}
                 className="w-full"
               />
-            </div>
+            </fieldset>
           )}
         </div>
 

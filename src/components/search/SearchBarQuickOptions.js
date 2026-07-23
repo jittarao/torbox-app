@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslations } from 'next-intl';
 import { Cog, Filter } from '@/components/icons';
 
@@ -10,16 +11,18 @@ export default function SearchBarQuickOptions({
   onToggleAdvancedOptions,
 }) {
   const t = useTranslations('SearchBar');
+  const customEnginesSwitchId = useId();
 
   return (
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2">
+        <label htmlFor={customEnginesSwitchId} className="flex items-center gap-2">
           <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
             <Cog className="size-4" />
             {t('customEngines')}
           </span>
           <div
+            id={customEnginesSwitchId}
             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
                 ${
                   includeCustomEngines
