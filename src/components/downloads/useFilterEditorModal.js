@@ -16,6 +16,10 @@ import {
 import { clonePresetFilters } from './CustomViews/presets';
 import { LOGIC_OPERATORS } from './AutomationRules/constants';
 
+function createEmptyFilter() {
+  return { column: '', operator: '', value: null };
+}
+
 function ensureStructure(prev) {
   if (prev?.groups && Array.isArray(prev.groups)) return prev;
   if (Array.isArray(prev)) {
@@ -25,6 +29,28 @@ function ensureStructure(prev) {
     };
   }
   return cloneFilters(EMPTY_FILTERS);
+}
+
+function prepareEditorFilters(filters) {
+  if (Array.isArray(filters) && filters.length > 0 && filters[0]?.column !== undefined) {
+    return normalizeFilters(filters);
+  }
+  if (!filters?.groups || !Array.isArray(filters.groups) || filters.groups.length === 0) {
+    return cloneFilters(EMPTY_FILTERS);
+  }
+  const hasEmptyGroups = filters.groups.some(
+    (group) => !group.filters || group.filters.length === 0
+  );
+  if (!hasEmptyGroups) return filters;
+  return {
+    ...filters,
+    groups: filters.groups.map((group) => {
+      if (!group.filters || group.filters.length === 0) {
+        return { ...group, filters: [createEmptyFilter()] };
+      }
+      return group;
+    }),
+  };
 }
 
 export function useFilterEditorModal({
@@ -44,6 +70,7 @@ export function useFilterEditorModal({
   activeColumns,
   search = '',
   onPreview,
+  previewItems,
 }) {
   const { saveView, updateView } = useCustomViews(apiKey);
   const customViewsT = useTranslations('CustomViews');
@@ -61,6 +88,7 @@ export function useFilterEditorModal({
   const [saveSort, setSaveSort] = useState(false);
   const [saveColumns, setSaveColumns] = useState(false);
   const [saveSearch, setSaveSearch] = useState(false);
+  const [draftFilters, setDraftFilters] = useState(() => prepareEditorFilters(columnFilters));
   const availableColumns = getFilterableColumns(columnsT, activeType);
   const isViewMode = isCreateMode || isEditMode;
   const trimmedSearch = search?.trim() || '';
@@ -92,6 +120,7 @@ export function useFilterEditorModal({
 
   const modeKey = isCreateMode ? 'create' : isEditMode ? `edit-${editingView?.id || ''}` : null;
   const [prevModeKey, setPrevModeKey] = useState(modeKey);
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
 
   if (isOpen && modeKey !== prevModeKey) {
     setPrevModeKey(modeKey);
@@ -102,63 +131,31 @@ export function useFilterEditorModal({
     setSaveSearch(
       isCreateMode ? !!search?.trim() : isEditMode ? !!editingView?.search_query : false
     );
+    setDraftFilters(
+      isEditMode && editingView?.filters
+        ? prepareEditorFilters(editingView.filters)
+        : prepareEditorFilters(columnFilters)
+    );
   }
 
-  useEffect(() => {
-    if (!isOpen || !columnFilters?.groups) return;
-
-    const hasEmptyGroups = columnFilters.groups.some(
-      (group) => !group.filters || group.filters.length === 0
-    );
-
-    if (hasEmptyGroups) {
-      setColumnFilters((prev) => {
-        if (!prev?.groups) return prev;
-        const updatedGroups = prev.groups.map((group) => {
-          if (!group.filters || group.filters.length === 0) {
-            return {
-              ...group,
-              filters: [{ column: '', operator: '', value: null }],
-            };
-          }
-          return group;
-        });
-        return { ...prev, groups: updatedGroups };
-      });
-    }
-  }, [isOpen, columnFilters, setColumnFilters]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    if (
-      Array.isArray(columnFilters) &&
-      columnFilters.length > 0 &&
-      columnFilters[0]?.column !== undefined
-    ) {
-      setColumnFilters(normalizeFilters(columnFilters));
-    } else if (
-      !columnFilters?.groups ||
-      !Array.isArray(columnFilters.groups) ||
-      columnFilters.groups.length === 0
-    ) {
-      setColumnFilters(cloneFilters(EMPTY_FILTERS));
-    }
-    // columnFilters, normalizeFilters, EMPTY_FILTERS intentionally omitted to
-    // avoid resetting filters on every change — effect should only run on open/close.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, setColumnFilters]);
+  if (isOpen && !prevIsOpen) {
+    setPrevIsOpen(true);
+    setDraftFilters(prepareEditorFilters(columnFilters));
+  } else if (!isOpen && prevIsOpen) {
+    setPrevIsOpen(false);
+  }
 
   const filterGroups =
-    columnFilters?.groups ||
-    (Array.isArray(columnFilters)
-      ? [{ logicOperator: LOGIC_OPERATORS.AND, filters: columnFilters }]
+    draftFilters?.groups ||
+    (Array.isArray(draftFilters)
+      ? [{ logicOperator: LOGIC_OPERATORS.AND, filters: draftFilters }]
       : EMPTY_FILTERS.groups);
 
-  const groupLogicOperator = columnFilters?.logicOperator || LOGIC_OPERATORS.AND;
-  const filtersActive = hasActiveFilters(columnFilters);
+  const groupLogicOperator = draftFilters?.logicOperator || LOGIC_OPERATORS.AND;
+  const filtersActive = hasActiveFilters(draftFilters);
 
   const handleAddGroup = () => {
-    setColumnFilters((prev) => {
+    setDraftFilters((prev) => {
       const current = ensureStructure(prev);
       return {
         ...current,
@@ -167,7 +164,7 @@ export function useFilterEditorModal({
           {
             _key: Math.random().toString(36).substring(2, 15),
             logicOperator: LOGIC_OPERATORS.AND,
-            filters: [],
+            filters: [createEmptyFilter()],
           },
         ],
       };
@@ -175,7 +172,7 @@ export function useFilterEditorModal({
   };
 
   const handleUpdateGroup = (groupIndex, field, value) => {
-    setColumnFilters((prev) => {
+    setDraftFilters((prev) => {
       const current = ensureStructure(prev);
       const newGroups = [...current.groups];
       newGroups[groupIndex] = { ...newGroups[groupIndex], [field]: value };
@@ -184,7 +181,7 @@ export function useFilterEditorModal({
   };
 
   const handleRemoveGroup = (groupIndex) => {
-    setColumnFilters((prev) => {
+    setDraftFilters((prev) => {
       const current = ensureStructure(prev);
       const newGroups = current.groups.filter((_, i) => i !== groupIndex);
       return {
@@ -195,7 +192,7 @@ export function useFilterEditorModal({
                 {
                   _key: Math.random().toString(36).substring(2, 15),
                   logicOperator: LOGIC_OPERATORS.AND,
-                  filters: [],
+                  filters: [createEmptyFilter()],
                 },
               ]
             : newGroups,
@@ -204,7 +201,7 @@ export function useFilterEditorModal({
   };
 
   const handleAddFilter = (groupIndex) => {
-    setColumnFilters((prev) => {
+    setDraftFilters((prev) => {
       const current = ensureStructure(prev);
       const newGroups = [...current.groups];
       newGroups[groupIndex] = {
@@ -224,7 +221,7 @@ export function useFilterEditorModal({
   };
 
   const handleUpdateFilter = (groupIndex, filterIndex, field, value) => {
-    setColumnFilters((prev) => {
+    setDraftFilters((prev) => {
       const current = ensureStructure(prev);
       const newGroups = [...current.groups];
       const newFilters = [...(newGroups[groupIndex].filters || [])];
@@ -235,26 +232,27 @@ export function useFilterEditorModal({
   };
 
   const handleRemoveFilter = (groupIndex, filterIndex) => {
-    setColumnFilters((prev) => {
+    setDraftFilters((prev) => {
       const current = ensureStructure(prev);
       const newGroups = [...current.groups];
+      const remainingFilters = newGroups[groupIndex].filters.filter((_, i) => i !== filterIndex);
       newGroups[groupIndex] = {
         ...newGroups[groupIndex],
-        filters: newGroups[groupIndex].filters.filter((_, i) => i !== filterIndex),
+        filters: remainingFilters.length === 0 ? [createEmptyFilter()] : remainingFilters,
       };
       return { ...current, groups: newGroups };
     });
   };
 
   const handleGroupLogicChange = (newLogic) => {
-    setColumnFilters((prev) => ({ ...ensureStructure(prev), logicOperator: newLogic }));
+    setDraftFilters((prev) => ({ ...ensureStructure(prev), logicOperator: newLogic }));
   };
 
-  const filtersToSave = () => stampFilterSchemaVersion(ensureStructure(columnFilters));
+  const filtersToSave = () => stampFilterSchemaVersion(ensureStructure(draftFilters));
 
   const handleApplyPreset = (preset) => {
     const filters = clonePresetFilters(preset);
-    setColumnFilters(filters);
+    setDraftFilters(filters);
     setSaveViewName(preset.name);
     onPreview?.(filters, { includeSort: !!preset.sort });
   };
@@ -356,7 +354,8 @@ export function useFilterEditorModal({
   };
 
   const handleApply = () => {
-    onApply?.(columnFilters);
+    setColumnFilters(draftFilters);
+    onApply?.(draftFilters);
     onClose();
   };
 
@@ -371,6 +370,7 @@ export function useFilterEditorModal({
 
   const handleClear = () => {
     const empty = cloneFilters(EMPTY_FILTERS);
+    setDraftFilters(empty);
     setColumnFilters(empty);
     onApply?.(empty);
     onClose();
@@ -383,7 +383,7 @@ export function useFilterEditorModal({
     editingView,
     apiKey,
     activeType,
-    columnFilters,
+    columnFilters: draftFilters,
     previewItems,
     onPreview,
     saveView,

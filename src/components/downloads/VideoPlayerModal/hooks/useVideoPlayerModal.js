@@ -76,7 +76,43 @@ export function useVideoPlayerModal({
   const lastClickTimeRef = useRef(0);
   const volumeSliderTimeoutRef = useRef(null);
   const isManualStreamUpdateRef = useRef(false);
-  const hasInitializedTracksRef = useRef(false);
+  const [playerWasOpen, setPlayerWasOpen] = useState(false);
+
+  if (isOpen && !playerWasOpen) {
+    setPlayerWasOpen(true);
+    setIsLoading(true);
+    setError(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setShowVolumeSlider(false);
+    setShowAudioMenu(false);
+    setShowSubtitleMenu(false);
+    setShowPlaybackSpeedMenu(false);
+    setShowInfo(false);
+    setShowSettingsSheet(false);
+    setShowInfoSheet(false);
+    setPlaybackSpeed(1.0);
+    setSelectedStreamData({
+      video_track_idx: 0,
+      audio_track_idx: initialAudioIndex,
+      subtitle_track_idx: initialSubtitleIndex,
+      intro_info: introInformation,
+    });
+    setSelectedSubtitleIndex(initialSubtitleIndex);
+    setSelectedAudioIndex(initialAudioIndex);
+  } else if (!isOpen && playerWasOpen) {
+    setPlayerWasOpen(false);
+  }
+
+  if (
+    isOpen &&
+    initialStreamUrl &&
+    !isManualStreamUpdateRef.current &&
+    initialStreamUrl !== streamUrl
+  ) {
+    setStreamUrl(initialStreamUrl);
+  }
 
   const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreen({
     enabled: isOpen,
@@ -149,30 +185,10 @@ export function useVideoPlayerModal({
   useVideoPlayerModalEffects({
     isOpen,
     isTouchPlayer,
-    initialStreamUrl,
-    isManualStreamUpdateRef,
-    setStreamUrl,
-    hasInitializedTracksRef,
-    initialAudioIndex,
-    initialSubtitleIndex,
-    introInformation,
-    setIsLoading,
-    setError,
-    setIsPlaying,
-    setCurrentTime,
-    setDuration,
-    setShowControls,
     setShowVolumeSlider,
     setShowAudioMenu,
     setShowSubtitleMenu,
     setShowPlaybackSpeedMenu,
-    setShowInfo,
-    setShowSettingsSheet,
-    setShowInfoSheet,
-    setPlaybackSpeed,
-    setSelectedStreamData,
-    setSelectedSubtitleIndex,
-    setSelectedAudioIndex,
     volumeRef,
     audioMenuRef,
     subtitleMenuRef,

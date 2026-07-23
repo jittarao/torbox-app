@@ -3,30 +3,10 @@ import { useEffect } from 'react';
 export function useVideoPlayerModalEffects({
   isOpen,
   isTouchPlayer,
-  initialStreamUrl,
-  isManualStreamUpdateRef,
-  setStreamUrl,
-  hasInitializedTracksRef,
-  initialAudioIndex,
-  initialSubtitleIndex,
-  introInformation,
-  setIsLoading,
-  setError,
-  setIsPlaying,
-  setCurrentTime,
-  setDuration,
-  setShowControls,
   setShowVolumeSlider,
   setShowAudioMenu,
   setShowSubtitleMenu,
   setShowPlaybackSpeedMenu,
-  setShowInfo,
-  setShowSettingsSheet,
-  setShowInfoSheet,
-  setPlaybackSpeed,
-  setSelectedStreamData,
-  setSelectedSubtitleIndex,
-  setSelectedAudioIndex,
   volumeRef,
   audioMenuRef,
   subtitleMenuRef,
@@ -46,59 +26,6 @@ export function useVideoPlayerModalEffects({
       document.body.style.overflow = '';
     };
   }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen && !hasInitializedTracksRef.current) {
-      hasInitializedTracksRef.current = true;
-      setIsLoading(true);
-      setError(null);
-      setIsPlaying(false);
-      setCurrentTime(0);
-      setDuration(0);
-      setShowControls(true);
-      setShowVolumeSlider(false);
-      setShowAudioMenu(false);
-      setShowSubtitleMenu(false);
-      setShowPlaybackSpeedMenu(false);
-      setShowInfo(false);
-      setShowSettingsSheet(false);
-      setShowInfoSheet(false);
-      setPlaybackSpeed(1.0);
-      setSelectedStreamData({
-        video_track_idx: 0,
-        audio_track_idx: initialAudioIndex,
-        subtitle_track_idx: initialSubtitleIndex,
-        intro_info: introInformation,
-      });
-      setSelectedSubtitleIndex(initialSubtitleIndex);
-      setSelectedAudioIndex(initialAudioIndex);
-    } else if (!isOpen) {
-      hasInitializedTracksRef.current = false;
-    }
-  }, [
-    isOpen,
-    introInformation,
-    initialAudioIndex,
-    initialSubtitleIndex,
-    hasInitializedTracksRef,
-    setIsLoading,
-    setError,
-    setIsPlaying,
-    setCurrentTime,
-    setDuration,
-    setShowControls,
-    setShowVolumeSlider,
-    setShowAudioMenu,
-    setShowSubtitleMenu,
-    setShowPlaybackSpeedMenu,
-    setShowInfo,
-    setShowSettingsSheet,
-    setShowInfoSheet,
-    setPlaybackSpeed,
-    setSelectedStreamData,
-    setSelectedSubtitleIndex,
-    setSelectedAudioIndex,
-  ]);
 
   useEffect(() => {
     if (!isOpen || isTouchPlayer) return;
@@ -138,10 +65,4 @@ export function useVideoPlayerModalEffects({
     setShowSubtitleMenu,
     setShowPlaybackSpeedMenu,
   ]);
-
-  useEffect(() => {
-    if (initialStreamUrl && !isManualStreamUpdateRef.current) {
-      setStreamUrl(initialStreamUrl);
-    }
-  }, [initialStreamUrl, isManualStreamUpdateRef, setStreamUrl]);
 }
