@@ -1,5 +1,9 @@
 export const TORBOX_NATIVE_TRACKERS = ['Newznab'];
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Apply server-side search filters to raw results (derived, not stored).
  */
@@ -15,8 +19,8 @@ export function applySearchFilters(results, filters) {
     const s0 = seasonFilter.padStart(2, '0');
     const seasonPatterns = [
       new RegExp(`s${s0}`, 'i'),
-      new RegExp(`season\\s*${seasonFilter}`, 'i'),
-      new RegExp(`\\b${seasonFilter}x\\d+`, 'i'),
+      new RegExp(`season\\s*${escapeRegExp(seasonFilter)}`, 'i'),
+      new RegExp(`\\b${escapeRegExp(seasonFilter)}x\\d+`, 'i'),
       new RegExp(`season\\s*${s0}`, 'i'),
     ];
     filtered = filtered.filter((item) => {
@@ -29,7 +33,7 @@ export function applySearchFilters(results, filters) {
     const e0 = episodeFilter.padStart(2, '0');
     const episodePatterns = [
       new RegExp(`e${e0}`, 'i'),
-      new RegExp(`episode\\s*${episodeFilter}`, 'i'),
+      new RegExp(`episode\\s*${escapeRegExp(episodeFilter)}`, 'i'),
       new RegExp(`\\b\\d+x${e0}`, 'i'),
       new RegExp(`episode\\s*${e0}`, 'i'),
     ];

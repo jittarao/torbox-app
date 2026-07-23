@@ -25,6 +25,36 @@ describe('searchSelectors', () => {
     },
   ];
 
+  test('applySearchFilters escapes regex metacharacters in season and episode filters', () => {
+    const filtered = applySearchFilters(
+      [
+        {
+          title: 'Show season 1.5 special',
+          raw_title: 'Show season 1.5 special',
+          size: 0,
+          last_known_seeders: 0,
+        },
+        {
+          title: 'Show season 1 special',
+          raw_title: 'Show season 1 special',
+          size: 0,
+          last_known_seeders: 0,
+        },
+      ],
+      {
+        seasonFilter: '1.5',
+        episodeFilter: '',
+        yearFilter: '',
+        qualityFilter: '',
+        sizeFilter: '',
+        seedersFilter: '',
+      }
+    );
+
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].title).toContain('1.5');
+  });
+
   test('applySearchFilters filters by season and quality', () => {
     const filtered = applySearchFilters(baseResults, {
       seasonFilter: '1',
