@@ -36,7 +36,6 @@ import { useDownloadProtectionActions } from './useDownloadProtectionActions';
 import { useStopSeeding } from './useStopSeeding';
 import { useProtectedDownloadsStore } from '@/store/protectedDownloadsStore';
 import { useDownloadTagsStore } from '@/store/downloadTagsStore';
-import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getItemFileCount, resolveItemFiles } from '@/utils/downloadEntityFiles';
 
 export const FILTERS_SIDEBAR_EXPANDED = '14rem';

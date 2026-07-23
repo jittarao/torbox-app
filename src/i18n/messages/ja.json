@@ -258,7 +258,8 @@
       "uploadSpeed": "現在のアップロード速度",
       "uploadSpeedDescription": "現在の瞬間的なアップロード速度",
       "uploadStalledTime": "アップロード停止時間",
-      "uploadStalledTimeDescription": "アップロード活動が停止してからの時間（分単位）"
+      "uploadStalledTimeDescription": "アップロード活動が停止してからの時間（分単位）",
+      "value": "値"
     },
     "delete": "ルールを削除",
     "details": "詳細",
@@ -453,6 +454,7 @@
     "of": "/",
     "previous": "前へ",
     "protected": "保護中",
+    "selectAll": "すべて選択",
     "selectRow": "{name} を選択",
     "showing": "表示",
     "time": {
@@ -1109,6 +1111,7 @@
       "title": "ダウンロードリンクがありません"
     },
     "expired": "期限切れ",
+    "searchLabel": "リンク履歴を検索",
     "status": {
       "failed": "失敗"
     },
@@ -1452,6 +1455,7 @@
       "linear": "線形",
       "logarithmic": "対数"
     },
+    "timeRange": "期間",
     "timeRanges": {
       "10m": "過去10分",
       "1h": "過去1時間",
@@ -1699,6 +1703,7 @@
     "mute": "ミュート",
     "pause": "一時停止",
     "play": "再生",
+    "playbackProgress": "再生位置をシーク",
     "playbackSpeed": "再生速度",
     "playbackSpeedNormal": "通常",
     "retry": "再試行",

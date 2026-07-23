@@ -47,6 +47,10 @@ export default function MoreOptionsMenuPanel({
           ref={menuRef}
           aria-label={title}
           className="ui-bottom-sheet fixed bottom-0 left-0 right-0 z-[1] flex max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl border-0 border-t border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark"
+          onCancel={(event) => {
+            event.preventDefault();
+            onClose?.();
+          }}
         >
           <div className="flex shrink-0 justify-center pt-2.5 pb-1">
             <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600" aria-hidden />

@@ -16,11 +16,12 @@ export function applySearchFilters(results, filters) {
   let filtered = [...results];
 
   if (seasonFilter) {
-    const s0 = seasonFilter.padStart(2, '0');
+    const escapedSeason = escapeRegExp(seasonFilter);
+    const s0 = escapeRegExp(seasonFilter.padStart(2, '0'));
     const seasonPatterns = [
       new RegExp(`s${s0}`, 'i'),
-      new RegExp(`season\\s*${escapeRegExp(seasonFilter)}`, 'i'),
-      new RegExp(`\\b${escapeRegExp(seasonFilter)}x\\d+`, 'i'),
+      new RegExp(`season\\s*${escapedSeason}`, 'i'),
+      new RegExp(`\\b${escapedSeason}x\\d+`, 'i'),
       new RegExp(`season\\s*${s0}`, 'i'),
     ];
     filtered = filtered.filter((item) => {
@@ -30,10 +31,11 @@ export function applySearchFilters(results, filters) {
   }
 
   if (episodeFilter) {
-    const e0 = episodeFilter.padStart(2, '0');
+    const escapedEpisode = escapeRegExp(episodeFilter);
+    const e0 = escapeRegExp(episodeFilter.padStart(2, '0'));
     const episodePatterns = [
       new RegExp(`e${e0}`, 'i'),
-      new RegExp(`episode\\s*${escapeRegExp(episodeFilter)}`, 'i'),
+      new RegExp(`episode\\s*${escapedEpisode}`, 'i'),
       new RegExp(`\\b\\d+x${e0}`, 'i'),
       new RegExp(`episode\\s*${e0}`, 'i'),
     ];

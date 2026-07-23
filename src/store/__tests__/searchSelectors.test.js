@@ -40,9 +40,15 @@ describe('searchSelectors', () => {
           size: 0,
           last_known_seeders: 0,
         },
+        {
+          title: 'Show S01X special',
+          raw_title: 'Show S01X special',
+          size: 0,
+          last_known_seeders: 0,
+        },
       ],
       {
-        seasonFilter: '1.5',
+        seasonFilter: '1.',
         episodeFilter: '',
         yearFilter: '',
         qualityFilter: '',
@@ -51,6 +57,7 @@ describe('searchSelectors', () => {
       }
     );
 
+    // Unescaped "." in padded s0 (`01.`) would incorrectly match "S01X".
     expect(filtered).toHaveLength(1);
     expect(filtered[0].title).toContain('1.5');
   });

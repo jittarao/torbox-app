@@ -256,7 +256,6 @@
       "fileSize": "File Size",
       "fileSizeDescription": "Total size of all files in the torrent (in GB)",
       "hours": "Hours",
-      "value": "Value",
       "isActive": "Is Active",
       "isActiveDescription": "Whether the torrent is currently active (downloading or seeding)",
       "isAirlocked": "Is Airlocked",
@@ -304,7 +303,8 @@
       "uploadSpeed": "Current Upload Speed",
       "uploadSpeedDescription": "Current upload speed (MB/s)",
       "uploadStalledTime": "Upload Stalled Time",
-      "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)"
+      "uploadStalledTimeDescription": "Time since upload activity stopped (in minutes)",
+      "value": "Value"
     },
     "delete": "Delete",
     "details": "Details",
@@ -1198,10 +1198,10 @@
       "title": "No Download Links"
     },
     "expired": "Expired",
+    "searchLabel": "Search link history",
     "status": {
       "failed": "Failed"
     },
-    "searchLabel": "Search link history",
     "title": "Link History",
     "toast": {
       "linkCopied": "Link copied to clipboard!",
