@@ -1,69 +1,38 @@
 # False Positives
 
-## `react-doctor/nextjs-no-side-effect-in-get-handler`
-
-**Resolved:** Outbound HTTP client timeout cleanup (`req.destroy()` on `http.ClientRequest`) was moved into `src/utils/backendRequest.js` (`backendHttpGet` / `backendHttpRequest`). The rule falsely flags `.destroy()` inside GET route handlers even though it tears down the outgoing client socket, not server state on the incoming request.
+Patterns react-doctor may flag incorrectly. Suppress a match only after verifying the cited code shape still holds.
 
 ## `react-doctor/no-mutable-in-deps`
 
-`history.length` and `selectedLinks.size` refer to local reactive state (array `.length` and Set `.size`), not the mutable global `window.history`. The variable `history` is a local array from a custom hook, and `selectedLinks` is a `useState` Set.
+The rule treats any deps root named `history` as `window.history`. Here `history` is a local array from `useLinkHistory`, so `history.length` in `useMemo` deps is reactive and correct.
 
-- `src/components/LinkHistory/index.js:95:6` — `history.length` is local array length
-- `src/components/LinkHistory/index.js:100:26` — `selectedLinks.size` is Set size
+- `src/components/LinkHistory/index.js` — `history.length` in `allSelected` / `someSelected` deps
 
 ## `react-doctor/no-danger`
 
-`dangerouslySetInnerHTML` for the theme-blocking script and analytics boot script is necessary in Next.js — there is no other way to inject inline JS that runs before React hydrates (prevents FOUC). The content is a static string literal (not user-supplied), so XSS risk is zero.
+Static, non-user-controlled inline scripts required before React hydrates. No XSS vector.
 
-- `src/app/RootDocument.js:40:60` — theme FOUC prevention script
-- `src/components/RybbitHeadScripts.js:17` — third-party analytics boot script
+- `src/app/RootDocument.js` — theme FOUC prevention script
+- `src/components/RybbitHeadScripts.js` — analytics boot script
 
 ## `react-doctor/unused-dev-dependency`
 
-`react-doctor` is listed as a devDependency and used locally via `bun run doctor` (and in CI via `.github/workflows/react-doctor.yml`). Not importable as a module — only used via CLI.
+`react-doctor` is a CLI (`bun run doctor` and CI), not an importable module.
 
 - `package.json` — `react-doctor` devDependency
 
 ## `react-doctor/async-await-in-loop`
 
-The retry loop must run sequentially — each retry depends on the prior outcome and includes exponential backoff. Converting to `Promise.all` would fire all retries simultaneously, defeating the purpose.
+Sequential `await` is required: each iteration depends on the prior result (backoff retries, keyset cursors, ordered migrations, early-return search).
 
-- `src/utils/retryFetch.js:63:24` — exponential-backoff retry loop
-
-The keyset-paginated download history fetch must iterate sequentially because each page's cursor depends on the previous response.
-
-- `src/store/downloadHistoryStore.js:67:28` — keyset pagination with cursor dependency
-
-The backend automation files use sequential iteration because operations depend on prior outcomes, aggregate cumulative state, or interact with rate-limited external APIs.
-
-- `backend/src/automation/PollingScheduler.js:1128` — sequential user polling
-- `backend/src/automation/AutomationEngine.js:582` — sequential rule processing
-- `backend/src/automation/UploadProcessor.js:1009,1088` — sequential upload processing
-- `backend/src/automation/helpers/RuleExecutor.js:67` — sequential rule execution
-- `backend/src/automation/helpers/DatabaseRetryHelper.js:22` — sequential DB retries
-- `backend/src/automation/GlobalActionQueue.js:189` — sequential action queue
-- `backend/src/database/MigrationRunner.js:200` — sequential migration runner
-- `backend/src/utils/fileStorage.js:298` — sequential file storage ops
-- `src/app/api/lib/ffprobe-bootstrap.js:150` — sequential ffprobe bootstrapping
+- `src/utils/retryFetch.js` — exponential-backoff retries
+- `src/store/downloadHistoryStore.js` — keyset pagination
+- `backend/src/automation/helpers/DatabaseRetryHelper.js` — transient DB retries
+- `backend/src/database/MigrationRunner.js` — ordered migration apply
+- `src/app/api/lib/ffprobe-bootstrap.js` — sequential directory probe with early return
 
 ## `react-doctor/no-dynamic-import-path`
 
-MigrationRunner dynamically imports migration files by their path — the path pattern is intentionally dynamic because migration filenames are not known at build time.
+Migration filenames are discovered at runtime from the migrations directory; a static literal import path is impossible.
 
-- `backend/src/database/MigrationRunner.js:200,276,357` — dynamic migration loading
-
-## `deslop/unused-file` / unused default Icons export
-
-`export default Icons` in `src/components/icons/index.js` is required by the barrel `src/components/icons.js` (`export { default } from './icons/index'`). Removing the default breaks Bun module evaluation (`export default cannot be used with export *` / missing default) for every consumer of `@/components/icons`.
-
-- `src/components/icons/index.js` — default Icons map for legacy/barrel re-export
-
-## `react-doctor/no-impure-state-updater`
-
-`pendingWidthsRef.current = updated` inside the `setColumnWidths` updater is intentional. Rapid column-resize `mousemove` events must chain via a functional updater; the ref must observe that same chained value immediately so debounced `localStorage` writes and `storageKey` cleanup never flush a one-commit-stale snapshot. Moving the ref write to an effect reintroduces that lag window.
-
-- `src/hooks/useColumnWidths.js` — sync `pendingWidthsRef` inside the functional width updater
-
-## `react-doctor/effect-needs-cleanup`
-
-**Resolved:** Subscription/timer setup moved into module-level `subscribe*` helpers (same pattern as `backendRequest.js`) so react-doctor’s static analyzer can pair registrations with their teardown. Previously flagged as false positives when cleanup lived inside nested helpers within `useEffect`.
+- `backend/src/database/MigrationRunner.js` — `import(migrationUrl)` for apply / rollback / ensure

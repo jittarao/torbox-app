@@ -49,13 +49,14 @@ export function useColumnWidths(activeType) {
     if (typeof window === 'undefined') return;
 
     const newWidth = Math.max(width, getColumnMinWidth(columnId));
-    setColumnWidths((prev) => {
-      const updated = { ...prev, [columnId]: newWidth };
-      // Keep pending widths in sync during the same event so debounced saves
-      // and storageKey cleanup never read a one-commit-stale ref.
-      pendingWidthsRef.current = updated;
-      return updated;
-    });
+    // Chain through the ref so rapid resize events in one tick keep every
+    // column change, without side effects inside the state updater.
+    const updated = {
+      ...(pendingWidthsRef.current ?? columnWidths),
+      [columnId]: newWidth,
+    };
+    pendingWidthsRef.current = updated;
+    setColumnWidths(updated);
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
