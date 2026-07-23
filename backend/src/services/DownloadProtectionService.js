@@ -33,7 +33,14 @@ export class DownloadProtectionService {
       return new Set(rows.map((row) => String(row.download_id)));
     }
 
-    const ids = [...new Set(downloadIds.map((id) => String(id)).filter(Boolean))];
+    const ids = [
+      ...new Set(
+        downloadIds.flatMap((id) => {
+          const normalized = String(id);
+          return normalized ? [normalized] : [];
+        })
+      ),
+    ];
     if (ids.length === 0) {
       return new Set();
     }
@@ -74,7 +81,14 @@ export class DownloadProtectionService {
    * @param {boolean} isProtected
    */
   setProtected(downloadIds, isProtected) {
-    const ids = [...new Set(downloadIds.map((id) => String(id)).filter(Boolean))];
+    const ids = [
+      ...new Set(
+        downloadIds.flatMap((id) => {
+          const normalized = String(id);
+          return normalized ? [normalized] : [];
+        })
+      ),
+    ];
     if (ids.length === 0) {
       return;
     }
@@ -107,7 +121,14 @@ export class DownloadProtectionService {
    * @returns {{ allowed: string[], blocked: string[] }}
    */
   partitionByProtection(downloadIds) {
-    const ids = [...new Set(downloadIds.map((id) => String(id)).filter(Boolean))];
+    const ids = [
+      ...new Set(
+        downloadIds.flatMap((id) => {
+          const normalized = String(id);
+          return normalized ? [normalized] : [];
+        })
+      ),
+    ];
     if (ids.length === 0) {
       return { allowed: [], blocked: [] };
     }

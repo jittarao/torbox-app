@@ -16,6 +16,7 @@ import {
 } from '../utils/fileStorage.js';
 import { stat } from 'fs/promises';
 import { getUploadQuotaLimits, isUnlimitedTier, UPLOAD_TIERS } from '../config/uploadQuota.js';
+import { runWithConcurrency } from '../routes/admin/concurrency.js';
 
 const ACTIVE_STATUSES = new Set(['queued', 'processing']);
 const DELETABLE_STATUSES = new Set(['completed', 'failed']);
@@ -101,13 +102,16 @@ export default class UploadQuotaService {
         .prepare(`SELECT id, file_path FROM uploads WHERE id IN (${placeholders})`)
         .all(...newUploadIds);
 
-      for (const row of rows) {
-        if (!row.file_path) continue;
-        const sizeBytes = await this.resolveAndPersistFileSize(userDb, row.id, row.file_path);
-        if (sizeBytes > 0) {
-          this.masterDatabase.adjustUploadQuotaCounters(authId, 1, 0);
-        }
-      }
+      await runWithConcurrency(
+        rows.filter((row) => row.file_path),
+        async (row) => {
+          const sizeBytes = await this.resolveAndPersistFileSize(userDb, row.id, row.file_path);
+          if (sizeBytes > 0) {
+            this.masterDatabase.adjustUploadQuotaCounters(authId, 1, 0);
+          }
+        },
+        8
+      );
     }
 
     await this.enforceQuota(authId, userDb, { excludeUploadIds });
@@ -329,18 +333,30 @@ export default class UploadQuotaService {
     let storageBytes = 0;
     const referencedPaths = new Set();
 
-    for (const row of rows) {
-      const exists = await fileExists(row.file_path);
-      if (!exists) continue;
+    const rowStats = await runWithConcurrency(
+      rows,
+      async (row) => {
+        const exists = await fileExists(row.file_path);
+        if (!exists) return null;
 
-      let sizeBytes = row.file_size_bytes;
-      if (!sizeBytes || sizeBytes <= 0) {
-        sizeBytes = await this.resolveAndPersistFileSize(userDb, row.id, row.file_path);
-      }
+        let sizeBytes = row.file_size_bytes;
+        if (!sizeBytes || sizeBytes <= 0) {
+          sizeBytes = await this.resolveAndPersistFileSize(userDb, row.id, row.file_path);
+        }
 
+        return {
+          filePath: row.file_path,
+          sizeBytes: sizeBytes || 0,
+        };
+      },
+      8
+    );
+
+    for (const stat of rowStats) {
+      if (!stat) continue;
       fileCount++;
-      storageBytes += sizeBytes || 0;
-      referencedPaths.add(row.file_path);
+      storageBytes += stat.sizeBytes;
+      referencedPaths.add(stat.filePath);
     }
 
     const files = await getUserUploadFiles(authId);
@@ -366,21 +382,32 @@ export default class UploadQuotaService {
     let errors = 0;
     let totalBytes = 0;
 
-    for (const { auth_id: authId } of users) {
-      try {
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
-        const { storageBytes } = await this.recalculateUsage(authId, userDb);
-        totalBytes += storageBytes;
-        processed++;
-
-        if (processed % 500 === 0) {
-          logger.info('Upload quota backfill progress', { processed, total: users.length });
+    const backfillResults = await runWithConcurrency(
+      users,
+      async ({ auth_id: authId }) => {
+        try {
+          const userDb = await userDatabaseManager.getUserDatabase(authId);
+          const { storageBytes } = await this.recalculateUsage(authId, userDb);
+          return { authId, storageBytes, error: null };
+        } catch (error) {
+          logger.error('Upload quota backfill failed for user', error, { authId });
+          return { authId, storageBytes: 0, error };
+        } finally {
+          userDatabaseManager.closeConnection(authId);
         }
-      } catch (error) {
+      },
+      8
+    );
+
+    for (const result of backfillResults) {
+      if (result.error) {
         errors++;
-        logger.error('Upload quota backfill failed for user', error, { authId });
-      } finally {
-        userDatabaseManager.closeConnection(authId);
+        continue;
+      }
+      totalBytes += result.storageBytes;
+      processed++;
+      if (processed % 500 === 0) {
+        logger.info('Upload quota backfill progress', { processed, total: users.length });
       }
     }
 
@@ -450,45 +477,55 @@ export default class UploadQuotaService {
       errors: 0,
     };
 
-    for (const { auth_id: authId } of users) {
-      summary.users_scanned++;
-
-      if (isUnlimitedTier(this.getTier(authId))) {
-        continue;
-      }
-
+    summary.users_scanned = users.length;
+    const usersOverQuota = users.filter(({ auth_id: authId }) => {
+      if (isUnlimitedTier(this.getTier(authId))) return false;
       const usage = this.masterDatabase.getUploadQuotaCounters(authId);
-      if (!this.isOverQuota(usage, limits)) {
+      return this.isOverQuota(usage, limits);
+    });
+    summary.users_over_quota = usersOverQuota.length;
+
+    const enforcementResults = await runWithConcurrency(
+      usersOverQuota,
+      async ({ auth_id: authId }) => {
+        try {
+          const userDb = await userDatabaseManager.getUserDatabase(authId);
+          const { evicted } = await this.enforceQuota(authId, userDb);
+          const after = this.masterDatabase.getUploadQuotaCounters(authId);
+          return {
+            evicted,
+            stillOverQuota: this.isOverQuota(after, limits),
+            error: null,
+          };
+        } catch (error) {
+          logger.error('Admin upload quota enforcement failed for user', error, { authId });
+          return { evicted: 0, stillOverQuota: false, error };
+        } finally {
+          userDatabaseManager.closeConnection(authId);
+        }
+      },
+      8
+    );
+
+    for (const result of enforcementResults) {
+      if (result.error) {
+        summary.errors++;
         continue;
       }
-
-      summary.users_over_quota++;
-
-      try {
-        const userDb = await userDatabaseManager.getUserDatabase(authId);
-        const { evicted } = await this.enforceQuota(authId, userDb);
-        summary.total_evicted += evicted;
-        if (evicted > 0) {
-          summary.users_with_evictions++;
-        }
-
-        const after = this.masterDatabase.getUploadQuotaCounters(authId);
-        if (this.isOverQuota(after, limits)) {
-          summary.still_over_quota++;
-        }
-      } catch (error) {
-        summary.errors++;
-        logger.error('Admin upload quota enforcement failed for user', error, { authId });
-      } finally {
-        userDatabaseManager.closeConnection(authId);
+      summary.total_evicted += result.evicted;
+      if (result.evicted > 0) {
+        summary.users_with_evictions++;
       }
-
-      if (summary.users_over_quota % 100 === 0) {
-        logger.info('Admin upload quota enforcement progress', {
-          users_over_quota: summary.users_over_quota,
-          total_evicted: summary.total_evicted,
-        });
+      if (result.stillOverQuota) {
+        summary.still_over_quota++;
       }
+    }
+
+    if (summary.users_over_quota > 0 && summary.users_over_quota % 100 === 0) {
+      logger.info('Admin upload quota enforcement progress', {
+        users_over_quota: summary.users_over_quota,
+        total_evicted: summary.total_evicted,
+      });
     }
 
     logger.info('Admin upload quota enforcement completed', summary);
@@ -503,4 +540,4 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export { UPLOAD_TIERS, formatBytes };
+export { formatBytes };

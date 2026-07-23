@@ -545,10 +545,12 @@ class AutomationEngine {
     const evaluatedRuleIdsNoAction = [];
 
     const ruleEvaluator = await this.getRuleEvaluator();
-    const torrentIds = torrents
-      .filter((t) => (t.assetType || 'torrent') === 'torrent')
-      .map((t) => t.id)
-      .filter((id) => id != null);
+    const torrentIds = torrents.reduce((ids, t) => {
+      if ((t.assetType || 'torrent') === 'torrent' && t.id != null) {
+        ids.push(t.id);
+      }
+      return ids;
+    }, []);
 
     // Union analyze all rules: load each dataset once per cycle instead of per rule
     let needsTelemetry = false;
@@ -690,10 +692,8 @@ class AutomationEngine {
       return { executed: false, skipped: true, ruleId: rule.id };
     }
 
-    const ruleAssetTypes = rule.assetTypes || ['torrent'];
-    const scopedDownloads = torrents.filter((d) =>
-      ruleAssetTypes.includes(d.assetType || 'torrent')
-    );
+    const ruleAssetTypes = new Set(rule.assetTypes || ['torrent']);
+    const scopedDownloads = torrents.filter((d) => ruleAssetTypes.has(d.assetType || 'torrent'));
 
     const ruleEvaluator = ruleEvaluatorInstance ?? (await this.getRuleEvaluator());
 
@@ -853,13 +853,17 @@ class AutomationEngine {
       // We update it before expensive operations so subsequent requests are rate limited
       await this.ruleRepository.updateLastEvaluatedAt(rule.id);
 
-      const ruleAssetTypes = rule.assetTypes || ['torrent'];
-      const downloads = await fetchDownloadsForAssetTypes(this.apiClient, ruleAssetTypes, true);
+      const ruleAssetTypes = new Set(rule.assetTypes || ['torrent']);
+      const downloads = await fetchDownloadsForAssetTypes(
+        this.apiClient,
+        [...ruleAssetTypes],
+        true
+      );
       logger.debug('Downloads fetched for manual execution', {
         authId: this.authId,
         ruleId,
         downloadCount: downloads.length,
-        assetTypes: ruleAssetTypes,
+        assetTypes: [...ruleAssetTypes],
       });
 
       const torrents = downloads;
@@ -940,17 +944,17 @@ class AutomationEngine {
         };
       }
 
-      const scopedDownloads = torrents.filter((d) =>
-        ruleAssetTypes.includes(d.assetType || 'torrent')
-      );
+      const scopedDownloads = torrents.filter((d) => ruleAssetTypes.has(d.assetType || 'torrent'));
 
       const ruleEvaluator = await this.getRuleEvaluator();
-      const torrentIds = scopedDownloads
-        .filter((t) => (t.assetType || 'torrent') === 'torrent')
-        .map((t) => t.id)
-        .filter((id) => id != null);
+      const torrentIds = scopedDownloads.reduce((ids, t) => {
+        if ((t.assetType || 'torrent') === 'torrent' && t.id != null) {
+          ids.push(t.id);
+        }
+        return ids;
+      }, []);
       const analysis = ruleEvaluator.analyzeRule(rule);
-      const needsTorrentData = ruleAssetTypes.includes('torrent');
+      const needsTorrentData = ruleAssetTypes.has('torrent');
       const sharedMaps = {
         telemetryMap:
           needsTorrentData && analysis.needsTelemetry
