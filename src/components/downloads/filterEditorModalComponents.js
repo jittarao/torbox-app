@@ -58,7 +58,6 @@ export function SaveAsNewForm({
             onCancel();
           }
         }}
-        autoFocus
       />
       <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
         <button

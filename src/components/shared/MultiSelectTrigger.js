@@ -39,17 +39,10 @@ export default function MultiSelectTrigger({
               >
                 {opt.label}
                 <span
-                  role="button"
-                  tabIndex={0}
                   onClick={(e) => onRemoveOption(opt.value, e)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onRemoveOption(opt.value, e);
-                    }
-                  }}
-                  className="hover:text-accent/80 dark:hover:text-accent-dark/80 focus:outline-none cursor-pointer"
-                  aria-label={`Remove ${opt.label}`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="hover:text-accent/80 dark:hover:text-accent-dark/80 cursor-pointer"
+                  aria-hidden="true"
                 >
                   ×
                 </span>

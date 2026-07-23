@@ -395,12 +395,13 @@ export function idsToRows(
 ) {
   if (!ids?.length) return [];
   const lookup = buildDownloadHistoryLookup(downloadHistory);
-  return ids
-    .flatMap((id) => {
-      const entity = entities[id];
-      return entity ? [entity] : [];
-    })
-    .map((entity) => enrichRowForFilter(entity, tagMappings, lookup, protectedMap));
+  const rows = [];
+  for (const id of ids) {
+    const entity = entities[id];
+    if (!entity) continue;
+    rows.push(enrichRowForFilter(entity, tagMappings, lookup, protectedMap));
+  }
+  return rows;
 }
 
 /**
