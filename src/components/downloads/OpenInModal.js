@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ExternalLink, Play, X } from '@/components/icons';
 import Infuse from '@/components/icons/Infuse';
 import Iina from '@/components/icons/Iina';
-// import Stremio from '@/components/icons/Stremio';
 import WebPlayer from '@/components/icons/WebPlayer';
 import ModalSheet from '@/components/shared/ModalSheet';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
@@ -19,7 +18,6 @@ const PLAYER_OPTIONS = [
   { id: 'web', icon: WebPlayer, platformKey: null, brand: false, external: false },
   { id: 'infuse', icon: Infuse, platformKey: 'infuse', brand: true, external: true },
   { id: 'iina', icon: Iina, platformKey: 'iina', brand: true, external: true },
-  // { id: 'stremio', icon: Stremio, platformKey: 'stremio', brand: true, external: true },
 ];
 
 function getFileExtensionLabel(filename) {
