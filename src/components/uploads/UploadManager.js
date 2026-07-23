@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -86,34 +86,67 @@ export default function UploadManager({ apiKey }) {
   );
 
   // Debounce search input - update search value after 500ms of no typing
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setFilters((prev) => ({ ...prev, search: searchInput }));
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchInput]);
-
   const getUploadRowId = useCallback((upload) => normalizeUploadId(upload.id), []);
   const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(uploads, getUploadRowId);
 
-  const nextListScopeKey = `${activeTab}:${filters.type}:${filters.search}:${pagination.page}`;
-  const nextPaginationScopeKey = `${activeTab}:${filters.search}`;
-  const [listScopeKey, setListScopeKey] = useState(nextListScopeKey);
-  const [paginationScopeKey, setPaginationScopeKey] = useState(nextPaginationScopeKey);
-
-  useEffect(() => {
-    if (nextPaginationScopeKey === paginationScopeKey) return;
-    setPaginationScopeKey(nextPaginationScopeKey);
-    setPagination((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
-  }, [nextPaginationScopeKey, paginationScopeKey]);
-
-  useEffect(() => {
-    if (nextListScopeKey === listScopeKey) return;
-    setListScopeKey(nextListScopeKey);
+  const clearUploadSelection = useCallback(() => {
     setSelectedUploads(new Set());
     resetAnchor();
-  }, [nextListScopeKey, listScopeKey, resetAnchor]);
+  }, [resetAnchor]);
+
+  const resetPaginationPage = useCallback(() => {
+    setPagination((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
+  }, []);
+
+  const handleActiveTabChange = useCallback(
+    (tab) => {
+      setActiveTab(tab);
+      resetPaginationPage();
+      clearUploadSelection();
+    },
+    [resetPaginationPage, clearUploadSelection]
+  );
+
+  const paginationRef = useRef(pagination);
+  paginationRef.current = pagination;
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
+  const handlePaginationChange = useCallback(
+    (updater) => {
+      const prev = paginationRef.current;
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (next.page !== prev.page) {
+        clearUploadSelection();
+      }
+      setPagination(next);
+    },
+    [clearUploadSelection]
+  );
+
+  const handleFiltersChange = useCallback(
+    (updater) => {
+      const prev = filtersRef.current;
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const scopeChanged = next.type !== prev.type || next.search !== prev.search;
+      setFilters(next);
+      if (scopeChanged) {
+        resetPaginationPage();
+        clearUploadSelection();
+      }
+    },
+    [resetPaginationPage, clearUploadSelection]
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleFiltersChange((prev) =>
+        prev.search === searchInput ? prev : { ...prev, search: searchInput }
+      );
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchInput, handleFiltersChange]);
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -148,8 +181,8 @@ export default function UploadManager({ apiKey }) {
         <div className={compactToolbarClass} role="toolbar" aria-label="Upload actions">
           <UploadFilters
             filters={filters}
-            setFilters={setFilters}
-            setPagination={setPagination}
+            setFilters={handleFiltersChange}
+            setPagination={handlePaginationChange}
             searchInput={searchInput}
             onSearchChange={setSearchInput}
             compact={true}
@@ -209,7 +242,11 @@ export default function UploadManager({ apiKey }) {
         </div>
       )}
 
-      <UploadTabs activeTab={activeTab} setActiveTab={setActiveTab} statusCounts={statusCounts} />
+      <UploadTabs
+        activeTab={activeTab}
+        setActiveTab={handleActiveTabChange}
+        statusCounts={statusCounts}
+      />
 
       {error && (
         <div className="p-4 bg-red-500/20 text-red-500 dark:bg-red-400/20 dark:text-red-400 rounded-lg">
@@ -287,7 +324,7 @@ export default function UploadManager({ apiKey }) {
             </div>
           )}
 
-          <UploadPagination pagination={pagination} setPagination={setPagination} />
+          <UploadPagination pagination={pagination} setPagination={handlePaginationChange} />
         </>
       )}
 
