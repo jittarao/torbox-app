@@ -15,7 +15,7 @@ function SeekFeedback({ side, seconds, onDone }) {
       onDoneRef.current?.();
     }, 700);
     return () => clearTimeout(timer);
-  }, [side, seconds]);
+  }, [side, seconds, onDoneRef]);
 
   if (!visible) return null;
 

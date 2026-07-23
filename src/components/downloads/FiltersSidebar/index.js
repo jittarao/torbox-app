@@ -12,15 +12,19 @@ import { useAppAlert } from '@/hooks/useAppAlert';
 import { FiltersSidebarHeader } from './FiltersSidebarChrome';
 import FiltersSidebarSections from './FiltersSidebarSections';
 
+const EMPTY_ACTIVE_VIEW_IDS = [];
+const EMPTY_ACTIVE_TRACKERS = [];
+const EMPTY_ACTIVE_SOURCES = [];
+
 export default function FiltersSidebar({
   apiKey,
   views,
-  activeViewIds = [],
+  activeViewIds = EMPTY_ACTIVE_VIEW_IDS,
   tags,
   activeAssetType = 'all',
   activeTagIds,
-  activeTrackers = [],
-  activeSources = [],
+  activeTrackers = EMPTY_ACTIVE_TRACKERS,
+  activeSources = EMPTY_ACTIVE_SOURCES,
   viewCombineMode,
   tagCombineMode,
   trackerCombineMode,

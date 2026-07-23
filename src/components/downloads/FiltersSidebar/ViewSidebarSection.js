@@ -81,11 +81,15 @@ const SortableViewRow = memo(function SortableViewRow({ view, itemIndex, viewCou
   );
 });
 
+const EMPTY_VIEWS = [];
+const EMPTY_VIEW_COUNTS = {};
+const EMPTY_ACTIVE_VIEW_IDS = [];
+
 export default function ViewSidebarSection({
-  views = [],
-  viewCounts = {},
+  views = EMPTY_VIEWS,
+  viewCounts = EMPTY_VIEW_COUNTS,
   searchQuery = '',
-  activeViewIds = [],
+  activeViewIds = EMPTY_ACTIVE_VIEW_IDS,
   onApplyView,
   onApplyViewRange,
   onClearViews,

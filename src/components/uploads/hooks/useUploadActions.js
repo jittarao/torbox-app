@@ -271,7 +271,7 @@ export function useUploadActions(
         `Are you sure you want to delete ${count} upload${count > 1 ? 's' : ''}? This action cannot be undone.`
       );
     },
-    [bulkDeleteIds]
+    [bulkDeleteIds, showAlert]
   );
 
   const handleClearAllFailed = useCallback(
@@ -321,7 +321,7 @@ export function useUploadActions(
         showAlert(err.message);
       }
     },
-    [apiKey, bulkDeleteIds]
+    [apiKey, bulkDeleteIds, showAlert]
   );
 
   const handleBulkRetry = useCallback(
