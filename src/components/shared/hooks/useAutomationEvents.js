@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { POLLING_CONFIG } from './pollingConfig';
 
 /**
@@ -143,6 +143,10 @@ function subscribeAutomationEvents({
   };
 }
 
+function getAutomationEventsServerSnapshot() {
+  return false;
+}
+
 /**
  * SSE subscription for backend tag-mapping changes (automation, manual assign, tag CRUD).
  *
@@ -166,15 +170,20 @@ export function useAutomationEvents({ enabled, apiKey, onTagsChanged, onProtecti
     onProtectionChangedRef.current = onProtectionChanged;
   }, [onProtectionChanged]);
 
-  useEffect(() => {
-    if (!enabled || !apiKey || (!onTagsChanged && !onProtectionChanged)) return;
+  const isSubscribed = Boolean(enabled && apiKey && (onTagsChanged || onProtectionChanged));
 
-    return subscribeAutomationEvents({
-      apiKey,
-      onTagsChangedRef,
-      onProtectionChangedRef,
-      tagsDebounceRef,
-      protectionDebounceRef,
-    });
-  }, [enabled, apiKey, onTagsChanged, onProtectionChanged]);
+  useSyncExternalStore(
+    () => {
+      if (!isSubscribed) return () => {};
+      return subscribeAutomationEvents({
+        apiKey,
+        onTagsChangedRef,
+        onProtectionChangedRef,
+        tagsDebounceRef,
+        protectionDebounceRef,
+      });
+    },
+    () => (isSubscribed ? apiKey : null),
+    getAutomationEventsServerSnapshot
+  );
 }

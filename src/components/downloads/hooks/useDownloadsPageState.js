@@ -101,6 +101,10 @@ export function useDownloadsPageState(apiKey) {
     filterParams,
   });
 
+  useEffect(() => {
+    filterData.syncFiltersForAssetType(activeType);
+  }, [activeType, filterParams.appliedFilters, filterData.syncFiltersForAssetType]);
+
   const listFilterParams = useMemo(
     () => ({
       ...filterParams,

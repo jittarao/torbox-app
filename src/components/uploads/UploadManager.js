@@ -1,24 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useEffectEvent } from 'react';
 import { useLatestRef } from '@/hooks/useLatestRef';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import Spinner from '../shared/Spinner';
 import { useUploads } from './hooks/useUploads';
 import { useUploadActions } from './hooks/useUploadActions';
 import UploadTabs from './UploadTabs';
-import UploadPagination from './UploadPagination';
 import UploadStatistics from './UploadStatistics';
 import UploadFilters from './UploadFilters';
-import UploadTable from './UploadTable';
+import UploadManagerTableSection from './UploadManagerTableSection';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import BulkActionButton from '@/components/shared/BulkActionButton';
 import { compactToolbarClass } from '@/components/shared/compactToolbar';
@@ -32,9 +22,7 @@ export default function UploadManager({ apiKey }) {
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
   const isBackendAvailable = backendMode === 'backend';
   const [activeTab, setActiveTab] = useState('queued');
-  // Input value (immediate updates for UI responsiveness)
   const [searchInput, setSearchInput] = useState('');
-  // Debounced search value (triggers API calls)
   const [filters, setFilters] = useState({
     type: '',
     search: '',
@@ -79,14 +67,6 @@ export default function UploadManager({ apiKey }) {
     handleDragEnd,
   } = useUploadActions(apiKey, fetchUploads, fetchStatusCounts, setSelectedUploads, confirm, alert);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // Debounce search input - update search value after 500ms of no typing
   const getUploadRowId = useCallback((upload) => normalizeUploadId(upload.id), []);
   const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(uploads, getUploadRowId);
 
@@ -120,7 +100,7 @@ export default function UploadManager({ apiKey }) {
       }
       setPagination(next);
     },
-    [clearUploadSelection]
+    [clearUploadSelection, paginationRef]
   );
 
   const handleFiltersChange = useCallback(
@@ -134,18 +114,20 @@ export default function UploadManager({ apiKey }) {
         clearUploadSelection();
       }
     },
-    [resetPaginationPage, clearUploadSelection]
+    [resetPaginationPage, clearUploadSelection, filtersRef]
   );
+
+  const handleFiltersChangeEvent = useEffectEvent(handleFiltersChange);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      handleFiltersChange((prev) =>
+      handleFiltersChangeEvent((prev) =>
         prev.search === searchInput ? prev : { ...prev, search: searchInput }
       );
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchInput, handleFiltersChange]);
+  }, [searchInput]);
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -259,72 +241,34 @@ export default function UploadManager({ apiKey }) {
         </div>
       )}
 
-      {loading && uploads.length === 0 && (
+      {loading && uploads.length === 0 ? (
         <div className="flex justify-center py-8">
           <Spinner />
         </div>
-      )}
-
-      {(!loading || uploads.length > 0) && (
-        <>
-          {!backendIsLoading && !isBackendAvailable ? (
-            <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
-              Upload logs are not available when backend is disabled.
-            </div>
-          ) : uploads.length === 0 ? (
-            <div className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70">
-              {filters.search
-                ? 'No uploads match your search criteria'
-                : `No ${activeTab} uploads found`}
-            </div>
-          ) : (
-            <div className="relative">
-              {activeTab === 'queued' ? (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={onDragEnd}
-                >
-                  <UploadTable
-                    uploads={uploads}
-                    enableDnd={true}
-                    onRetry={handleRetry}
-                    onDelete={handleDelete}
-                    onDownload={handleDownload}
-                    onCopy={handleCopy}
-                    retrying={retrying}
-                    deleting={deleting}
-                    downloading={downloading}
-                    copying={copying}
-                    selectedUploads={selectedUploads}
-                    onSelect={handleSelectUpload}
-                    onSelectAll={handleSelectAll}
-                    copySuccess={copySuccess}
-                  />
-                </DndContext>
-              ) : (
-                <UploadTable
-                  uploads={uploads}
-                  enableDnd={false}
-                  onRetry={handleRetry}
-                  onDelete={handleDelete}
-                  onDownload={handleDownload}
-                  onCopy={handleCopy}
-                  retrying={retrying}
-                  deleting={deleting}
-                  downloading={downloading}
-                  copying={copying}
-                  selectedUploads={selectedUploads}
-                  onSelect={handleSelectUpload}
-                  onSelectAll={handleSelectAll}
-                  copySuccess={copySuccess}
-                />
-              )}
-            </div>
-          )}
-
-          <UploadPagination pagination={pagination} setPagination={handlePaginationChange} />
-        </>
+      ) : (
+        <UploadManagerTableSection
+          activeTab={activeTab}
+          loading={loading}
+          uploads={uploads}
+          filters={filters}
+          backendIsLoading={backendIsLoading}
+          isBackendAvailable={isBackendAvailable}
+          onDragEnd={onDragEnd}
+          onRetry={handleRetry}
+          onDelete={handleDelete}
+          onDownload={handleDownload}
+          onCopy={handleCopy}
+          retrying={retrying}
+          deleting={deleting}
+          downloading={downloading}
+          copying={copying}
+          selectedUploads={selectedUploads}
+          onSelect={handleSelectUpload}
+          onSelectAll={handleSelectAll}
+          copySuccess={copySuccess}
+          pagination={pagination}
+          onPaginationChange={handlePaginationChange}
+        />
       )}
 
       <ConfirmDialog />

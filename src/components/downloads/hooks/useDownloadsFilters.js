@@ -17,6 +17,7 @@ import {
   normalizeFilters,
   stampFilterSchemaVersion,
   mergeViewAssetTypeFilter,
+  getIncompatibleAssetTypeFilterReset,
   getActiveTagIds,
   getActiveTrackers,
   getActiveSources,
@@ -71,12 +72,13 @@ export function useDownloadsFilters({
   } = filterParams;
 
   const [searchInput, setSearchInput] = useState(urlSearch);
+  const [prevUrlSearch, setPrevUrlSearch] = useState(urlSearch);
+  if (urlSearch !== prevUrlSearch) {
+    setPrevUrlSearch(urlSearch);
+    setSearchInput(urlSearch);
+  }
   const debouncedSearch = useDebouncedValue(searchInput, 250);
   const urlSearchDebounceRef = useRef(null);
-
-  useEffect(() => {
-    setSearchInput(urlSearch);
-  }, [urlSearch]);
 
   useEffect(
     () => () => {
@@ -568,40 +570,18 @@ export function useDownloadsFilters({
     setMobileFiltersOpen(false);
   }, [appliedFilters, activeSources.length, handleClearFilters]);
 
-  useEffect(() => {
-    if (activeType === 'all' || activeType === 'torrents') return;
-    const trackers = getActiveTrackers(urlAppliedFilters);
-    if (!trackers) return;
+  const syncFiltersForAssetType = useCallback(
+    (type) => {
+      const reset = getIncompatibleAssetTypeFilterReset(type, urlAppliedFilters);
+      if (!reset) return;
 
-    pendingSidebarFilterRef.current = { kind: 'clear' };
-    suppressUrlViewSyncRef.current = true;
-    const empty = cloneFilters(EMPTY_FILTERS);
-    setColumnFilters(empty);
-    patchFilterCriteria({
-      trackerUrls: null,
-      sourceHosts: null,
-      appliedFilters: empty,
-      viewIds: null,
-      tagIds: null,
-    });
-  }, [activeType, urlAppliedFilters, patchFilterCriteria]);
-
-  useEffect(() => {
-    if (activeType === 'all' || activeType === 'webdl') return;
-    const sources = getActiveSources(urlAppliedFilters);
-    if (!sources) return;
-
-    pendingSidebarFilterRef.current = { kind: 'clear' };
-    suppressUrlViewSyncRef.current = true;
-    const empty = cloneFilters(EMPTY_FILTERS);
-    setColumnFilters(empty);
-    patchFilterCriteria({
-      sourceHosts: null,
-      appliedFilters: empty,
-      viewIds: null,
-      tagIds: null,
-    });
-  }, [activeType, urlAppliedFilters, patchFilterCriteria]);
+      pendingSidebarFilterRef.current = { kind: 'clear' };
+      suppressUrlViewSyncRef.current = true;
+      setColumnFilters(reset.empty);
+      patchFilterCriteria(reset.patch);
+    },
+    [urlAppliedFilters, patchFilterCriteria]
+  );
 
   const handleCloseFilterModal = useCallback(() => {
     setFilterModalOpen(false);
@@ -860,6 +840,7 @@ export function useDownloadsFilters({
     handleApplySource,
     handleApplySourceRange,
     handleClearSources,
+    syncFiltersForAssetType,
     handleSetViewCombineMode,
     handleSetTagCombineMode,
     handleSetTrackerCombineMode,

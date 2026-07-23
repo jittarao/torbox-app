@@ -40,7 +40,10 @@ export function useSpeedData(itemsOrGetter, timeRange = '10m') {
   });
 
   const intervalRef = useRef(null);
-  const lastUpdateRef = useRef(Date.now());
+  const lastUpdateRef = useRef(null);
+  if (lastUpdateRef.current === null) {
+    lastUpdateRef.current = Date.now();
+  }
   const hasActivityRef = useRef(false);
   const getItemsRef = useLatestRef(getItems);
 
