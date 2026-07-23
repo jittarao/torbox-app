@@ -79,6 +79,13 @@ const ModalSheet = forwardRef(function ModalSheet(
         aria-describedby={ariaDescribedBy}
         aria-label={ariaLabel}
         className={panelClass}
+        onCancel={(event) => {
+          // Prevent the native dialog from closing independently of React open state.
+          event.preventDefault();
+          if (closeOnEscape) {
+            onClose?.();
+          }
+        }}
       >
         {children}
       </dialog>

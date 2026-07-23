@@ -5,6 +5,7 @@ import { Play, X } from '@/components/icons';
 import TrackSelectionModalContent from './TrackSelectionModalContent';
 
 const EMPTY_OBJECT = {};
+const EMPTY_TRACKS = [];
 
 /**
  * TrackSelectionModal - Modal for selecting video/audio/subtitle tracks before playback
@@ -19,9 +20,9 @@ export default function TrackSelectionModal({
 }) {
   const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState(null);
 
-  const video = metadata?.video || {};
-  const audios = metadata?.audios || [];
-  const subtitles = metadata?.subtitles || [];
+  const video = metadata?.video || EMPTY_OBJECT;
+  const audios = metadata?.audios || EMPTY_TRACKS;
+  const subtitles = metadata?.subtitles || EMPTY_TRACKS;
 
   const defaultAudioIndex =
     audios.length === 0

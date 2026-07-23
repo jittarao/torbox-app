@@ -141,6 +141,8 @@ export function useControlsVisibility({
 
     if (hasOpenMenu) {
       clearHideTimeout();
+      // Persist visibility so closing a menu still has a true base state for scheduleHide().
+      setShowControls(true);
       return;
     }
 
@@ -167,6 +169,8 @@ export function useControlsVisibility({
 
     if (!isPlaying || isSeeking) {
       clearHideTimeout();
+      // Persist visibility so resume/play still fades out from a true base state.
+      setShowControls(true);
       return;
     }
 

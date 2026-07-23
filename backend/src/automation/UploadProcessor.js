@@ -1555,7 +1555,6 @@ class UploadProcessor {
       let recoveredToQueued = 0;
       let completedAfterApiSuccess = 0;
 
-      const apiClient = await this.getApiClient(authId);
       const recoveryOutcomes = await Promise.all(
         stuckUploads.map(async (upload) => {
           const successAttempt = userDb.db
@@ -1572,6 +1571,7 @@ class UploadProcessor {
 
           if (successAttempt) {
             try {
+              const apiClient = await this.getApiClient(authId);
               const completed = await this.handleIdempotentDuplicate(
                 { ...upload, authId },
                 userDb,

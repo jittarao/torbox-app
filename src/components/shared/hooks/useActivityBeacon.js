@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useSyncExternalStore } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { useSessionStore } from '@/store/sessionStore';
 import { useBackendMode } from '@/hooks/useBackendMode';
 
@@ -88,11 +88,13 @@ export function useActivityBeacon() {
     backendMode === 'backend' &&
     typeof document !== 'undefined';
 
+  const subscribe = useCallback(() => {
+    if (!isActive) return () => {};
+    return subscribeActivityBeacon({ apiKey, lastPingAtRef });
+  }, [isActive, apiKey]);
+
   useSyncExternalStore(
-    () => {
-      if (!isActive) return () => {};
-      return subscribeActivityBeacon({ apiKey, lastPingAtRef });
-    },
+    subscribe,
     () => (isActive ? apiKey : null),
     getActivityBeaconServerSnapshot
   );
