@@ -65,6 +65,7 @@ function FileRow({
   style,
 }) {
   const t = useTranslations('FileActions');
+  const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
   const selectionId = getDownloadSelectionId(item);
   const isItemSelected = useIsItemBlockingFileSelect(selectionId);
@@ -181,6 +182,7 @@ function FileRowInner({
           type="checkbox"
           checked={isChecked}
           disabled={isDisabled}
+          aria-label={commonT('selectRow', { name: file.short_name || file.name })}
           onChange={(e) =>
             handleFileSelection(selectionId, actualIndex, file, e.target.checked, e.shiftKey)
           }

@@ -126,6 +126,7 @@ export default function UploadItemList({ items, setItems, uploading, activeType 
                   <div className="flex gap-4 mt-2">
                     <select
                       value={item.seed}
+                      aria-label="Seeding preference"
                       onChange={(e) => {
                         const updatedItems = items.map((i, idx) =>
                           idx === itemIndex ? { ...i, seed: Number(e.target.value) } : i

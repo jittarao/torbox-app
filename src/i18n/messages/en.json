@@ -256,6 +256,7 @@
       "fileSize": "File Size",
       "fileSizeDescription": "Total size of all files in the torrent (in GB)",
       "hours": "Hours",
+      "value": "Value",
       "isActive": "Is Active",
       "isActiveDescription": "Whether the torrent is currently active (downloading or seeding)",
       "isAirlocked": "Is Airlocked",
@@ -506,6 +507,7 @@
     "of": "of",
     "previous": "Previous",
     "protected": "Protected",
+    "selectAll": "Select all",
     "selectRow": "Select {name}",
     "showing": "Showing",
     "time": {
@@ -1199,6 +1201,7 @@
     "status": {
       "failed": "Failed"
     },
+    "searchLabel": "Search link history",
     "title": "Link History",
     "toast": {
       "linkCopied": "Link copied to clipboard!",
@@ -1547,6 +1550,7 @@
       "linear": "Linear",
       "logarithmic": "Log"
     },
+    "timeRange": "Time range",
     "timeRanges": {
       "10m": "Last 10m",
       "1h": "Last 1h",
@@ -1797,6 +1801,7 @@
     "mute": "Mute",
     "pause": "Pause",
     "play": "Play",
+    "playbackProgress": "Seek playback position",
     "playbackSpeed": "Playback Speed",
     "playbackSpeedNormal": "Normal",
     "retry": "Retry",
