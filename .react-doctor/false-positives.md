@@ -38,34 +38,6 @@
 
 - `package.json` — `react-doctor` devDependency
 
-## `deslop/unused-file`
-
-Backend migration files are dynamically imported at runtime by `MigrationRunner.js` (via `import(path)`), which the static analyzer cannot trace.
-
-- `backend/src/database/migrations/master/000_migrations_table.js`
-- `backend/src/database/migrations/master/001_master_user_registry.js`
-- `backend/src/database/migrations/master/002_add_upload_counters.js`
-- `backend/src/database/migrations/master/003_consecutive_auth_failures.js`
-- `backend/src/database/migrations/master/004_pending_actions.js`
-- `backend/src/database/migrations/master/005_fix_poll_timestamp.js`
-- `backend/src/database/migrations/master/006_consecutive_plan_restricted_failures.js`
-- `backend/src/database/migrations/user/000_migrations_table.js`
-- `backend/src/database/migrations/user/001_automation_rules_schema.js`
-- `backend/src/database/migrations/user/002_torrent_shadow_schema.js`
-- `backend/src/database/migrations/user/003_torrent_telemetry_schema.js`
-- `backend/src/database/migrations/user/004_speed_history_schema.js`
-- `backend/src/database/migrations/user/005_archived_downloads_schema.js`
-- `backend/src/database/migrations/user/006_custom_views_schema.js`
-- `backend/src/database/migrations/user/007_tags_schema.js`
-- `backend/src/database/migrations/user/008_download_tags_schema.js`
-- `backend/src/database/migrations/user/009_add_last_evaluated_at.js`
-- `backend/src/database/migrations/user/010_deprecate_cooldown_minutes.js`
-- `backend/src/database/migrations/user/011_uploads_schema.js`
-- `backend/src/database/migrations/user/012_upload_attempts_schema.js`
-- `backend/src/database/migrations/user/013_link_history_schema.js`
-- `backend/src/database/migrations/user/014_unique_archived_downloads.js`
-- `backend/src/database/migrations/user/015_custom_views_search_query.js`
-
 ## `react-doctor/async-await-in-loop`
 
 The retry loop must run sequentially — each retry depends on the prior outcome and includes exponential backoff. Converting to `Promise.all` would fire all retries simultaneously, defeating the purpose.

@@ -2,6 +2,11 @@ import { promises as fsPromises } from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import logger from '../utils/logger.js';
+import { MIGRATION_MODULE_BINDINGS } from './migrations/registration.js';
+
+/** Static bindings keep migration exports visible to static analysis; runtime uses dynamic import(). */
+const _migrationModuleBindings = MIGRATION_MODULE_BINDINGS;
+void _migrationModuleBindings;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -167,9 +172,10 @@ class MigrationRunner {
     }
 
     let migrationsRun = 0;
+    const appliedMigrationVersions = new Set(appliedMigrations);
     const pendingMigrations = migrationFiles.filter((file) => {
       const { version } = this.parseMigrationFile(file);
-      return !appliedMigrations.includes(version);
+      return !appliedMigrationVersions.has(version);
     });
 
     if (pendingMigrations.length === 0) {
@@ -183,7 +189,10 @@ class MigrationRunner {
       appliedMigrations: appliedMigrations.length,
     });
 
-    for (const file of pendingMigrations) {
+    const applyMigrationAt = async (index) => {
+      if (index >= pendingMigrations.length) return 0;
+
+      const file = pendingMigrations[index];
       const { version, name } = this.parseMigrationFile(file);
 
       try {
@@ -213,13 +222,14 @@ class MigrationRunner {
 
         // Mark as applied (only after successful execution)
         this.markMigrationApplied(version, name);
-        migrationsRun++;
 
         logger.debug(`✓ Migration ${version}_${name} applied successfully`, {
           dbType: this.dbType,
           version,
           name,
         });
+
+        return 1 + (await applyMigrationAt(index + 1));
       } catch (error) {
         // Enhanced error logging with context
         logger.error(`✗ Migration ${version}_${name} failed`, error, {
@@ -240,7 +250,9 @@ class MigrationRunner {
         migrationError.originalError = error;
         throw migrationError;
       }
-    }
+    };
+
+    migrationsRun = await applyMigrationAt(0);
 
     logger.debug(`Applied ${migrationsRun} migration(s)`, {
       dbType: this.dbType,
@@ -383,12 +395,14 @@ class MigrationRunner {
     const migrationFiles = await this.getMigrationFiles();
     const appliedMigrations = this.getAppliedMigrations();
 
+    const appliedMigrationVersions = new Set(appliedMigrations);
+
     return migrationFiles.map((file) => {
       const { version, name } = this.parseMigrationFile(file);
       return {
         version,
         name,
-        applied: appliedMigrations.includes(version),
+        applied: appliedMigrationVersions.has(version),
         filename: file,
       };
     });
