@@ -123,13 +123,11 @@ export default function SystemStatusIndicator({ apiKey, className = '', label, v
   };
 
   const handleToggle = useCallback(() => {
-    setIsOpen((open) => {
-      if (!open) {
-        refreshOnOpenRef.current = true;
-      }
-      return !open;
-    });
-  }, []);
+    if (!isOpen) {
+      refreshOnOpenRef.current = true;
+    }
+    setIsOpen((open) => !open);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !refreshOnOpenRef.current) return;

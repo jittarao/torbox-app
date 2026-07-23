@@ -44,7 +44,10 @@ export function usePollTimer({
 
   const autoStartApplies = autoStartEnabled && (type === 'torrents' || type === 'all');
   const pollingPausedRef = useRef(pollingPaused);
-  pollingPausedRef.current = pollingPaused;
+
+  useEffect(() => {
+    pollingPausedRef.current = pollingPaused;
+  }, [pollingPaused]);
   const prevPollingPausedRef = useRef(pollingPaused);
 
   const onPollRef = useRef(onPoll);
@@ -242,12 +245,14 @@ export function usePollTimer({
       }
     };
 
+    const handleWorkerMessage = (event) => {
+      if (event.data?.type === 'tick' && !cancelled) {
+        handlePollTick();
+      }
+    };
+
     if (workerPort) {
-      workerPort.onmessage = (event) => {
-        if (event.data?.type === 'tick' && !cancelled) {
-          handlePollTick();
-        }
-      };
+      workerPort.addEventListener('message', handleWorkerMessage);
     }
 
     const scheduleNextPoll = (delayMs) => {
@@ -377,13 +382,25 @@ export function usePollTimer({
 
     return () => {
       cancelled = true;
+      if (pollTimeoutId) {
+        clearTimeout(pollTimeoutId);
+        pollTimeoutId = null;
+      }
+      if (safetyTimeoutId) {
+        clearTimeout(safetyTimeoutId);
+        safetyTimeoutId = null;
+      }
+      if (graceStopTimeoutId) {
+        clearTimeout(graceStopTimeoutId);
+        graceStopTimeoutId = null;
+      }
+      staggerTimeoutIds.forEach(clearTimeout);
+      staggerTimeoutIds = [];
       unsubscribeQueue();
       unregisterPollTimerReset();
       stopPolling();
-      clearSafetyTimeout();
-      clearGraceStopTimeout();
-      clearStaggerTimeouts();
       if (workerPort) {
+        workerPort.removeEventListener('message', handleWorkerMessage);
         try {
           workerPort.close();
         } catch {}

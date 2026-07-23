@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLatestRef } from '@/hooks/useLatestRef';
 
 // Maximum number of data points to keep in history
 const MAX_DATA_POINTS = 2000;
@@ -41,8 +42,7 @@ export function useSpeedData(itemsOrGetter, timeRange = '10m') {
   const intervalRef = useRef(null);
   const lastUpdateRef = useRef(Date.now());
   const hasActivityRef = useRef(false);
-  const getItemsRef = useRef(getItems);
-  getItemsRef.current = getItems;
+  const getItemsRef = useLatestRef(getItems);
 
   useEffect(() => {
     // Function to update speed data (reads latest items from ref)

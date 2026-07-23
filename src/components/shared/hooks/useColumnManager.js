@@ -54,10 +54,11 @@ export function useColumnManager(activeType = 'torrents') {
   const [activeColumns, setActiveColumns] = useState(() => loadColumns(activeType));
   const prevTypeRef = useRef(activeType);
 
-  if (prevTypeRef.current !== activeType) {
+  useEffect(() => {
+    if (prevTypeRef.current === activeType) return;
     prevTypeRef.current = activeType;
     setActiveColumns(loadColumns(activeType));
-  }
+  }, [activeType]);
 
   const handleColumnChange = (newColumns) => {
     if (typeof window === 'undefined') return;

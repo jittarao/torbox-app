@@ -170,9 +170,11 @@ export default function MultiSelect({
     return `${selectedOptions.length} selected`;
   }, [selectedOptions, placeholder]);
 
-  if (isOpen) {
-    optionsRef.current = [];
-  }
+  useLayoutEffect(() => {
+    if (isOpen) {
+      optionsRef.current = [];
+    }
+  }, [isOpen]);
 
   return (
     <div className="relative">

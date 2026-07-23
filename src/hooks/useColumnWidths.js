@@ -30,6 +30,10 @@ export function useColumnWidths(activeType) {
   }, [storageKey]);
 
   useEffect(() => {
+    pendingWidthsRef.current = columnWidths;
+  }, [columnWidths]);
+
+  useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
@@ -45,11 +49,7 @@ export function useColumnWidths(activeType) {
     if (typeof window === 'undefined') return;
 
     const newWidth = Math.max(width, getColumnMinWidth(columnId));
-    setColumnWidths((prev) => {
-      const updated = { ...prev, [columnId]: newWidth };
-      pendingWidthsRef.current = updated;
-      return updated;
-    });
+    setColumnWidths((prev) => ({ ...prev, [columnId]: newWidth }));
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;

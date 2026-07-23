@@ -39,7 +39,9 @@ export function useControlsVisibility({
     showSettingsSheet ||
     showInfoSheet;
 
-  stateRef.current = { isPlaying, hasOpenMenu, isSeeking };
+  useEffect(() => {
+    stateRef.current = { isPlaying, hasOpenMenu, isSeeking };
+  }, [isPlaying, hasOpenMenu, isSeeking]);
 
   const clearHideTimeout = useCallback(() => {
     if (hideTimeoutRef.current) {
