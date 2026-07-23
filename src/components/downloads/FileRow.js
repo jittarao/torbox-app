@@ -239,12 +239,7 @@ function FileRowInner({
       <td
         className={`${tableActionsCell} ${actionsSurfaceClass} relative z-[2] [transform:translateZ(0)] [&_button]:md:p-1`}
       >
-        <div
-          className={tableActionsCellInner}
-          data-file-actions
-          onClick={stopRowActivation}
-          onPointerDown={stopRowActivation}
-        >
+        <div className={tableActionsCellInner} data-file-actions>
           <span className={FILE_ACTION_SLOT_CLASS}>
             {isVideoFile(file) && handleFileStream ? (
               <button

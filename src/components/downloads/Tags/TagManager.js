@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Edit, Hash, MagnifyingGlass, Plus, Trash, X } from '@/components/icons';
 import { useTags } from '@/components/shared/hooks/useTags';
@@ -216,6 +216,8 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
     requestAnimationFrame(() => createInputRef.current?.focus());
   }, [isOpen, resetState]);
 
+  const onCloseEvent = useEffectEvent(onClose);
+
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -230,12 +232,12 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
         setPendingDelete(null);
         return;
       }
-      onClose();
+      onCloseEvent();
     };
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, editingId, pendingDelete, onClose]);
+  }, [isOpen, editingId, pendingDelete]);
 
   const sortedTags = useMemo(
     () =>

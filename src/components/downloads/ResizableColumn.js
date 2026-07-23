@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import useIsMobile from '@/hooks/useIsMobile';
 import { getColumnMinWidth } from './utils/tableColumnLayout';
 
@@ -62,9 +62,12 @@ export default function ResizableColumn({
     [isResizing]
   );
 
+  const handleMouseMoveEvent = useEffectEvent((e) => handleMouseMove(e));
+  const handleMouseUpEvent = useEffectEvent((e) => handleMouseUp(e));
+
   useEffect(() => {
-    const onMouseMove = (e) => handleMouseMove(e);
-    const onMouseUp = (e) => handleMouseUp(e);
+    const onMouseMove = (e) => handleMouseMoveEvent(e);
+    const onMouseUp = (e) => handleMouseUpEvent(e);
 
     if (isResizing) {
       document.addEventListener('mousemove', onMouseMove);
@@ -79,7 +82,7 @@ export default function ResizableColumn({
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
     };
-  }, [isResizing, handleMouseMove, handleMouseUp]);
+  }, [isResizing]);
 
   const pixelWidth = Math.max(minWidth, parseInt(width, 10) || minWidth);
 
