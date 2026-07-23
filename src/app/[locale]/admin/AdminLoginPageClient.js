@@ -58,7 +58,7 @@ export default function AdminLoginPageClient() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface px-4 dark:bg-surface-dark">
+    <div className="flex min-h-dvh items-center justify-center bg-surface px-4 dark:bg-surface-dark">
       <div className="w-full max-w-md">
         <div className="rounded-2xl border border-border/60 bg-white p-8 shadow-lg dark:border-border-dark/60 dark:bg-surface-alt-dark sm:p-10">
           <div className="mb-8 flex flex-col items-center text-center">

@@ -5,7 +5,7 @@
 export default function PageRouteLoading() {
   return (
     <div
-      className="min-h-screen bg-surface dark:bg-surface-dark font-sans"
+      className="min-h-dvh bg-surface dark:bg-surface-dark font-sans"
       aria-busy="true"
       aria-label="Loading page"
     >
@@ -24,7 +24,7 @@ export default function PageRouteLoading() {
         </div>
       </div>
 
-      <div className="md:pl-[16rem] min-h-screen">
+      <div className="md:pl-[16rem] min-h-dvh">
         <div className="md:hidden h-14 border-b border-border/60 dark:border-border-dark/60 flex items-center px-4 gap-3">
           <div className="size-8 rounded bg-border/50 dark:bg-border-dark/50 animate-pulse" />
           <div className="h-5 flex-1 max-w-[10rem] rounded bg-border/50 dark:bg-border-dark/50 animate-pulse" />

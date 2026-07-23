@@ -9,7 +9,7 @@ export const adminCardClass =
 
 export const adminCardPadding = 'p-5 sm:p-6';
 
-export const adminTableWrapClass = `${adminCardClass} overflow-hidden`;
+const adminTableWrapClass = `${adminCardClass} overflow-hidden`;
 
 export const adminTableClass = 'min-w-full divide-y divide-border/60 dark:divide-border-dark/60';
 

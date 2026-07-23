@@ -25,7 +25,12 @@ export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetTyp
   const clearSelectionForItems = (items, successfulIds) => {
     const idSet = new Set(successfulIds.map(String));
     const removedSelectionIds = new Set(
-      items.filter((item) => idSet.has(String(item.id))).map((item) => getDownloadSelectionId(item))
+      items.reduce((acc, item) => {
+        if (idSet.has(String(item.id))) {
+          acc.push(getDownloadSelectionId(item));
+        }
+        return acc;
+      }, [])
     );
 
     setSelectedItems((prev) => ({

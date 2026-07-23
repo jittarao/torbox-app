@@ -65,14 +65,15 @@ export function applyTranslations(input, { locales = TARGET_LOCALES } = {}) {
   const validationErrors = [];
 
   const byLocale = normalizeApplyInput(input, TARGET_LOCALES);
-  const targetLocales = locales;
+  const targetLocaleSet = new Set(locales);
+  const knownLocaleSet = new Set(TARGET_LOCALES);
 
   for (const locale of Object.keys(byLocale)) {
-    if (!targetLocales.includes(locale)) {
+    if (!targetLocaleSet.has(locale)) {
       continue;
     }
 
-    if (!TARGET_LOCALES.includes(locale)) {
+    if (!knownLocaleSet.has(locale)) {
       validationErrors.push(`Unknown locale "${locale}"`);
       continue;
     }
@@ -141,8 +142,9 @@ function normalizeApplyInput(input, allowedLocales) {
   }
 
   const out = {};
+  const allowedLocaleSet = new Set(allowedLocales);
   for (const [locale, entries] of Object.entries(input)) {
-    if (!allowedLocales.includes(locale)) continue;
+    if (!allowedLocaleSet.has(locale)) continue;
     if (typeof entries !== 'object' || entries === null || Array.isArray(entries)) continue;
 
     const flat = {};
@@ -156,7 +158,7 @@ function normalizeApplyInput(input, allowedLocales) {
   return out;
 }
 
-export function mergeLocalePatch(locale, patchObject) {
+function mergeLocalePatch(locale, patchObject) {
   const en = readLocale(DEFAULT_LOCALE).data;
   const { data } = readLocale(locale);
   const merged = structuredClone(data);
@@ -166,6 +168,6 @@ export function mergeLocalePatch(locale, patchObject) {
   return normalized;
 }
 
-export function patchFromFlat(locale, flatEntries) {
+function patchFromFlat(locale, flatEntries) {
   return nestedFromFlat(flatEntries);
 }

@@ -93,7 +93,7 @@ export default function TorrentOptions({ showOptions, globalOptions, updateGloba
           <div className="hidden xl:block w-px bg-border dark:bg-border-dark mx-6" />
 
           {/* Horizontal Divider - Only visible on mobile */}
-          <div className="block xl:hidden h-px w-full bg-border dark:bg-border-dark my-4" />
+          <div className="xl:hidden h-px w-full bg-border dark:bg-border-dark my-4" />
 
           {/* Right Section - Auto Start Options */}
           <div className="flex-1 xl:pl-6">

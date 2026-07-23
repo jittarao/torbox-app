@@ -82,7 +82,7 @@ export const getItemTypeName = (activeType) => {
   }
 };
 
-export const getTotalSelectedFiles = (selectedItems) => {
+const getTotalSelectedFiles = (selectedItems) => {
   return Array.from(selectedItems.files.values()).reduce((total, files) => total + files.size, 0);
 };
 

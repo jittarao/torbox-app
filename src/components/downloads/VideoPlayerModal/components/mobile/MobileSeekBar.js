@@ -27,9 +27,6 @@ function MobileSeekBar({
         onPointerUp={onPointerUp}
         onClick={onClick}
         aria-label="Seek"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(progress)}
       >
         <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-white/25" />
         <span

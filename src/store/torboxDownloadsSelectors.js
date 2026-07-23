@@ -50,7 +50,7 @@ export function selectItemsForView(state, viewType) {
  * @param {{ entities?: Record<string, object> }} state
  * @param {string} key — `${assetType}:${id}`
  */
-export function selectEntity(state, key) {
+function selectEntity(state, key) {
   return state.entities?.[key];
 }
 
