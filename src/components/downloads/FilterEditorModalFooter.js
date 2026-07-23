@@ -3,8 +3,7 @@
 import { SaveAsNewForm, SaveOptionsPanel } from './filterEditorModalComponents';
 
 export default function FilterEditorModalFooter({
-  isCreateMode,
-  isEditMode,
+  editorMode,
   filtersActive,
   showSaveInput,
   apiKey,
@@ -28,6 +27,9 @@ export default function FilterEditorModalFooter({
   handleCancelSaveAsNew,
   handleUpdateView,
 }) {
+  const isCreateMode = editorMode === 'create';
+  const isEditMode = editorMode === 'edit';
+
   return (
     <div className="shrink-0 border-t border-border/50 px-4 py-3 sm:px-5 sm:py-4 dark:border-border-dark/50">
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">

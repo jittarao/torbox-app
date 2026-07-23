@@ -5,24 +5,23 @@ import Tooltip from '@/components/shared/Tooltip';
 import { Question } from '@/components/icons';
 
 export default function ActionButtonsConfirmModals({
-  showArchiveConfirm,
+  archiveModal,
   onCloseArchiveConfirm,
   onConfirmArchive,
-  isArchiving,
   selectedArchivableCount,
-  showDeleteConfirm,
+  deleteModal,
   onCloseDeleteConfirm,
   onConfirmDelete,
-  isDeleting,
   selectedItemCount,
   deleteParentFileCount,
-  hasSelectedFiles,
   deleteParentDownloads,
   onDeleteParentDownloadsChange,
   itemTypeName,
   itemTypePlural,
 }) {
   const t = useTranslations('ActionButtons');
+  const { open: showArchiveConfirm, inProgress: isArchiving } = archiveModal;
+  const { open: showDeleteConfirm, inProgress: isDeleting, hasSelectedFiles } = deleteModal;
 
   return (
     <>

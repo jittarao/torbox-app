@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import type { FolderWatcherConfig, WatchRule, WatcherStatus } from '@/desktop/capabilities';
 import { Activity, Plus } from '@/components/icons';
 import {
@@ -27,6 +26,8 @@ type DesktopFolderWatcherPanelContentProps = {
   pickingMoveRuleId: string | null;
   scanConfirmRuleId: string | null;
   changeFolderRuleId: string | null;
+  expandedRuleIds: Set<string>;
+  onToggleRuleExpanded: (ruleId: string) => void;
   t: (key: string, values?: Record<string, string | number>) => string;
   onAddRule: () => void;
   onRemoveRule: (ruleId: string) => void;
@@ -56,6 +57,8 @@ export default function DesktopFolderWatcherPanelContent({
   pickingMoveRuleId,
   scanConfirmRuleId,
   changeFolderRuleId,
+  expandedRuleIds,
+  onToggleRuleExpanded,
   t,
   onAddRule,
   onRemoveRule,
@@ -70,46 +73,9 @@ export default function DesktopFolderWatcherPanelContent({
   onCloseChangeFolderConfirm,
   onConfirmChangeFolderWhileRunning,
 }: DesktopFolderWatcherPanelContentProps) {
-  const [expandedRuleIds, setExpandedRuleIds] = useState<Set<string>>(() => new Set());
-  const previousRuleCountRef = useRef(draft.rules.length);
-  const initializedExpansionRef = useRef(false);
-
   const hasEnabledRule = draft.rules.some((rule) => rule.enabled && rule.watchPath);
   const enabledRuleCount = draft.rules.filter((rule) => rule.enabled).length;
   const activeRuleCount = watcherStatus?.rules.filter((rule) => rule.active).length ?? 0;
-
-  useEffect(() => {
-    if (draft.rules.length === 0) {
-      setExpandedRuleIds(new Set());
-      previousRuleCountRef.current = 0;
-      initializedExpansionRef.current = false;
-      return;
-    }
-
-    if (draft.rules.length > previousRuleCountRef.current) {
-      const newestRule = draft.rules[draft.rules.length - 1];
-      if (newestRule) {
-        setExpandedRuleIds((current) => new Set(current).add(newestRule.id));
-      }
-    } else if (!initializedExpansionRef.current && draft.rules.length === 1) {
-      setExpandedRuleIds(new Set([draft.rules[0].id]));
-      initializedExpansionRef.current = true;
-    }
-
-    previousRuleCountRef.current = draft.rules.length;
-  }, [draft.rules]);
-
-  const toggleRuleExpanded = (ruleId: string) => {
-    setExpandedRuleIds((current) => {
-      const next = new Set(current);
-      if (next.has(ruleId)) {
-        next.delete(ruleId);
-      } else {
-        next.add(ruleId);
-      }
-      return next;
-    });
-  };
 
   return (
     <div className="space-y-5">
@@ -261,15 +227,19 @@ export default function DesktopFolderWatcherPanelContent({
                 ruleStatus={
                   watcherStatus?.rules.find((status) => status.ruleId === rule.id) ?? null
                 }
-                canRemove
+                activeDialog={
+                  scanConfirmRuleId === rule.id
+                    ? 'scan'
+                    : changeFolderRuleId === rule.id
+                      ? 'changeFolder'
+                      : null
+                }
                 hasCredential={hasCredential}
                 saving={saving}
                 pickingWatchFolder={pickingWatchRuleId === rule.id}
                 pickingMoveFolder={pickingMoveRuleId === rule.id}
-                showScanConfirm={scanConfirmRuleId === rule.id}
-                showChangeFolderConfirm={changeFolderRuleId === rule.id}
                 t={t}
-                onToggleExpanded={() => toggleRuleExpanded(rule.id)}
+                onToggleExpanded={() => onToggleRuleExpanded(rule.id)}
                 onUpdateRule={(partial) => onUpdateRule(rule.id, partial)}
                 onRemoveRule={() => onRemoveRule(rule.id)}
                 onPickWatchFolder={() => onPickWatchFolder(rule.id)}

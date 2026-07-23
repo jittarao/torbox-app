@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Play, X } from '@/components/icons';
 import TrackSelectionModalContent from './TrackSelectionModalContent';
 
@@ -17,28 +17,38 @@ export default function TrackSelectionModal({
   introInformation = null,
   fileName = 'Video',
 }) {
-  const [selectedAudioIndex, setSelectedAudioIndex] = useState(0);
   const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState(null);
 
   const video = metadata?.video || {};
   const audios = metadata?.audios || [];
   const subtitles = metadata?.subtitles || [];
 
-  useEffect(() => {
-    if (audios.length > 0) {
-      const defaultAudioIndex = audios.findIndex((audio) => audio.default);
-      if (defaultAudioIndex !== -1) {
-        setSelectedAudioIndex(defaultAudioIndex);
-      } else {
-        setSelectedAudioIndex(0);
-      }
-    }
-  }, [audios, setSelectedAudioIndex, setSelectedSubtitleIndex]);
+  const defaultAudioIndex =
+    audios.length === 0
+      ? 0
+      : (() => {
+          const index = audios.findIndex((audio) => audio.default);
+          return index !== -1 ? index : 0;
+        })();
+
+  const [prevAudios, setPrevAudios] = useState(audios);
+  const [audioOverrideIndex, setAudioOverrideIndex] = useState(null);
+
+  if (audios !== prevAudios) {
+    setPrevAudios(audios);
+    setAudioOverrideIndex(null);
+  }
+
+  const resolvedAudioIndex = audioOverrideIndex ?? defaultAudioIndex;
+
+  const handleAudioIndexChange = (index) => {
+    setAudioOverrideIndex(index);
+  };
 
   const handlePlay = () => {
     const selectedStreamData = {
       video_track_idx: 0,
-      audio_track_idx: selectedAudioIndex,
+      audio_track_idx: resolvedAudioIndex,
       subtitle_track_idx: selectedSubtitleIndex,
       intro_info: introInformation,
     };
@@ -95,10 +105,10 @@ export default function TrackSelectionModal({
           video={video}
           audios={audios}
           subtitles={subtitles}
-          selectedAudioIndex={selectedAudioIndex}
+          selectedAudioIndex={resolvedAudioIndex}
           selectedSubtitleIndex={selectedSubtitleIndex}
           introInformation={introInformation}
-          onSelectAudio={setSelectedAudioIndex}
+          onSelectAudio={handleAudioIndexChange}
           onSelectSubtitle={setSelectedSubtitleIndex}
         />
 

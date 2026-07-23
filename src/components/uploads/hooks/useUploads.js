@@ -26,6 +26,11 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   const [uploadStatistics, setUploadStatistics] = useState(null);
   const uploadsRequestIdRef = useRef(0);
   const statusCountsRequestIdRef = useRef(0);
+  const listQueryRef = useRef({
+    activeTab,
+    type: filters.type,
+    search: filters.search,
+  });
 
   // Subscribe to backend mode store to react to changes
   const { mode: backendMode, isLoading: backendIsLoading } = useBackendMode();
@@ -53,6 +58,22 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
       }
 
       const requestId = ++uploadsRequestIdRef.current;
+      const queryChanged =
+        listQueryRef.current.activeTab !== activeTab ||
+        listQueryRef.current.type !== filters.type ||
+        listQueryRef.current.search !== filters.search;
+
+      if (queryChanged) {
+        listQueryRef.current = {
+          activeTab,
+          type: filters.type,
+          search: filters.search,
+        };
+        setUploads([]);
+        setError(null);
+        uploadsLengthRef.current = 0;
+      }
+
       const showFullPageLoader = uploadsLengthRef.current === 0;
       try {
         if (showFullPageLoader) {
@@ -187,12 +208,6 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
   useEffect(() => {
     uploadsLengthRef.current = uploads.length;
   }, [uploads]);
-
-  // Avoid showing the previous tab's rows while a new tab/filter fetch is in flight
-  useEffect(() => {
-    setUploads([]);
-    setError(null);
-  }, [activeTab, filters.type, filters.search]);
 
   useEffect(() => {
     fetchUploads();

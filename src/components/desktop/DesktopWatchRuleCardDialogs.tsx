@@ -3,10 +3,11 @@
 import type { WatchRule } from '@/desktop/capabilities';
 import DesktopConfirmDialog from '@/components/desktop/DesktopConfirmDialog';
 
+type WatchRuleDialog = 'scan' | 'changeFolder' | null;
+
 type DesktopWatchRuleCardDialogsProps = {
   rule: WatchRule;
-  showScanConfirm: boolean;
-  showChangeFolderConfirm: boolean;
+  activeDialog: WatchRuleDialog;
   t: (key: string, values?: Record<string, string | number>) => string;
   onCloseScanConfirm: () => void;
   onConfirmEnableWithScan: () => void;
@@ -16,8 +17,7 @@ type DesktopWatchRuleCardDialogsProps = {
 
 export default function DesktopWatchRuleCardDialogs({
   rule,
-  showScanConfirm,
-  showChangeFolderConfirm,
+  activeDialog,
   t,
   onCloseScanConfirm,
   onConfirmEnableWithScan,
@@ -27,7 +27,7 @@ export default function DesktopWatchRuleCardDialogs({
   return (
     <>
       <DesktopConfirmDialog
-        open={showChangeFolderConfirm}
+        open={activeDialog === 'changeFolder'}
         onClose={onCloseChangeFolderConfirm}
         titleId={`change-folder-confirm-title-${rule.id}`}
         title={t('changeFolderWhileRunningTitle')}
@@ -39,7 +39,7 @@ export default function DesktopWatchRuleCardDialogs({
       </DesktopConfirmDialog>
 
       <DesktopConfirmDialog
-        open={showScanConfirm}
+        open={activeDialog === 'scan'}
         onClose={onCloseScanConfirm}
         titleId={`scan-confirm-title-${rule.id}`}
         title={t('scanConfirmTitle')}

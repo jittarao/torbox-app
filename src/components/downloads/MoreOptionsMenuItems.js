@@ -61,26 +61,14 @@ export default function MoreOptionsMenuItems({
   activeType,
   t,
   actionT,
-  isExporting,
-  isReannouncing,
-  isRetrying,
-  isDeleting,
-  showDownload,
-  showRetry,
-  showDelete,
-  showArchive,
-  showAirlock,
-  showProtection,
-  isProtected,
-  airlocked,
+  actionProgress,
+  actionVisibility,
+  itemFlags,
   onDownload,
   onDelete,
   onArchive,
   onToggleProtection,
-  isProtectionUpdating,
   onToggleAirlock,
-  isArchiving,
-  isAirlockUpdating,
   onCopyId,
   onCopyHash,
   onCopyShortMagnet,
@@ -90,6 +78,25 @@ export default function MoreOptionsMenuItems({
   onExportTorrent,
   onCopySourceUrl,
 }) {
+  const {
+    exporting: isExporting,
+    reannouncing: isReannouncing,
+    retrying: isRetrying,
+    deleting: isDeleting,
+    archiving: isArchiving,
+    protectionUpdating: isProtectionUpdating,
+    airlockUpdating: isAirlockUpdating,
+  } = actionProgress;
+  const {
+    download: showDownload,
+    retry: showRetry,
+    delete: showDelete,
+    archive: showArchive,
+    airlock: showAirlock,
+    protection: showProtection,
+  } = actionVisibility;
+  const { protected: isProtected, airlocked } = itemFlags;
+
   const items = [];
 
   if (showRetry && onRetry) {

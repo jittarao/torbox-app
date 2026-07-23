@@ -38,15 +38,18 @@ function FileListFile({
   selectionId,
   itemId,
   itemName,
-  isBlurred,
+  display,
   onFileSelect,
   onFileDownload,
   onFileStream,
   onAudioPlay,
-  isMobile,
-  isFileDownloaded,
-  isFileLinkFailed,
 }) {
+  const {
+    blurred: isBlurred,
+    mobile: isMobile,
+    fileDownloaded: isFileDownloaded,
+    fileLinkFailed: isFileLinkFailed,
+  } = display;
   const t = useTranslations('FileActions');
   const commonT = useTranslations('Common');
   const isChecked = useIsFileSelected(selectionId, file.id);
@@ -279,14 +282,11 @@ function FileList({
   selectionId,
   itemId,
   itemName,
-  isBlurred,
+  display,
   onFileSelect,
   onFileDownload,
   onFileStream,
   onAudioPlay,
-  isMobile,
-  isFileDownloaded,
-  isFileLinkFailed,
 }) {
   return (
     <div className="mt-3 md:mt-2.5 lg:mt-4 border-t border-border/50 dark:border-border-dark/50 pt-3 md:pt-2.5 lg:pt-4">
@@ -299,14 +299,11 @@ function FileList({
             selectionId={selectionId}
             itemId={itemId}
             itemName={itemName}
-            isBlurred={isBlurred}
+            display={display}
             onFileSelect={onFileSelect}
             onFileDownload={onFileDownload}
             onFileStream={onFileStream}
             onAudioPlay={onAudioPlay}
-            isMobile={isMobile}
-            isFileDownloaded={isFileDownloaded}
-            isFileLinkFailed={isFileLinkFailed}
           />
         ))}
       </div>

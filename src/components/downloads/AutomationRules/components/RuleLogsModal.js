@@ -1,30 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
 import { parseUtcDate } from '@/utils/parseUtcDate';
 import { ACTION_TYPES } from '../constants';
 import LastEvaluatedAtValue from './LastEvaluatedAtValue';
 
+function formatLogTimestamp(timestamp, locale) {
+  try {
+    if (!timestamp) {
+      return 'Invalid Date';
+    }
+    const date = parseUtcDate(timestamp);
+    return Number.isNaN(date.getTime()) ? timestamp : date.toLocaleString(locale);
+  } catch {
+    return timestamp || 'Invalid Date';
+  }
+}
+
 function LogTimestamp({ timestamp }) {
   const locale = useLocale();
-  const [display, setDisplay] = useState(() => timestamp || '');
-
-  useEffect(() => {
-    try {
-      const dateStr = timestamp;
-      if (!dateStr) {
-        setDisplay('Invalid Date');
-        return;
-      }
-      const date = parseUtcDate(dateStr);
-      setDisplay(Number.isNaN(date.getTime()) ? dateStr : date.toLocaleString(locale));
-    } catch {
-      setDisplay(timestamp || 'Invalid Date');
-    }
-  }, [timestamp, locale]);
-
-  return display;
+  return formatLogTimestamp(timestamp, locale);
 }
 
 /**

@@ -74,7 +74,7 @@ const SortableViewRow = memo(function SortableViewRow({ view, itemIndex, viewCou
         isActive={false}
         disabled
         hideCheckbox
-        showMenu={false}
+        menu={{ open: false, visible: false }}
         leading={<DragHandle listeners={listeners} attributes={attributes} label={dragLabel} />}
       />
     </div>
@@ -115,6 +115,7 @@ export default function ViewSidebarSection({
 
   const selectedCount = activeViewIds.length;
   const hasSearchQuery = searchQuery.trim().length > 0;
+  const effectiveOverflowMenu = sortMode ? null : overflowMenu;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -124,12 +125,6 @@ export default function ViewSidebarSection({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  useEffect(() => {
-    if (sortMode) {
-      setOverflowMenu(null);
-    }
-  }, [sortMode]);
 
   useEffect(() => {
     if (!sortMode) return undefined;
@@ -184,7 +179,7 @@ export default function ViewSidebarSection({
         const view = filteredViews[index];
         if (!view || String(view.id) !== row.dataset.id) return;
         const viewId = String(view.id);
-        if (overflowMenu?.viewId === viewId) {
+        if (effectiveOverflowMenu?.viewId === viewId) {
           closeOverflowMenu();
           return;
         }
@@ -253,7 +248,7 @@ export default function ViewSidebarSection({
       onRenameView,
       onDeleteView,
       lastIndexRef,
-      overflowMenu,
+      effectiveOverflowMenu,
       closeOverflowMenu,
       t,
     ]
@@ -282,8 +277,7 @@ export default function ViewSidebarSection({
             isActive={viewIsActive}
             disabled={disabled}
             title={viewIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
-            showMenu
-            isMenuOpen={overflowMenu?.viewId === viewId}
+            menu={{ open: effectiveOverflowMenu?.viewId === viewId, visible: true }}
           />
         );
       })}
@@ -355,12 +349,12 @@ export default function ViewSidebarSection({
         renderNormalList()
       )}
 
-      {!sortMode && overflowMenu && (
+      {!sortMode && effectiveOverflowMenu && (
         <SidebarOverflowMenu
           isOpen
           onClose={closeOverflowMenu}
-          anchorRef={overflowMenu.anchorRef}
-          items={overflowMenu.items}
+          anchorRef={effectiveOverflowMenu.anchorRef}
+          items={effectiveOverflowMenu.items}
         />
       )}
     </div>

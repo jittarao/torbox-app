@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Hash, Plus, Times, X } from '@/components/icons';
 import TagSelector from './TagSelector';
@@ -26,6 +26,16 @@ export default function TagAssignmentModal({
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const [mode, setMode] = useState('add');
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    setSelectedTagIds([]);
+    setMode('add');
+    if (isOpen) {
+      fetchDownloadTags({ force: true });
+    }
+  }
 
   const downloadCount = downloadIds.length;
 
@@ -46,17 +56,6 @@ export default function TagAssignmentModal({
       a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
     );
   }, [isOpen, downloadIds, downloadCount, getDownloadTags, tagMappings]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedTagIds([]);
-      setMode('add');
-      fetchDownloadTags({ force: true });
-    } else {
-      setSelectedTagIds([]);
-      setMode('add');
-    }
-  }, [isOpen, fetchDownloadTags]);
 
   const handleSubmit = async () => {
     if (!downloadCount || !selectedTagIds.length) return;

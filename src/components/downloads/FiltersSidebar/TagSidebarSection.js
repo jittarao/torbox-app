@@ -167,8 +167,7 @@ export default function TagSidebarSection({
                 isActive={tagIsActive}
                 disabled={disabled}
                 title={tagIsActive ? t('toggleFilterOff') : t('toggleFilterOn')}
-                showMenu
-                isMenuOpen={overflowMenu?.tagId === tagId}
+                menu={{ open: overflowMenu?.tagId === tagId, visible: true }}
               />
             );
           })}

@@ -94,19 +94,24 @@ export default function UploadManager({ apiKey }) {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Reset to page 1 when tab or search changes
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [activeTab, filters.search]);
-
   const getUploadRowId = useCallback((upload) => normalizeUploadId(upload.id), []);
   const { buildSelectionUpdater, resetAnchor } = useShiftRangeRowSelection(uploads, getUploadRowId);
 
-  // Drop selection from other tabs/pages so bulk actions match visible checkboxes
-  useEffect(() => {
+  const nextListScopeKey = `${activeTab}:${filters.type}:${filters.search}:${pagination.page}`;
+  const nextPaginationScopeKey = `${activeTab}:${filters.search}`;
+  const [listScopeKey, setListScopeKey] = useState(nextListScopeKey);
+  const [paginationScopeKey, setPaginationScopeKey] = useState(nextPaginationScopeKey);
+
+  if (nextPaginationScopeKey !== paginationScopeKey) {
+    setPaginationScopeKey(nextPaginationScopeKey);
+    setPagination((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
+  }
+
+  if (nextListScopeKey !== listScopeKey) {
+    setListScopeKey(nextListScopeKey);
     setSelectedUploads(new Set());
     resetAnchor();
-  }, [activeTab, filters.type, filters.search, pagination.page, resetAnchor]);
+  }
 
   const handleSelectAll = (checked) => {
     if (checked) {

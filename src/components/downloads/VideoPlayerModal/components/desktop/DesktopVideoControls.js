@@ -10,22 +10,18 @@ import TrackSelector from '../TrackSelector';
 const EMPTY_ARRAY = [];
 
 function DesktopVideoControls({
+  visibility,
+  playback,
+  menus,
   currentTime,
   duration,
   progress,
-  isPlaying,
-  isSeeking,
   volume,
-  isMuted,
-  showVolumeSlider,
   audios = EMPTY_ARRAY,
   subtitles = EMPTY_ARRAY,
   selectedAudioIndex,
   selectedSubtitleIndex,
-  showAudioMenu,
-  showSubtitleMenu,
   playbackSpeed = 1.0,
-  showPlaybackSpeedMenu = false,
   onPlaybackSpeedChange,
   onPlaybackSpeedMenuToggle,
   onPlayPause,
@@ -43,15 +39,26 @@ function DesktopVideoControls({
   onSubtitleMenuToggle,
   onInfoToggle,
   onFullscreen,
-  isFullscreen,
   audioMenuRef,
   subtitleMenuRef,
   playbackSpeedMenuRef,
   volumeRef,
   seekBarRef,
   controlsBarRef,
-  isVisible = true,
 }) {
+  const { controls: isVisible = true } = visibility ?? {};
+  const {
+    playing: isPlaying,
+    seeking: isSeeking,
+    muted: isMuted,
+    fullscreen: isFullscreen,
+  } = playback;
+  const {
+    volumeSlider: showVolumeSlider,
+    audio: showAudioMenu,
+    subtitle: showSubtitleMenu,
+    playbackSpeed: showPlaybackSpeedMenu,
+  } = menus;
   const videoPlayerT = useTranslations('VideoPlayer');
   const displayTime = isSeeking && currentTime !== null ? currentTime : currentTime;
 

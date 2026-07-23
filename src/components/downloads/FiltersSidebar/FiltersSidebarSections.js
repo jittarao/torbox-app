@@ -57,16 +57,20 @@ export default function FiltersSidebarSections({
   handleToggleViewsSortMode,
   handleExitViewsSortMode,
   reorderDisabledBySearch,
-  canReorderViews,
-  showViewCombineToggle,
-  showTagCombineToggle,
-  showTrackerCombineToggle,
-  showSourceCombineToggle,
-  showTrackerSection,
-  showSourceSection,
+  sectionVisibility,
   trackerFilterLocked,
   onNewView,
 }) {
+  const {
+    canReorderViews,
+    showViewCombineToggle,
+    showTagCombineToggle,
+    showTrackerCombineToggle,
+    showSourceCombineToggle,
+    showTrackerSection,
+    showSourceSection,
+  } = sectionVisibility;
+
   return (
     <div className="ui-scrollbar min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto overscroll-contain dark:divide-border-dark/60">
       <SidebarSection

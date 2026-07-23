@@ -238,13 +238,15 @@ export default function FiltersSidebar({
           handleToggleViewsSortMode={handleToggleViewsSortMode}
           handleExitViewsSortMode={handleExitViewsSortMode}
           reorderDisabledBySearch={reorderDisabledBySearch}
-          canReorderViews={canReorderViews}
-          showViewCombineToggle={showViewCombineToggle}
-          showTagCombineToggle={showTagCombineToggle}
-          showTrackerCombineToggle={showTrackerCombineToggle}
-          showSourceCombineToggle={showSourceCombineToggle}
-          showTrackerSection={showTrackerSection}
-          showSourceSection={showSourceSection}
+          sectionVisibility={{
+            canReorderViews,
+            showViewCombineToggle,
+            showTagCombineToggle,
+            showTrackerCombineToggle,
+            showSourceCombineToggle,
+            showTrackerSection,
+            showSourceSection,
+          }}
           trackerFilterLocked={trackerFilterLocked}
           onNewView={onNewView}
         />

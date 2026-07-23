@@ -219,8 +219,7 @@ export default function FilterEditorModalBody(props) {
           )}
 
           <FilterEditorModalFooter
-            isCreateMode={isCreateMode}
-            isEditMode={isEditMode}
+            editorMode={isCreateMode ? 'create' : isEditMode ? 'edit' : 'filter'}
             filtersActive={filtersActive}
             showSaveInput={showSaveInput}
             apiKey={apiKey}
