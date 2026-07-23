@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const MENU_MIN_WIDTH = 140;
@@ -61,6 +61,8 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
     };
   }, [isOpen, updateMenuPosition]);
 
+  const onCloseEvent = useEffectEvent(onClose);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -71,12 +73,12 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
         anchorRef?.current &&
         !anchorRef.current.contains(e.target)
       ) {
-        onClose();
+        onCloseEvent();
       }
     };
 
     const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseEvent();
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -85,7 +87,7 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen, onClose, anchorRef]);
+  }, [isOpen, anchorRef]);
 
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
 

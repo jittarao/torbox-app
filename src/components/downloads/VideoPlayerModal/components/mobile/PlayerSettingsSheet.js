@@ -4,34 +4,9 @@ import { memo } from 'react';
 import { useTranslations } from 'next-intl';
 import ModalSheet from '@/components/shared/ModalSheet';
 import ModalSheetHandle from '@/components/shared/ModalSheetHandle';
-import { Check } from '@/components/icons';
+import { SheetRow, SectionTitle } from './PlayerSettingsSheetParts';
 
 const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
-
-function SheetRow({ label, selected, onClick, description }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left text-white
-        active:bg-white/10 touch-manipulation"
-    >
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{label}</span>
-        {description ? <span className="block text-xs text-white/60">{description}</span> : null}
-      </span>
-      {selected ? <Check className="size-5 shrink-0 text-accent dark:text-accent-dark" /> : null}
-    </button>
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <h3 className="px-4 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-white/50">
-      {children}
-    </h3>
-  );
-}
 
 function PlayerSettingsSheet({
   open,

@@ -1,6 +1,14 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 import { computeOverlayDropdownLayout } from '@/components/shared/computeOverlayDropdownLayout';
 import SelectDropdown from '@/components/shared/select/SelectDropdown';
@@ -116,6 +124,13 @@ export default function Select({
     [onChange, closeDropdown]
   );
 
+  const handleSelectEvent = useEffectEvent((selectedValue) => {
+    handleSelect(selectedValue);
+  });
+  const closeDropdownEvent = useEffectEvent(() => {
+    closeDropdown();
+  });
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (!isOpen || disabled) return;
@@ -125,7 +140,7 @@ export default function Select({
       }
 
       if (event.key === 'Escape') {
-        closeDropdown();
+        closeDropdownEvent();
         selectRef.current?.focus();
       } else if (event.key === 'ArrowDown') {
         event.preventDefault();
@@ -140,7 +155,7 @@ export default function Select({
       } else if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         if (document.activeElement?.dataset?.value) {
-          handleSelect(document.activeElement.dataset.value);
+          handleSelectEvent(document.activeElement.dataset.value);
         }
       }
     };
@@ -152,7 +167,7 @@ export default function Select({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, disabled, handleSelect, searchable, closeDropdown]);
+  }, [isOpen, disabled, searchable]);
 
   const handleToggle = () => {
     if (!disabled) {

@@ -1,6 +1,14 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import OverlayPortal from '@/components/shared/OverlayPortal';
 import { computeOverlayDropdownLayout } from '@/components/shared/computeOverlayDropdownLayout';
 import MultiSelectDropdown from '@/components/shared/MultiSelectDropdown';
@@ -106,6 +114,10 @@ export default function MultiSelect({
     [selectedValues, onChange]
   );
 
+  const handleToggleOptionEvent = useEffectEvent((optionValue) => {
+    handleToggleOption(optionValue);
+  });
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (!isOpen || disabled) return;
@@ -128,7 +140,7 @@ export default function MultiSelect({
       } else if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         if (document.activeElement?.dataset?.value) {
-          handleToggleOption(document.activeElement.dataset.value);
+          handleToggleOptionEvent(document.activeElement.dataset.value);
         }
       }
     };
@@ -140,7 +152,7 @@ export default function MultiSelect({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, disabled, handleToggleOption]);
+  }, [isOpen, disabled]);
 
   const handleRemoveOption = (optionValue, e) => {
     e.stopPropagation();

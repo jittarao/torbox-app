@@ -34,23 +34,10 @@ export default function SourceSidebarSection({
   const selectedCount = activeSourceSet.size;
   const hasSearchQuery = searchQuery.trim().length > 0;
 
-  const handleListMouseDown = useCallback((event) => {
-    if (event.shiftKey && event.target.closest('[data-sidebar-item]')) {
-      event.preventDefault();
-    }
-  }, []);
-
-  const handleListClick = useCallback(
-    (event) => {
-      const activateButton = event.target.closest('[data-sidebar-activate]');
-      if (!activateButton || disabled) return;
-
-      const row = activateButton.closest('[data-sidebar-item]');
-      if (!row) return;
-
-      const index = Number(row.dataset.index);
+  const handleItemActivate = useCallback(
+    (index) => (event) => {
       const entry = filteredEntries[index];
-      if (!entry || entry.host !== row.dataset.id) return;
+      if (!entry || disabled) return;
 
       const isActive = activeSourceSet.has(entry.host);
 
@@ -98,7 +85,7 @@ export default function SourceSidebarSection({
           {hasSearchQuery ? t('noSourceMatches', { query: searchQuery.trim() }) : t('noSources')}
         </p>
       ) : (
-        <div onMouseDown={handleListMouseDown} onClick={handleListClick}>
+        <div>
           {filteredEntries.map((entry, index) => {
             const isActive = activeSourceSet.has(entry.host);
             return (
@@ -111,6 +98,7 @@ export default function SourceSidebarSection({
                 isActive={isActive}
                 disabled={disabled}
                 title={entry.host}
+                onClick={handleItemActivate(index)}
               />
             );
           })}

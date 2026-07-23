@@ -64,12 +64,7 @@ function FileListFile({
     const showAudioPlay = isAudioFile(file) && onAudioPlay;
 
     return (
-      <div
-        className={FILE_LIST_ACTIONS_CLASS}
-        data-file-actions
-        onClick={stopRowActivation}
-        onPointerDown={stopRowActivation}
-      >
+      <div className={FILE_LIST_ACTIONS_CLASS} data-file-actions>
         <span className={FILE_ACTION_SLOT_CLASS}>
           {showVideoPlay ? (
             <button
@@ -161,6 +156,8 @@ function FileListFile({
       {isMobile ? (
         <>
           <div
+            role="button"
+            tabIndex={isDisabled ? -1 : 0}
             className={`flex min-w-0 items-start gap-3 ${!isDisabled ? 'cursor-pointer' : ''}`}
             onMouseDown={(e) => {
               if (e.shiftKey) e.preventDefault();
@@ -169,6 +166,16 @@ function FileListFile({
               e.stopPropagation();
               if (e.target.closest('button, input, a, select, textarea') || isDisabled) return;
               handleSelectRow(e);
+            }}
+            onKeyDown={(e) => {
+              if (
+                (e.key === 'Enter' || e.key === ' ') &&
+                !isDisabled &&
+                !e.target.closest('button, input, a, select, textarea')
+              ) {
+                e.preventDefault();
+                handleSelectRow(e);
+              }
             }}
           >
             <input
@@ -203,6 +210,7 @@ function FileListFile({
         </>
       ) : (
         <div
+          role="button"
           className={`flex items-center justify-between gap-3 min-w-0 ${tableRowFocusClasses} ${!isDisabled && 'cursor-pointer'}`}
           tabIndex={isDisabled ? -1 : 0}
           onMouseDown={(e) => {
