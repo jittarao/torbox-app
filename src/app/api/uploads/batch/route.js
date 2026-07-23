@@ -150,18 +150,15 @@ export async function POST(request) {
     });
 
     const rateLimitHeaders = extractRateLimitHeaders(response);
+    const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-    if (response.status === 429) {
-      const rateLimitData = await response.json().catch(() => ({}));
+    if (responseStatus === 429) {
       return rateLimitedUploadResponse(
         rateLimitHeaders,
-        rateLimitData.error || 'Too many upload requests, please try again later.',
-        rateLimitData.detail ||
-          'Upload rate limit exceeded. Please wait before making more requests.'
+        data.error || 'Too many upload requests, please try again later.',
+        data.detail || 'Upload rate limit exceeded. Please wait before making more requests.'
       );
     }
-
-    const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
     if (!responseOk) {
       // Clean up all successfully uploaded files if batch creation failed
