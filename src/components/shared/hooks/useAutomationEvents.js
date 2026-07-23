@@ -44,7 +44,7 @@ export function useAutomationEvents({ enabled, apiKey, onTagsChanged, onProtecti
   }, [onProtectionChanged]);
 
   useEffect(() => {
-    if (!enabled || !apiKey || (!onTagsChanged && !onProtectionChanged)) return;
+    if (!enabled || !apiKey || (!onTagsChanged && !onProtectionChanged)) return undefined;
 
     const ac = new AbortController();
     let buffer = '';

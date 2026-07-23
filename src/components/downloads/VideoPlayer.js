@@ -37,7 +37,7 @@ export default function VideoPlayer({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !streamUrl) return;
+    if (!video || !streamUrl) return undefined;
 
     isCancelledRef.current = false;
 
@@ -86,6 +86,7 @@ export default function VideoPlayer({
     };
 
     let shakaPlayer = null;
+    let seekMetadataListener = null;
 
     const initPlayer = async () => {
       try {
@@ -184,7 +185,8 @@ export default function VideoPlayer({
             };
 
             // Wait for video to be ready
-            video.addEventListener('loadedmetadata', seekToTime, { once: true });
+            seekMetadataListener = seekToTime;
+            video.addEventListener('loadedmetadata', seekMetadataListener, { once: true });
             safeTimeout(seekToTime, 500);
           } else if (shouldAutoPlay) {
             // Normal autoplay
@@ -233,6 +235,11 @@ export default function VideoPlayer({
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('volumechange', handleVolumeChange);
+
+      if (seekMetadataListener) {
+        video.removeEventListener('loadedmetadata', seekMetadataListener);
+        seekMetadataListener = null;
+      }
 
       if (shakaPlayer) {
         shakaPlayer.destroy();

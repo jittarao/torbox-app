@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import http from 'http';
+import { backendHttpRequest, isHttp2xx } from '@/utils/backendRequest';
 import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -48,49 +48,12 @@ async function proxyRequest(request, pathSegments) {
       headers['Content-Length'] = Buffer.byteLength(bodyString);
     }
 
-    const response = await new Promise((resolve, reject) => {
-      const req = http.request(
-        url,
-        {
-          method: method,
-          headers: headers,
-          timeout: 30000,
-        },
-        (res) => {
-          let data = '';
-          res.on('data', (chunk) => (data += chunk));
-          res.on('end', () => {
-            try {
-              const jsonData = data ? JSON.parse(data) : {};
-              resolve({
-                ok: res.statusCode >= 200 && res.statusCode < 300,
-                status: res.statusCode,
-                data: jsonData,
-                headers: res.headers,
-              });
-            } catch (parseError) {
-              // If not JSON, return as text
-              resolve({
-                ok: res.statusCode >= 200 && res.statusCode < 300,
-                status: res.statusCode,
-                data: data,
-                headers: res.headers,
-              });
-            }
-          });
-        }
-      );
-
-      req.on('error', reject);
-      req.setTimeout(30000, () => {
-        req.destroy();
-        reject(new Error('Request timeout'));
-      });
-
-      if (bodyString) {
-        req.write(bodyString);
-      }
-      req.end();
+    const response = await backendHttpRequest(url, {
+      method,
+      headers,
+      body: bodyString,
+      timeoutMs: 30000,
+      isOk: isHttp2xx,
     });
 
     const nextResponse = NextResponse.json(response.data, { status: response.status });

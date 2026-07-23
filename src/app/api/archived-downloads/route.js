@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import http from 'http';
 import crypto from 'crypto';
-import { backendProxyHeaders } from '@/utils/backendRequest';
+import { backendHttpGet, backendProxyHeaders } from '@/utils/backendRequest';
 import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -39,25 +38,9 @@ export async function GET(request) {
       url.searchParams.set('search', search);
     }
 
-    const response = await new Promise((resolve, reject) => {
-      const req = http.get(url, { headers: backendProxyHeaders(apiKey) }, (res) => {
-        let data = '';
-        res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => {
-          try {
-            const jsonData = JSON.parse(data);
-            resolve({ ok: res.statusCode === 200, data: jsonData, status: res.statusCode });
-          } catch (parseError) {
-            reject(parseError);
-          }
-        });
-      });
-
-      req.on('error', reject);
-      req.setTimeout(10000, () => {
-        req.destroy();
-        reject(new Error('Request timeout'));
-      });
+    const response = await backendHttpGet(url, {
+      headers: backendProxyHeaders(apiKey),
+      timeoutMs: 10000,
     });
 
     if (response.ok) {
