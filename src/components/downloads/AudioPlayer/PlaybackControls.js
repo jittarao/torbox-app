@@ -121,7 +121,7 @@ export default function PlaybackControls({
         type="button"
         onClick={onPlayPause}
         disabled={!canPlay}
-        className="relative flex items-center justify-center size-14 rounded-full bg-amber-500 hover:bg-amber-400 text-white shadow-lg transition-all disabled:opacity-50 active:scale-95"
+        className="relative flex items-center justify-center size-14 rounded-full bg-amber-500 hover:bg-amber-400 text-white shadow-lg transition-colors transition-transform disabled:opacity-50 active:scale-95"
         aria-label={isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'}
       >
         {isBuffering ? (

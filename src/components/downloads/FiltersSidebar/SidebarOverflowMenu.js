@@ -7,6 +7,11 @@ const MENU_MIN_WIDTH = 140;
 const MENU_ITEM_HEIGHT = 30;
 const MENU_PADDING = 8;
 
+function stopMenuEvent(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
 export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items }) {
   const menuRef = useRef(null);
   const [menuLayout, setMenuLayout] = useState(null);
@@ -85,11 +90,6 @@ export default function SidebarOverflowMenu({ isOpen, onClose, anchorRef, items 
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
 
   if (!isOpen || !portalTarget || !menuLayout) return null;
-
-  const stopMenuEvent = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
 
   const handleItemActivate = (item) => {
     item.onClick();

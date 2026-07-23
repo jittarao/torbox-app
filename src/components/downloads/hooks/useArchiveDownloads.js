@@ -9,6 +9,11 @@ import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
 import { resolveItemAssetType } from '@/store/torboxDownloadsSelectors';
 import { useDestructiveActionGuard } from '@/components/downloads/hooks/useDestructiveActionGuard';
 
+function applyLocalRemovals(successfulIds) {
+  if (successfulIds.length === 0) return;
+  useTorboxDownloadsStore.getState().removeByIds('torrents', successfulIds);
+}
+
 export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetType = 'torrents') {
   const [isArchiving, setIsArchiving] = useState(false);
   const t = useTranslations('ItemActions.toast');
@@ -16,11 +21,6 @@ export function useArchiveDownloads(apiKey, setSelectedItems, setToast, assetTyp
     useDestructiveActionGuard(setToast);
 
   const setIsArchivingRef = useLatestRef(setIsArchiving);
-
-  const applyLocalRemovals = (successfulIds) => {
-    if (successfulIds.length === 0) return;
-    useTorboxDownloadsStore.getState().removeByIds('torrents', successfulIds);
-  };
 
   const clearSelectionForItems = (items, successfulIds) => {
     const idSet = new Set(successfulIds.map(String));

@@ -238,18 +238,19 @@ function PanelHeader({
   );
 }
 
+function actionButtonClass(accent = false) {
+  return `inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium transition-colors sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
+    accent
+      ? 'text-accent hover:bg-accent/10 dark:text-accent-dark dark:hover:bg-accent-dark/10'
+      : ''
+  }`;
+}
+
 function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
   const displayName = getDisplayName(link);
   const extension = resolveLinkExtension(link);
   const hostname = getHostname(link.url);
   const isCopied = copiedId === link.id;
-
-  const actionButtonClass = (accent = false) =>
-    `inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium transition-colors sm:min-h-0 sm:min-w-0 sm:py-1.5 ${
-      accent
-        ? 'text-accent hover:bg-accent/10 dark:text-accent-dark dark:hover:bg-accent-dark/10'
-        : ''
-    }`;
 
   return (
     <li className="group flex flex-col gap-2 rounded-xl border border-border/80 bg-surface-alt/80 p-2.5 transition-colors hover:border-accent/30 hover:bg-surface-alt dark:border-border-dark/80 dark:bg-surface-alt-dark/80 dark:hover:border-accent-dark/30 dark:hover:bg-surface-alt-dark sm:flex-row sm:items-center sm:gap-3">
@@ -318,6 +319,10 @@ function LinkRow({ link, index, total, copiedId, onCopy, onDownload, t }) {
       </div>
     </li>
   );
+}
+
+function handleDownloadFile(url) {
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export default function DownloadPanel({
@@ -397,10 +402,6 @@ export default function DownloadPanel({
         });
       });
   }, [downloadLinks, setToast, t]);
-
-  const handleDownloadFile = (url) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
 
   const handleCopyLink = useCallback(
     (link) => {

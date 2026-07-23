@@ -51,7 +51,7 @@ export default function ItemUploaderNzbTips({ nzbTipsHidden, onHide, onShow, t }
       <button
         type="button"
         onClick={onShow}
-        className="flex items-center gap-2 px-3 py-2 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded-lg transition-all duration-200"
+        className="flex items-center gap-2 px-3 py-2 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded-lg transition-colors duration-200"
       >
         <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path

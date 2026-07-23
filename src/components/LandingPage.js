@@ -18,64 +18,64 @@ const syne = Syne({
   display: 'swap',
 });
 
+const LANDING_FEATURES = [
+  {
+    key: 'batchUpload',
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+    ),
+  },
+  {
+    key: 'search',
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.35-4.35" />
+      </svg>
+    ),
+  },
+  {
+    key: 'automation',
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      </svg>
+    ),
+  },
+];
+
 export default function LandingPage({ onKeyChange }) {
   const t = useTranslations('LandingPage');
   const referralT = useTranslations('Referral');
   const [showCopied, setShowCopied] = useState(false);
-
-  const features = [
-    {
-      key: 'batchUpload',
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
-      ),
-    },
-    {
-      key: 'search',
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-      ),
-    },
-    {
-      key: 'automation',
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-        </svg>
-      ),
-    },
-  ];
 
   return (
     <div
@@ -126,10 +126,10 @@ export default function LandingPage({ onKeyChange }) {
             opacity: 0,
           }}
         >
-          {features.map(({ key, icon }, i) => (
+          {LANDING_FEATURES.map(({ key, icon }, i) => (
             <div
               key={key}
-              className="group relative p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-white/[0.02] backdrop-blur-sm transition-all duration-300 hover:border-amber-500/30 hover:bg-white/[0.04] hover:shadow-[0_0_40px_-12px_rgba(251,191,36,0.15)]"
+              className="group relative p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-white/[0.02] backdrop-blur-sm transition-colors transition-shadow duration-300 hover:border-amber-500/30 hover:bg-white/[0.04] hover:shadow-[0_0_40px_-12px_rgba(251,191,36,0.15)]"
               style={{
                 animation: `landing-fade-in-up 0.6s ease-out ${0.32 + i * 0.08}s forwards`,
                 opacity: 0,

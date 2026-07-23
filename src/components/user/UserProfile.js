@@ -20,6 +20,19 @@ import {
   UserProfileDownloadBreakdown,
 } from '@/components/user/UserProfileCards';
 
+function formatDate(dateString) {
+  if (!dateString) return 'N/A';
+  try {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return 'Invalid Date';
+  }
+}
+
 export default function UserProfile({ apiKey, setToast }) {
   const t = useTranslations('User');
   const locale = useLocale();
@@ -79,19 +92,6 @@ export default function UserProfile({ apiKey, setToast }) {
           type: 'error',
         });
       }
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return 'Invalid Date';
     }
   };
 

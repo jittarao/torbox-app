@@ -32,7 +32,7 @@ const ProgressBar = forwardRef(function ProgressBar(
       }}
     >
       <div
-        className="h-full bg-accent dark:bg-accent-dark transition-all duration-150
+        className="h-full bg-accent dark:bg-accent-dark transition-[width] duration-150 transition-colors
           group-hover:bg-accent/90 dark:group-hover:bg-accent-dark/90
           relative pointer-events-none"
         style={{ width: `${progress}%` }}
