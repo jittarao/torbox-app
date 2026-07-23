@@ -7,11 +7,15 @@ import SidebarOverflowMenu from './SidebarOverflowMenu';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
 
+const EMPTY_TAGS = [];
+const EMPTY_TAG_COUNTS = {};
+const EMPTY_ACTIVE_TAG_IDS = [];
+
 export default function TagSidebarSection({
-  tags = [],
-  tagCounts = {},
+  tags = EMPTY_TAGS,
+  tagCounts = EMPTY_TAG_COUNTS,
   searchQuery = '',
-  activeTagIds = [],
+  activeTagIds = EMPTY_ACTIVE_TAG_IDS,
   onApplyTag,
   onApplyTagRange,
   onClearTags,

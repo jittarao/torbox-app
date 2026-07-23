@@ -30,7 +30,7 @@ function parseEntityKey(entityKey) {
   return { assetType: entityKey.slice(0, sep), id: entityKey.slice(sep + 1) };
 }
 
-function useCardEstimateSize(deferredEntityKeys, fileSearch, expandedItemsKey) {
+function useCardEstimateSize(deferredEntityKeys, fileSearch, expandedById) {
   const isMobile = useIsMobile();
   const itemGap = getCardListItemGapPx();
   const lastIndex = deferredEntityKeys.length - 1;
@@ -40,7 +40,6 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch, expandedItemsKey) {
       const entityKey = deferredEntityKeys[index];
       if (!entityKey) return 0;
       const { id } = parseEntityKey(entityKey);
-      const expandedById = useDownloadsUiStore.getState().expandedById;
       const filesExpanded = expandedById[id];
       const entity = useTorboxDownloadsStore.getState().entities[entityKey];
       const filesByEntityKey = useTorboxDownloadsStore.getState().filesByEntityKey;
@@ -56,7 +55,7 @@ function useCardEstimateSize(deferredEntityKeys, fileSearch, expandedItemsKey) {
       }
       return cardHeight;
     },
-    [deferredEntityKeys, expandedItemsKey, fileSearch, isMobile, itemGap, lastIndex]
+    [deferredEntityKeys, expandedById, fileSearch, isMobile, itemGap, lastIndex]
   );
 }
 
@@ -329,7 +328,7 @@ export default function CardList() {
     () => Object.keys(deferredExpandedById).sort().join(','),
     [deferredExpandedById]
   );
-  const estimateSize = useCardEstimateSize(deferredEntityKeys, fileSearch, expandedItemsKey);
+  const estimateSize = useCardEstimateSize(deferredEntityKeys, fileSearch, deferredExpandedById);
 
   const toastMessages = useMemo(
     () => ({
@@ -405,6 +404,7 @@ export default function CardList() {
     ),
     [
       tagMappings,
+      protectedMap,
       apiKey,
       activeColumns,
       isBlurred,

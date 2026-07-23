@@ -18,6 +18,8 @@ import {
   createConfirmDialogs,
 } from './actionButtonsToolbarGroups';
 
+const EMPTY_ALL_ITEMS = [];
+
 export default function ActionButtons({
   setSelectedItems,
   hasSelectedFiles,
@@ -32,7 +34,7 @@ export default function ActionButtons({
   activeType = 'torrents',
   apiKey,
   setToast,
-  allItems = [],
+  allItems = EMPTY_ALL_ITEMS,
 }) {
   const {
     downloading: isDownloading,

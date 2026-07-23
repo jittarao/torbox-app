@@ -6,10 +6,13 @@ import SidebarListItem from './SidebarListItem';
 import { matchesSidebarSearch } from './sidebarSearch';
 import { useSidebarShiftSelect } from './sidebarRangeSelect';
 
+const EMPTY_ENTRIES = [];
+const EMPTY_ACTIVE_SOURCES = [];
+
 export default function SourceSidebarSection({
-  entries = [],
+  entries = EMPTY_ENTRIES,
   searchQuery = '',
-  activeSources = [],
+  activeSources = EMPTY_ACTIVE_SOURCES,
   onApplySource,
   onApplySourceRange,
   onClearSources,

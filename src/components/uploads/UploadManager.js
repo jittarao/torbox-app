@@ -102,16 +102,18 @@ export default function UploadManager({ apiKey }) {
   const [listScopeKey, setListScopeKey] = useState(nextListScopeKey);
   const [paginationScopeKey, setPaginationScopeKey] = useState(nextPaginationScopeKey);
 
-  if (nextPaginationScopeKey !== paginationScopeKey) {
+  useEffect(() => {
+    if (nextPaginationScopeKey === paginationScopeKey) return;
     setPaginationScopeKey(nextPaginationScopeKey);
     setPagination((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
-  }
+  }, [nextPaginationScopeKey, paginationScopeKey]);
 
-  if (nextListScopeKey !== listScopeKey) {
+  useEffect(() => {
+    if (nextListScopeKey === listScopeKey) return;
     setListScopeKey(nextListScopeKey);
     setSelectedUploads(new Set());
     resetAnchor();
-  }
+  }, [nextListScopeKey, listScopeKey, resetAnchor]);
 
   const handleSelectAll = (checked) => {
     if (checked) {
