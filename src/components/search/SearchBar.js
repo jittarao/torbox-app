@@ -5,8 +5,11 @@ import { useSearchStore } from '@/store/searchStore';
 import { useSearchFilterParams } from '@/hooks/useSearchFilterParams';
 import Dropdown from '@/components/shared/Dropdown';
 import BulkActionButton from '@/components/shared/BulkActionButton';
-import { Cog, Filter, MagnifyingGlass, Times } from '@/components/icons';
+import { MagnifyingGlass, Times } from '@/components/icons';
 import { useTranslations } from 'next-intl';
+import SearchBarDropdowns from './SearchBarDropdowns';
+import SearchBarQuickOptions from './SearchBarQuickOptions';
+import SearchBarAdvancedFilters from './SearchBarAdvancedFilters';
 
 const DEFAULT_SEARCH_OPTIONS = [
   { value: 'usenet', labelKey: 'itemTypes.Usenet' },
@@ -63,7 +66,6 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
     clearFilters,
   } = useSearchFilterParams();
 
-  // Resolve options: use prop when provided (permission-filtered), else default with both types
   const searchTypeOptions = searchTypeOptionsProp ?? DEFAULT_SEARCH_OPTIONS;
   const SEARCH_OPTIONS = searchTypeOptions.map((opt) => ({
     value: opt.value,
@@ -72,19 +74,16 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
 
   const allowedValues = SEARCH_OPTIONS.map((o) => o.value);
 
-  // If current searchType is not in allowed options, switch to first available
   useEffect(() => {
     if (allowedValues.length > 0 && !allowedValues.includes(searchType)) {
       setSearchType(allowedValues[0]);
     }
   }, [allowedValues, searchType, setSearchType]);
 
-  // Load search history on mount
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -96,26 +95,6 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const QUALITY_OPTIONS = [
-    { value: '', label: t('qualityAll') },
-    { value: '2160p', label: '4K (2160p)' },
-    { value: '1080p', label: 'Full HD (1080p)' },
-    { value: '720p', label: 'HD (720p)' },
-    { value: '480p', label: 'SD (480p)' },
-    { value: 'HDRip', label: 'HDRip' },
-    { value: 'BRRip', label: 'BRRip' },
-    { value: 'WEBRip', label: 'WEBRip' },
-  ];
-
-  const SEARCH_SUGGESTIONS = [
-    { label: 'IMDB Search', example: 'imdb:tt0133093' },
-    { label: 'TVDB Search', example: 'tvdb:12345' },
-    { label: 'Anime Search', example: 'jikan:12345' },
-    { label: 'TV Show Search', example: 'Breaking Bad' },
-    { label: 'Movie Search', example: 'Inception' },
-    { label: 'Year Search', example: 'Inception (2010)' },
-  ];
 
   const handleSearchChange = (e) => {
     setLocalQuery(e.target.value);
@@ -159,7 +138,6 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
 
   return (
     <div className="flex flex-col gap-4 mt-4" ref={searchRef}>
-      {/* Main Search Bar */}
       <div className="relative flex flex-wrap items-center gap-1.5">
         <div className="w-28 shrink-0 sm:w-32">
           <Dropdown options={SEARCH_OPTIONS} value={searchType} onChange={setSearchType} />
@@ -217,200 +195,38 @@ export default function SearchBar({ searchTypeOptions: searchTypeOptionsProp }) 
         </div>
       )}
 
-      {/* Search History Dropdown */}
-      {showHistory && searchHistory.length > 0 && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-gray-800 border border-border dark:border-border-dark rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          <div className="p-2 border-b border-border dark:border-border-dark">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-                {t('recentSearches') || 'Recent Searches'}
-              </span>
-              <button
-                type="button"
-                onClick={clearHistory}
-                className="text-xs text-red-500 hover:text-red-600 transition-colors"
-              >
-                {t('clearHistory') || 'Clear'}
-              </button>
-            </div>
-          </div>
-          {searchHistory.map((item) => (
-            <button
-              type="button"
-              key={item}
-              onClick={() => handleHistoryClick(item)}
-              className="w-full p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-primary-text dark:text-primary-text-dark"
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      )}
+      <SearchBarDropdowns
+        showHistory={showHistory}
+        showSuggestions={showSuggestions}
+        searchHistory={searchHistory}
+        onHistoryClick={handleHistoryClick}
+        onClearHistory={clearHistory}
+        onSuggestionClick={handleSuggestionClick}
+      />
 
-      {/* Search Suggestions Dropdown */}
-      {showSuggestions && !showHistory && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-gray-800 border border-border dark:border-border-dark rounded-lg shadow-lg">
-          <div className="p-2 border-b border-border dark:border-border-dark">
-            <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-              {t('searchExamples') || 'Search Examples'}
-            </span>
-          </div>
-          {SEARCH_SUGGESTIONS.map((suggestion) => (
-            <button
-              type="button"
-              key={suggestion.label}
-              onClick={() => handleSuggestionClick(suggestion)}
-              className="w-full p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <div className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-                {suggestion.label}
-              </div>
-              <div className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
-                {suggestion.example}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      <SearchBarQuickOptions
+        includeCustomEngines={includeCustomEngines}
+        onCustomEnginesToggle={handleCustomEnginesClick}
+        showAdvancedOptions={showAdvancedOptions}
+        onToggleAdvancedOptions={() => setShowAdvancedOptions(!showAdvancedOptions)}
+      />
 
-      {/* Quick Options */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-              <Cog className="size-4" />
-              {t('customEngines')}
-            </span>
-            <div
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
-                ${
-                  includeCustomEngines
-                    ? 'bg-accent dark:bg-accent-dark'
-                    : 'bg-border dark:bg-border-dark'
-                }`}
-              onClick={handleCustomEnginesClick}
-              role="switch"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleCustomEnginesClick();
-                }
-              }}
-              aria-checked={includeCustomEngines}
-            >
-              <span
-                className={`inline-block size-4 transform rounded-full bg-white transition-transform
-                  ${includeCustomEngines ? 'translate-x-4' : 'translate-x-1'}`}
-              />
-            </div>
-          </label>
-
-          <button
-            type="button"
-            onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-            className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 hover:text-primary-text dark:hover:text-primary-text-dark transition-colors"
-          >
-            <Filter className="size-4" />
-            {showAdvancedOptions
-              ? t('hideAdvanced') || 'Hide Advanced'
-              : t('showAdvanced') || 'Show Advanced'}
-          </button>
-        </div>
-      </div>
-
-      {/* Advanced Filter Options */}
       {showAdvancedOptions && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border dark:border-border-dark">
-          <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
-              {t('season') || 'Season'}
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={seasonFilter}
-              onChange={(e) => setSeasonFilter(e.target.value)}
-              className="w-full px-3 py-1 rounded border border-border dark:border-border-dark bg-transparent text-sm text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors"
-              placeholder={t('seasonPlaceholder') || 'S01'}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
-              {t('episode') || 'Episode'}
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={episodeFilter}
-              onChange={(e) => setEpisodeFilter(e.target.value)}
-              className="w-full px-3 py-1 rounded border border-border dark:border-border-dark bg-transparent text-sm text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors"
-              placeholder={t('episodePlaceholder') || 'E01'}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
-              {t('year') || 'Year'}
-            </label>
-            <input
-              type="number"
-              min="1900"
-              max="2030"
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              className="w-full px-3 py-1 rounded border border-border dark:border-border-dark bg-transparent text-sm text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors"
-              placeholder={t('yearPlaceholder') || '2024'}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
-              {t('quality') || 'Quality'}
-            </label>
-            <Dropdown options={QUALITY_OPTIONS} value={qualityFilter} onChange={setQualityFilter} />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
-              {t('minSize') || 'Min Size (GB)'}
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={sizeFilter}
-              onChange={(e) => setSizeFilter(e.target.value)}
-              className="w-full px-3 py-1 rounded border border-border dark:border-border-dark bg-transparent text-sm text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors"
-              placeholder="0"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
-              {t('minSeeders') || 'Min Seeders'}
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={seedersFilter}
-              onChange={(e) => setSeedersFilter(e.target.value)}
-              className="w-full px-3 py-1 rounded border border-border dark:border-border-dark bg-transparent text-sm text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors"
-              placeholder="0"
-            />
-          </div>
-
-          <div className="col-span-full flex justify-end">
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="px-3 py-1 text-sm text-red-500 hover:text-red-600 transition-colors"
-            >
-              {t('clearFilters') || 'Clear Filters'}
-            </button>
-          </div>
-        </div>
+        <SearchBarAdvancedFilters
+          seasonFilter={seasonFilter}
+          setSeasonFilter={setSeasonFilter}
+          episodeFilter={episodeFilter}
+          setEpisodeFilter={setEpisodeFilter}
+          yearFilter={yearFilter}
+          setYearFilter={setYearFilter}
+          qualityFilter={qualityFilter}
+          setQualityFilter={setQualityFilter}
+          sizeFilter={sizeFilter}
+          setSizeFilter={setSizeFilter}
+          seedersFilter={seedersFilter}
+          setSeedersFilter={setSeedersFilter}
+          clearFilters={clearFilters}
+        />
       )}
     </div>
   );
