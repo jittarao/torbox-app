@@ -14,7 +14,7 @@ import {
   useIsDownloadSelected,
   useItemHasSelectedFiles,
 } from '@/components/shared/hooks/useSelection';
-import { useDownloadsUiStore } from '@/store/downloadsUiStore';
+import { useIsDownloadRowExpanded } from '@/components/downloads/hooks/useDownloadRowExpansion';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getFilesVisibleForDownloadSearch } from './utils/downloadSearch';
 import {
@@ -51,7 +51,7 @@ function ItemCard({
   const columnT = useTranslations('Columns');
   const commonT = useTranslations('Common');
   const isMobile = useIsMobile();
-  const isExpanded = useDownloadsUiStore((s) => Boolean(s.expandedById[item.id]));
+  const isExpanded = useIsDownloadRowExpanded(item);
   const selectionKey = getDownloadSelectionId(item);
   const cachedFiles = useTorboxDownloadsStore((s) => s.filesByEntityKey[selectionKey]);
   const visibleFiles = useMemo(

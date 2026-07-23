@@ -45,7 +45,6 @@ export function useVideoPlayerModal({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [showControls, setShowControls] = useState(true);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -108,12 +107,10 @@ export function useVideoPlayerModal({
     onTimeCommit: handleTimeCommit,
   });
 
-  const { toggleControls, revealControls } = useControlsVisibility({
+  const { showControls, setShowControls, toggleControls, revealControls } = useControlsVisibility({
     isOpen,
     isPlaying,
     isSeeking,
-    showControls,
-    setShowControls,
     playerRef: playerAreaRef,
     controlsBarRef,
     showVolumeSlider,
