@@ -19,4 +19,16 @@ describe('useColumnWidths', () => {
 
     expect(result.current.columnWidths.progress).toBe(DEFAULT_COLUMN_WIDTHS.progress);
   });
+
+  test('applies successive width updates without losing prior column changes', () => {
+    const { result } = renderHook(() => useColumnWidths('torrents'));
+
+    act(() => {
+      result.current.updateColumnWidth('progress', 220);
+      result.current.updateColumnWidth('name', 300);
+    });
+
+    expect(result.current.columnWidths.progress).toBe(220);
+    expect(result.current.columnWidths.name).toBe(300);
+  });
 });

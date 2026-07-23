@@ -48,13 +48,13 @@ export function useColumnWidths(activeType) {
     setColumnWidths((prev) => {
       const updated = { ...prev, [columnId]: newWidth };
       pendingWidthsRef.current = updated;
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => {
-        saveTimerRef.current = null;
-        setJSON(storageKey, updated);
-      }, SAVE_DEBOUNCE_MS);
       return updated;
     });
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      setJSON(storageKey, pendingWidthsRef.current);
+    }, SAVE_DEBOUNCE_MS);
   };
 
   return { columnWidths, updateColumnWidth };
