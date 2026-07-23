@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
 import { normalizeUploadId } from '../utils';
@@ -78,13 +79,13 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
           return;
         }
 
-        const data = await response.json();
+        const { ok: responseOk, data } = await readJsonFromResponse(response);
 
         if (requestId !== uploadsRequestIdRef.current) {
           return;
         }
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to fetch uploads');
         }
 
@@ -163,9 +164,13 @@ export function useUploads(apiKey, activeTab, filters, pagination, setPagination
         return;
       }
 
-      const data = await response.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
       if (requestId !== statusCountsRequestIdRef.current) {
+        return;
+      }
+
+      if (!responseOk) {
         return;
       }
 

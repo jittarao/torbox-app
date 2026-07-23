@@ -1,5 +1,6 @@
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { resolveTorboxApiKey } from '@/app/api/lib/resolveTorboxApiKey';
 import { toPublicUploadResponse } from '@/app/api/lib/publicUploadResponse';
 
@@ -23,15 +24,16 @@ export async function GET(_request, { params }) {
       },
     });
 
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
+    const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
+
+    if (!responseOk) {
       return Response.json(
         {
           success: false,
-          error: data.error || `Backend responded with status: ${response.status}`,
+          error: data.error || `Backend responded with status: ${responseStatus}`,
           detail: data.detail,
         },
-        { status: response.status }
+        { status: responseStatus }
       );
     }
 

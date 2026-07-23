@@ -1,3 +1,4 @@
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 export function getUserStatsErrorMessage(data, fallback) {
   if (data.error && data.error !== 'UNKNOWN_ERROR') {
     return data.error;
@@ -16,9 +17,9 @@ export async function fetchUserStats(apiKey, { grouping = 'week', signal } = {})
     signal,
   });
 
-  const data = await response.json();
+  const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-  if (!response.ok || !data.success) {
+  if (!responseOk || !data.success) {
     throw new Error(getUserStatsErrorMessage(data, 'Failed to load stats'));
   }
 

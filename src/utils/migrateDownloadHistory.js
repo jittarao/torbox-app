@@ -1,4 +1,5 @@
 import { getItem, setItem, removeItem, getJSON } from '@/utils/storage';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 /**
  * One-time migration utility to migrate download history from localStorage to backend
@@ -117,9 +118,9 @@ export async function migrateDownloadHistory(apiKey) {
       body: JSON.stringify({ entries: transformedEntries }),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-    if (!response.ok) {
+    if (!responseOk) {
       console.error('Migration failed:', data.error || 'Unknown error');
       return {
         success: false,
