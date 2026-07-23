@@ -12,27 +12,36 @@ import { useActionButtonsSelection } from './useActionButtonsSelection';
 import { useActionButtonsHandlers } from './useActionButtonsHandlers';
 import { useBulkCloudUpload } from './useBulkCloudUpload';
 import ActionButtonsToolbar from './ActionButtonsToolbar';
+import {
+  createBulkActionVisibility,
+  createBulkProgress,
+  createConfirmDialogs,
+} from './actionButtonsToolbarGroups';
 
 export default function ActionButtons({
   setSelectedItems,
   hasSelectedFiles,
-  isDownloading,
-  isDeleting,
-  isExporting,
+  bulkProgress,
   onBulkDownload,
   onBulkDelete,
   onBulkArchive,
   onBulkExport,
-  isArchiving = false,
   itemTypeName,
   itemTypePlural,
-  isDownloadPanelOpen,
-  setIsDownloadPanelOpen,
+  downloadPanel,
   activeType = 'torrents',
   apiKey,
   setToast,
   allItems = [],
 }) {
+  const {
+    downloading: isDownloading,
+    deleting: isDeleting,
+    exporting: isExporting,
+    archiving: isArchiving,
+  } = bulkProgress;
+  const { open: isDownloadPanelOpen, setOpen: setIsDownloadPanelOpen } = downloadPanel;
+
   const t = useTranslations('ActionButtons');
   const tItemActions = useTranslations('ItemActions.toast');
   const { isBackendAvailable } = useDownloadsUIContext();
@@ -110,33 +119,39 @@ export default function ActionButtons({
       activeType={activeType}
       selectedItemCount={selectedItemCount}
       hasSelectedFiles={hasSelectedFiles}
-      isDownloading={isDownloading}
-      isDeleting={isDeleting}
-      isExporting={isExporting}
-      isArchiving={isArchiving}
-      isForceStarting={handlers.isForceStarting}
-      isBulkRetrying={handlers.isBulkRetrying}
-      isStoppingSeeding={isStoppingSeeding}
-      isUpdatingProtection={isUpdatingProtection}
+      bulkProgress={createBulkProgress({
+        isDownloading,
+        isDeleting,
+        isExporting,
+        isArchiving,
+        isForceStarting: handlers.isForceStarting,
+        isBulkRetrying: handlers.isBulkRetrying,
+        isStoppingSeeding,
+        isUpdatingProtection,
+      })}
+      bulkActionVisibility={createBulkActionVisibility({
+        showBulkForceStart: selection.showBulkForceStart,
+        showBulkRetry: selection.showBulkRetry,
+        showBulkAirlockLock: selection.showBulkAirlockLock,
+        showBulkAirlockUnlock: selection.showBulkAirlockUnlock,
+        showBulkProtect: selection.showBulkProtect,
+        showBulkUnprotect: selection.showBulkUnprotect,
+        showBulkStopSeeding: selection.showBulkStopSeeding,
+        showBulkArchive: selection.showBulkArchive,
+      })}
+      confirmDialogs={createConfirmDialogs({
+        showArchiveConfirm,
+        showDeleteConfirm,
+        showTagAssignment,
+      })}
       bulkAirlockPendingAction={bulkAirlockPendingAction}
       deleteSelectionBlocked={selection.deleteSelectionBlocked}
       deleteParentDownloads={deleteParentDownloads}
       onDeleteParentDownloadsChange={setDeleteParentDownloads}
-      showBulkForceStart={selection.showBulkForceStart}
-      showBulkRetry={selection.showBulkRetry}
-      showBulkAirlockLock={selection.showBulkAirlockLock}
-      showBulkAirlockUnlock={selection.showBulkAirlockUnlock}
-      showBulkProtect={selection.showBulkProtect}
-      showBulkUnprotect={selection.showBulkUnprotect}
-      showBulkStopSeeding={selection.showBulkStopSeeding}
-      showBulkArchive={selection.showBulkArchive}
-      showArchiveConfirm={showArchiveConfirm}
       onShowArchiveConfirm={setShowArchiveConfirm}
       onCloseArchiveConfirm={() => setShowArchiveConfirm(false)}
-      showDeleteConfirm={showDeleteConfirm}
       onShowDeleteConfirm={setShowDeleteConfirm}
       onCloseDeleteConfirm={() => setShowDeleteConfirm(false)}
-      showTagAssignment={showTagAssignment}
       onShowTagAssignment={setShowTagAssignment}
       onCloseTagAssignment={setShowTagAssignment}
       selectedArchivableTorrents={selection.selectedArchivableTorrents}
@@ -151,8 +166,7 @@ export default function ActionButtons({
       onBulkUnprotect={handlers.handleBulkUnprotect}
       onBulkStopSeeding={handlers.handleBulkStopSeeding}
       onClearSelection={() => setSelectedItems({ items: new Set(), files: new Map() })}
-      isDownloadPanelOpen={isDownloadPanelOpen}
-      setIsDownloadPanelOpen={setIsDownloadPanelOpen}
+      downloadPanel={{ open: isDownloadPanelOpen, setOpen: setIsDownloadPanelOpen }}
       apiKey={apiKey}
       allItems={allItems}
       getSelectedItems={getSelectedItems}

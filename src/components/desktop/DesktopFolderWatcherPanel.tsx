@@ -12,27 +12,10 @@ import {
 } from '@/desktop/capabilities';
 import { DesktopInfoCallout } from '@/components/desktop/DesktopUi';
 import DesktopFolderWatcherPanelContent from '@/components/desktop/DesktopFolderWatcherPanelContent';
-
-export function createDefaultWatchRule(): WatchRule {
-  return {
-    id: crypto.randomUUID(),
-    enabled: false,
-    watchPath: null,
-    postUploadAction: 'moveToUploaded',
-    customMovePath: null,
-    torrentOptions: {
-      seed: 1,
-      allowZip: true,
-      asQueued: false,
-      addOnlyIfCached: false,
-    },
-    scanExistingOnEnable: false,
-  };
-}
-
-export const DEFAULT_WATCHER_CONFIG: FolderWatcherConfig = {
-  rules: [],
-};
+import {
+  createDefaultWatchRule,
+  DEFAULT_WATCHER_CONFIG,
+} from '@/components/desktop/desktopFolderWatcherDefaults';
 
 type DesktopFolderWatcherPanelProps = {
   hasCredential: boolean;
@@ -64,6 +47,7 @@ export default function DesktopFolderWatcherPanel({
   const [scanConfirmRuleId, setScanConfirmRuleId] = useState<string | null>(null);
   const [changeFolderRuleId, setChangeFolderRuleId] = useState<string | null>(null);
   const [stopping, setStopping] = useState(false);
+  const [expandedRuleIds, setExpandedRuleIds] = useState<Set<string>>(() => new Set());
 
   const canUseWatcher = hasFeature(capabilities, 'folderWatcher');
   const supportsMultiRule = folderWatcherSupportsMultiRule(capabilities);
@@ -74,6 +58,11 @@ export default function DesktopFolderWatcherPanel({
   useEffect(() => {
     if (watcherConfig) {
       setDraft(watcherConfig);
+      if (watcherConfig.rules.length === 0) {
+        setExpandedRuleIds(new Set());
+      } else if (watcherConfig.rules.length === 1) {
+        setExpandedRuleIds(new Set([watcherConfig.rules[0].id]));
+      }
     }
   }, [watcherConfig]);
 
@@ -118,6 +107,11 @@ export default function DesktopFolderWatcherPanel({
         rules: draft.rules.filter((rule) => rule.id !== ruleId),
       };
       setDraft(nextDraft);
+      setExpandedRuleIds((current) => {
+        const next = new Set(current);
+        next.delete(ruleId);
+        return next;
+      });
       await persistDraft(nextDraft);
     },
     [draft.rules, persistDraft]
@@ -127,10 +121,12 @@ export default function DesktopFolderWatcherPanel({
     if (draft.rules.length >= maxRules) {
       return;
     }
+    const newRule = createDefaultWatchRule();
     const nextDraft = {
-      rules: [...draft.rules, createDefaultWatchRule()],
+      rules: [...draft.rules, newRule],
     };
     setDraft(nextDraft);
+    setExpandedRuleIds((current) => new Set(current).add(newRule.id));
     await persistDraft(nextDraft);
   }, [draft.rules, maxRules, persistDraft]);
 
@@ -319,6 +315,18 @@ export default function DesktopFolderWatcherPanel({
       pickingMoveRuleId={pickingMoveRuleId}
       scanConfirmRuleId={scanConfirmRuleId}
       changeFolderRuleId={changeFolderRuleId}
+      expandedRuleIds={expandedRuleIds}
+      onToggleRuleExpanded={(ruleId) => {
+        setExpandedRuleIds((current) => {
+          const next = new Set(current);
+          if (next.has(ruleId)) {
+            next.delete(ruleId);
+          } else {
+            next.add(ruleId);
+          }
+          return next;
+        });
+      }}
       t={t}
       onAddRule={addRule}
       onRemoveRule={removeRule}

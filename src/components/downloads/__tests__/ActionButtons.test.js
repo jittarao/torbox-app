@@ -134,17 +134,19 @@ function renderButtons({ allItems, activeType = 'torrents' } = {}) {
     <ActionButtons
       setSelectedItems={() => {}}
       hasSelectedFiles={false}
-      isDownloading={false}
-      isDeleting={false}
-      isExporting={false}
+      bulkProgress={{
+        downloading: false,
+        deleting: false,
+        exporting: false,
+        archiving: false,
+      }}
       onBulkDownload={() => {}}
       onBulkDelete={() => {}}
       onBulkArchive={() => {}}
       onBulkExport={() => {}}
       itemTypeName="item"
       itemTypePlural="items"
-      isDownloadPanelOpen={false}
-      setIsDownloadPanelOpen={() => {}}
+      downloadPanel={{ open: false, setOpen: () => {} }}
       activeType={activeType}
       apiKey="test-key"
       setToast={() => {}}
@@ -263,17 +265,19 @@ describe('ActionButtons bulk Airlock', () => {
         <ActionButtons
           setSelectedItems={() => {}}
           hasSelectedFiles={false}
-          isDownloading={false}
-          isDeleting={false}
-          isExporting={false}
+          bulkProgress={{
+            downloading: false,
+            deleting: false,
+            exporting: false,
+            archiving: false,
+          }}
           onBulkDownload={() => {}}
           onBulkDelete={() => {}}
           onBulkArchive={() => {}}
           onBulkExport={() => {}}
           itemTypeName="item"
           itemTypePlural="items"
-          isDownloadPanelOpen={false}
-          setIsDownloadPanelOpen={() => {}}
+          downloadPanel={{ open: false, setOpen: () => {} }}
           activeType="torrents"
           apiKey="test-key"
           setToast={() => {}}

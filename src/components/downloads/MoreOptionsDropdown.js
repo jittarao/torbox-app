@@ -43,28 +43,34 @@ export default function MoreOptionsDropdown({
   apiKey,
   setToast,
   activeType = 'torrents',
-  showDownload = false,
+  actionVisibility,
+  actionProgress,
+  itemFlags,
   onDownload,
-  showDelete = false,
   onDelete,
-  isDeleting = false,
-  showArchive = false,
   onArchive,
-  isArchiving = false,
-  showProtection = false,
-  isProtected = false,
   onToggleProtection,
-  isProtectionUpdating = false,
-  showRetry = false,
   onRetry,
-  isRetrying = false,
-  showAirlock = false,
-  airlocked = false,
   onToggleAirlock,
-  isAirlockUpdating = false,
   compact = false,
   mobileBar = false,
 }) {
+  const {
+    download: showDownload = false,
+    delete: showDelete = false,
+    archive: showArchive = false,
+    protection: showProtection = false,
+    retry: showRetry = false,
+    airlock: showAirlock = false,
+  } = actionVisibility ?? {};
+  const {
+    deleting: isDeleting = false,
+    archiving: isArchiving = false,
+    retrying: isRetrying = false,
+    protectionUpdating: isProtectionUpdating = false,
+    airlockUpdating: isAirlockUpdating = false,
+  } = actionProgress ?? {};
+  const { protected: isProtected = false, airlocked = false } = itemFlags ?? {};
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [showTagAssignment, setShowTagAssignment] = useState(false);
@@ -181,24 +187,27 @@ export default function MoreOptionsDropdown({
       activeType={activeType}
       t={t}
       actionT={actionT}
-      isExporting={isExporting}
-      isReannouncing={isReannouncing}
-      isRetrying={isRetrying}
-      isDeleting={isDeleting}
-      showDownload={showDownload}
-      showRetry={showRetry}
-      showDelete={showDelete}
-      showArchive={showArchive}
-      showAirlock={showAirlock}
-      showProtection={showProtection}
-      isProtected={isProtected}
-      airlocked={airlocked}
+      actionProgress={{
+        exporting: isExporting,
+        reannouncing: isReannouncing,
+        retrying: isRetrying,
+        deleting: isDeleting,
+        archiving: isArchiving,
+        protectionUpdating: isProtectionUpdating,
+        airlockUpdating: isAirlockUpdating,
+      }}
+      actionVisibility={{
+        download: showDownload,
+        retry: showRetry,
+        delete: showDelete,
+        archive: showArchive,
+        airlock: showAirlock,
+        protection: showProtection,
+      }}
+      itemFlags={{ protected: isProtected, airlocked }}
       onToggleProtection={onToggleProtection ? closeAndRun(onToggleProtection) : undefined}
-      isProtectionUpdating={isProtectionUpdating}
       onArchive={onArchive ? closeAndRun(onArchive) : undefined}
-      isArchiving={isArchiving}
       onToggleAirlock={onToggleAirlock ? closeAndRun(onToggleAirlock) : undefined}
-      isAirlockUpdating={isAirlockUpdating}
       onDownload={onDownload ? closeAndRun(onDownload) : undefined}
       onDelete={onDelete ? closeAndRun(onDelete) : undefined}
       onCopyId={wrapClose(handleCopyId(setIsMenuOpen))}

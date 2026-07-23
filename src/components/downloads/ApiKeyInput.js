@@ -31,11 +31,12 @@ export default function ApiKeyInput({
   const ensureDbTimeoutRef = useRef(null);
 
   const committedValue = value ?? '';
+  const [prevCommittedValue, setPrevCommittedValue] = useState(committedValue);
 
-  // When parent commits a new value, show it (clear draft).
-  useEffect(() => {
+  if (committedValue !== prevCommittedValue) {
+    setPrevCommittedValue(committedValue);
     setDraft(undefined);
-  }, [committedValue]);
+  }
 
   useEffect(() => {
     if (!onboardingAuxActive) return;

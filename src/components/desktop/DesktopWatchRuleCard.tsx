@@ -6,18 +6,18 @@ import DesktopWatchRuleCardHeader from './DesktopWatchRuleCardHeader';
 import DesktopWatchRuleCardExpandedPanel from './DesktopWatchRuleCardExpandedPanel';
 import DesktopWatchRuleCardDialogs from './DesktopWatchRuleCardDialogs';
 
+type WatchRuleDialog = 'scan' | 'changeFolder' | null;
+
 type DesktopWatchRuleCardProps = {
   rule: WatchRule;
   ruleStatus: WatchRuleStatus | null;
   ruleIndex: number;
   expanded: boolean;
-  canRemove: boolean;
   hasCredential: boolean;
   saving: boolean;
   pickingWatchFolder: boolean;
   pickingMoveFolder: boolean;
-  showScanConfirm: boolean;
-  showChangeFolderConfirm: boolean;
+  activeDialog: WatchRuleDialog;
   t: (key: string, values?: Record<string, string | number>) => string;
   onToggleExpanded: () => void;
   onUpdateRule: (partial: Partial<WatchRule>) => void | Promise<void>;
@@ -36,13 +36,11 @@ export default function DesktopWatchRuleCard({
   ruleStatus,
   ruleIndex,
   expanded,
-  canRemove,
   hasCredential,
   saving,
   pickingWatchFolder,
   pickingMoveFolder,
-  showScanConfirm,
-  showChangeFolderConfirm,
+  activeDialog,
   t,
   onToggleExpanded,
   onUpdateRule,
@@ -68,7 +66,6 @@ export default function DesktopWatchRuleCard({
         ruleStatus={ruleStatus}
         ruleIndex={ruleIndex}
         expanded={expanded}
-        canRemove={canRemove}
         hasCredential={hasCredential}
         saving={saving}
         t={t}
@@ -97,8 +94,7 @@ export default function DesktopWatchRuleCard({
 
       <DesktopWatchRuleCardDialogs
         rule={rule}
-        showScanConfirm={showScanConfirm}
-        showChangeFolderConfirm={showChangeFolderConfirm}
+        activeDialog={activeDialog}
         t={t}
         onCloseScanConfirm={onCloseScanConfirm}
         onConfirmEnableWithScan={onConfirmEnableWithScan}
