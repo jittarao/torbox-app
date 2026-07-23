@@ -20,6 +20,10 @@ export default function SearchBarAdvancedFilters({
   clearFilters,
 }) {
   const t = useTranslations('SearchBar');
+  const seasonInputId = useId();
+  const episodeInputId = useId();
+  const yearInputId = useId();
+  const qualityDropdownId = useId();
   const minSizeInputId = useId();
   const minSeedersInputId = useId();
 
@@ -37,10 +41,14 @@ export default function SearchBarAdvancedFilters({
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-border dark:border-border-dark">
       <div>
-        <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+        <label
+          htmlFor={seasonInputId}
+          className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+        >
           {t('season') || 'Season'}
         </label>
         <input
+          id={seasonInputId}
           type="number"
           min="0"
           value={seasonFilter}
@@ -51,10 +59,14 @@ export default function SearchBarAdvancedFilters({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+        <label
+          htmlFor={episodeInputId}
+          className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+        >
           {t('episode') || 'Episode'}
         </label>
         <input
+          id={episodeInputId}
           type="number"
           min="0"
           value={episodeFilter}
@@ -65,10 +77,14 @@ export default function SearchBarAdvancedFilters({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+        <label
+          htmlFor={yearInputId}
+          className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+        >
           {t('year') || 'Year'}
         </label>
         <input
+          id={yearInputId}
           type="number"
           min="1900"
           max="2030"
@@ -80,10 +96,18 @@ export default function SearchBarAdvancedFilters({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1">
+        <label
+          htmlFor={qualityDropdownId}
+          className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-1"
+        >
           {t('quality') || 'Quality'}
         </label>
-        <Dropdown options={QUALITY_OPTIONS} value={qualityFilter} onChange={setQualityFilter} />
+        <Dropdown
+          id={qualityDropdownId}
+          options={QUALITY_OPTIONS}
+          value={qualityFilter}
+          onChange={setQualityFilter}
+        />
       </div>
 
       <div>

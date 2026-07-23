@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import adminApiClient from '@/utils/adminApiClient';
 import { useShallow } from 'zustand/react/shallow';
 import useAdminStore from '@/store/adminStore';
@@ -8,12 +9,20 @@ import { AdminBadge, AdminCard, AdminLoading, AdminStatRow } from './AdminUi';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useAppAlert } from '@/hooks/useAppAlert';
 
+function formatAdminDateTime(iso, locale) {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString(locale, { timeZone: 'UTC' });
+}
+
 export default function UserDetail({ user }) {
   const [databaseInfo, setDatabaseInfo] = useState(null);
   const [automationInfo, setAutomationInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const { confirm, ConfirmDialog } = useConfirmDialog({ cancelLabel: 'Cancel' });
   const { alert, AppAlert } = useAppAlert();
+  const locale = useLocale();
   const { updateUserStatus, updateUserUploadTier } = useAdminStore(
     useShallow((s) => ({
       updateUserStatus: s.updateUserStatus,
@@ -22,24 +31,32 @@ export default function UserDetail({ user }) {
   );
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadDetails = async () => {
       try {
         const [dbResult, autoResult] = await Promise.all([
           adminApiClient.getUserDatabase(user.auth_id),
           adminApiClient.getUserAutomation(user.auth_id),
         ]);
+        if (cancelled) return;
         setDatabaseInfo(dbResult.database);
         setAutomationInfo(autoResult);
       } catch (error) {
+        if (cancelled) return;
         console.error('Error loading user details:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     if (user) {
       loadDetails();
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const handleStatusChange = async () => {
@@ -98,8 +115,8 @@ export default function UserDetail({ user }) {
             </AdminBadge>
           </div>
           <AdminStatRow label="Active rules" value={user.has_active_rules ? 'Yes' : 'No'} />
-          <AdminStatRow label="Created" value={new Date(user.created_at).toLocaleString()} />
-          <AdminStatRow label="Updated" value={new Date(user.updated_at).toLocaleString()} />
+          <AdminStatRow label="Created" value={formatAdminDateTime(user.created_at, locale)} />
+          <AdminStatRow label="Updated" value={formatAdminDateTime(user.updated_at, locale)} />
         </div>
       </AdminCard>
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { readJsonFromResponse } from '@/utils/fetchResponse';
-import { resetLoadingUnlessAborted } from '@/utils/asyncLoadingReset';
 
 import { useState, useEffect } from 'react';
 import {
@@ -25,10 +24,14 @@ export function useBandwidthUsage(apiKey, planId) {
   const level = loading ? null : getUsageLevel(percent);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!apiKey || apiKey.length < 20 || planId == null || limitBytes == null) {
       setUsedBytes(0);
       setLoading(false);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     const abortController = new AbortController();
@@ -48,7 +51,7 @@ export function useBandwidthUsage(apiKey, planId) {
 
         const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-        if (abortController.signal.aborted) return;
+        if (cancelled) return;
 
         if (!responseOk || !data.success) {
           setUsedBytes(0);
@@ -57,15 +60,18 @@ export function useBandwidthUsage(apiKey, planId) {
 
         setUsedBytes(sumBandwidthBytes(data.data?.bandwidth));
       } catch {
-        if (!abortController.signal.aborted) setUsedBytes(0);
+        if (!cancelled) setUsedBytes(0);
       } finally {
-        resetLoadingUnlessAborted(abortController.signal, setLoading);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchUsage();
 
-    return () => abortController.abort();
+    return () => {
+      cancelled = true;
+      abortController.abort();
+    };
   }, [apiKey, planId, limitBytes]);
 
   return { level, usedBytes, limitBytes, percent, loading };
