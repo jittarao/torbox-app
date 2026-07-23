@@ -175,9 +175,9 @@ export default function ReferralDropdown({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+            <span className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
               {t('referralCode')}
-            </label>
+            </span>
             <div className="flex items-center gap-2 rounded-lg border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark px-3 py-2">
               <code className="flex-1 min-w-0 text-xs font-mono text-zinc-800 dark:text-zinc-200 truncate">
                 {truncateCode(actions.referralCode)}

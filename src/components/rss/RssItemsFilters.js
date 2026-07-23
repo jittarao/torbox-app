@@ -18,6 +18,7 @@ export default function RssItemsFilters({
   const filterTypeId = useId();
   const sortById = useId();
   const sortOrderId = useId();
+  const searchInputId = useId();
 
   return (
     <>
@@ -47,10 +48,14 @@ export default function RssItemsFilters({
         <div className="bg-surface-alt dark:bg-surface-alt-dark p-4 rounded-lg border border-border dark:border-border-dark">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2">
+              <label
+                htmlFor={searchInputId}
+                className="block text-sm font-medium text-primary-text dark:text-primary-text-dark mb-2"
+              >
                 {t('search')}
               </label>
               <input
+                id={searchInputId}
                 type="text"
                 value={searchTerm}
                 onChange={(e) => onSearchTermChange(e.target.value)}
