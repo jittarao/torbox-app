@@ -259,7 +259,7 @@ export const useDownloadsSelectionStore = create((set, get) => ({
 }));
 
 /** @param {string|number} selectionId */
-export function selectIsItemSelected(selectionId) {
+function selectIsItemSelected(selectionId) {
   return (state) => state.selectedItems.items.has(selectionId);
 }
 

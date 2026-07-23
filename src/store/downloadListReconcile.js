@@ -41,12 +41,14 @@ async function runReconcileFetch(assetTypes) {
   const { apiKey, viewType } = syncContext;
   if (!apiKey || !viewType) return;
 
-  for (const assetType of assetTypes) {
-    await fetchDownloadType(apiKey, assetType, viewType, {
-      skipLoading: true,
-      forMutation: true,
-    });
-  }
+  await Promise.all(
+    assetTypes.map((assetType) =>
+      fetchDownloadType(apiKey, assetType, viewType, {
+        skipLoading: true,
+        forMutation: true,
+      })
+    )
+  );
 }
 
 /**

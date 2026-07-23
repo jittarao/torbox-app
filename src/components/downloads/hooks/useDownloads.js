@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FETCH_TIMEOUT_MS, NON_RETRYABLE_ERRORS } from '@/components/constants';
+import { FETCH_TIMEOUT_MS } from '@/components/constants';
+import { isNonRetryableResponse } from '@/config/errors';
 import { retryFetch } from '@/utils/retryFetch';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
 import { buildSelectionIdMap } from '@/utils/downloadSelectionId';
@@ -289,12 +290,7 @@ export function useDownloads(
         maxRetries: 1,
         timeout: FETCH_TIMEOUT_MS,
         headers: { 'x-api-key': apiKey },
-        permanent: [
-          (data) =>
-            Object.values(NON_RETRYABLE_ERRORS).some(
-              (err) => data.error?.includes(err) || data.detail?.includes(err)
-            ),
-        ],
+        permanent: [(data) => isNonRetryableResponse(data)],
       });
 
       if (result.success) {
@@ -417,7 +413,7 @@ export function useDownloads(
               }
             }
           } else {
-            window.open(result.data.url, '_blank');
+            window.open(result.data.url, '_blank', 'noopener');
           }
 
           // Fetch updated history from backend after single download completes

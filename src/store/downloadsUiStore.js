@@ -67,6 +67,6 @@ export const useDownloadsUiStore = create((set, get) => ({
 }));
 
 /** @param {string|number} itemId */
-export function selectIsRowExpanded(itemId) {
+function selectIsRowExpanded(itemId) {
   return (state) => Boolean(state.expandedById[itemId]);
 }

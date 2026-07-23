@@ -246,7 +246,7 @@ export default function VideoPlayerModal({
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
@@ -385,6 +385,11 @@ export default function VideoPlayerModal({
     }
   }, []);
 
+  const handleInfoClose = useCallback(() => {
+    setShowInfo(false);
+    setShowInfoSheet(false);
+  }, []);
+
   useVideoPlayerKeyboard({
     isOpen,
     isPlaying,
@@ -394,10 +399,7 @@ export default function VideoPlayerModal({
     onPlayPause: handlePlayPause,
     onFullscreen: toggleFullscreen,
     onMuteToggle: handleMuteToggle,
-    onInfoClose: () => {
-      setShowInfo(false);
-      setShowInfoSheet(false);
-    },
+    onInfoClose: handleInfoClose,
     onVolumeChange: handleVolumeChange,
   });
 

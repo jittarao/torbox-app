@@ -476,7 +476,7 @@ export function getSourceCombineMode(filters) {
 /**
  * Count downloads per tag ID from TBM-enriched download items.
  */
-export function countDownloadsPerTag(enrichedDownloads) {
+function countDownloadsPerTag(enrichedDownloads) {
   const counts = {};
   if (!enrichedDownloads?.length) return counts;
 
@@ -528,7 +528,7 @@ export function countDownloadsMatchingFilters(
  * Count downloads matching each saved view (uses TBM-enriched items for filters).
  * Uses the same filters as apply (including view asset_type). Skips views scoped to another tab.
  */
-export function countDownloadsPerView(views, enrichedDownloads, activeAssetType = 'all') {
+function countDownloadsPerView(views, enrichedDownloads, activeAssetType = 'all') {
   const counts = {};
   if (!views?.length) return counts;
 

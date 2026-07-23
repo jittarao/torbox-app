@@ -1,4 +1,4 @@
-import { NON_RETRYABLE_ERRORS } from '@/config/errors';
+import { isNonRetryableResponse } from '@/config/errors';
 import { retryFetch } from '@/utils/retryFetch';
 import { getEndpointForAssetType } from '@/utils/apiEndpoints';
 
@@ -17,9 +17,7 @@ export function resolveAssetTypeForItem(item, fallbackAssetType = 'torrents') {
 }
 
 function isPermanentError(data) {
-  return Object.values(NON_RETRYABLE_ERRORS).some(
-    (err) => data.error?.includes(err) || data.detail?.includes(err)
-  );
+  return isNonRetryableResponse(data);
 }
 
 /** Control queued items (start, etc.) without subscribing to uploader store. */

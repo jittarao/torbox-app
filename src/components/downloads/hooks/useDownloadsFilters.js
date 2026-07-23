@@ -111,7 +111,10 @@ export function useDownloadsFilters({
 
   const activeViews = useMemo(() => {
     if (!activeViewIds.length || !views?.length) return [];
-    return activeViewIds.map((id) => views.find((v) => sameViewId(v.id, id))).filter(Boolean);
+    return activeViewIds.flatMap((id) => {
+      const view = views.find((v) => sameViewId(v.id, id));
+      return view ? [view] : [];
+    });
   }, [activeViewIds, views]);
 
   const orViewFilters = activeViews.length > 1 ? activeViews : null;
@@ -239,9 +242,10 @@ export function useDownloadsFilters({
       viewIds,
       { fromUrlSync = false, reapplyPreset = false, combineMode = COMBINE_MODES.ANY } = {}
     ) => {
-      const resolved = viewIds
-        .map((id) => viewsRef.current.find((v) => sameViewId(v.id, id)))
-        .filter(Boolean);
+      const resolved = viewIds.flatMap((id) => {
+        const view = viewsRef.current.find((v) => sameViewId(v.id, id));
+        return view ? [view] : [];
+      });
       if (resolved.length === 0) return;
 
       const first = resolved[0];
@@ -308,9 +312,10 @@ export function useDownloadsFilters({
     if (suppressUrlViewSyncRef.current) return;
     if (sameViewIdList(lastSyncedUrlViewIdsRef.current, urlViewIds)) return;
 
-    const resolved = urlViewIds
-      .map((id) => viewsRef.current.find((v) => sameViewId(v.id, id)))
-      .filter(Boolean);
+    const resolved = urlViewIds.flatMap((id) => {
+      const view = viewsRef.current.find((v) => sameViewId(v.id, id));
+      return view ? [view] : [];
+    });
     if (resolved.length === 0) return;
 
     lastSyncedUrlViewIdsRef.current = urlViewIds;

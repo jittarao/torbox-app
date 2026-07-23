@@ -255,7 +255,10 @@ export function useDownloadsPageState(apiKey) {
 
   const expandAllFiles = useCallback(() => {
     searchExpandedItemIdsRef.current = new Set();
-    const itemIds = viewItems.filter((item) => getItemFileCount(item) > 0).map((item) => item.id);
+    const itemIds = viewItems.reduce((ids, item) => {
+      if (getItemFileCount(item) > 0) ids.push(item.id);
+      return ids;
+    }, []);
     expandIds(itemIds);
   }, [viewItems, expandIds, searchExpandedItemIdsRef]);
 

@@ -98,7 +98,7 @@ const LinkHistory = ({ apiKey }) => {
   }, []);
 
   const handleOpenLink = useCallback((url) => {
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener');
   }, []);
 
   const handleBulkDeleteClick = useCallback(() => {
