@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBackendMode } from '@/hooks/useBackendMode';
 import { mergeListWithStructuralSharing } from '@/utils/listStructuralMerge';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 function mergePaginationTotals(prev, next) {
   if (prev.total === next.total && prev.totalPages === next.totalPages) {
@@ -116,9 +117,9 @@ export function useLinkHistory(apiKey, pagination, setPagination, search = '') {
         return;
       }
 
-      const data = await response.json();
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-      if (!response.ok) {
+      if (!responseOk) {
         throw new Error(data.error || 'Failed to fetch link history');
       }
 

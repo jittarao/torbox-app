@@ -1,5 +1,7 @@
 'use client';
 
+import { readJsonFromResponse } from '@/utils/fetchResponse';
+
 import { useState, useCallback, memo } from 'react';
 import { useDownloadsActions } from './DownloadsActionsContext';
 import { useDownloadsContext } from './DownloadsContext';
@@ -205,9 +207,9 @@ function ItemActions({
           airlocked: nextAirlocked,
         }),
       });
-      const data = await response.json().catch(() => ({}));
+      const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-      if (!response.ok || data.success === false) {
+      if (!responseOk || data.success === false) {
         if (data.error === AIRLOCK_LIMIT_REACHED_ERROR) {
           patchItem(uiAssetType, item.id, { airlocked: !nextAirlocked });
           setToast({

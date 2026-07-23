@@ -277,7 +277,10 @@ export function useArchive(apiKey, pagination, setPagination, search = '') {
   };
 
   const clearArchive = async () => {
-    const ids = archivedDownloads.map((item) => item.archiveId).filter(Boolean);
+    const ids = archivedDownloads.flatMap((item) => {
+      const archiveId = item.archiveId;
+      return archiveId ? [archiveId] : [];
+    });
     if (ids.length === 0) return [];
 
     const response = await fetch('/api/archived-downloads/bulk', {

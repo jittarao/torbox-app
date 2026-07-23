@@ -1,5 +1,7 @@
 'use client';
 
+import { readJsonFromResponse } from '@/utils/fetchResponse';
+
 import { useState, useEffect } from 'react';
 import {
   getPlanFloorBytes,
@@ -43,11 +45,11 @@ export function useBandwidthUsage(apiKey, planId) {
           signal: abortController.signal,
         });
 
-        const data = await response.json();
+        const { ok: responseOk, data } = await readJsonFromResponse(response);
 
         if (abortController.signal.aborted) return;
 
-        if (!response.ok || !data.success) {
+        if (!responseOk || !data.success) {
           setUsedBytes(0);
           return;
         }
