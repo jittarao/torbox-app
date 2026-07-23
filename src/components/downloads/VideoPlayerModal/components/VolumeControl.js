@@ -67,7 +67,7 @@ export default function VolumeControl({
           }
         }}
         className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-          backdrop-blur-sm text-white transition-all duration-200
+          backdrop-blur-sm text-white transition-colors transition-transform duration-200
           hover:scale-110 active:scale-95"
         aria-label="Volume"
       >
@@ -100,7 +100,7 @@ export default function VolumeControl({
           />
           <div className="relative h-full w-2 bg-white/20 rounded-full mx-auto pointer-events-none">
             <div
-              className="absolute bottom-0 w-full bg-accent dark:bg-accent-dark rounded-full transition-all"
+              className="absolute bottom-0 w-full bg-accent dark:bg-accent-dark rounded-full transition-[height]"
               style={{ height: `${(isMuted ? 0 : volume) * 100}%` }}
             />
             <div

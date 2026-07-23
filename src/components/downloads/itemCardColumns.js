@@ -146,7 +146,7 @@ export function ItemCardDownloadProgress({ item, commonT }) {
     <div className="flex flex-col gap-1 min-w-0">
       <div className="w-full bg-progress-track dark:bg-progress-track-dark rounded-full h-2">
         <div
-          className="bg-accent dark:bg-accent-dark h-2 rounded-full transition-all duration-300"
+          className="bg-accent dark:bg-accent-dark h-2 rounded-full transition-[width] duration-300"
           style={{ width: `${Math.min(100, progress)}%` }}
         />
       </div>

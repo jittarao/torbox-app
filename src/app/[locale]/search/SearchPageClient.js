@@ -8,27 +8,27 @@ import { hasDownloadAccess } from '@/utils/userProfile';
 import { useSearchStore } from '@/store/searchStore';
 import { useSession } from '@/components/shared/hooks/useSession';
 
+function initEnsureUserDb(key) {
+  if (key) {
+    import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
+      ensureUserDb(key)
+        .then((result) => {
+          if (result.success && result.wasCreated) {
+            console.log('User database created for existing API key');
+          }
+        })
+        .catch((error) => {
+          console.error('Error ensuring user database on load:', error);
+        });
+    });
+  }
+}
+
 export default function SearchPageClient() {
   const { apiKey, hydrated, permissions, setApiKey } = useSession();
 
   const searchType = useSearchStore((state) => state.searchType);
   const setSearchType = useSearchStore((state) => state.setSearchType);
-
-  const initEnsureUserDb = (key) => {
-    if (key) {
-      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(key)
-          .then((result) => {
-            if (result.success && result.wasCreated) {
-              console.log('User database created for existing API key');
-            }
-          })
-          .catch((error) => {
-            console.error('Error ensuring user database on load:', error);
-          });
-      });
-    }
-  };
 
   useEffect(() => {
     initEnsureUserDb(apiKey);

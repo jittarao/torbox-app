@@ -10,6 +10,12 @@ import { compactToolbarClass } from '@/components/shared/compactToolbar';
 import RssItemsFilters from './RssItemsFilters';
 import RssItemsList from './RssItemsList';
 
+function getItemType(link) {
+  if (link?.includes('magnet:')) return 'torrent';
+  if (link?.includes('.nzb')) return 'usenet';
+  return 'webdl';
+}
+
 export default function RssItemsManager({ apiKey, setToast }) {
   const t = useTranslations('RssItems');
   const { feeds, getFeedItems } = useRssFeeds(apiKey);
@@ -168,12 +174,6 @@ export default function RssItemsManager({ apiKey, setToast }) {
     } catch {
       return t('unknown');
     }
-  };
-
-  const getItemType = (link) => {
-    if (link?.includes('magnet:')) return 'torrent';
-    if (link?.includes('.nzb')) return 'usenet';
-    return 'webdl';
   };
 
   if (componentError) {

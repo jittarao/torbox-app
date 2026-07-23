@@ -188,7 +188,7 @@ export default function OpenInModal({
                     type="button"
                     onClick={() => onSelect(id)}
                     disabled={isDisabled}
-                    className="group flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 text-left transition-all hover:border-accent/50 hover:bg-surface-alt hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:border-border-dark dark:bg-surface-dark dark:hover:border-accent-dark/50 dark:hover:bg-surface-alt-dark"
+                    className="group flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 text-left transition-colors transition-shadow hover:border-accent/50 hover:bg-surface-alt hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:border-border-dark dark:bg-surface-dark dark:hover:border-accent-dark/50 dark:hover:bg-surface-alt-dark"
                   >
                     <span
                       className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${iconWrapClass}`}

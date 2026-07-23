@@ -17,6 +17,11 @@ import {
 } from '@/utils/referralDismissal';
 import { REFERRAL_HELP_URL } from '@/components/constants';
 
+function truncateCode(code) {
+  if (code.length <= 20) return code;
+  return `${code.slice(0, 8)}…${code.slice(-8)}`;
+}
+
 export default function ReferralDropdown({
   apiKey,
   onToast,
@@ -48,11 +53,6 @@ export default function ReferralDropdown({
     clearReferralDismissal(REFERRAL_CALLOUT_DISMISS_KEY);
     clearReferralDismissal(REFERRAL_PANEL_DISMISS_KEY);
     refresh();
-  };
-
-  const truncateCode = (code) => {
-    if (code.length <= 20) return code;
-    return `${code.slice(0, 8)}…${code.slice(-8)}`;
   };
 
   const sidebarVariant = variant === 'sidebar' || variant === 'sidebar-subtle';

@@ -5,6 +5,18 @@ import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { selectStatusCountsFromIds } from '@/store/downloadsDerivedSelectors';
 import { selectViewOrderedIds } from '@/store/torboxDownloadsSelectors';
 
+function isStatusSelected(status, statusFilter) {
+  if (statusFilter === 'all') return false;
+
+  const targetValue = STATUS_OPTIONS.find((opt) => opt.label === status)?.value;
+  if (!targetValue) return false;
+
+  const stringifiedTarget = JSON.stringify(targetValue);
+  return Array.isArray(statusFilter)
+    ? statusFilter.includes(stringifiedTarget)
+    : statusFilter === stringifiedTarget;
+}
+
 /**
  * Status tab counts from the current view (unfiltered).
  * Subscribes to store entities/order only — derives view ids in useMemo so getSnapshot stays stable.
@@ -68,18 +80,6 @@ export function useDownloadsStatusCounts(activeType) {
       return acc;
     }, []);
   }, [counts, total]);
-
-  const isStatusSelected = (status, statusFilter) => {
-    if (statusFilter === 'all') return false;
-
-    const targetValue = STATUS_OPTIONS.find((opt) => opt.label === status)?.value;
-    if (!targetValue) return false;
-
-    const stringifiedTarget = JSON.stringify(targetValue);
-    return Array.isArray(statusFilter)
-      ? statusFilter.includes(stringifiedTarget)
-      : statusFilter === stringifiedTarget;
-  };
 
   return {
     statusCounts: counts,
