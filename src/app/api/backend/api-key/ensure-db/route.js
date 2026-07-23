@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import http from 'http';
 
 import { isBackendDisabled } from '@/utils/backendCheck';
-import { backendProxyHeaders } from '@/utils/backendRequest';
+import { backendHttpRequest, backendProxyHeaders } from '@/utils/backendRequest';
 import { sanitizeError } from '@/utils/sanitizeError';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -27,39 +26,14 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const url = new URL(`${BACKEND_URL}/api/backend/api-key/ensure-db`);
 
-    const response = await new Promise((resolve, reject) => {
-      const postData = JSON.stringify({ ...body, apiKey });
-      const req = http.request(
-        url,
-        {
-          method: 'POST',
-          headers: backendProxyHeaders(apiKey, {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(postData),
-          }),
-          timeout: 10000,
-        },
-        (res) => {
-          let data = '';
-          res.on('data', (chunk) => (data += chunk));
-          res.on('end', () => {
-            try {
-              const jsonData = JSON.parse(data);
-              resolve({ ok: res.statusCode === 200, data: jsonData });
-            } catch (parseError) {
-              reject(parseError);
-            }
-          });
-        }
-      );
-
-      req.on('error', reject);
-      req.setTimeout(10000, () => {
-        req.destroy();
-        reject(new Error('Request timeout'));
-      });
-      req.write(postData);
-      req.end();
+    const postData = JSON.stringify({ ...body, apiKey });
+    const response = await backendHttpRequest(url, {
+      method: 'POST',
+      headers: backendProxyHeaders(apiKey, {
+        'Content-Type': 'application/json',
+      }),
+      body: postData,
+      timeoutMs: 10000,
     });
 
     if (response.ok) {

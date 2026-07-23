@@ -2,21 +2,7 @@
 
 ## `react-doctor/nextjs-no-side-effect-in-get-handler`
 
-`req.destroy()` on the `http.ClientRequest` variable (not the incoming Next.js `Request`) is standard Node.js timeout cleanup — not a CSRF-vulnerable side effect.
-
-**Pattern:** `const req = http.get(...)` / `req.setTimeout(...)` then `req.destroy()` inside the timeout callback. The `req` is always the outgoing `http.ClientRequest`, not the incoming request parameter.
-
-- `src/app/api/backend/status/route.js`
-- `src/app/api/backend/api-key/status/route.js`
-- `src/app/api/admin/verify/route.js`
-- `src/app/api/automation/rules/route.js`
-- `src/app/api/automation/rules/[id]/logs/route.js`
-- `src/app/api/custom-views/route.js`
-- `src/app/api/custom-views/[id]/route.js`
-- `src/app/api/tags/route.js`
-- `src/app/api/tags/[id]/route.js`
-- `src/app/api/downloads/tags/route.js`
-- `src/app/api/archived-downloads/route.js`
+**Resolved:** Outbound HTTP client timeout cleanup (`req.destroy()` on `http.ClientRequest`) was moved into `src/utils/backendRequest.js` (`backendHttpGet` / `backendHttpRequest`). The rule falsely flags `.destroy()` inside GET route handlers even though it tears down the outgoing client socket, not server state on the incoming request.
 
 ## `react-doctor/no-mutable-in-deps`
 

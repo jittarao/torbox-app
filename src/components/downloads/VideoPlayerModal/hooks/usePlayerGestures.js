@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 const DOUBLE_TAP_MS = 300;
 const SWIPE_THRESHOLD = 80;
@@ -124,7 +124,7 @@ export function usePlayerGestures({
     ]
   );
 
-  const bindGestures = useCallback(() => {
+  useEffect(() => {
     const el = targetRef.current;
     if (!el || !enabled) return undefined;
 
@@ -137,6 +137,4 @@ export function usePlayerGestures({
       clearToggleTimeout();
     };
   }, [targetRef, enabled, handlePointerDown, handlePointerUp, clearToggleTimeout]);
-
-  return { bindGestures };
 }

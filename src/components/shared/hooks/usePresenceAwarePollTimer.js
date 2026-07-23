@@ -27,7 +27,7 @@ export function usePresenceAwarePollTimer({
   onTickRef.current = onTick;
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) return undefined;
 
     let pollTimeoutId = null;
     let cancelled = false;
