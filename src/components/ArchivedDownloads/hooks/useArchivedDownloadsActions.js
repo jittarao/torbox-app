@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 export function useArchivedDownloadsActions(
   apiKey,
@@ -48,9 +49,9 @@ export function useArchivedDownloadsActions(
           body: JSON.stringify({ ids }),
         });
 
-        const data = await response.json();
+        const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to delete archived downloads');
         }
 

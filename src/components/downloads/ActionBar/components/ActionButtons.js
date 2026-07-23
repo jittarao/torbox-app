@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { phEvent } from '@/utils/sa';
 import { useTranslations } from 'next-intl';
 import {
@@ -103,9 +104,10 @@ export default function ActionButtons({
     if (activeType !== 'torrents' && activeType !== 'all') return [];
 
     const selectionIds = Array.from(getSelectedItems().items || []);
-    const resolved = selectionIds
-      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
-      .filter(Boolean);
+    const resolved = selectionIds.flatMap((selectionId) => {
+      const item = findItemBySelectionId(allItems, selectionId);
+      return item ? [item] : [];
+    });
 
     if (resolved.length !== selectionIds.length) return [];
 
@@ -120,9 +122,10 @@ export default function ActionButtons({
   const selectedResolvedItems = useMemo(() => {
     if (hasSelectedFiles || selectedItemCount === 0) return [];
     const selectionIds = Array.from(getSelectedItems().items || []);
-    return selectionIds
-      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
-      .filter(Boolean);
+    return selectionIds.flatMap((selectionId) => {
+      const item = findItemBySelectionId(allItems, selectionId);
+      return item ? [item] : [];
+    });
   }, [allItems, hasSelectedFiles, selectedItemCount]);
 
   const selectedUnprotectedItems = useMemo(
@@ -146,9 +149,10 @@ export default function ActionButtons({
     if (activeType !== 'torrents' && activeType !== 'all') return [];
 
     const selectionIds = Array.from(getSelectedItems().items || []);
-    const resolved = selectionIds
-      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
-      .filter(Boolean);
+    const resolved = selectionIds.flatMap((selectionId) => {
+      const item = findItemBySelectionId(allItems, selectionId);
+      return item ? [item] : [];
+    });
 
     if (resolved.length !== selectionIds.length) return [];
 
@@ -165,9 +169,10 @@ export default function ActionButtons({
     if (activeType !== 'torrents' && activeType !== 'webdl' && activeType !== 'all') return [];
 
     const selectionIds = Array.from(getSelectedItems().items || []);
-    const resolved = selectionIds
-      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
-      .filter(Boolean);
+    const resolved = selectionIds.flatMap((selectionId) => {
+      const item = findItemBySelectionId(allItems, selectionId);
+      return item ? [item] : [];
+    });
 
     if (resolved.length !== selectionIds.length) return [];
 
@@ -188,9 +193,10 @@ export default function ActionButtons({
       return [];
 
     const selectionIds = Array.from(getSelectedItems().items || []);
-    const resolved = selectionIds
-      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
-      .filter(Boolean);
+    const resolved = selectionIds.flatMap((selectionId) => {
+      const item = findItemBySelectionId(allItems, selectionId);
+      return item ? [item] : [];
+    });
 
     if (resolved.length !== selectionIds.length) return [];
     if (resolved.some((item) => isQueuedItem(item))) return [];
@@ -215,9 +221,10 @@ export default function ActionButtons({
     if (activeType !== 'torrents' && activeType !== 'all') return [];
 
     const selectionIds = Array.from(getSelectedItems().items || []);
-    const resolved = selectionIds
-      .map((selectionId) => findItemBySelectionId(allItems, selectionId))
-      .filter(Boolean);
+    const resolved = selectionIds.flatMap((selectionId) => {
+      const item = findItemBySelectionId(allItems, selectionId);
+      return item ? [item] : [];
+    });
 
     if (resolved.length !== selectionIds.length) return [];
 
@@ -315,8 +322,10 @@ export default function ActionButtons({
     let failCount = 0;
 
     try {
-      for (const item of selectedRetryable) {
-        const result = await retryDownload(apiKey, item, activeType);
+      const results = await Promise.all(
+        selectedRetryable.map((item) => retryDownload(apiKey, item, activeType))
+      );
+      for (const result of results) {
         if (result.success) {
           successCount++;
         } else {
@@ -404,8 +413,13 @@ export default function ActionButtons({
             airlocked: nextAirlocked,
           }),
         });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || data.success === false) {
+        const {
+          ok: responseOk,
+          status: responseStatus,
+          data,
+        } = await readJsonFromResponse(response);
+
+        if (!responseOk || data.success === false) {
           const error = new Error(data.detail || data.error || 'Airlock update failed');
           error.code = data.error;
           throw error;
@@ -487,9 +501,17 @@ export default function ActionButtons({
     const removedByType = { torrents: [], usenet: [], webdl: [] };
 
     try {
-      for (const item of selectedQueuedTorrents) {
-        const assetType = resolveItemAssetType(item, activeType);
-        const result = await controlQueuedItem(apiKey, item.id, 'start', assetType);
+      const results = await Promise.all(
+        selectedQueuedTorrents.map((item) => {
+          const assetType = resolveItemAssetType(item, activeType);
+          return controlQueuedItem(apiKey, item.id, 'start', assetType).then((result) => ({
+            item,
+            assetType,
+            result,
+          }));
+        })
+      );
+      for (const { item, assetType, result } of results) {
         if (result?.success) {
           successCount++;
           removedByType[assetType].push(item.id);
@@ -936,9 +958,10 @@ export default function ActionButtons({
         <TagAssignmentModal
           isOpen={showTagAssignment}
           onClose={() => setShowTagAssignment(false)}
-          downloadIds={Array.from(getSelectedItems().items || [])
-            .map((selectionId) => findItemBySelectionId(allItems, selectionId)?.id?.toString())
-            .filter(Boolean)}
+          downloadIds={Array.from(getSelectedItems().items || []).flatMap((selectionId) => {
+            const id = findItemBySelectionId(allItems, selectionId)?.id?.toString();
+            return id ? [id] : [];
+          })}
           apiKey={apiKey}
           onSuccess={() => {
             setSelectedItems({ items: new Set(), files: new Map() });

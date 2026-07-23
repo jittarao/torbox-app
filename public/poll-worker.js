@@ -101,6 +101,10 @@ async function startQueuedTorrent(id) {
     }),
   });
 
+  if (!response.ok) {
+    return false;
+  }
+
   let data = {};
   try {
     data = await response.json();
@@ -108,7 +112,7 @@ async function startQueuedTorrent(id) {
     // ignore parse errors
   }
 
-  return response.ok && data.success === true;
+  return data.success === true;
 }
 
 async function runAutoStartCycle() {

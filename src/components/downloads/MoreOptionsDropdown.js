@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { createPortal } from 'react-dom';
 import {
   Archive,
@@ -508,9 +509,9 @@ export default function MoreOptionsDropdown({
           'x-api-key': apiKey,
         },
       });
-      const data = await response.json().catch(() => null);
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-      if (data?.success && data.data) {
+      if (responseOk && data?.success && data.data) {
         await copyToClipboard(data.data, t('toast.fullMagnetCopied'));
         setToast({
           message: t('toast.exportMagnetSuccess'),
@@ -610,8 +611,8 @@ export default function MoreOptionsDropdown({
         }),
       });
 
-      const data = await response.json();
-      if (data.success) {
+      const { ok: responseOk, data } = await readJsonFromResponse(response);
+      if (responseOk && data.success) {
         setToast({
           message: t('toast.reannounceSuccess'),
           type: 'success',

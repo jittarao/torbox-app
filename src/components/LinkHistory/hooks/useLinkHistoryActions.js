@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 export function useLinkHistoryActions(
   apiKey,
@@ -33,9 +34,9 @@ export function useLinkHistoryActions(
           },
         });
 
-        const data = await response.json();
+        const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to delete link history entry');
         }
 
@@ -87,9 +88,9 @@ export function useLinkHistoryActions(
           body: JSON.stringify({ ids }),
         });
 
-        const data = await response.json();
+        const { ok: responseOk, data } = await readJsonFromResponse(response);
 
-        if (!response.ok) {
+        if (!responseOk) {
           throw new Error(data.error || 'Failed to delete link history entries');
         }
 

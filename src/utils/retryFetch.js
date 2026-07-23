@@ -2,6 +2,7 @@
 'use client';
 
 import { FETCH_TIMEOUT_MS } from '@/config/apiConstants';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_DELAY_MS = 2000;
@@ -105,7 +106,7 @@ export async function retryFetch(url, options = {}) {
         }
       }
 
-      const data = await response.json();
+      const { data } = await readJsonFromResponse(response);
 
       // Check for permanent failures that shouldn't be retried
       if (!data.success && permanent.some((check) => check(data))) {

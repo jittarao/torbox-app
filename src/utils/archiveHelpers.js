@@ -1,4 +1,5 @@
 import { FETCH_TIMEOUT_MS } from '@/config/apiConstants';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import { DOWNLOAD_PROTECTED_CODE } from '@/config/downloadProtection';
 import { deleteItemHelper, BULK_DELETE_FETCH_OPTIONS } from '@/utils/deleteHelpers';
 import { runWithConcurrency } from '@/utils/runWithConcurrency';
@@ -40,17 +41,17 @@ export async function archiveToBackend(apiKey, items) {
         body: JSON.stringify(toArchivePayload(item)),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-      if (response.ok && data.success) {
+      if (responseOk && data.success) {
         return { success: true, torrentIds: [String(item.id)] };
       }
 
-      if (response.status === 409) {
+      if (responseStatus === 409) {
         return { success: true, torrentIds: [String(item.id)] };
       }
 
-      if (response.status === 403 && data.code === DOWNLOAD_PROTECTED_CODE) {
+      if (responseStatus === 403 && data.code === DOWNLOAD_PROTECTED_CODE) {
         return {
           success: false,
           error: data.error || 'Download is protected',
@@ -76,10 +77,10 @@ export async function archiveToBackend(apiKey, items) {
       }),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-    if (!response.ok || !data.success) {
-      if (response.status === 403 && data.code === DOWNLOAD_PROTECTED_CODE) {
+    if (!responseOk || !data.success) {
+      if (responseStatus === 403 && data.code === DOWNLOAD_PROTECTED_CODE) {
         return {
           success: false,
           error: data.error || 'Download is protected',

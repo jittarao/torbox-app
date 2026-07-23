@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sanitizeError } from '@/utils/sanitizeError';
 import { toPublicUploadResponse } from '@/app/api/lib/publicUploadResponse';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -96,9 +97,9 @@ export async function queuePublicTorrentBatchUploads(request, apiKey) {
       body: JSON.stringify({ uploads: preparedUploads }),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const { ok: responseOk, status: responseStatus, data } = await readJsonFromResponse(response);
 
-    if (!response.ok) {
+    if (!responseOk) {
       const cleanupPromises = Array.from(filePathMap.values()).map((filePath) =>
         fetch(`${BACKEND_URL}/api/uploads/file`, {
           method: 'DELETE',
@@ -120,10 +121,10 @@ export async function queuePublicTorrentBatchUploads(request, apiKey) {
       return NextResponse.json(
         {
           success: false,
-          error: data.error || `Backend responded with status: ${response.status}`,
+          error: data.error || `Backend responded with status: ${responseStatus}`,
           detail: data.detail,
         },
-        { status: response.status }
+        { status: responseStatus }
       );
     }
 

@@ -1,5 +1,7 @@
 'use client';
 
+import { readJsonFromResponse } from '@/utils/fetchResponse';
+
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { formatTimeRemaining } from '../utils/formatters';
 import { SKIP_SECONDS, POSITION_SAVE_INTERVAL_SEC } from './constants';
@@ -62,6 +64,7 @@ export default function AudioPlayer({
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
   const [volume, setVolume] = useState(() => loadVolume());
+  const volumeRef = useRef(volume);
   const [playbackSpeed, setPlaybackSpeed] = useState(() => loadSpeed(itemId, fileId));
   const [isSeekingInProgress, setIsSeekingInProgress] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
@@ -109,8 +112,8 @@ export default function AudioPlayer({
           url: audioUrl,
         }),
       });
-      const data = await res.json();
-      if (data.chapters && Array.isArray(data.chapters)) {
+      const { ok: responseOk, data } = await readJsonFromResponse(res);
+      if (responseOk && data.chapters && Array.isArray(data.chapters)) {
         setChapters(data.chapters);
       } else {
         setChapters([]);
@@ -313,9 +316,10 @@ export default function AudioPlayer({
     if (audio) {
       audio.volume = volume;
     }
+    volumeRef.current = volume;
   }, [volume]);
 
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
     if (isPlaying) {
@@ -329,22 +333,25 @@ export default function AudioPlayer({
         setErrorMessage(err.message || 'Play failed');
       });
     }
-  };
+  }, [isPlaying, itemId, fileId]);
 
-  const skip = (delta) => {
-    const audio = audioRef.current;
-    if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
-    wasPlayingBeforeSeekRef.current = isPlaying;
-    userInitiatedSeekRef.current = true;
-    isSeekingInProgressRef.current = true;
-    setIsSeekingInProgress(true);
-    const time = Math.max(0, Math.min(audio.duration, audio.currentTime + delta));
-    audio.currentTime = time;
-    lastCommittedTimeRef.current = time;
-    setCurrentTime(time);
-    setSeekValue((time / audio.duration) * 100);
-    savePosition(itemId, fileId, time);
-  };
+  const skip = useCallback(
+    (delta) => {
+      const audio = audioRef.current;
+      if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+      wasPlayingBeforeSeekRef.current = isPlaying;
+      userInitiatedSeekRef.current = true;
+      isSeekingInProgressRef.current = true;
+      setIsSeekingInProgress(true);
+      const time = Math.max(0, Math.min(audio.duration, audio.currentTime + delta));
+      audio.currentTime = time;
+      lastCommittedTimeRef.current = time;
+      setCurrentTime(time);
+      setSeekValue((time / audio.duration) * 100);
+      savePosition(itemId, fileId, time);
+    },
+    [isPlaying, itemId, fileId]
+  );
 
   const currentChapterIndex = chapters.findIndex(
     (ch, i) =>
@@ -438,12 +445,11 @@ export default function AudioPlayer({
   };
 
   const handleVolumeDelta = useCallback((delta) => {
-    setVolume((v) => {
-      const next = Math.max(0, Math.min(1, v + delta));
-      saveVolume(next);
-      if (next > 0) volumeBeforeMuteRef.current = next;
-      return next;
-    });
+    const next = Math.max(0, Math.min(1, volumeRef.current + delta));
+    volumeRef.current = next;
+    setVolume(next);
+    saveVolume(next);
+    if (next > 0) volumeBeforeMuteRef.current = next;
   }, []);
 
   useAudioKeyboard({

@@ -1,4 +1,5 @@
 import { useAppStore } from '@/store/appStore';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 /** In-flight ensure-db requests per API key (concurrent callers share one promise). */
 const ensureDbPromises = new Map();
@@ -52,8 +53,9 @@ async function runEnsureUserDb(apiKey) {
       },
     });
 
-    if (response.ok) {
-      const data = await response.json();
+    const { ok: responseOk, data } = await readJsonFromResponse(response);
+
+    if (responseOk) {
       useAppStore.getState().markDbEnsured(apiKey);
       return {
         success: true,
@@ -62,10 +64,9 @@ async function runEnsureUserDb(apiKey) {
       };
     }
 
-    const errorData = await response.json().catch(() => ({}));
     return {
       success: false,
-      error: errorData.error || `HTTP ${response.status}`,
+      error: data.error || `HTTP ${response.status}`,
     };
   } catch (error) {
     console.error('Error ensuring user database:', error);
