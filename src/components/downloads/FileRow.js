@@ -105,6 +105,7 @@ function FileRow({
             isMobile={isMobile}
             style={style}
             t={t}
+            commonT={commonT}
           />
         );
       })}
@@ -129,6 +130,7 @@ function FileRowInner({
   measureRef,
   dataIndex,
   t,
+  commonT,
   fileIndex,
   attachMeasureRef,
   isMobile,
