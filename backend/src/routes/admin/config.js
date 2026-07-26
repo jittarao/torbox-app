@@ -5,6 +5,7 @@ import { getAutomationInactivityDays } from '../../config/automationInactivity.j
 import {
   CREATE_UPLOAD_TIMEOUT_MS,
   UPLOAD_BATCH_FETCH_SIZE,
+  UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
   UPLOAD_MAX_WORK_PER_DRAIN,
 } from '../../config/uploadProcessorConfig.js';
 
@@ -48,6 +49,7 @@ export function setupConfigRoutes(router, backend) {
           batch_fetch_size: UPLOAD_BATCH_FETCH_SIZE,
           max_work_per_drain: UPLOAD_MAX_WORK_PER_DRAIN,
           create_upload_timeout_ms: CREATE_UPLOAD_TIMEOUT_MS,
+          external_rate_limit_retry_ms: UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
         },
         frontend_url: process.env.FRONTEND_URL || 'http://localhost:3000',
         node_env: process.env.NODE_ENV || 'development',

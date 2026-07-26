@@ -144,8 +144,12 @@ export function isTorboxTransientQueuedResponse(response) {
  * @returns {boolean}
  */
 export function isTorboxCachedUploadResponse(response) {
-  const detail = String(response?.data?.detail ?? '');
-  return detail.toLowerCase().includes('cached');
+  const detail = String(response?.data?.detail ?? '').toLowerCase();
+  if (!detail) return false;
+  if (/\bnot\s+cached\b/.test(detail) || /\buncached\b/.test(detail)) {
+    return false;
+  }
+  return /\bcached\b/.test(detail);
 }
 
 export function isTorboxDuplicateUploadResponse(response) {

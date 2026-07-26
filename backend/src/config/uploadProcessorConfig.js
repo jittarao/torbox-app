@@ -19,3 +19,12 @@ export const CREATE_UPLOAD_TIMEOUT_MS = parsePositiveInt(
   process.env.CREATE_UPLOAD_TIMEOUT_MS,
   30000
 );
+
+/**
+ * Cool-down when TorBox returns 429 but our rolling uncached budget still has capacity
+ * (no Retry-After header). Shared across the affected upload type's queue.
+ */
+export const UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS = parsePositiveInt(
+  process.env.UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
+  5 * 60 * 1000
+);
