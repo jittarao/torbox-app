@@ -1,10 +1,20 @@
 import { parseUtcDate } from '@/utils/parseUtcDate';
 import { timeAgo } from '@/components/downloads/utils/formatters';
 
+/** Keep in sync with backend/src/automation/uploadDeferral.js */
+export const UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE =
+  'Uncached rate limit reached. Will retry automatically.';
+export const CONNECTION_DEFERRAL_MESSAGE = 'TorBox API unavailable. Will retry automatically.';
+export const EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE =
+  'Rate limit reached. Will retry automatically.';
+export const TRANSIENT_TORBOX_DEFERRAL_MESSAGE =
+  'TorBox is still processing a queued upload. Will retry automatically.';
+
 const TRANSIENT_DEFERRAL_MESSAGES = [
-  'Uncached rate limit reached. Will retry automatically.',
-  'TorBox API unavailable. Will retry automatically.',
-  'Rate limit reached. Will retry automatically.',
+  UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
+  CONNECTION_DEFERRAL_MESSAGE,
+  EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE,
+  TRANSIENT_TORBOX_DEFERRAL_MESSAGE,
 ];
 
 /** Stable numeric id for Set lookups and API payloads (SQLite/json may use number or string). */
@@ -24,6 +34,35 @@ export function isUploadDeferred(nextAttemptAt) {
   if (!nextAttemptAt) return false;
   const date = parseUtcDate(nextAttemptAt);
   return !isNaN(date.getTime()) && date.getTime() > Date.now();
+}
+
+function getDeferralReasonKey(errorMessage) {
+  switch (errorMessage) {
+    case UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE:
+      return 'deferralReasonHourlyLimit';
+    case EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE:
+      return 'deferralReasonExternalRateLimit';
+    case CONNECTION_DEFERRAL_MESSAGE:
+      return 'deferralReasonConnection';
+    case TRANSIENT_TORBOX_DEFERRAL_MESSAGE:
+      return 'deferralReasonTransient';
+    default:
+      return 'deferralReasonGeneric';
+  }
+}
+
+/** Row hint for queued uploads waiting on next_attempt_at. */
+export function getUploadRowDeferralHint(upload, tUploads, tCommon) {
+  if (upload?.status !== 'queued' || !isUploadDeferred(upload.next_attempt_at)) {
+    return null;
+  }
+
+  const reasonKey = getDeferralReasonKey(upload.error_message);
+  const resumeTime = formatTimeAgo(upload.next_attempt_at, tCommon);
+  return tUploads('deferralRowHint', {
+    reason: tUploads(reasonKey),
+    time: resumeTime,
+  });
 }
 
 export function getUploadRowErrorMessage(upload) {

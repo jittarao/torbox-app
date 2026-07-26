@@ -1543,6 +1543,16 @@
     },
     "title": "Options de téléchargement globales"
   },
+  "UploadManager": {
+    "cachedCreateAria": "En cache",
+    "cachedCreateTooltip": "TorBox a servi cet élément depuis son cache partagé. Ne compte pas dans la limite horaire d’envois non mis en cache.",
+    "deferralReasonConnection": "TorBox indisponible",
+    "deferralReasonExternalRateLimit": "Limite TorBox",
+    "deferralReasonGeneric": "En pause",
+    "deferralReasonHourlyLimit": "Limite horaire",
+    "deferralReasonTransient": "Traitement TorBox",
+    "deferralRowHint": "{reason} · reprise {time}"
+  },
   "UploadProgress": {
     "approachingRateLimit": "Limite de débit pour les éléments non mis en cache approchée:",
     "approachingRateLimitDetails": "{perHour}/60 non mis en cache par heure",
@@ -1557,14 +1567,20 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "Proche de la limite",
+    "connectionPausedWaiting": "{count, plural, one {# en attente — TorBox indisponible} other {# en attente — TorBox indisponible}}",
     "deferredCount": "{count, plural, one {# en file} other {# en file}}",
     "deferredSummary": "{count, plural, one {# téléversement en attente — reprise {time}} other {# téléversements en attente — reprise {time}}}",
     "deferredTypeSummary": "{label}: {count, plural, one {# téléversement en attente — reprise {time}} other {# téléversements en attente — reprise {time}}}",
+    "externalRateLimitWaiting": "{count, plural, one {# en attente — limite TorBox} other {# en attente — limite TorBox}}",
+    "firstSlotOpens": "Premier créneau ouvert {time}",
     "noUncached": "Aucun téléversement non mis en cache au cours de la dernière heure",
     "rateLimitReached": "Limite de débit atteinte",
+    "rateLimitedWaiting": "{count, plural, one {# en attente — limite horaire} other {# en attente — limite horaire}}",
     "resumesIn": "Reprise {time}",
+    "resumesProcessing": "Reprise du traitement {time}",
     "soon": "bientôt",
     "title": "Téléversements non mis en cache (dernière heure)",
+    "transientPausedWaiting": "{count, plural, one {# en attente — TorBox traite encore} other {# en attente — TorBox traite encore}}",
     "typeUncached": "/ {limit} non mis en cache"
   },
   "Usage": {

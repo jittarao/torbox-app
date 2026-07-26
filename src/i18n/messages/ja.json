@@ -1584,6 +1584,16 @@
     },
     "title": "グローバルアップロードオプション"
   },
+  "UploadManager": {
+    "cachedCreateAria": "キャッシュ済み",
+    "cachedCreateTooltip": "TorBoxの共有キャッシュから提供されました。1時間あたりの非キャッシュアップロード上限にはカウントされません。",
+    "deferralReasonConnection": "TorBox利用不可",
+    "deferralReasonExternalRateLimit": "TorBoxレート制限",
+    "deferralReasonGeneric": "一時停止",
+    "deferralReasonHourlyLimit": "時間あたり上限",
+    "deferralReasonTransient": "TorBox処理中",
+    "deferralRowHint": "{reason} · {time}に再開"
+  },
   "UploadProgress": {
     "approachingRateLimit": "キャッシュなしのレート制限に近づいています:",
     "approachingRateLimitDetails": "キャッシュなしで時間あたり {perHour}/60",
@@ -1598,14 +1608,20 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "制限に近づいています",
+    "connectionPausedWaiting": "{count, plural, other {# 件待機中 — TorBox利用不可}}",
     "deferredCount": "{count, plural, other {# 件キュー}}",
     "deferredSummary": "{count, plural, other {# 件のアップロード待機中 — {time} に再開}}",
     "deferredTypeSummary": "{label}: {count, plural, other {# 件のアップロード待機中 — {time} に再開}}",
+    "externalRateLimitWaiting": "{count, plural, other {# 件待機中 — TorBoxレート制限}}",
+    "firstSlotOpens": "次の枠が開くのは {time}",
     "noUncached": "直近1時間にキャッシュなしのアップロードはありません",
     "rateLimitReached": "レート制限に達しました",
+    "rateLimitedWaiting": "{count, plural, other {# 件待機中 — 時間あたり上限}}",
     "resumesIn": "{time} に再開",
+    "resumesProcessing": "処理再開 {time}",
     "soon": "まもなく",
     "title": "キャッシュなしアップロード（直近1時間）",
+    "transientPausedWaiting": "{count, plural, other {# 件待機中 — TorBox処理中}}",
     "typeUncached": "/ {limit} キャッシュなし"
   },
   "Usage": {

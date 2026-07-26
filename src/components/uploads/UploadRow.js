@@ -1,8 +1,42 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { useTranslations } from 'next-intl';
 import Tooltip from '@/components/shared/Tooltip';
-import { formatDate, formatTimeAgo, normalizeUploadId, getUploadRowErrorMessage } from './utils';
+import {
+  formatDate,
+  formatTimeAgo,
+  normalizeUploadId,
+  getUploadRowErrorMessage,
+  getUploadRowDeferralHint,
+} from './utils';
 import { STATUS_COLORS, TYPE_LABELS } from './constants';
+
+function CachedCreateBadge({ label, tooltip }) {
+  return (
+    <Tooltip content={tooltip}>
+      <span
+        className="inline-flex shrink-0 items-center text-sky-600 dark:text-sky-400"
+        aria-label={label}
+        title={tooltip}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="size-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <ellipse cx="12" cy="5" rx="9" ry="3" />
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+          <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
+        </svg>
+      </span>
+    </Tooltip>
+  );
+}
 
 function UploadDateCell({ dateString, t }) {
   if (!dateString) {
@@ -31,8 +65,10 @@ export default function UploadRow({
   rowIndex,
   copySuccess,
   isSortable = false,
+  showCacheIndicator = false,
 }) {
   const t = useTranslations('Common');
+  const tUploads = useTranslations('UploadManager');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: upload.id,
     disabled: !isSortable,
@@ -52,6 +88,9 @@ export default function UploadRow({
   const canDownload = upload.upload_type === 'file' && upload.file_path;
   const canCopy = (upload.upload_type === 'magnet' || upload.upload_type === 'link') && upload.url;
   const rowErrorMessage = getUploadRowErrorMessage(upload);
+  const deferralHint = getUploadRowDeferralHint(upload, tUploads, t);
+  const showCachedBadge =
+    showCacheIndicator && upload.status === 'completed' && upload.create_was_cached === true;
 
   const rowProps = isSortable
     ? {
@@ -123,6 +162,12 @@ export default function UploadRow({
           <div className="max-w-md truncate" title={upload.name}>
             {upload.name}
           </div>
+          {showCachedBadge && (
+            <CachedCreateBadge
+              label={tUploads('cachedCreateAria')}
+              tooltip={tUploads('cachedCreateTooltip')}
+            />
+          )}
         </div>
         {rowErrorMessage && (
           <div className="text-xs text-red-500 dark:text-red-400 mt-0.5" title={rowErrorMessage}>
@@ -134,11 +179,18 @@ export default function UploadRow({
         {TYPE_LABELS[upload.type] || upload.type}
       </td>
       <td className="px-2.5 py-1.5">
-        <span
-          className={`px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[upload.status] || STATUS_COLORS.queued}`}
-        >
-          {upload.status}
-        </span>
+        <div>
+          <span
+            className={`px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[upload.status] || STATUS_COLORS.queued}`}
+          >
+            {upload.status}
+          </span>
+          {deferralHint && (
+            <div className="mt-0.5 text-xs text-primary-text/55 dark:text-primary-text-dark/55">
+              {deferralHint}
+            </div>
+          )}
+        </div>
       </td>
       <td className="px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70">
         <UploadDateCell dateString={upload.created_at} t={t} />

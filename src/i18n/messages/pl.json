@@ -1562,6 +1562,16 @@
     },
     "title": "Globalne opcje przesyłania"
   },
+  "UploadManager": {
+    "cachedCreateAria": "Z cache",
+    "cachedCreateTooltip": "TorBox dostarczył to z wspólnej pamięci podręcznej. Nie wlicza się do godzinowego limitu przesłań bez cache.",
+    "deferralReasonConnection": "TorBox niedostępny",
+    "deferralReasonExternalRateLimit": "Limit TorBox",
+    "deferralReasonGeneric": "Wstrzymane",
+    "deferralReasonHourlyLimit": "Limit godzinowy",
+    "deferralReasonTransient": "Przetwarzanie TorBox",
+    "deferralRowHint": "{reason} · wznowienie {time}"
+  },
   "UploadProgress": {
     "approachingRateLimit": "Zbliżanie się do limitu niezbuforowanych:",
     "approachingRateLimitDetails": "{perHour}/60 niezbuforowanych na godzinę",
@@ -1576,14 +1586,20 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "Zbliżanie się do limitu",
+    "connectionPausedWaiting": "{count, plural, one {# oczekuje — TorBox niedostępny} few {# oczekują — TorBox niedostępny} many {# oczekuje — TorBox niedostępny} other {# oczekuje — TorBox niedostępny}}",
     "deferredCount": "{count, plural, one {# w kolejce} few {# w kolejce} many {# w kolejce} other {# w kolejce}}",
     "deferredSummary": "{count, plural, one {# przesyłanie oczekuje — wznowienie {time}} few {# przesyłania oczekują — wznowienie {time}} many {# przesyłań oczekuje — wznowienie {time}} other {# przesyłania oczekują — wznowienie {time}}}",
     "deferredTypeSummary": "{label}: {count, plural, one {# przesyłanie oczekuje — wznowienie {time}} few {# przesyłania oczekują — wznowienie {time}} many {# przesyłań oczekuje — wznowienie {time}} other {# przesyłania oczekują — wznowienie {time}}}",
+    "externalRateLimitWaiting": "{count, plural, one {# oczekuje — limit TorBox} few {# oczekują — limit TorBox} many {# oczekuje — limit TorBox} other {# oczekuje — limit TorBox}}",
+    "firstSlotOpens": "Pierwsze miejsce otwiera się {time}",
     "noUncached": "Brak niezbuforowanych przesłań w ostatniej godzinie",
     "rateLimitReached": "Osiągnięto limit",
+    "rateLimitedWaiting": "{count, plural, one {# oczekuje — limit godzinowy} few {# oczekują — limit godzinowy} many {# oczekuje — limit godzinowy} other {# oczekuje — limit godzinowy}}",
     "resumesIn": "Wznowienie {time}",
+    "resumesProcessing": "Wznowienie przetwarzania {time}",
     "soon": "wkrótce",
     "title": "Niezbuforowane przesyłania (ostatnia godzina)",
+    "transientPausedWaiting": "{count, plural, one {# oczekuje — TorBox nadal przetwarza} few {# oczekują — TorBox nadal przetwarza} many {# oczekuje — TorBox nadal przetwarza} other {# oczekuje — TorBox nadal przetwarza}}",
     "typeUncached": "/ {limit} niezbuforowanych"
   },
   "Usage": {

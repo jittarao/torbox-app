@@ -1679,6 +1679,16 @@
     },
     "title": "Global Upload Options"
   },
+  "UploadManager": {
+    "cachedCreateAria": "Cached",
+    "cachedCreateTooltip": "TorBox served this from its shared cache. Does not count toward the hourly uncached upload limit.",
+    "deferralReasonConnection": "TorBox unavailable",
+    "deferralReasonExternalRateLimit": "TorBox rate limit",
+    "deferralReasonGeneric": "Paused",
+    "deferralReasonHourlyLimit": "Hourly limit",
+    "deferralReasonTransient": "TorBox processing",
+    "deferralRowHint": "{reason} · resumes {time}"
+  },
   "UploadProgress": {
     "approachingRateLimit": "Approaching uncached rate limit:",
     "approachingRateLimitDetails": "{perHour}/60 uncached per hour",
@@ -1693,14 +1703,20 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "Approaching limit",
-    "deferredCount": "{count, plural, one {# queued} other {# queued}}",
+    "connectionPausedWaiting": "{count, plural, one {# waiting — TorBox unavailable} other {# waiting — TorBox unavailable}}",
+    "deferredCount": "{count, plural, one {# waiting} other {# waiting}}",
     "deferredSummary": "{count, plural, one {# upload waiting — resumes {time}} other {# uploads waiting — resumes {time}}}",
     "deferredTypeSummary": "{label}: {count, plural, one {# upload waiting — resumes {time}} other {# uploads waiting — resumes {time}}}",
+    "externalRateLimitWaiting": "{count, plural, one {# waiting — TorBox rate limit} other {# waiting — TorBox rate limit}}",
+    "firstSlotOpens": "First slot opens {time}",
     "noUncached": "No uncached uploads in the last hour",
     "rateLimitReached": "Rate limit reached",
+    "rateLimitedWaiting": "{count, plural, one {# waiting — hourly limit} other {# waiting — hourly limit}}",
     "resumesIn": "Resumes {time}",
+    "resumesProcessing": "Resumes processing {time}",
     "soon": "soon",
     "title": "Uncached Uploads (Last Hour)",
+    "transientPausedWaiting": "{count, plural, one {# waiting — TorBox still processing} other {# waiting — TorBox still processing}}",
     "typeTorrents": "Torrents",
     "typeUncached": "/ {limit} uncached",
     "typeUsenet": "Usenet",

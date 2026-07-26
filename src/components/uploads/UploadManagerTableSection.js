@@ -73,6 +73,7 @@ export default function UploadManagerTableSection({
             <UploadTable
               uploads={uploads}
               enableDnd={true}
+              showCacheIndicator={activeTab === 'completed'}
               onRetry={onRetry}
               onDelete={onDelete}
               onDownload={onDownload}
@@ -91,6 +92,7 @@ export default function UploadManagerTableSection({
           <UploadTable
             uploads={uploads}
             enableDnd={false}
+            showCacheIndicator={activeTab === 'completed'}
             onRetry={onRetry}
             onDelete={onDelete}
             onDownload={onDownload}
