@@ -27,10 +27,12 @@ describe('uploadProcessorConfig', () => {
     delete process.env.UPLOAD_BATCH_FETCH_SIZE;
     delete process.env.UPLOAD_MAX_WORK_PER_DRAIN;
     delete process.env.CREATE_UPLOAD_TIMEOUT_MS;
+    delete process.env.UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS;
     const mod = await import('../uploadProcessorConfig.js?t=' + Date.now());
     expect(mod.UPLOAD_BATCH_FETCH_SIZE).toBe(50);
     expect(mod.UPLOAD_MAX_WORK_PER_DRAIN).toBe(25);
     expect(mod.CREATE_UPLOAD_TIMEOUT_MS).toBe(30000);
+    expect(mod.UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS).toBe(5 * 60 * 1000);
   });
 
   test('falls back to defaults for non-positive values', async () => {

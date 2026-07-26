@@ -44,7 +44,8 @@ describe('UploadProcessor outage handling', () => {
     );
     expect(updateCall).toBeDefined();
     expect(updateCall.sql).not.toContain('retry_count');
-    expect(updateCall.sql).toContain('error_message = NULL');
+    expect(updateCall.sql).toContain(`error_message = ?`);
+    expect(updateCall.params[0]).toBe('TorBox API unavailable. Will retry automatically.');
   });
 
   test('processUpload calls createtorrent for torrent magnet uploads', async () => {

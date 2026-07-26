@@ -23,6 +23,7 @@ import {
   UPLOAD_UNCACHED_WINDOW_SQL,
 } from '../config/uploadRateLimits.js';
 import { getUploadDeferralStatistics } from '../automation/uploadDeferral.js';
+import { attachCreateWasCached } from '../automation/uploadAttemptLookup.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
@@ -891,16 +892,25 @@ export function setupUploadsRoutes(app, backend) {
             uncached: uncachedByType.torrent,
             deferredCount: deferralByType.torrent.deferredCount,
             deferredUntil: deferralByType.torrent.deferredUntil,
+            pausedCount: deferralByType.torrent.pausedCount,
+            pausedUntil: deferralByType.torrent.pausedUntil,
+            pauseReason: deferralByType.torrent.pauseReason,
           },
           usenets: {
             uncached: uncachedByType.usenet,
             deferredCount: deferralByType.usenet.deferredCount,
             deferredUntil: deferralByType.usenet.deferredUntil,
+            pausedCount: deferralByType.usenet.pausedCount,
+            pausedUntil: deferralByType.usenet.pausedUntil,
+            pauseReason: deferralByType.usenet.pauseReason,
           },
           webdls: {
             uncached: uncachedByType.webdl,
             deferredCount: deferralByType.webdl.deferredCount,
             deferredUntil: deferralByType.webdl.deferredUntil,
+            pausedCount: deferralByType.webdl.pausedCount,
+            pausedUntil: deferralByType.webdl.pausedUntil,
+            pauseReason: deferralByType.webdl.pauseReason,
           },
         },
         rateLimit: getUploadRateLimitConfig(),
@@ -927,7 +937,7 @@ export function setupUploadsRoutes(app, backend) {
         `;
       params.push(limit, offset);
 
-      const uploads = userDb.db.prepare(query).all(...params);
+      const uploads = attachCreateWasCached(userDb, userDb.db.prepare(query).all(...params));
 
       res.json({
         success: true,

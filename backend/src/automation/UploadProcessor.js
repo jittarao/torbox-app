@@ -16,20 +16,29 @@ import { getExpectedTorrentHash, matchTorboxResource } from './uploadDuplicateRe
 import { isConnectionError } from '../utils/torboxErrors.js';
 import {
   UPLOAD_UNCACHED_LIMIT_PER_HOUR,
-  UPLOAD_UNCACHED_WINDOW_SQL,
+  countUncachedUploadAttempts,
+  getUncachedBudgetWaitMs,
+  isUncachedHourlyBudgetExhausted,
 } from '../config/uploadRateLimits.js';
 import {
   CREATE_UPLOAD_TIMEOUT_MS,
   UPLOAD_BATCH_FETCH_SIZE,
   UPLOAD_MAX_WORK_PER_DRAIN,
+  UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
 } from '../config/uploadProcessorConfig.js';
-import { CLEAR_TRANSIENT_ERROR_EXPR, transientMessageBindParams } from './uploadDeferral.js';
+import {
+  syncAllRateLimitDeferrals,
+  deferQueuedUploadSiblings,
+  EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE,
+  UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
+  CONNECTION_DEFERRAL_MESSAGE,
+  TRANSIENT_TORBOX_DEFERRAL_MESSAGE,
+} from './uploadDeferral.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 
 // Rate limit: 60 uncached creates per hour per type (cached responses are unlimited)
 const UNCACHED_LIMIT_PER_HOUR = UPLOAD_UNCACHED_LIMIT_PER_HOUR;
-const HOUR_MS = 60 * 60 * 1000;
 const PROCESSOR_INTERVAL_MS = parseInt(process.env.UPLOAD_PROCESSOR_INTERVAL_MS || '5000', 10);
 
 export function extractTorboxTorrentResult(response, type) {
@@ -42,8 +51,6 @@ export function extractTorboxTorrentResult(response, type) {
     torboxAuthId: torboxData.auth_id ?? null,
   };
 }
-const RATE_LIMIT_BUFFER_MS = 1000; // 1 second buffer for rate limit calculations
-const RATE_LIMIT_UNKNOWN_RETRY_MS = 60 * 1000; // fallback when 429 but no Retry-After and no local window data
 const UPLOAD_TYPES_ROUND_ROBIN = ['torrent', 'usenet', 'webdl'];
 
 function uploadProcessResult(success, stopTypeDrain = false) {
@@ -194,35 +201,7 @@ class UploadProcessor {
    * @returns {number} Count of uncached attempts
    */
   countUncachedAttemptsSince(userDb, type) {
-    const result = userDb.db
-      .prepare(
-        `
-        SELECT COUNT(*) as count
-        FROM upload_attempts
-        WHERE type = ? AND is_cached = 0 AND attempted_at >= ${UPLOAD_UNCACHED_WINDOW_SQL}
-      `
-      )
-      .get(type);
-    return result?.count || 0;
-  }
-
-  /**
-   * Get oldest uncached attempt in the rolling hour window
-   * @param {Object} userDb - User database instance
-   * @param {string} type - Upload type
-   * @returns {string|null} Oldest attempt datetime or null
-   */
-  getOldestUncachedAttemptSince(userDb, type) {
-    const result = userDb.db
-      .prepare(
-        `
-        SELECT MIN(attempted_at) as oldest
-        FROM upload_attempts
-        WHERE type = ? AND is_cached = 0 AND attempted_at >= ${UPLOAD_UNCACHED_WINDOW_SQL}
-      `
-      )
-      .get(type);
-    return result?.oldest || null;
+    return countUncachedUploadAttempts(userDb, type);
   }
 
   // ==================== Rate Limit Methods ====================
@@ -234,28 +213,14 @@ class UploadProcessor {
    * @returns {number} Wait time in milliseconds
    */
   calculateWaitTime(userDb, type) {
-    const { now } = this.getRateLimitBoundaries();
-    const hourCount = this.countUncachedAttemptsSince(userDb, type);
-
-    if (hourCount < UNCACHED_LIMIT_PER_HOUR) {
-      return 0;
-    }
-
-    const oldestHour = this.getOldestUncachedAttemptSince(userDb, type);
-    if (!oldestHour) {
-      return HOUR_MS;
-    }
-
-    const oldestDate = this.parseSQLDate(oldestHour);
-    const timeUntilOldestExpires = HOUR_MS - (now.getTime() - oldestDate.getTime());
-    return Math.max(0, timeUntilOldestExpires + RATE_LIMIT_BUFFER_MS);
+    return getUncachedBudgetWaitMs(userDb, type);
   }
 
   /**
    * Whether the per-type uncached hourly budget is exhausted (proactive gate before create API).
    */
   isAtUncachedHourlyLimit(userDb, type) {
-    return this.countUncachedAttemptsSince(userDb, type) >= UNCACHED_LIMIT_PER_HOUR;
+    return isUncachedHourlyBudgetExhausted(userDb, type);
   }
 
   async handleRateLimitDeferral(upload, userDb, type) {
@@ -274,33 +239,23 @@ class UploadProcessor {
         `
         UPDATE uploads
         SET status = 'queued',
-            error_message = NULL,
+            error_message = ?,
             next_attempt_at = ?,
             last_processed_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `
       )
-      .run(nextAttemptAt, upload.id);
+      .run(UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE, nextAttemptAt, upload.id);
 
-    const deferOthersResult = userDb.db
-      .prepare(
-        `
-        UPDATE uploads
-        SET next_attempt_at = ?,
-            error_message = ${CLEAR_TRANSIENT_ERROR_EXPR},
-            updated_at = CURRENT_TIMESTAMP
-        WHERE status = 'queued'
-          AND type = ?
-          AND id != ?
-      `
-      )
-      .run(nextAttemptAt, ...transientMessageBindParams(), type, upload.id);
+    const deferredCount = deferQueuedUploadSiblings(userDb, type, upload.id, nextAttemptAt, {
+      siblingErrorMessage: UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
+    });
 
-    if (deferOthersResult.changes > 0) {
+    if (deferredCount > 0) {
       logger.debug('Deferred other queued uploads due to uncached hourly limit', {
         type,
-        deferredCount: deferOthersResult.changes,
+        deferredCount,
         nextAttemptAt,
       });
     }
@@ -566,28 +521,28 @@ class UploadProcessor {
         `
         UPDATE uploads
         SET status = 'queued',
-            error_message = NULL,
+            error_message = ?,
             next_attempt_at = ?,
             last_processed_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `
       )
-      .run(nextAttemptAt, upload.id);
+      .run(CONNECTION_DEFERRAL_MESSAGE, nextAttemptAt, upload.id);
 
     const deferOthersResult = userDb.db
       .prepare(
         `
         UPDATE uploads
         SET next_attempt_at = ?,
-            error_message = ${CLEAR_TRANSIENT_ERROR_EXPR},
+            error_message = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE status = 'queued'
           AND type = ?
           AND id != ?
       `
       )
-      .run(nextAttemptAt, ...transientMessageBindParams(), type, upload.id);
+      .run(nextAttemptAt, CONNECTION_DEFERRAL_MESSAGE, type, upload.id);
 
     if (deferOthersResult.changes > 0) {
       logger.debug('Deferred other queued uploads due to TorBox outage', {
@@ -653,13 +608,14 @@ class UploadProcessor {
         `
         UPDATE uploads
         SET next_attempt_at = ?,
+            error_message = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE status = 'queued'
           AND type = ?
           AND id != ?
       `
       )
-      .run(nextAttemptAt, type, upload.id);
+      .run(nextAttemptAt, TRANSIENT_TORBOX_DEFERRAL_MESSAGE, type, upload.id);
 
     if (deferOthersResult.changes > 0) {
       logger.debug('Deferred other queued uploads due to TorBox transient response', {
@@ -935,8 +891,8 @@ class UploadProcessor {
       return rollingWaitMs;
     }
 
-    // External usage may have exhausted the limit without entries in our log — retry soon
-    return RATE_LIMIT_UNKNOWN_RETRY_MS;
+    // TorBox 429 while local uncached budget still has room — shared short cool-down
+    return UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS;
   }
 
   /**
@@ -1047,8 +1003,19 @@ class UploadProcessor {
     const nextAttemptAt =
       deferMs > 0 ? this.formatDateForSQL(new Date(Date.now() + deferMs)) : null;
 
+    const localUncachedWaitMs = isRateLimit ? getUncachedBudgetWaitMs(userDb, type) : 0;
+
     // Create user-friendly error message (deferrals use queue-level state, not per-row errors)
-    const userFriendlyError = shouldDefer ? null : this.createUserFriendlyError(error, isRateLimit);
+    const deferralMessage = isConnection
+      ? CONNECTION_DEFERRAL_MESSAGE
+      : isRateLimit
+        ? localUncachedWaitMs > 0
+          ? UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE
+          : EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE
+        : null;
+    const userFriendlyError = shouldDefer
+      ? deferralMessage
+      : this.createUserFriendlyError(error, isRateLimit);
 
     // Update upload record
     const updateResult = userDb.db
@@ -1066,28 +1033,43 @@ class UploadProcessor {
       )
       .run(finalStatus, userFriendlyError, finalRetryCount, nextAttemptAt, id);
 
-    // When API returns 429, defer all other queued uploads of this type so we don't hammer
-    // TorBox for the rest of the queue (e.g. external tools may have exhausted the limit first).
-    if ((isRateLimit || isConnection) && nextAttemptAt) {
-      const deferOthersResult = userDb.db
-        .prepare(
-          `
-          UPDATE uploads
-          SET next_attempt_at = ?,
-              error_message = ${CLEAR_TRANSIENT_ERROR_EXPR},
-              updated_at = CURRENT_TIMESTAMP
-          WHERE status = 'queued'
-            AND type = ?
-            AND id != ?
-        `
-        )
-        .run(nextAttemptAt, ...transientMessageBindParams(), type, id);
-      if (deferOthersResult.changes > 0) {
+    // TorBox 429/connection: pause siblings so we do not walk the queue one item per drain.
+    // - Local rolling budget exhausted: defer until oldest uncached attempt ages out.
+    // - External 429 with local headroom: short shared cool-down (Retry-After or default 5m).
+    // - Connection errors: longer shared cool-down.
+    if (isConnection && nextAttemptAt) {
+      const deferredCount = deferQueuedUploadSiblings(userDb, type, id, nextAttemptAt, {
+        siblingErrorMessage: CONNECTION_DEFERRAL_MESSAGE,
+      });
+      if (deferredCount > 0) {
         logger.debug('Deferred other queued uploads due to TorBox backoff', {
           type,
-          reason: isConnection ? 'connection_error' : 'rate_limit',
-          deferredCount: deferOthersResult.changes,
+          reason: 'connection_error',
+          deferredCount,
           nextAttemptAt,
+        });
+      }
+    } else if (isRateLimit && nextAttemptAt) {
+      const siblingOptions = {
+        siblingErrorMessage:
+          localUncachedWaitMs > 0
+            ? UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE
+            : EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE,
+      };
+      const deferredCount = deferQueuedUploadSiblings(
+        userDb,
+        type,
+        id,
+        nextAttemptAt,
+        siblingOptions
+      );
+      if (deferredCount > 0) {
+        logger.debug('Deferred other queued uploads due to TorBox backoff', {
+          type,
+          reason: localUncachedWaitMs > 0 ? 'rate_limit' : 'external_rate_limit',
+          deferredCount,
+          nextAttemptAt,
+          localUncachedWaitMs,
         });
       }
     }
@@ -1856,6 +1838,8 @@ class UploadProcessor {
   }
 
   async _drainUserQueuesUnlocked(authId, userDb) {
+    syncAllRateLimitDeferrals(userDb);
+
     const uncachedBudget = {
       torrent: UNCACHED_LIMIT_PER_HOUR - this.countUncachedAttemptsSince(userDb, 'torrent'),
       usenet: UNCACHED_LIMIT_PER_HOUR - this.countUncachedAttemptsSince(userDb, 'usenet'),
