@@ -268,6 +268,7 @@ export default function UploadManager({ apiKey }) {
           copySuccess={copySuccess}
           pagination={pagination}
           onPaginationChange={handlePaginationChange}
+          cachedCountsTowardLimit={uploadStatistics?.rateLimit?.cachedCountsTowardLimit !== false}
         />
       )}
 

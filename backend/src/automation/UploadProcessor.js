@@ -19,6 +19,7 @@ import {
   countUncachedUploadAttempts,
   getUncachedBudgetWaitMs,
   isUncachedHourlyBudgetExhausted,
+  shouldConsumeHourlyCreateBudget,
 } from '../config/uploadRateLimits.js';
 import {
   CREATE_UPLOAD_TIMEOUT_MS,
@@ -37,7 +38,7 @@ import {
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
 
-// Rate limit: 60 uncached creates per hour per type (cached responses are unlimited)
+// Rate limit: 60 successful creates per hour per type (cached inclusion toggled by env)
 const UNCACHED_LIMIT_PER_HOUR = UPLOAD_UNCACHED_LIMIT_PER_HOUR;
 const PROCESSOR_INTERVAL_MS = parseInt(process.env.UPLOAD_PROCESSOR_INTERVAL_MS || '5000', 10);
 
@@ -1251,7 +1252,7 @@ class UploadProcessor {
       // since the upload already succeeded on TorBox
       try {
         this.handleSuccessfulUpload(upload, userDb, type, response);
-        if (budgetCtx && !isTorboxCachedUploadResponse(response)) {
+        if (budgetCtx && shouldConsumeHourlyCreateBudget(isTorboxCachedUploadResponse(response))) {
           budgetCtx.remainingUncachedBudget--;
         }
         return uploadProcessResult(true);
@@ -1295,7 +1296,10 @@ class UploadProcessor {
 
             // Re-attempt the database update
             this.handleSuccessfulUpload(upload, currentUserDb, type, response);
-            if (budgetCtx && !isTorboxCachedUploadResponse(response)) {
+            if (
+              budgetCtx &&
+              shouldConsumeHourlyCreateBudget(isTorboxCachedUploadResponse(response))
+            ) {
               budgetCtx.remainingUncachedBudget--;
             }
             logger.info('Successfully completed database update after retry', {

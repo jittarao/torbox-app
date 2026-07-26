@@ -14,7 +14,8 @@
 #   SEARCH_PAGE_DISABLED      — "true" to hide search page
 #   UPLOAD_LIMIT_MAX_STORAGE_MB — staged upload storage cap per LIMITED user (default 100)
 #   UPLOAD_LIMIT_MAX_FILES      — staged file count cap per LIMITED user (default 500)
-#   UPLOAD_UNCACHED_LIMIT_PER_HOUR — uncached TorBox create limit per type (default 60)
+#   UPLOAD_UNCACHED_LIMIT_PER_HOUR — TorBox create limit per type (default 60)
+#   UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT — count Found Cached toward hourly budget (default true)
 #   UPLOAD_PROCESSOR_INTERVAL_MS — upload queue poll interval ms (default 5000)
 #   UPLOAD_PROCESS_CONCURRENCY   — max users processed in parallel per cycle (default 6)
 #   UPLOAD_CONNECTION_DEFER_MS   — defer ms when TorBox is unreachable (default 900000)
@@ -59,6 +60,7 @@ services:
       UPLOAD_LIMIT_MAX_STORAGE_MB: ${UPLOAD_LIMIT_MAX_STORAGE_MB:-100}
       UPLOAD_LIMIT_MAX_FILES: ${UPLOAD_LIMIT_MAX_FILES:-500}
       UPLOAD_UNCACHED_LIMIT_PER_HOUR: ${UPLOAD_UNCACHED_LIMIT_PER_HOUR:-60}
+      UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT: ${UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT:-true}
       UPLOAD_PROCESSOR_INTERVAL_MS: ${UPLOAD_PROCESSOR_INTERVAL_MS:-5000}
       UPLOAD_PROCESS_CONCURRENCY: ${UPLOAD_PROCESS_CONCURRENCY:-6}
       UPLOAD_CONNECTION_DEFER_MS: ${UPLOAD_CONNECTION_DEFER_MS:-900000}

@@ -191,7 +191,7 @@ Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uplo
 | `CREATE_UPLOAD_TIMEOUT_MS`            | TorBox create API request timeout (ms)                                                | `30000`          |
 | `UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS` | TorBox 429 cool-down (ms) when local uncached budget has headroom; `Retry-After` wins | `300000` (5 min) |
 
-Related (unchanged): `UPLOAD_PROCESSOR_INTERVAL_MS` (scheduler tick, default 5s), `UPLOAD_PROCESS_CONCURRENCY` (cross-user worker slots, default 6), `UPLOAD_UNCACHED_LIMIT_PER_HOUR` (per-type uncached hourly budget, default 60), `UPLOAD_CONNECTION_DEFER_MS` (defer when TorBox is unreachable, default 15 min).
+Related (unchanged): `UPLOAD_PROCESSOR_INTERVAL_MS` (scheduler tick, default 5s), `UPLOAD_PROCESS_CONCURRENCY` (cross-user worker slots, default 6), `UPLOAD_UNCACHED_LIMIT_PER_HOUR` (per-type hourly create budget, default 60), `UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT` (count Found Cached toward that budget, default true), `UPLOAD_CONNECTION_DEFER_MS` (defer when TorBox is unreachable, default 15 min).
 
 ## User activity tracking
 

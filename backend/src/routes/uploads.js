@@ -20,6 +20,7 @@ import {
 import { isConnectionError } from '../utils/torboxErrors.js';
 import {
   getUploadRateLimitConfig,
+  getUploadBudgetAttemptSql,
   UPLOAD_UNCACHED_WINDOW_SQL,
 } from '../config/uploadRateLimits.js';
 import { getUploadDeferralStatistics } from '../automation/uploadDeferral.js';
@@ -863,7 +864,7 @@ export function setupUploadsRoutes(app, backend) {
         statusCountsMap[row.status] = row.count;
       });
 
-      // Per-type uncached attempt counts for rate limit display
+      // Per-type create attempts that consume the hourly budget (includes Found Cached)
       const uncachedStats = userDb.db
         .prepare(
           `
@@ -871,7 +872,8 @@ export function setupUploadsRoutes(app, backend) {
             type,
             COUNT(*) as uncached_count
           FROM upload_attempts
-          WHERE is_cached = 0 AND attempted_at >= ${UPLOAD_UNCACHED_WINDOW_SQL}
+          WHERE ${getUploadBudgetAttemptSql()}
+            AND attempted_at >= ${UPLOAD_UNCACHED_WINDOW_SQL}
           GROUP BY type
         `
         )

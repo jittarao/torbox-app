@@ -37,6 +37,7 @@ import * as user019_upload_file_size from './user/019_upload_file_size.js';
 import * as user020_protected_downloads_schema from './user/020_protected_downloads_schema.js';
 import * as user021_custom_views_sort_order from './user/021_custom_views_sort_order.js';
 import * as user022_upload_attempts_is_cached from './user/022_upload_attempts_is_cached.js';
+import * as user023_upload_attempts_budget_index from './user/023_upload_attempts_budget_index.js';
 
 /** Keeps migration exports reachable for static analysis (see MigrationRunner). */
 export const MIGRATION_MODULE_BINDINGS = [
@@ -74,4 +75,5 @@ export const MIGRATION_MODULE_BINDINGS = [
   user020_protected_downloads_schema,
   user021_custom_views_sort_order,
   user022_upload_attempts_is_cached,
+  user023_upload_attempts_budget_index,
 ];

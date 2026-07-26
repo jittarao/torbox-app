@@ -481,7 +481,7 @@ describe('UploadProcessor drain integration (real claim path)', () => {
     });
   });
 
-  test('cached responses do not decrement in-memory uncached budget during drain', async () => {
+  test('cached responses decrement in-memory hourly budget during drain', async () => {
     await withUserDb(async (userDb) => {
       const processor = new UploadProcessor(env.userDatabaseManager, {
         updateUploadCounters: async () => {},
@@ -510,15 +510,79 @@ describe('UploadProcessor drain integration (real claim path)', () => {
       insertQueuedUpload(userDb, { type: 'torrent', name: 'cached-2', queueOrder: 1 });
 
       const { totalProcessed } = await processor._drainUserQueues(env.authId, userDb);
+      // First cached create consumes the last budget slot; second is proactively deferred.
+      // Both claim attempts count toward totalProcessed (success + defer).
       expect(totalProcessed).toBe(2);
 
       const completed = userDb.db
         .prepare(`SELECT COUNT(*) as count FROM uploads WHERE status = 'completed'`)
         .get().count;
-      expect(completed).toBe(2);
+      expect(completed).toBe(1);
 
-      expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(seedCount);
+      expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(
+        UPLOAD_UNCACHED_LIMIT_PER_HOUR
+      );
+
+      const deferred = userDb.db
+        .prepare(
+          `SELECT status, next_attempt_at, error_message FROM uploads WHERE name = 'cached-2'`
+        )
+        .get();
+      expect(deferred.status).toBe('queued');
+      expect(deferred.next_attempt_at).not.toBeNull();
+      expect(deferred.error_message).toBe('Uncached rate limit reached. Will retry automatically.');
     });
+  });
+
+  test('cached responses skip in-memory budget when UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT=false', async () => {
+    const previous = process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT;
+    process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT = 'false';
+    try {
+      await withUserDb(async (userDb) => {
+        const processor = new UploadProcessor(env.userDatabaseManager, {
+          updateUploadCounters: async () => {},
+        });
+        stubTorboxCreateApi(processor, { cached: true });
+
+        const seedCount = UPLOAD_UNCACHED_LIMIT_PER_HOUR - 1;
+        userDb.db
+          .prepare(
+            `
+            INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
+            SELECT value, 'torrent', 200, 1, 0, datetime('now', '-30 minutes')
+            FROM (
+              WITH RECURSIVE cnt(x) AS (
+                SELECT 1
+                UNION ALL
+                SELECT x + 1 FROM cnt WHERE x < ?
+              )
+              SELECT x AS value FROM cnt
+            )
+          `
+          )
+          .run(seedCount);
+
+        insertQueuedUpload(userDb, { type: 'torrent', name: 'cached-1', queueOrder: 0 });
+        insertQueuedUpload(userDb, { type: 'torrent', name: 'cached-2', queueOrder: 1 });
+
+        const { totalProcessed } = await processor._drainUserQueues(env.authId, userDb);
+        expect(totalProcessed).toBe(2);
+
+        const completed = userDb.db
+          .prepare(`SELECT COUNT(*) as count FROM uploads WHERE status = 'completed'`)
+          .get().count;
+        expect(completed).toBe(2);
+
+        // Cached creates excluded from the budget when the flag is off.
+        expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(seedCount);
+      });
+    } finally {
+      if (previous === undefined) {
+        delete process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT;
+      } else {
+        process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT = previous;
+      }
+    }
   });
 
   test('serializes concurrent drains for the same user', async () => {

@@ -30,41 +30,6 @@ export function isTransientDeferralMessage(errorMessage) {
   return TRANSIENT_DEFERRAL_MESSAGES.includes(errorMessage);
 }
 
-export function isUploadDeferred(nextAttemptAt) {
-  if (!nextAttemptAt) return false;
-  const date = parseUtcDate(nextAttemptAt);
-  return !isNaN(date.getTime()) && date.getTime() > Date.now();
-}
-
-function getDeferralReasonKey(errorMessage) {
-  switch (errorMessage) {
-    case UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE:
-      return 'deferralReasonHourlyLimit';
-    case EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE:
-      return 'deferralReasonExternalRateLimit';
-    case CONNECTION_DEFERRAL_MESSAGE:
-      return 'deferralReasonConnection';
-    case TRANSIENT_TORBOX_DEFERRAL_MESSAGE:
-      return 'deferralReasonTransient';
-    default:
-      return 'deferralReasonGeneric';
-  }
-}
-
-/** Row hint for queued uploads waiting on next_attempt_at. */
-export function getUploadRowDeferralHint(upload, tUploads, tCommon) {
-  if (upload?.status !== 'queued' || !isUploadDeferred(upload.next_attempt_at)) {
-    return null;
-  }
-
-  const reasonKey = getDeferralReasonKey(upload.error_message);
-  const resumeTime = formatTimeAgo(upload.next_attempt_at, tCommon);
-  return tUploads('deferralRowHint', {
-    reason: tUploads(reasonKey),
-    time: resumeTime,
-  });
-}
-
 export function getUploadRowErrorMessage(upload) {
   if (!upload?.error_message) return null;
   if (upload.status === 'queued' && isTransientDeferralMessage(upload.error_message)) {

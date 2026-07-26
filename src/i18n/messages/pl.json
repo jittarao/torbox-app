@@ -1026,7 +1026,7 @@
       "webdlPassword": "Hasło (jeśli wymagane)"
     },
     "rateLimit": {
-      "details": "Masz {count} elementów w kolejce. TorBox ogranicza niezbuforowane przesyłania do {perHour} na godzinę na typ. Zbuforowane elementy nie są liczone. Duże partie są przetwarzane automatycznie.",
+      "details": "Masz {count} elementów w kolejce. TorBox ogranicza tworzenie do {perHour} na godzinę na typ. Duże partie są przetwarzane automatycznie.",
       "info": "Ograniczenie prędkości"
     },
     "section": {
@@ -1564,17 +1564,12 @@
   },
   "UploadManager": {
     "cachedCreateAria": "Z cache",
-    "cachedCreateTooltip": "TorBox dostarczył to z wspólnej pamięci podręcznej. Nie wlicza się do godzinowego limitu przesłań bez cache.",
-    "deferralReasonConnection": "TorBox niedostępny",
-    "deferralReasonExternalRateLimit": "Limit TorBox",
-    "deferralReasonGeneric": "Wstrzymane",
-    "deferralReasonHourlyLimit": "Limit godzinowy",
-    "deferralReasonTransient": "Przetwarzanie TorBox",
-    "deferralRowHint": "{reason} · wznowienie {time}"
+    "cachedCreateTooltipCounts": "TorBox dostarczył to z wspólnej pamięci podręcznej. Nadal wlicza się do godzinowego limitu tworzenia.",
+    "cachedCreateTooltipExcluded": "TorBox dostarczył to z wspólnej pamięci podręcznej. Nie wlicza się do godzinowego limitu tworzenia."
   },
   "UploadProgress": {
-    "approachingRateLimit": "Zbliżanie się do limitu niezbuforowanych:",
-    "approachingRateLimitDetails": "{perHour}/60 niezbuforowanych na godzinę",
+    "approachingRateLimit": "Zbliżanie się do limitu tworzenia:",
+    "approachingRateLimitDetails": "{perHour}/60 utworzeń na godzinę",
     "estimatedCompletion": "Szacowany czas ukończenia:",
     "pleaseWait": "Proszę czekać...",
     "preparingUploads": "Przygotowywanie przesyłania...",
@@ -1592,15 +1587,15 @@
     "deferredTypeSummary": "{label}: {count, plural, one {# przesyłanie oczekuje — wznowienie {time}} few {# przesyłania oczekują — wznowienie {time}} many {# przesyłań oczekuje — wznowienie {time}} other {# przesyłania oczekują — wznowienie {time}}}",
     "externalRateLimitWaiting": "{count, plural, one {# oczekuje — limit TorBox} few {# oczekują — limit TorBox} many {# oczekuje — limit TorBox} other {# oczekuje — limit TorBox}}",
     "firstSlotOpens": "Pierwsze miejsce otwiera się {time}",
-    "noUncached": "Brak niezbuforowanych przesłań w ostatniej godzinie",
+    "noUncached": "Brak utworzeń w ostatniej godzinie",
     "rateLimitReached": "Osiągnięto limit",
     "rateLimitedWaiting": "{count, plural, one {# oczekuje — limit godzinowy} few {# oczekują — limit godzinowy} many {# oczekuje — limit godzinowy} other {# oczekuje — limit godzinowy}}",
     "resumesIn": "Wznowienie {time}",
     "resumesProcessing": "Wznowienie przetwarzania {time}",
     "soon": "wkrótce",
-    "title": "Niezbuforowane przesyłania (ostatnia godzina)",
+    "title": "Utworzenia (ostatnia godzina)",
     "transientPausedWaiting": "{count, plural, one {# oczekuje — TorBox nadal przetwarza} few {# oczekują — TorBox nadal przetwarza} many {# oczekuje — TorBox nadal przetwarza} other {# oczekuje — TorBox nadal przetwarza}}",
-    "typeUncached": "/ {limit} niezbuforowanych"
+    "typeUncached": "/ {limit} utworzeń"
   },
   "Usage": {
     "danger": {

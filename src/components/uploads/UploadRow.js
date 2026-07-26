@@ -1,13 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { useTranslations } from 'next-intl';
 import Tooltip from '@/components/shared/Tooltip';
-import {
-  formatDate,
-  formatTimeAgo,
-  normalizeUploadId,
-  getUploadRowErrorMessage,
-  getUploadRowDeferralHint,
-} from './utils';
+import { formatDate, formatTimeAgo, normalizeUploadId, getUploadRowErrorMessage } from './utils';
 import { STATUS_COLORS, TYPE_LABELS } from './constants';
 
 function CachedCreateBadge({ label, tooltip }) {
@@ -66,6 +60,7 @@ export default function UploadRow({
   copySuccess,
   isSortable = false,
   showCacheIndicator = false,
+  cachedCountsTowardLimit = true,
 }) {
   const t = useTranslations('Common');
   const tUploads = useTranslations('UploadManager');
@@ -88,9 +83,11 @@ export default function UploadRow({
   const canDownload = upload.upload_type === 'file' && upload.file_path;
   const canCopy = (upload.upload_type === 'magnet' || upload.upload_type === 'link') && upload.url;
   const rowErrorMessage = getUploadRowErrorMessage(upload);
-  const deferralHint = getUploadRowDeferralHint(upload, tUploads, t);
   const showCachedBadge =
     showCacheIndicator && upload.status === 'completed' && upload.create_was_cached === true;
+  const cachedTooltip = cachedCountsTowardLimit
+    ? tUploads('cachedCreateTooltipCounts')
+    : tUploads('cachedCreateTooltipExcluded');
 
   const rowProps = isSortable
     ? {
@@ -163,10 +160,7 @@ export default function UploadRow({
             {upload.name}
           </div>
           {showCachedBadge && (
-            <CachedCreateBadge
-              label={tUploads('cachedCreateAria')}
-              tooltip={tUploads('cachedCreateTooltip')}
-            />
+            <CachedCreateBadge label={tUploads('cachedCreateAria')} tooltip={cachedTooltip} />
           )}
         </div>
         {rowErrorMessage && (
@@ -185,11 +179,6 @@ export default function UploadRow({
           >
             {upload.status}
           </span>
-          {deferralHint && (
-            <div className="mt-0.5 text-xs text-primary-text/55 dark:text-primary-text-dark/55">
-              {deferralHint}
-            </div>
-          )}
         </div>
       </td>
       <td className="px-2.5 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70">
