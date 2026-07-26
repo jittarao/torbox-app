@@ -625,4 +625,49 @@ describe('UploadProcessor drain integration (real claim path)', () => {
       expect(usenet.status).toBe('completed');
     });
   });
+
+  test('releases stale rate-limit deferrals when uncached budget has capacity before draining', async () => {
+    await withUserDb(async (userDb) => {
+      const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
+
+      for (let i = 1; i <= 45; i++) {
+        userDb.db
+          .prepare(
+            `
+            INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
+            VALUES (?, 'torrent', 200, 1, 0, datetime('now', '-30 minutes'))
+          `
+          )
+          .run(i);
+      }
+
+      userDb.db
+        .prepare(
+          `
+          INSERT INTO uploads (type, upload_type, url, name, status, queue_order, next_attempt_at, error_message)
+          VALUES ('torrent', 'magnet', 'magnet:?xt=urn:btih:ready', 'ready', 'queued', 0, datetime('now', '+4 minutes'), ?)
+        `
+        )
+        .run('Uncached rate limit reached. Will retry automatically.');
+
+      processor.getApiClient = async () => ({});
+      processor.makeApiRequest = async () => ({
+        status: 200,
+        data: {
+          success: true,
+          detail: 'ok',
+          data: { hash: 'abc', torrent_id: 1, auth_id: 'x' },
+        },
+      });
+
+      const { totalProcessed } = await processor._drainUserQueues(env.authId, userDb);
+      expect(totalProcessed).toBe(1);
+
+      const row = userDb.db
+        .prepare(`SELECT status, next_attempt_at FROM uploads WHERE name = 'ready'`)
+        .get();
+      expect(row.status).toBe('completed');
+      expect(row.next_attempt_at).toBeNull();
+    });
+  });
 });

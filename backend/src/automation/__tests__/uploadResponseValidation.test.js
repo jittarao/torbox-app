@@ -313,5 +313,18 @@ describe('uploadResponseValidation', () => {
       expect(isTorboxCachedUploadResponse({ data: { success: true } })).toBe(false);
       expect(isTorboxCachedUploadResponse({})).toBe(false);
     });
+
+    test('rejects negated cached wording', () => {
+      expect(
+        isTorboxCachedUploadResponse({
+          data: { success: true, detail: 'Torrent not cached on TorBox', data: {} },
+        })
+      ).toBe(false);
+      expect(
+        isTorboxCachedUploadResponse({
+          data: { success: true, detail: 'Uncached torrent added', data: {} },
+        })
+      ).toBe(false);
+    });
   });
 });
