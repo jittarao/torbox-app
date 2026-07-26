@@ -6,6 +6,7 @@ export default function UploadTable({
   uploads,
   enableDnd = false,
   showCacheIndicator = false,
+  cachedCountsTowardLimit = true,
   onRetry,
   onDelete,
   onDownload,
@@ -91,6 +92,7 @@ export default function UploadTable({
                   copySuccess={copySuccess}
                   isSortable={true}
                   showCacheIndicator={showCacheIndicator}
+                  cachedCountsTowardLimit={cachedCountsTowardLimit}
                 />
               ))}
             </SortableContext>
@@ -113,6 +115,7 @@ export default function UploadTable({
                 copySuccess={copySuccess}
                 isSortable={false}
                 showCacheIndicator={showCacheIndicator}
+                cachedCountsTowardLimit={cachedCountsTowardLimit}
               />
             ))
           )}

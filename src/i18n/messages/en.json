@@ -1122,7 +1122,7 @@
       "webdlPassword": "Password (if required)"
     },
     "rateLimit": {
-      "details": "You have {count} items queued. TorBox limits uncached uploads to {perHour} per hour per type. Cached items are not counted. Large batches are processed automatically.",
+      "details": "You have {count} items queued. TorBox limits create uploads to {perHour} per hour per type. Large batches are processed automatically.",
       "info": "Rate Limit Notice"
     },
     "section": {
@@ -1681,17 +1681,12 @@
   },
   "UploadManager": {
     "cachedCreateAria": "Cached",
-    "cachedCreateTooltip": "TorBox served this from its shared cache. Does not count toward the hourly uncached upload limit.",
-    "deferralReasonConnection": "TorBox unavailable",
-    "deferralReasonExternalRateLimit": "TorBox rate limit",
-    "deferralReasonGeneric": "Paused",
-    "deferralReasonHourlyLimit": "Hourly limit",
-    "deferralReasonTransient": "TorBox processing",
-    "deferralRowHint": "{reason} · resumes {time}"
+    "cachedCreateTooltipCounts": "TorBox served this from its shared cache. Still counts toward the hourly create limit.",
+    "cachedCreateTooltipExcluded": "TorBox served this from its shared cache. Does not count toward the hourly create limit."
   },
   "UploadProgress": {
-    "approachingRateLimit": "Approaching uncached rate limit:",
-    "approachingRateLimitDetails": "{perHour}/60 uncached per hour",
+    "approachingRateLimit": "Approaching create rate limit:",
+    "approachingRateLimitDetails": "{perHour}/60 creates per hour",
     "estimatedCompletion": "Estimated completion:",
     "pleaseWait": "Please wait...",
     "preparingUploads": "Preparing uploads...",
@@ -1709,16 +1704,16 @@
     "deferredTypeSummary": "{label}: {count, plural, one {# upload waiting — resumes {time}} other {# uploads waiting — resumes {time}}}",
     "externalRateLimitWaiting": "{count, plural, one {# waiting — TorBox rate limit} other {# waiting — TorBox rate limit}}",
     "firstSlotOpens": "First slot opens {time}",
-    "noUncached": "No uncached uploads in the last hour",
+    "noUncached": "No create uploads in the last hour",
     "rateLimitReached": "Rate limit reached",
     "rateLimitedWaiting": "{count, plural, one {# waiting — hourly limit} other {# waiting — hourly limit}}",
     "resumesIn": "Resumes {time}",
     "resumesProcessing": "Resumes processing {time}",
     "soon": "soon",
-    "title": "Uncached Uploads (Last Hour)",
+    "title": "Create Uploads (Last Hour)",
     "transientPausedWaiting": "{count, plural, one {# waiting — TorBox still processing} other {# waiting — TorBox still processing}}",
     "typeTorrents": "Torrents",
-    "typeUncached": "/ {limit} uncached",
+    "typeUncached": "/ {limit} creates",
     "typeUsenet": "Usenet",
     "typeWebdl": "WebDL"
   },

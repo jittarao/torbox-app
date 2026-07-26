@@ -1027,7 +1027,7 @@
       "webdlPassword": "Passwort eingeben (optional)"
     },
     "rateLimit": {
-      "details": "Sie haben {count} Elemente in der Warteschlange. TorBox beschränkt nicht zwischengespeicherte Uploads auf {perHour} pro Stunde und Typ. Zwischengespeicherte Elemente werden nicht gezählt. Große Batch-Uploads werden automatisch verarbeitet.",
+      "details": "Sie haben {count} Elemente in der Warteschlange. TorBox beschränkt Create-Uploads auf {perHour} pro Stunde und Typ. Große Batch-Uploads werden automatisch verarbeitet.",
       "info": "Rate Limit Hinweis"
     },
     "section": {
@@ -1559,17 +1559,12 @@
   },
   "UploadManager": {
     "cachedCreateAria": "Zwischengespeichert",
-    "cachedCreateTooltip": "TorBox hat dies aus dem gemeinsamen Cache bereitgestellt. Zählt nicht zum stündlichen Limit für nicht zwischengespeicherte Uploads.",
-    "deferralReasonConnection": "TorBox nicht erreichbar",
-    "deferralReasonExternalRateLimit": "TorBox-Rate-Limit",
-    "deferralReasonGeneric": "Pausiert",
-    "deferralReasonHourlyLimit": "Stündliches Limit",
-    "deferralReasonTransient": "TorBox verarbeitet",
-    "deferralRowHint": "{reason} · Fortsetzung {time}"
+    "cachedCreateTooltipCounts": "TorBox hat dies aus dem gemeinsamen Cache bereitgestellt. Zählt weiterhin zum stündlichen Create-Limit.",
+    "cachedCreateTooltipExcluded": "TorBox hat dies aus dem gemeinsamen Cache bereitgestellt. Zählt nicht zum stündlichen Create-Limit."
   },
   "UploadProgress": {
-    "approachingRateLimit": "Nicht zwischengespeichertes Rate-Limit wird erreicht:",
-    "approachingRateLimitDetails": "{perHour}/60 nicht zwischengespeichert pro Stunde",
+    "approachingRateLimit": "Create-Rate-Limit wird erreicht:",
+    "approachingRateLimitDetails": "{perHour}/60 Creates pro Stunde",
     "estimatedCompletion": "Geschätzte Fertigstellung:",
     "pleaseWait": "Bitte warten...",
     "preparingUploads": "Uploads werden vorbereitet...",
@@ -1587,15 +1582,15 @@
     "deferredTypeSummary": "{label}: {count, plural, one {# Upload wartet — Fortsetzung {time}} other {# Uploads warten — Fortsetzung {time}}}",
     "externalRateLimitWaiting": "{count, plural, one {# wartet — TorBox-Rate-Limit} other {# warten — TorBox-Rate-Limit}}",
     "firstSlotOpens": "Erster Slot öffnet {time}",
-    "noUncached": "Keine nicht zwischengespeicherten Uploads in der letzten Stunde",
+    "noUncached": "Keine Create-Uploads in der letzten Stunde",
     "rateLimitReached": "Rate-Limit erreicht",
     "rateLimitedWaiting": "{count, plural, one {# wartet — Stündliches Limit} other {# warten — Stündliches Limit}}",
     "resumesIn": "Fortsetzung {time}",
     "resumesProcessing": "Verarbeitung fortgesetzt {time}",
     "soon": "bald",
-    "title": "Nicht zwischengespeicherte Uploads (letzte Stunde)",
+    "title": "Create-Uploads (letzte Stunde)",
     "transientPausedWaiting": "{count, plural, one {# wartet — TorBox verarbeitet noch} other {# warten — TorBox verarbeitet noch}}",
-    "typeUncached": "/ {limit} nicht zwischengespeichert"
+    "typeUncached": "/ {limit} Creates"
   },
   "Usage": {
     "danger": {

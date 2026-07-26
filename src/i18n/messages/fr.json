@@ -1010,7 +1010,7 @@
       "webdlPassword": "Entrer le mot de passe (optionnel)"
     },
     "rateLimit": {
-      "details": "Vous avez {count} éléments en file d'attente. TorBox limite les téléchargements non mis en cache à {perHour} par heure et par type. Les éléments mis en cache ne sont pas comptés. Les lots importants sont traités automatiquement.",
+      "details": "Vous avez {count} éléments en file d'attente. TorBox limite les créations à {perHour} par heure et par type. Les lots importants sont traités automatiquement.",
       "info": "Limite de taux"
     },
     "section": {
@@ -1545,17 +1545,12 @@
   },
   "UploadManager": {
     "cachedCreateAria": "En cache",
-    "cachedCreateTooltip": "TorBox a servi cet élément depuis son cache partagé. Ne compte pas dans la limite horaire d’envois non mis en cache.",
-    "deferralReasonConnection": "TorBox indisponible",
-    "deferralReasonExternalRateLimit": "Limite TorBox",
-    "deferralReasonGeneric": "En pause",
-    "deferralReasonHourlyLimit": "Limite horaire",
-    "deferralReasonTransient": "Traitement TorBox",
-    "deferralRowHint": "{reason} · reprise {time}"
+    "cachedCreateTooltipCounts": "TorBox a servi cet élément depuis son cache partagé. Compte toujours dans la limite horaire de création.",
+    "cachedCreateTooltipExcluded": "TorBox a servi cet élément depuis son cache partagé. Ne compte pas dans la limite horaire de création."
   },
   "UploadProgress": {
-    "approachingRateLimit": "Limite de débit pour les éléments non mis en cache approchée:",
-    "approachingRateLimitDetails": "{perHour}/60 non mis en cache par heure",
+    "approachingRateLimit": "Limite de création approchée:",
+    "approachingRateLimitDetails": "{perHour}/60 créations par heure",
     "estimatedCompletion": "Achèvement estimé:",
     "pleaseWait": "Veuillez patienter...",
     "preparingUploads": "Préparation des téléversements...",
@@ -1573,15 +1568,15 @@
     "deferredTypeSummary": "{label}: {count, plural, one {# téléversement en attente — reprise {time}} other {# téléversements en attente — reprise {time}}}",
     "externalRateLimitWaiting": "{count, plural, one {# en attente — limite TorBox} other {# en attente — limite TorBox}}",
     "firstSlotOpens": "Premier créneau ouvert {time}",
-    "noUncached": "Aucun téléversement non mis en cache au cours de la dernière heure",
+    "noUncached": "Aucune création au cours de la dernière heure",
     "rateLimitReached": "Limite de débit atteinte",
     "rateLimitedWaiting": "{count, plural, one {# en attente — limite horaire} other {# en attente — limite horaire}}",
     "resumesIn": "Reprise {time}",
     "resumesProcessing": "Reprise du traitement {time}",
     "soon": "bientôt",
-    "title": "Téléversements non mis en cache (dernière heure)",
+    "title": "Créations (dernière heure)",
     "transientPausedWaiting": "{count, plural, one {# en attente — TorBox traite encore} other {# en attente — TorBox traite encore}}",
-    "typeUncached": "/ {limit} non mis en cache"
+    "typeUncached": "/ {limit} créations"
   },
   "Usage": {
     "danger": {
