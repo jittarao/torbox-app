@@ -1037,7 +1037,7 @@
       "webdlPassword": "パスワードを入力してください（オプション）"
     },
     "rateLimit": {
-      "details": "{count} アイテムがキューにあります。TorBoxはキャッシュされていないアップロードを種類ごとに1時間あたり {perHour} 件に制限しています。キャッシュ済みのアイテムはカウントされません。大規模なバッチは自動的に処理されます。",
+      "details": "{count} アイテムがキューにあります。TorBoxは作成アップロードを種類ごとに1時間あたり {perHour} 件に制限しています。大規模なバッチは自動的に処理されます。",
       "info": "レート制限"
     },
     "section": {
@@ -1586,17 +1586,12 @@
   },
   "UploadManager": {
     "cachedCreateAria": "キャッシュ済み",
-    "cachedCreateTooltip": "TorBoxの共有キャッシュから提供されました。1時間あたりの非キャッシュアップロード上限にはカウントされません。",
-    "deferralReasonConnection": "TorBox利用不可",
-    "deferralReasonExternalRateLimit": "TorBoxレート制限",
-    "deferralReasonGeneric": "一時停止",
-    "deferralReasonHourlyLimit": "時間あたり上限",
-    "deferralReasonTransient": "TorBox処理中",
-    "deferralRowHint": "{reason} · {time}に再開"
+    "cachedCreateTooltipCounts": "TorBoxの共有キャッシュから提供されました。1時間あたりの作成上限にはカウントされます。",
+    "cachedCreateTooltipExcluded": "TorBoxの共有キャッシュから提供されました。1時間あたりの作成上限にはカウントされません。"
   },
   "UploadProgress": {
-    "approachingRateLimit": "キャッシュなしのレート制限に近づいています:",
-    "approachingRateLimitDetails": "キャッシュなしで時間あたり {perHour}/60",
+    "approachingRateLimit": "作成レート制限に近づいています:",
+    "approachingRateLimitDetails": "時間あたり {perHour}/60 件の作成",
     "estimatedCompletion": "推定完了時間:",
     "pleaseWait": "お待ちください...",
     "preparingUploads": "アップロードを準備中...",
@@ -1614,15 +1609,15 @@
     "deferredTypeSummary": "{label}: {count, plural, other {# 件のアップロード待機中 — {time} に再開}}",
     "externalRateLimitWaiting": "{count, plural, other {# 件待機中 — TorBoxレート制限}}",
     "firstSlotOpens": "次の枠が開くのは {time}",
-    "noUncached": "直近1時間にキャッシュなしのアップロードはありません",
+    "noUncached": "直近1時間に作成アップロードはありません",
     "rateLimitReached": "レート制限に達しました",
     "rateLimitedWaiting": "{count, plural, other {# 件待機中 — 時間あたり上限}}",
     "resumesIn": "{time} に再開",
     "resumesProcessing": "処理再開 {time}",
     "soon": "まもなく",
-    "title": "キャッシュなしアップロード（直近1時間）",
+    "title": "作成アップロード（直近1時間）",
     "transientPausedWaiting": "{count, plural, other {# 件待機中 — TorBox処理中}}",
-    "typeUncached": "/ {limit} キャッシュなし"
+    "typeUncached": "/ {limit} 作成"
   },
   "Usage": {
     "danger": {

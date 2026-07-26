@@ -28,7 +28,7 @@ describe('UploadProcessor uncached rate limits', () => {
     }
   }
 
-  test('countUncachedAttemptsSince excludes cached attempts', async () => {
+  test('countUncachedAttemptsSince includes cached creates when flag defaults on', async () => {
     await withUserDb((userDb) => {
       const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
 
@@ -38,6 +38,55 @@ describe('UploadProcessor uncached rate limits', () => {
           INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
           VALUES (1, 'torrent', 200, 1, 0, datetime('now', '-10 minutes')),
                  (2, 'torrent', 200, 1, 1, datetime('now', '-5 minutes'))
+        `
+        )
+        .run();
+
+      // Default UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT=true matches TorBox prod 429s.
+      expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(2);
+    });
+  });
+
+  test('countUncachedAttemptsSince excludes cached creates when flag is false', async () => {
+    const previous = process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT;
+    process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT = 'false';
+    try {
+      await withUserDb((userDb) => {
+        const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
+
+        userDb.db
+          .prepare(
+            `
+            INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
+            VALUES (1, 'torrent', 200, 1, 0, datetime('now', '-10 minutes')),
+                   (2, 'torrent', 200, 1, 1, datetime('now', '-5 minutes'))
+          `
+          )
+          .run();
+
+        expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(1);
+      });
+    } finally {
+      if (previous === undefined) {
+        delete process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT;
+      } else {
+        process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT = previous;
+      }
+    }
+  });
+
+  test('countUncachedAttemptsSince excludes duplicate resolves from the hourly budget', async () => {
+    await withUserDb((userDb) => {
+      const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
+
+      userDb.db
+        .prepare(
+          `
+          INSERT INTO upload_attempts
+            (upload_id, type, status_code, success, error_code, is_cached, attempted_at)
+          VALUES
+            (1, 'torrent', 200, 1, NULL, 0, datetime('now', '-10 minutes')),
+            (2, 'torrent', 200, 1, 'DUPLICATE_ITEM', 1, datetime('now', '-5 minutes'))
         `
         )
         .run();
@@ -101,7 +150,7 @@ describe('UploadProcessor uncached rate limits', () => {
     });
   });
 
-  test('handleSuccessfulUpload logs cached responses without consuming uncached budget', async () => {
+  test('handleSuccessfulUpload logs cached responses and consumes hourly budget', async () => {
     await withUserDb((userDb) => {
       const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
 
@@ -130,7 +179,7 @@ describe('UploadProcessor uncached rate limits', () => {
         .get(uploadId);
       expect(row?.is_cached).toBe(1);
 
-      expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(0);
+      expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(1);
     });
   });
 
@@ -510,10 +559,11 @@ describe('GET /api/uploads uncached statistics', () => {
     const res = await request(app).get('/api/uploads').set('x-api-key', env.apiKey);
 
     expect(res.status).toBe(200);
-    expect(res.body.uploadStatistics.lastHour.torrents.uncached).toBe(1);
+    expect(res.body.uploadStatistics.lastHour.torrents.uncached).toBe(2);
     expect(res.body.uploadStatistics.lastHour.usenets.uncached).toBe(1);
     expect(res.body.uploadStatistics.lastHour.webdls.uncached).toBe(0);
     expect(res.body.uploadStatistics.rateLimit.uncachedPerHour).toBe(60);
+    expect(res.body.uploadStatistics.rateLimit.cachedCountsTowardLimit).toBe(true);
   });
 
   test('returns deferred queue counts and retryAt when uploads are waiting on exhausted budget', async () => {
