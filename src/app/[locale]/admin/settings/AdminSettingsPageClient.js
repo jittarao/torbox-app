@@ -80,7 +80,7 @@ export default function AdminSettingsPageClient() {
             </AdminCard>
 
             <AdminCard title="Upload processor drain">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <AdminStatRow
                   label="Batch fetch size (SQL rows)"
                   value={config.upload_processor?.batch_fetch_size}
@@ -92,6 +92,10 @@ export default function AdminSettingsPageClient() {
                 <AdminStatRow
                   label="Create upload timeout (ms)"
                   value={config.upload_processor?.create_upload_timeout_ms}
+                />
+                <AdminStatRow
+                  label="External 429 retry (ms)"
+                  value={config.upload_processor?.external_rate_limit_retry_ms}
                 />
               </div>
             </AdminCard>

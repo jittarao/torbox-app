@@ -1557,6 +1557,16 @@
     },
     "title": "Globale Upload-Optionen"
   },
+  "UploadManager": {
+    "cachedCreateAria": "Zwischengespeichert",
+    "cachedCreateTooltip": "TorBox hat dies aus dem gemeinsamen Cache bereitgestellt. Zählt nicht zum stündlichen Limit für nicht zwischengespeicherte Uploads.",
+    "deferralReasonConnection": "TorBox nicht erreichbar",
+    "deferralReasonExternalRateLimit": "TorBox-Rate-Limit",
+    "deferralReasonGeneric": "Pausiert",
+    "deferralReasonHourlyLimit": "Stündliches Limit",
+    "deferralReasonTransient": "TorBox verarbeitet",
+    "deferralRowHint": "{reason} · Fortsetzung {time}"
+  },
   "UploadProgress": {
     "approachingRateLimit": "Nicht zwischengespeichertes Rate-Limit wird erreicht:",
     "approachingRateLimitDetails": "{perHour}/60 nicht zwischengespeichert pro Stunde",
@@ -1571,14 +1581,20 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "Limit wird erreicht",
+    "connectionPausedWaiting": "{count, plural, one {# wartet — TorBox nicht erreichbar} other {# warten — TorBox nicht erreichbar}}",
     "deferredCount": "{count, plural, one {# in Warteschlange} other {# in Warteschlange}}",
     "deferredSummary": "{count, plural, one {# Upload wartet — Fortsetzung {time}} other {# Uploads warten — Fortsetzung {time}}}",
     "deferredTypeSummary": "{label}: {count, plural, one {# Upload wartet — Fortsetzung {time}} other {# Uploads warten — Fortsetzung {time}}}",
+    "externalRateLimitWaiting": "{count, plural, one {# wartet — TorBox-Rate-Limit} other {# warten — TorBox-Rate-Limit}}",
+    "firstSlotOpens": "Erster Slot öffnet {time}",
     "noUncached": "Keine nicht zwischengespeicherten Uploads in der letzten Stunde",
     "rateLimitReached": "Rate-Limit erreicht",
+    "rateLimitedWaiting": "{count, plural, one {# wartet — Stündliches Limit} other {# warten — Stündliches Limit}}",
     "resumesIn": "Fortsetzung {time}",
+    "resumesProcessing": "Verarbeitung fortgesetzt {time}",
     "soon": "bald",
     "title": "Nicht zwischengespeicherte Uploads (letzte Stunde)",
+    "transientPausedWaiting": "{count, plural, one {# wartet — TorBox verarbeitet noch} other {# warten — TorBox verarbeitet noch}}",
     "typeUncached": "/ {limit} nicht zwischengespeichert"
   },
   "Usage": {

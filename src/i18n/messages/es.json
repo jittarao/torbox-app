@@ -1556,6 +1556,16 @@
     },
     "title": "Opciones de carga global"
   },
+  "UploadManager": {
+    "cachedCreateAria": "En caché",
+    "cachedCreateTooltip": "TorBox lo sirvió desde su caché compartida. No cuenta para el límite horario de subidas sin caché.",
+    "deferralReasonConnection": "TorBox no disponible",
+    "deferralReasonExternalRateLimit": "Límite de TorBox",
+    "deferralReasonGeneric": "En pausa",
+    "deferralReasonHourlyLimit": "Límite horario",
+    "deferralReasonTransient": "TorBox procesando",
+    "deferralRowHint": "{reason} · reanuda {time}"
+  },
   "UploadProgress": {
     "approachingRateLimit": "Límite de velocidad de cargas sin caché aproximándose:",
     "approachingRateLimitDetails": "{perHour}/60 sin caché por hora",
@@ -1570,14 +1580,20 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "Acercándose al límite",
+    "connectionPausedWaiting": "{count, plural, one {# en espera — TorBox no disponible} other {# en espera — TorBox no disponible}}",
     "deferredCount": "{count, plural, one {# en cola} other {# en cola}}",
     "deferredSummary": "{count, plural, one {# subida en espera — reanuda {time}} other {# subidas en espera — reanudan {time}}}",
     "deferredTypeSummary": "{label}: {count, plural, one {# subida en espera — reanuda {time}} other {# subidas en espera — reanudan {time}}}",
+    "externalRateLimitWaiting": "{count, plural, one {# en espera — límite de TorBox} other {# en espera — límite de TorBox}}",
+    "firstSlotOpens": "Primer cupo disponible {time}",
     "noUncached": "No hay subidas sin caché en la última hora",
     "rateLimitReached": "Límite de velocidad alcanzado",
+    "rateLimitedWaiting": "{count, plural, one {# en espera — límite horario} other {# en espera — límite horario}}",
     "resumesIn": "Reanuda {time}",
+    "resumesProcessing": "Reanuda el procesamiento {time}",
     "soon": "pronto",
     "title": "Subidas sin caché (última hora)",
+    "transientPausedWaiting": "{count, plural, one {# en espera — TorBox aún procesando} other {# en espera — TorBox aún procesando}}",
     "typeUncached": "/ {limit} sin caché"
   },
   "Usage": {
