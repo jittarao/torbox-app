@@ -18,10 +18,20 @@ function getTypeStats(lastHour, lastHourKey) {
       uncached: entry.uncached ?? 0,
       deferredCount: entry.deferredCount ?? 0,
       deferredUntil: entry.deferredUntil ?? null,
+      pausedCount: entry.pausedCount ?? 0,
+      pausedUntil: entry.pausedUntil ?? null,
+      pauseReason: entry.pauseReason ?? null,
     };
   }
   const uncached = typeof entry === 'number' ? entry : 0;
-  return { uncached, deferredCount: 0, deferredUntil: null };
+  return {
+    uncached,
+    deferredCount: 0,
+    deferredUntil: null,
+    pausedCount: 0,
+    pausedUntil: null,
+    pauseReason: null,
+  };
 }
 
 function getTypeLimit(rateLimit, typeKey) {
@@ -35,6 +45,35 @@ function getUsageState(uncached, limit) {
   const isAtLimit = uncached >= limit;
   const isApproaching = !isAtLimit && uncached >= limit * 0.8;
   return { pct, isAtLimit, isApproaching };
+}
+
+function getQueueStatusCopy(type, t, tCommon) {
+  if (type.deferredCount > 0) {
+    return {
+      waitingLabel: t('rateLimitedWaiting', { count: type.deferredCount }),
+      resumeLabel: type.deferredUntil
+        ? t('firstSlotOpens', { time: formatTimeAgo(type.deferredUntil, tCommon) })
+        : null,
+    };
+  }
+
+  if (type.pausedCount > 0) {
+    const waitingKey =
+      type.pauseReason === 'connection'
+        ? 'connectionPausedWaiting'
+        : type.pauseReason === 'transient'
+          ? 'transientPausedWaiting'
+          : 'externalRateLimitWaiting';
+
+    return {
+      waitingLabel: t(waitingKey, { count: type.pausedCount }),
+      resumeLabel: type.pausedUntil
+        ? t('resumesProcessing', { time: formatTimeAgo(type.pausedUntil, tCommon) })
+        : null,
+    };
+  }
+
+  return { waitingLabel: null, resumeLabel: null };
 }
 
 function TypeUsageBar({ pct, isAtLimit, isApproaching }) {
@@ -59,7 +98,7 @@ function TypeUsageBar({ pct, isAtLimit, isApproaching }) {
 
 function TypeStatCard({ type, t, tCommon }) {
   const { pct, isAtLimit, isApproaching } = getUsageState(type.uncached, type.limit);
-  const resumeTime = type.deferredUntil ? formatTimeAgo(type.deferredUntil, tCommon) : null;
+  const { waitingLabel, resumeLabel } = getQueueStatusCopy(type, t, tCommon);
 
   const countClass = isAtLimit
     ? 'text-label-warning-text dark:text-label-warning-text-dark'
@@ -84,12 +123,12 @@ function TypeStatCard({ type, t, tCommon }) {
 
       <TypeUsageBar pct={pct} isAtLimit={isAtLimit} isApproaching={isApproaching} />
 
-      {type.deferredCount > 0 && (
+      {waitingLabel && (
         <p className="mt-2 text-xs text-primary-text/60 dark:text-primary-text-dark/60">
           <span className="font-medium text-primary-text/75 dark:text-primary-text-dark/75">
-            {t('deferredCount', { count: type.deferredCount })}
+            {waitingLabel}
           </span>
-          {resumeTime && (
+          {resumeLabel && (
             <>
               <span
                 aria-hidden
@@ -97,7 +136,7 @@ function TypeStatCard({ type, t, tCommon }) {
               >
                 ·
               </span>
-              {t('resumesIn', { time: resumeTime })}
+              {resumeLabel}
             </>
           )}
         </p>
@@ -139,7 +178,9 @@ export default function UploadStatistics({ uploadStatistics }) {
     };
   });
 
-  const visibleTypes = types.filter((type) => type.uncached > 0 || type.deferredCount > 0);
+  const visibleTypes = types.filter(
+    (type) => type.uncached > 0 || type.deferredCount > 0 || type.pausedCount > 0
+  );
   const isAtLimit = visibleTypes.some((type) => type.uncached >= type.limit);
   const isApproaching =
     !isAtLimit && visibleTypes.some((type) => type.uncached >= type.limit * 0.8);

@@ -5,6 +5,7 @@ import { normalizeUploadId } from './utils';
 export default function UploadTable({
   uploads,
   enableDnd = false,
+  showCacheIndicator = false,
   onRetry,
   onDelete,
   onDownload,
@@ -89,6 +90,7 @@ export default function UploadTable({
                   onSelect={onSelect}
                   copySuccess={copySuccess}
                   isSortable={true}
+                  showCacheIndicator={showCacheIndicator}
                 />
               ))}
             </SortableContext>
@@ -110,6 +112,7 @@ export default function UploadTable({
                 onSelect={onSelect}
                 copySuccess={copySuccess}
                 isSortable={false}
+                showCacheIndicator={showCacheIndicator}
               />
             ))
           )}

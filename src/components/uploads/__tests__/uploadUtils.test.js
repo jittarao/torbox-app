@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   getUploadRowErrorMessage,
+  getUploadRowDeferralHint,
   isTransientDeferralMessage,
   isUploadDeferred,
   normalizeUploadId,
@@ -59,5 +60,48 @@ describe('upload deferral helpers', () => {
     expect(isUploadDeferred(future)).toBe(true);
     expect(isUploadDeferred(past)).toBe(false);
     expect(isUploadDeferred(null)).toBe(false);
+  });
+
+  test('getUploadRowDeferralHint returns reason and resume time for queued deferrals', () => {
+    const future = new Date(Date.now() + 5 * 60_000).toISOString();
+    const tUploads = (key, values) => {
+      if (key === 'deferralRowHint') {
+        return `${values.reason} · resumes ${values.time}`;
+      }
+      const labels = {
+        deferralReasonHourlyLimit: 'Hourly limit',
+        deferralReasonExternalRateLimit: 'TorBox rate limit',
+      };
+      return labels[key] ?? key;
+    };
+    const tCommon = () => 'in 5m';
+
+    expect(
+      getUploadRowDeferralHint(
+        {
+          status: 'queued',
+          next_attempt_at: future,
+          error_message: 'Uncached rate limit reached. Will retry automatically.',
+        },
+        tUploads,
+        tCommon
+      )
+    ).toBe('Hourly limit · resumes in 5m');
+
+    expect(
+      getUploadRowDeferralHint(
+        {
+          status: 'queued',
+          next_attempt_at: future,
+          error_message: 'Rate limit reached. Will retry automatically.',
+        },
+        tUploads,
+        tCommon
+      )
+    ).toBe('TorBox rate limit · resumes in 5m');
+
+    expect(
+      getUploadRowDeferralHint({ status: 'queued', next_attempt_at: null }, tUploads, tCommon)
+    ).toBeNull();
   });
 });
