@@ -4,18 +4,20 @@ import { useTranslations } from 'next-intl';
 import { formatTimeAgo } from './utils';
 
 const TYPE_CONFIG = [
-  { lastHourKey: 'torrents', typeKey: 'torrent', labelKey: 'typeTorrents' },
-  { lastHourKey: 'usenets', typeKey: 'usenet', labelKey: 'typeUsenet' },
-  { lastHourKey: 'webdls', typeKey: 'webdl', labelKey: 'typeWebdl' },
+  { typeKey: 'torrent', labelKey: 'typeTorrents' },
+  { typeKey: 'usenet', labelKey: 'typeUsenet' },
+  { typeKey: 'webdl', labelKey: 'typeWebdl' },
 ];
 
-const DEFAULT_UNCACHED_HOURLY_LIMIT = 60;
-
-function getTypeStats(lastHour, lastHourKey) {
-  const entry = lastHour?.[lastHourKey];
+function getTypeStats(byType, typeKey) {
+  const entry = byType?.[typeKey];
   if (entry != null && typeof entry === 'object') {
     return {
-      uncached: entry.uncached ?? 0,
+      limit: entry.limit ?? null,
+      remaining: entry.remaining ?? null,
+      used: entry.used ?? null,
+      known: entry.known === true,
+      resetAt: entry.resetAt ?? null,
       deferredCount: entry.deferredCount ?? 0,
       deferredUntil: entry.deferredUntil ?? null,
       pausedCount: entry.pausedCount ?? 0,
@@ -23,9 +25,12 @@ function getTypeStats(lastHour, lastHourKey) {
       pauseReason: entry.pauseReason ?? null,
     };
   }
-  const uncached = typeof entry === 'number' ? entry : 0;
   return {
-    uncached,
+    limit: null,
+    remaining: null,
+    used: null,
+    known: false,
+    resetAt: null,
     deferredCount: 0,
     deferredUntil: null,
     pausedCount: 0,
@@ -34,17 +39,15 @@ function getTypeStats(lastHour, lastHourKey) {
   };
 }
 
-function getTypeLimit(rateLimit, typeKey) {
-  return (
-    rateLimit?.perType?.[typeKey] ?? rateLimit?.uncachedPerHour ?? DEFAULT_UNCACHED_HOURLY_LIMIT
-  );
-}
-
-function getUsageState(uncached, limit) {
-  const pct = limit > 0 ? Math.min(100, Math.round((uncached / limit) * 100)) : 0;
-  const isAtLimit = uncached >= limit;
-  const isApproaching = !isAtLimit && uncached >= limit * 0.8;
-  return { pct, isAtLimit, isApproaching };
+function getUsageState(type) {
+  if (!type.known || type.limit == null || type.remaining == null) {
+    return { pct: 0, isAtLimit: false, isApproaching: false, showBar: false };
+  }
+  const used = type.used ?? Math.max(0, type.limit - type.remaining);
+  const pct = type.limit > 0 ? Math.min(100, Math.round((used / type.limit) * 100)) : 0;
+  const isAtLimit = type.remaining <= 0;
+  const isApproaching = !isAtLimit && used >= type.limit * 0.8;
+  return { pct, isAtLimit, isApproaching, showBar: true, used };
 }
 
 function getQueueStatusCopy(type, t, tCommon) {
@@ -53,7 +56,9 @@ function getQueueStatusCopy(type, t, tCommon) {
       waitingLabel: t('rateLimitedWaiting', { count: type.deferredCount }),
       resumeLabel: type.deferredUntil
         ? t('firstSlotOpens', { time: formatTimeAgo(type.deferredUntil, tCommon) })
-        : null,
+        : type.resetAt
+          ? t('resumesIn', { time: formatTimeAgo(type.resetAt, tCommon) })
+          : null,
     };
   }
 
@@ -63,7 +68,7 @@ function getQueueStatusCopy(type, t, tCommon) {
         ? 'connectionPausedWaiting'
         : type.pauseReason === 'transient'
           ? 'transientPausedWaiting'
-          : 'externalRateLimitWaiting';
+          : 'rateLimitedWaiting';
 
     return {
       waitingLabel: t(waitingKey, { count: type.pausedCount }),
@@ -97,14 +102,20 @@ function TypeUsageBar({ pct, isAtLimit, isApproaching }) {
 }
 
 function TypeStatCard({ type, t, tCommon }) {
-  const { pct, isAtLimit, isApproaching } = getUsageState(type.uncached, type.limit);
+  const usage = getUsageState(type);
   const { waitingLabel, resumeLabel } = getQueueStatusCopy(type, t, tCommon);
 
-  const countClass = isAtLimit
+  const countClass = usage.isAtLimit
     ? 'text-label-warning-text dark:text-label-warning-text-dark'
-    : isApproaching
+    : usage.isApproaching
       ? 'text-label-active-text dark:text-label-active-text-dark'
       : 'text-primary-text dark:text-primary-text-dark';
+
+  const countLabel = type.known
+    ? usage.showBar
+      ? `${usage.used ?? 0} / ${type.limit}`
+      : t('quotaUnknown')
+    : t('quotaUnknown');
 
   return (
     <div className="rounded-md border border-border/60 bg-surface/50 px-3 py-2.5 dark:border-border-dark/60 dark:bg-surface-dark/40">
@@ -112,16 +123,22 @@ function TypeStatCard({ type, t, tCommon }) {
         <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
           {type.label}
         </span>
-        <span className="text-sm tabular-nums">
-          <span className={`font-semibold ${countClass}`}>{type.uncached}</span>
-          <span className="text-primary-text/45 dark:text-primary-text-dark/45">
-            {' '}
-            / {type.limit}
-          </span>
-        </span>
+        <span className={`text-sm tabular-nums ${countClass}`}>{countLabel}</span>
       </div>
 
-      <TypeUsageBar pct={pct} isAtLimit={isAtLimit} isApproaching={isApproaching} />
+      {usage.showBar && (
+        <TypeUsageBar
+          pct={usage.pct}
+          isAtLimit={usage.isAtLimit}
+          isApproaching={usage.isApproaching}
+        />
+      )}
+
+      {type.known && type.remaining != null && type.limit != null && (
+        <p className="mt-1.5 text-xs text-primary-text/50 dark:text-primary-text-dark/50">
+          {t('remainingQuota', { remaining: type.remaining, limit: type.limit })}
+        </p>
+      )}
 
       {waitingLabel && (
         <p className="mt-2 text-xs text-primary-text/60 dark:text-primary-text-dark/60">
@@ -165,31 +182,48 @@ export default function UploadStatistics({ uploadStatistics }) {
 
   if (!uploadStatistics) return null;
 
-  const { lastHour = {}, rateLimit } = uploadStatistics;
+  const { byType = {} } = uploadStatistics;
 
-  const types = TYPE_CONFIG.map(({ lastHourKey, typeKey, labelKey }) => {
-    const limit = getTypeLimit(rateLimit, typeKey);
-    const stats = getTypeStats(lastHour, lastHourKey);
+  const types = TYPE_CONFIG.map(({ typeKey, labelKey }) => {
+    const stats = getTypeStats(byType, typeKey);
     return {
-      key: lastHourKey,
+      key: typeKey,
       label: t(labelKey),
       ...stats,
-      limit,
     };
   });
 
-  const visibleTypes = types.filter(
-    (type) => type.uncached > 0 || type.deferredCount > 0 || type.pausedCount > 0
+  const visibleTypes = types.filter((type) => {
+    if (type.deferredCount > 0 || type.pausedCount > 0) {
+      return true;
+    }
+    if (!type.known) {
+      return false;
+    }
+    if (type.limit == null || type.remaining == null) {
+      return false;
+    }
+    return type.remaining < type.limit;
+  });
+
+  const isAtLimit = visibleTypes.some(
+    (type) => type.known && type.remaining != null && type.remaining <= 0
   );
-  const isAtLimit = visibleTypes.some((type) => type.uncached >= type.limit);
   const isApproaching =
-    !isAtLimit && visibleTypes.some((type) => type.uncached >= type.limit * 0.8);
+    !isAtLimit &&
+    visibleTypes.some((type) => {
+      if (!type.known || type.limit == null || type.remaining == null) {
+        return false;
+      }
+      const used = type.used ?? type.limit - type.remaining;
+      return used >= type.limit * 0.8;
+    });
 
   if (visibleTypes.length === 0) {
     return (
       <div className="mt-4 rounded-lg border border-border/70 bg-surface-alt/40 px-4 py-3 dark:border-border-dark/70 dark:bg-surface-alt-dark/30">
         <p className="text-sm text-primary-text/50 dark:text-primary-text-dark/50">
-          {t('noUncached')}
+          {t('noQuotaActivity')}
         </p>
       </div>
     );

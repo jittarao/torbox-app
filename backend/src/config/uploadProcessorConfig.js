@@ -21,8 +21,8 @@ export const CREATE_UPLOAD_TIMEOUT_MS = parsePositiveInt(
 );
 
 /**
- * Cool-down when TorBox returns 429 but our rolling uncached budget still has capacity
- * (no Retry-After header). Shared across the affected upload type's queue.
+ * Fallback wait (ms) when TorBox blocks creates but response headers omit reset/retry timing.
+ * Used for proactive gating, 429 deferral, and orphan block expiry (remaining=0 without reset).
  */
 export const UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS = parsePositiveInt(
   process.env.UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
