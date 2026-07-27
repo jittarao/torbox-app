@@ -1545,8 +1545,7 @@
   },
   "UploadManager": {
     "cachedCreateAria": "En cache",
-    "cachedCreateTooltipCounts": "TorBox a servi cet élément depuis son cache partagé. Compte toujours dans la limite horaire de création.",
-    "cachedCreateTooltipExcluded": "TorBox a servi cet élément depuis son cache partagé. Ne compte pas dans la limite horaire de création."
+    "cachedCreateTooltip": "TorBox a servi cet élément depuis son cache partagé."
   },
   "UploadProgress": {
     "approachingRateLimit": "Limite de création approchée:",
@@ -1568,9 +1567,12 @@
     "deferredTypeSummary": "{label}: {count, plural, one {# téléversement en attente — reprise {time}} other {# téléversements en attente — reprise {time}}}",
     "externalRateLimitWaiting": "{count, plural, one {# en attente — limite TorBox} other {# en attente — limite TorBox}}",
     "firstSlotOpens": "Premier créneau ouvert {time}",
+    "noQuotaActivity": "Aucune activité récente de quota de création TorBox",
     "noUncached": "Aucune création au cours de la dernière heure",
+    "quotaUnknown": "Quota inconnu",
     "rateLimitReached": "Limite de débit atteinte",
     "rateLimitedWaiting": "{count, plural, one {# en attente — limite horaire} other {# en attente — limite horaire}}",
+    "remainingQuota": "{remaining} sur {limit} restants",
     "resumesIn": "Reprise {time}",
     "resumesProcessing": "Reprise du traitement {time}",
     "soon": "bientôt",

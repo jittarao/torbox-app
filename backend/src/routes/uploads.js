@@ -18,11 +18,6 @@ import {
   UPLOAD_RETRY_SELECT_FIELDS,
 } from '../automation/uploadDuplicateResolve.js';
 import { isConnectionError } from '../utils/torboxErrors.js';
-import {
-  getUploadRateLimitConfig,
-  getUploadBudgetAttemptSql,
-  UPLOAD_UNCACHED_WINDOW_SQL,
-} from '../config/uploadRateLimits.js';
 import { getUploadDeferralStatistics } from '../automation/uploadDeferral.js';
 import { attachCreateWasCached } from '../automation/uploadAttemptLookup.js';
 
@@ -864,58 +859,57 @@ export function setupUploadsRoutes(app, backend) {
         statusCountsMap[row.status] = row.count;
       });
 
-      // Per-type create attempts that consume the hourly budget (includes Found Cached)
-      const uncachedStats = userDb.db
-        .prepare(
-          `
-          SELECT
-            type,
-            COUNT(*) as uncached_count
-          FROM upload_attempts
-          WHERE ${getUploadBudgetAttemptSql()}
-            AND attempted_at >= ${UPLOAD_UNCACHED_WINDOW_SQL}
-          GROUP BY type
-        `
-        )
-        .all();
+      // Per-type TorBox rate-limit state (from processor cache) + queue deferral stats
+      const rateLimitByType = backend.uploadProcessor?.getRateLimitStatisticsForUser(
+        authId,
+        userDb
+      ) ?? {
+        torrent: { limit: null, remaining: null, used: null, resetAt: null, known: false },
+        usenet: { limit: null, remaining: null, used: null, resetAt: null, known: false },
+        webdl: { limit: null, remaining: null, used: null, resetAt: null, known: false },
+      };
 
-      const uncachedByType = { torrent: 0, usenet: 0, webdl: 0 };
-      for (const row of uncachedStats) {
-        if (row.type in uncachedByType) {
-          uncachedByType[row.type] = row.uncached_count;
-        }
-      }
+      const rateLimitSync = backend.uploadProcessor?.getRateLimitSyncContext(authId, userDb) ?? {};
+      const { byType: deferralByType, retryAt } = getUploadDeferralStatistics(
+        userDb,
+        rateLimitSync
+      );
 
-      const { byType: deferralByType, retryAt } = getUploadDeferralStatistics(userDb);
+      const buildTypeStats = (typeKey) => {
+        const quota = rateLimitByType[typeKey] ?? {
+          limit: null,
+          remaining: null,
+          used: null,
+          resetAt: null,
+          known: false,
+        };
+        const deferral = deferralByType[typeKey] ?? {
+          deferredCount: 0,
+          deferredUntil: null,
+          pausedCount: 0,
+          pausedUntil: null,
+          pauseReason: null,
+        };
+        return {
+          limit: quota.limit,
+          remaining: quota.remaining,
+          used: quota.used,
+          resetAt: quota.resetAt,
+          known: quota.known,
+          deferredCount: deferral.deferredCount,
+          deferredUntil: deferral.deferredUntil,
+          pausedCount: deferral.pausedCount,
+          pausedUntil: deferral.pausedUntil,
+          pauseReason: deferral.pauseReason,
+        };
+      };
 
       const uploadStatistics = {
-        lastHour: {
-          torrents: {
-            uncached: uncachedByType.torrent,
-            deferredCount: deferralByType.torrent.deferredCount,
-            deferredUntil: deferralByType.torrent.deferredUntil,
-            pausedCount: deferralByType.torrent.pausedCount,
-            pausedUntil: deferralByType.torrent.pausedUntil,
-            pauseReason: deferralByType.torrent.pauseReason,
-          },
-          usenets: {
-            uncached: uncachedByType.usenet,
-            deferredCount: deferralByType.usenet.deferredCount,
-            deferredUntil: deferralByType.usenet.deferredUntil,
-            pausedCount: deferralByType.usenet.pausedCount,
-            pausedUntil: deferralByType.usenet.pausedUntil,
-            pauseReason: deferralByType.usenet.pauseReason,
-          },
-          webdls: {
-            uncached: uncachedByType.webdl,
-            deferredCount: deferralByType.webdl.deferredCount,
-            deferredUntil: deferralByType.webdl.deferredUntil,
-            pausedCount: deferralByType.webdl.pausedCount,
-            pausedUntil: deferralByType.webdl.pausedUntil,
-            pauseReason: deferralByType.webdl.pauseReason,
-          },
+        byType: {
+          torrent: buildTypeStats('torrent'),
+          usenet: buildTypeStats('usenet'),
+          webdl: buildTypeStats('webdl'),
         },
-        rateLimit: getUploadRateLimitConfig(),
         retryAt,
       };
 

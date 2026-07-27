@@ -34,7 +34,6 @@ export default function UploadManagerTableSection({
   copySuccess,
   pagination,
   onPaginationChange,
-  cachedCountsTowardLimit = true,
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -75,7 +74,6 @@ export default function UploadManagerTableSection({
               uploads={uploads}
               enableDnd={true}
               showCacheIndicator={activeTab === 'completed'}
-              cachedCountsTowardLimit={cachedCountsTowardLimit}
               onRetry={onRetry}
               onDelete={onDelete}
               onDownload={onDownload}
@@ -95,7 +93,6 @@ export default function UploadManagerTableSection({
             uploads={uploads}
             enableDnd={false}
             showCacheIndicator={activeTab === 'completed'}
-            cachedCountsTowardLimit={cachedCountsTowardLimit}
             onRetry={onRetry}
             onDelete={onDelete}
             onDownload={onDownload}

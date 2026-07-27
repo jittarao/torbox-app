@@ -137,11 +137,8 @@ export function isTorboxTransientQueuedResponse(response) {
 
 /**
  * True when TorBox served the create request from its shared debrid cache
- * (e.g. detail "Found Cached Torrent"). Used for UI badges only.
- *
- * Production observation: Found Cached responses may still consume TorBox's
- * 60/hour create pool. Whether TBM counts them locally is controlled by
- * `UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT` (see uploadRateLimits.js).
+ * (e.g. detail "Found Cached Torrent"). Used for UI badges and audit logging only.
+ * Cached detection is stored on `upload_attempts.is_cached`.
  * This is unrelated to mylist duplicate pre-check (items already on the account).
  * @param {Object|undefined} response - Axios response ({ data })
  * @returns {boolean}

@@ -1559,8 +1559,7 @@
   },
   "UploadManager": {
     "cachedCreateAria": "Zwischengespeichert",
-    "cachedCreateTooltipCounts": "TorBox hat dies aus dem gemeinsamen Cache bereitgestellt. Zählt weiterhin zum stündlichen Create-Limit.",
-    "cachedCreateTooltipExcluded": "TorBox hat dies aus dem gemeinsamen Cache bereitgestellt. Zählt nicht zum stündlichen Create-Limit."
+    "cachedCreateTooltip": "TorBox hat dies aus dem gemeinsamen Cache bereitgestellt."
   },
   "UploadProgress": {
     "approachingRateLimit": "Create-Rate-Limit wird erreicht:",
@@ -1582,9 +1581,12 @@
     "deferredTypeSummary": "{label}: {count, plural, one {# Upload wartet — Fortsetzung {time}} other {# Uploads warten — Fortsetzung {time}}}",
     "externalRateLimitWaiting": "{count, plural, one {# wartet — TorBox-Rate-Limit} other {# warten — TorBox-Rate-Limit}}",
     "firstSlotOpens": "Erster Slot öffnet {time}",
+    "noQuotaActivity": "Keine aktuelle TorBox-Create-Quota-Aktivität",
     "noUncached": "Keine Create-Uploads in der letzten Stunde",
+    "quotaUnknown": "Quota unbekannt",
     "rateLimitReached": "Rate-Limit erreicht",
     "rateLimitedWaiting": "{count, plural, one {# wartet — Stündliches Limit} other {# warten — Stündliches Limit}}",
+    "remainingQuota": "{remaining} von {limit} verbleibend",
     "resumesIn": "Fortsetzung {time}",
     "resumesProcessing": "Verarbeitung fortgesetzt {time}",
     "soon": "bald",

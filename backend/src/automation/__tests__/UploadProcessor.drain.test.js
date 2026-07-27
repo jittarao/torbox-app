@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import UploadProcessor from '../UploadProcessor.js';
-import { UPLOAD_UNCACHED_LIMIT_PER_HOUR } from '../../config/uploadRateLimits.js';
 import {
   cleanupUploadTestEnv,
   createUploadTestEnv,
@@ -53,7 +52,7 @@ describe('UploadProcessor buffered round-robin drain', () => {
       };
 
       const originalClaim = processor._claimAndProcessUpload.bind(processor);
-      processor._claimAndProcessUpload = async (upload, authId, db, budgetCtx) => {
+      processor._claimAndProcessUpload = async (upload, authId, db) => {
         const row = db.db.prepare('SELECT status FROM uploads WHERE id = ?').get(upload.id);
         if (row?.status !== 'queued') {
           return { userDb: db, outcome: null };
@@ -63,7 +62,7 @@ describe('UploadProcessor buffered round-robin drain', () => {
             `UPDATE uploads SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`
           )
           .run(upload.id);
-        await processor.processUpload(upload, db, 'queued', false, budgetCtx);
+        await processor.processUpload(upload, db, 'queued', false);
         return { userDb: db, outcome: { success: true, stopTypeDrain: false } };
       };
 
@@ -94,7 +93,7 @@ describe('UploadProcessor buffered round-robin drain', () => {
         return { success: true, stopTypeDrain: false };
       };
 
-      processor._claimAndProcessUpload = async (upload, authId, db, budgetCtx) => {
+      processor._claimAndProcessUpload = async (upload, authId, db) => {
         const row = db.db.prepare('SELECT status FROM uploads WHERE id = ?').get(upload.id);
         if (row?.status !== 'queued') {
           return { userDb: db, outcome: null };
@@ -104,7 +103,7 @@ describe('UploadProcessor buffered round-robin drain', () => {
             `UPDATE uploads SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`
           )
           .run(upload.id);
-        await processor.processUpload(upload, db, 'queued', false, budgetCtx);
+        await processor.processUpload(upload, db, 'queued', false);
         return { userDb: db, outcome: { success: true, stopTypeDrain: false } };
       };
 
@@ -145,40 +144,18 @@ describe('UploadProcessor buffered round-robin drain', () => {
       };
 
       processor.processUpload = async () => ({ success: true, stopTypeDrain: false });
-      processor._claimAndProcessUpload = async (upload, authId, db, budgetCtx) => {
+      processor._claimAndProcessUpload = async (upload, authId, db) => {
         db.db
           .prepare(
             `UPDATE uploads SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`
           )
           .run(upload.id);
-        await processor.processUpload(upload, db, 'queued', false, budgetCtx);
+        await processor.processUpload(upload, db, 'queued', false);
         return { userDb: db, outcome: { success: true, stopTypeDrain: false } };
       };
 
       await processor._drainUserQueues(env.authId, userDb);
       expect(torrentFetchCount).toBe(1);
-    });
-  });
-
-  test('initializes uncached budgets upfront (three count queries)', async () => {
-    await withUserDb(async (userDb) => {
-      const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
-
-      let countCalls = 0;
-      const originalCount = processor.countUncachedAttemptsSince.bind(processor);
-      processor.countUncachedAttemptsSince = (db, type) => {
-        countCalls++;
-        return originalCount(db, type);
-      };
-
-      processor.processUpload = async () => ({ success: true, stopTypeDrain: false });
-      processor._claimAndProcessUpload = async () => ({
-        userDb,
-        outcome: { success: true, stopTypeDrain: false },
-      });
-
-      await processor._drainUserQueues(env.authId, userDb);
-      expect(countCalls).toBe(3);
     });
   });
 
@@ -201,8 +178,8 @@ describe('UploadProcessor buffered round-robin drain', () => {
         return { success: true, stopTypeDrain: false };
       };
 
-      processor._claimAndProcessUpload = async (upload, authId, db, budgetCtx) => {
-        const outcome = await processor.processUpload(upload, db, 'queued', false, budgetCtx);
+      processor._claimAndProcessUpload = async (upload, authId, db) => {
+        const outcome = await processor.processUpload(upload, db, 'queued', false);
         return { userDb: db, outcome };
       };
 
@@ -212,10 +189,18 @@ describe('UploadProcessor buffered round-robin drain', () => {
     });
   });
 
-  test('budgetCtx proactive gate without re-querying SQLite', async () => {
+  test('cached header state proactively gates without SQLite budget queries', async () => {
     await withUserDb(async (userDb) => {
       const processor = new UploadProcessor(env.userDatabaseManager, {
         updateUploadCounters: async () => {},
+      });
+
+      processor.updateRateLimitFromResponse(env.authId, 'torrent', {
+        headers: {
+          'x-ratelimit-limit': '60',
+          'x-ratelimit-remaining': '0',
+          'x-ratelimit-reset': '1800',
+        },
       });
 
       userDb.db
@@ -228,28 +213,20 @@ describe('UploadProcessor buffered round-robin drain', () => {
         .run();
       const uploadId = userDb.db.prepare('SELECT last_insert_rowid() as id').get().id;
 
-      let limitChecks = 0;
-      processor.isAtUncachedHourlyLimit = () => {
-        limitChecks++;
-        return false;
-      };
       processor.getApiClient = async () => ({});
       processor.makeApiRequest = async () => {
         throw new Error('should not call API');
       };
 
-      const budgetCtx = { remainingUncachedBudget: 0 };
       const result = await processor.processUpload(
         { id: uploadId, type: 'torrent', authId: env.authId, upload_type: 'magnet' },
         userDb,
         'processing',
-        false,
-        budgetCtx
+        false
       );
 
       expect(result.success).toBe(false);
       expect(result.stopTypeDrain).toBe(true);
-      expect(limitChecks).toBe(0);
     });
   });
 
@@ -266,9 +243,9 @@ describe('UploadProcessor buffered round-robin drain', () => {
         },
       });
       processor.processUpload = async () => ({ success: true, stopTypeDrain: false });
-      processor._claimAndProcessUpload = async (upload, authId, db, budgetCtx) => {
+      processor._claimAndProcessUpload = async (upload, authId, db) => {
         await processor.getApiClient(authId);
-        await processor.processUpload(upload, db, 'queued', false, budgetCtx);
+        await processor.processUpload(upload, db, 'queued', false);
         return { userDb: db, outcome: { success: true, stopTypeDrain: false } };
       };
 
@@ -310,7 +287,10 @@ describe('UploadProcessor drain integration (real claim path)', () => {
     return userDb.db.prepare('SELECT last_insert_rowid() as id').get().id;
   }
 
-  function stubTorboxCreateApi(processor, { cached = false, delayMs = 0 } = {}) {
+  function stubTorboxCreateApi(
+    processor,
+    { cached = false, delayMs = 0, remaining = 59, limit = 60, resetSeconds = 3600 } = {}
+  ) {
     processor.getApiClient = async () => ({
       client: {
         defaults: {
@@ -321,12 +301,20 @@ describe('UploadProcessor drain integration (real claim path)', () => {
     processor.buildFormData = async () => ({
       getHeaders: () => ({ 'content-type': 'multipart/form-data' }),
     });
+    let calls = 0;
     processor.makeApiRequest = async () => {
       if (delayMs > 0) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
+      calls++;
+      const responseRemaining = calls === 1 ? remaining : Math.max(0, remaining - 1);
       return {
         status: 200,
+        headers: {
+          'x-ratelimit-limit': String(limit),
+          'x-ratelimit-remaining': String(responseRemaining),
+          'x-ratelimit-reset': String(resetSeconds),
+        },
         data: {
           success: true,
           detail: cached ? 'Found Cached Torrent' : 'Download created',
@@ -434,155 +422,121 @@ describe('UploadProcessor drain integration (real claim path)', () => {
     });
   });
 
-  test('in-memory uncached budget defers second upload without isAtUncachedHourlyLimit re-query', async () => {
+  test('header quota defers queued uploads when remaining is zero', async () => {
     await withUserDb(async (userDb) => {
       const processor = new UploadProcessor(env.userDatabaseManager, {
         updateUploadCounters: async () => {},
       });
-      stubTorboxCreateApi(processor, { cached: false });
 
-      const seedCount = UPLOAD_UNCACHED_LIMIT_PER_HOUR - 1;
-      userDb.db
-        .prepare(
-          `
-          INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
-          SELECT value, 'torrent', 200, 1, 0, datetime('now', '-30 minutes')
-          FROM (
-            WITH RECURSIVE cnt(x) AS (
-              SELECT 1
-              UNION ALL
-              SELECT x + 1 FROM cnt WHERE x < ?
-            )
-            SELECT x AS value FROM cnt
-          )
-        `
-        )
-        .run(seedCount);
+      processor.updateRateLimitFromResponse(env.authId, 'torrent', {
+        headers: {
+          'x-ratelimit-limit': '60',
+          'x-ratelimit-remaining': '0',
+          'x-ratelimit-reset': '1800',
+        },
+      });
 
       insertQueuedUpload(userDb, { type: 'torrent', name: 'budget-1', queueOrder: 0 });
       insertQueuedUpload(userDb, { type: 'torrent', name: 'budget-2', queueOrder: 1 });
 
-      let limitChecks = 0;
-      processor.isAtUncachedHourlyLimit = () => {
-        limitChecks++;
-        return true;
+      let apiCalls = 0;
+      processor.getApiClient = async () => ({});
+      processor.makeApiRequest = async () => {
+        apiCalls++;
+        return { status: 200, data: { success: true, data: {} } };
       };
 
       const { totalProcessed } = await processor._drainUserQueues(env.authId, userDb);
-      expect(totalProcessed).toBe(2);
-      expect(limitChecks).toBe(0);
+      expect(totalProcessed).toBe(0);
+      expect(apiCalls).toBe(0);
 
       const rows = userDb.db
-        .prepare(`SELECT name, status, next_attempt_at FROM uploads ORDER BY queue_order ASC`)
+        .prepare(
+          `SELECT name, status, next_attempt_at, error_message FROM uploads ORDER BY queue_order ASC`
+        )
         .all();
-      expect(rows[0].status).toBe('completed');
-      expect(rows[1].status).toBe('queued');
-      expect(rows[1].next_attempt_at).not.toBeNull();
+      expect(rows.every((row) => row.status === 'queued')).toBe(true);
+      expect(rows.every((row) => row.next_attempt_at != null)).toBe(true);
+      expect(
+        rows.every((row) => row.error_message === 'Rate limit reached. Will retry automatically.')
+      ).toBe(true);
     });
   });
 
-  test('cached responses decrement in-memory hourly budget during drain', async () => {
+  test('releases stale rate-limit deferrals when quota is known available before draining', async () => {
     await withUserDb(async (userDb) => {
-      const processor = new UploadProcessor(env.userDatabaseManager, {
-        updateUploadCounters: async () => {},
-      });
-      stubTorboxCreateApi(processor, { cached: true });
+      const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
 
-      const seedCount = UPLOAD_UNCACHED_LIMIT_PER_HOUR - 1;
+      processor.updateRateLimitFromResponse(env.authId, 'torrent', {
+        headers: {
+          'x-ratelimit-limit': '60',
+          'x-ratelimit-remaining': '10',
+          'x-ratelimit-reset': '3600',
+        },
+      });
+
       userDb.db
         .prepare(
           `
-          INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
-          SELECT value, 'torrent', 200, 1, 0, datetime('now', '-30 minutes')
-          FROM (
-            WITH RECURSIVE cnt(x) AS (
-              SELECT 1
-              UNION ALL
-              SELECT x + 1 FROM cnt WHERE x < ?
-            )
-            SELECT x AS value FROM cnt
-          )
+          INSERT INTO uploads (type, upload_type, url, name, status, queue_order, next_attempt_at, error_message)
+          VALUES ('torrent', 'magnet', 'magnet:?xt=urn:btih:ready', 'ready', 'queued', 0, datetime('now', '+4 minutes'), ?)
         `
         )
-        .run(seedCount);
+        .run('Rate limit reached. Will retry automatically.');
 
-      insertQueuedUpload(userDb, { type: 'torrent', name: 'cached-1', queueOrder: 0 });
-      insertQueuedUpload(userDb, { type: 'torrent', name: 'cached-2', queueOrder: 1 });
+      stubTorboxCreateApi(processor, { remaining: 10 });
 
       const { totalProcessed } = await processor._drainUserQueues(env.authId, userDb);
-      // First cached create consumes the last budget slot; second is proactively deferred.
-      // Both claim attempts count toward totalProcessed (success + defer).
-      expect(totalProcessed).toBe(2);
+      expect(totalProcessed).toBe(1);
 
-      const completed = userDb.db
-        .prepare(`SELECT COUNT(*) as count FROM uploads WHERE status = 'completed'`)
-        .get().count;
-      expect(completed).toBe(1);
-
-      expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(
-        UPLOAD_UNCACHED_LIMIT_PER_HOUR
-      );
-
-      const deferred = userDb.db
-        .prepare(
-          `SELECT status, next_attempt_at, error_message FROM uploads WHERE name = 'cached-2'`
-        )
+      const row = userDb.db
+        .prepare(`SELECT status, next_attempt_at FROM uploads WHERE name = 'ready'`)
         .get();
-      expect(deferred.status).toBe('queued');
-      expect(deferred.next_attempt_at).not.toBeNull();
-      expect(deferred.error_message).toBe('Uncached rate limit reached. Will retry automatically.');
+      expect(row.status).toBe('completed');
+      expect(row.next_attempt_at).toBeNull();
     });
   });
 
-  test('cached responses skip in-memory budget when UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT=false', async () => {
-    const previous = process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT;
-    process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT = 'false';
-    try {
-      await withUserDb(async (userDb) => {
-        const processor = new UploadProcessor(env.userDatabaseManager, {
-          updateUploadCounters: async () => {},
-        });
-        stubTorboxCreateApi(processor, { cached: true });
+  test('preserves rate-limit deferrals after restart when header cache is empty', async () => {
+    await withUserDb(async (userDb) => {
+      const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
 
-        const seedCount = UPLOAD_UNCACHED_LIMIT_PER_HOUR - 1;
-        userDb.db
-          .prepare(
-            `
-            INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
-            SELECT value, 'torrent', 200, 1, 0, datetime('now', '-30 minutes')
-            FROM (
-              WITH RECURSIVE cnt(x) AS (
-                SELECT 1
-                UNION ALL
-                SELECT x + 1 FROM cnt WHERE x < ?
-              )
-              SELECT x AS value FROM cnt
-            )
+      userDb.db
+        .prepare(
           `
-          )
-          .run(seedCount);
+          INSERT INTO uploads (type, upload_type, url, name, status, queue_order, next_attempt_at, error_message)
+          VALUES
+            ('torrent', 'magnet', 'magnet:?xt=urn:btih:a', 'deferred-a', 'queued', 0, datetime('now', '+30 minutes'), ?),
+            ('torrent', 'magnet', 'magnet:?xt=urn:btih:b', 'deferred-b', 'queued', 1, datetime('now', '+45 minutes'), ?)
+        `
+        )
+        .run(
+          'Rate limit reached. Will retry automatically.',
+          'Rate limit reached. Will retry automatically.'
+        );
 
-        insertQueuedUpload(userDb, { type: 'torrent', name: 'cached-1', queueOrder: 0 });
-        insertQueuedUpload(userDb, { type: 'torrent', name: 'cached-2', queueOrder: 1 });
+      let apiCalls = 0;
+      processor.getApiClient = async () => ({});
+      processor.makeApiRequest = async () => {
+        apiCalls++;
+        return { status: 200, data: { success: true, data: {} } };
+      };
 
-        const { totalProcessed } = await processor._drainUserQueues(env.authId, userDb);
-        expect(totalProcessed).toBe(2);
+      const { totalProcessed } = await processor._drainUserQueues(env.authId, userDb);
+      expect(totalProcessed).toBe(0);
+      expect(apiCalls).toBe(0);
 
-        const completed = userDb.db
-          .prepare(`SELECT COUNT(*) as count FROM uploads WHERE status = 'completed'`)
-          .get().count;
-        expect(completed).toBe(2);
-
-        // Cached creates excluded from the budget when the flag is off.
-        expect(processor.countUncachedAttemptsSince(userDb, 'torrent')).toBe(seedCount);
-      });
-    } finally {
-      if (previous === undefined) {
-        delete process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT;
-      } else {
-        process.env.UPLOAD_CACHED_COUNTS_TOWARD_HOURLY_LIMIT = previous;
-      }
-    }
+      const rows = userDb.db
+        .prepare(
+          `SELECT name, status, next_attempt_at, error_message FROM uploads ORDER BY queue_order ASC`
+        )
+        .all();
+      expect(rows.every((row) => row.status === 'queued')).toBe(true);
+      expect(rows.every((row) => row.next_attempt_at != null)).toBe(true);
+      expect(
+        rows.every((row) => row.error_message === 'Rate limit reached. Will retry automatically.')
+      ).toBe(true);
+    });
   });
 
   test('serializes concurrent drains for the same user', async () => {
@@ -687,51 +641,6 @@ describe('UploadProcessor drain integration (real claim path)', () => {
 
       const usenet = userDb.db.prepare(`SELECT status FROM uploads WHERE name = 'u-0'`).get();
       expect(usenet.status).toBe('completed');
-    });
-  });
-
-  test('releases stale rate-limit deferrals when uncached budget has capacity before draining', async () => {
-    await withUserDb(async (userDb) => {
-      const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
-
-      for (let i = 1; i <= 45; i++) {
-        userDb.db
-          .prepare(
-            `
-            INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
-            VALUES (?, 'torrent', 200, 1, 0, datetime('now', '-30 minutes'))
-          `
-          )
-          .run(i);
-      }
-
-      userDb.db
-        .prepare(
-          `
-          INSERT INTO uploads (type, upload_type, url, name, status, queue_order, next_attempt_at, error_message)
-          VALUES ('torrent', 'magnet', 'magnet:?xt=urn:btih:ready', 'ready', 'queued', 0, datetime('now', '+4 minutes'), ?)
-        `
-        )
-        .run('Uncached rate limit reached. Will retry automatically.');
-
-      processor.getApiClient = async () => ({});
-      processor.makeApiRequest = async () => ({
-        status: 200,
-        data: {
-          success: true,
-          detail: 'ok',
-          data: { hash: 'abc', torrent_id: 1, auth_id: 'x' },
-        },
-      });
-
-      const { totalProcessed } = await processor._drainUserQueues(env.authId, userDb);
-      expect(totalProcessed).toBe(1);
-
-      const row = userDb.db
-        .prepare(`SELECT status, next_attempt_at FROM uploads WHERE name = 'ready'`)
-        .get();
-      expect(row.status).toBe('completed');
-      expect(row.next_attempt_at).toBeNull();
     });
   });
 });

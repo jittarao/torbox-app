@@ -98,18 +98,8 @@ export default function AdminSettingsPageClient() {
                   value={config.upload_processor?.external_rate_limit_retry_ms}
                 />
                 <AdminStatRow
-                  label="Hourly create limit per type"
-                  value={config.upload_processor?.uncached_limit_per_hour}
-                />
-                <AdminStatRow
-                  label="Cached counts toward hourly limit"
-                  value={
-                    config.upload_processor?.cached_counts_toward_hourly_limit == null
-                      ? undefined
-                      : config.upload_processor.cached_counts_toward_hourly_limit
-                        ? 'true'
-                        : 'false'
-                  }
+                  label="Rate limit source"
+                  value={config.upload_processor?.rate_limit_source}
                 />
               </div>
             </AdminCard>

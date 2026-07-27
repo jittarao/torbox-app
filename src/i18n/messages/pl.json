@@ -1564,8 +1564,7 @@
   },
   "UploadManager": {
     "cachedCreateAria": "Z cache",
-    "cachedCreateTooltipCounts": "TorBox dostarczył to z wspólnej pamięci podręcznej. Nadal wlicza się do godzinowego limitu tworzenia.",
-    "cachedCreateTooltipExcluded": "TorBox dostarczył to z wspólnej pamięci podręcznej. Nie wlicza się do godzinowego limitu tworzenia."
+    "cachedCreateTooltip": "TorBox dostarczył to z wspólnej pamięci podręcznej."
   },
   "UploadProgress": {
     "approachingRateLimit": "Zbliżanie się do limitu tworzenia:",
@@ -1587,9 +1586,12 @@
     "deferredTypeSummary": "{label}: {count, plural, one {# przesyłanie oczekuje — wznowienie {time}} few {# przesyłania oczekują — wznowienie {time}} many {# przesyłań oczekuje — wznowienie {time}} other {# przesyłania oczekują — wznowienie {time}}}",
     "externalRateLimitWaiting": "{count, plural, one {# oczekuje — limit TorBox} few {# oczekują — limit TorBox} many {# oczekuje — limit TorBox} other {# oczekuje — limit TorBox}}",
     "firstSlotOpens": "Pierwsze miejsce otwiera się {time}",
+    "noQuotaActivity": "Brak ostatniej aktywności limitu tworzenia TorBox",
     "noUncached": "Brak utworzeń w ostatniej godzinie",
+    "quotaUnknown": "Limit nieznany",
     "rateLimitReached": "Osiągnięto limit",
     "rateLimitedWaiting": "{count, plural, one {# oczekuje — limit godzinowy} few {# oczekują — limit godzinowy} many {# oczekuje — limit godzinowy} other {# oczekuje — limit godzinowy}}",
+    "remainingQuota": "{remaining} z {limit} pozostało",
     "resumesIn": "Wznowienie {time}",
     "resumesProcessing": "Wznowienie przetwarzania {time}",
     "soon": "wkrótce",

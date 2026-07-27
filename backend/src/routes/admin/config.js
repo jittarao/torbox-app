@@ -3,10 +3,6 @@ import { getMasterDbPath, getUserDbDir } from '../../utils/dataPaths.js';
 import { getUploadQuotaLimits } from '../../config/uploadQuota.js';
 import { getAutomationInactivityDays } from '../../config/automationInactivity.js';
 import {
-  UPLOAD_UNCACHED_LIMIT_PER_HOUR,
-  isCachedCountedTowardHourlyLimit,
-} from '../../config/uploadRateLimits.js';
-import {
   CREATE_UPLOAD_TIMEOUT_MS,
   UPLOAD_BATCH_FETCH_SIZE,
   UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
@@ -54,8 +50,7 @@ export function setupConfigRoutes(router, backend) {
           max_work_per_drain: UPLOAD_MAX_WORK_PER_DRAIN,
           create_upload_timeout_ms: CREATE_UPLOAD_TIMEOUT_MS,
           external_rate_limit_retry_ms: UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
-          uncached_limit_per_hour: UPLOAD_UNCACHED_LIMIT_PER_HOUR,
-          cached_counts_toward_hourly_limit: isCachedCountedTowardHourlyLimit(),
+          rate_limit_source: 'torbox_headers',
         },
         frontend_url: process.env.FRONTEND_URL || 'http://localhost:3000',
         node_env: process.env.NODE_ENV || 'development',

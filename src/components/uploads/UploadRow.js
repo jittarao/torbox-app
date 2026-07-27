@@ -60,7 +60,6 @@ export default function UploadRow({
   copySuccess,
   isSortable = false,
   showCacheIndicator = false,
-  cachedCountsTowardLimit = true,
 }) {
   const t = useTranslations('Common');
   const tUploads = useTranslations('UploadManager');
@@ -85,9 +84,7 @@ export default function UploadRow({
   const rowErrorMessage = getUploadRowErrorMessage(upload);
   const showCachedBadge =
     showCacheIndicator && upload.status === 'completed' && upload.create_was_cached === true;
-  const cachedTooltip = cachedCountsTowardLimit
-    ? tUploads('cachedCreateTooltipCounts')
-    : tUploads('cachedCreateTooltipExcluded');
+  const cachedTooltip = tUploads('cachedCreateTooltip');
 
   const rowProps = isSortable
     ? {

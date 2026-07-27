@@ -1,17 +1,15 @@
-import {
-  getUncachedBudgetResumeAtSql,
-  getUncachedBudgetWaitMs,
-  isUncachedHourlyBudgetExhausted,
-} from '../config/uploadRateLimits.js';
+import { formatSqlUtcDate, parseSqlUtcDate } from '../config/torboxRateLimitHeaders.js';
 import logger from '../utils/logger.js';
 
-/** Proactive local rolling-window deferral. */
+/** TorBox hourly create quota deferral (server-reported rate limit). */
+export const RATE_LIMIT_DEFERRAL_MESSAGE = 'Rate limit reached. Will retry automatically.';
+
+/** @deprecated Legacy message kept for clearing stale queue rows. */
 export const UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE =
   'Uncached rate limit reached. Will retry automatically.';
 
-/** TorBox returned 429 while local uncached budget still has capacity. */
-export const EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE =
-  'Rate limit reached. Will retry automatically.';
+/** @deprecated Legacy alias — use RATE_LIMIT_DEFERRAL_MESSAGE. */
+export const EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE = RATE_LIMIT_DEFERRAL_MESSAGE;
 
 /** TorBox unreachable — shared queue cool-down. */
 export const CONNECTION_DEFERRAL_MESSAGE = 'TorBox API unavailable. Will retry automatically.';
@@ -20,30 +18,41 @@ export const CONNECTION_DEFERRAL_MESSAGE = 'TorBox API unavailable. Will retry a
 export const TRANSIENT_TORBOX_DEFERRAL_MESSAGE =
   'TorBox is still processing a queued upload. Will retry automatically.';
 
+export const RATE_LIMIT_DEFERRAL_MESSAGES = [
+  RATE_LIMIT_DEFERRAL_MESSAGE,
+  UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
+];
+
 /** Messages for auto-retry deferrals; cleared on new deferrals for stale rows. */
 export const TRANSIENT_DEFERRAL_MESSAGES = [
-  UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
+  ...RATE_LIMIT_DEFERRAL_MESSAGES,
   CONNECTION_DEFERRAL_MESSAGE,
-  EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE,
   TRANSIENT_TORBOX_DEFERRAL_MESSAGE,
 ];
 
-/** Tagged pauses surfaced in stats when local uncached budget still has headroom. */
+/** Tagged pauses surfaced in stats (connection/transient only — rate limits use deferred stats). */
 export const QUEUE_PAUSE_DEFERRAL_MESSAGES = [
-  EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE,
   CONNECTION_DEFERRAL_MESSAGE,
   TRANSIENT_TORBOX_DEFERRAL_MESSAGE,
 ];
 
 const QUEUE_PAUSE_MSG_PLACEHOLDERS = QUEUE_PAUSE_DEFERRAL_MESSAGES.map(() => '?').join(', ');
+const RATE_LIMIT_MSG_PLACEHOLDERS = RATE_LIMIT_DEFERRAL_MESSAGES.map(() => '?').join(', ');
+const TRANSIENT_MSG_PLACEHOLDERS = TRANSIENT_DEFERRAL_MESSAGES.map(() => '?').join(', ');
+
+const UPLOAD_TYPES = ['torrent', 'usenet', 'webdl'];
 
 export function queuePauseMessageBindParams() {
   return [...QUEUE_PAUSE_DEFERRAL_MESSAGES];
 }
 
+export function rateLimitMessageBindParams() {
+  return [...RATE_LIMIT_DEFERRAL_MESSAGES];
+}
+
 export function pauseReasonFromDeferralMessage(message) {
-  if (message === EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE) {
-    return 'external_rate_limit';
+  if (RATE_LIMIT_DEFERRAL_MESSAGES.includes(message)) {
+    return 'rate_limit';
   }
   if (message === CONNECTION_DEFERRAL_MESSAGE) {
     return 'connection';
@@ -54,12 +63,8 @@ export function pauseReasonFromDeferralMessage(message) {
   return null;
 }
 
-const TRANSIENT_MSG_PLACEHOLDERS = TRANSIENT_DEFERRAL_MESSAGES.map(() => '?').join(', ');
-
 /** SQL expression: NULL out known transient deferral messages, keep others. */
 export const CLEAR_TRANSIENT_ERROR_EXPR = `CASE WHEN error_message IN (${TRANSIENT_MSG_PLACEHOLDERS}) THEN NULL ELSE error_message END`;
-
-const UPLOAD_TYPES = ['torrent', 'usenet', 'webdl'];
 
 export function transientMessageBindParams() {
   return [...TRANSIENT_DEFERRAL_MESSAGES];
@@ -109,19 +114,65 @@ export function deferQueuedUploadSiblings(
   return result.changes;
 }
 
+function getRateLimitDeferredUntil(userDb, type) {
+  const row = userDb.db
+    .prepare(
+      `
+      SELECT MIN(next_attempt_at) AS deferred_until
+      FROM uploads
+      WHERE status = 'queued'
+        AND type = ?
+        AND next_attempt_at IS NOT NULL
+        AND datetime(next_attempt_at) > datetime('now')
+        AND error_message IN (${RATE_LIMIT_MSG_PLACEHOLDERS})
+    `
+    )
+    .get(type, ...rateLimitMessageBindParams());
+  return row?.deferred_until ?? null;
+}
+
 /**
- * Keep queued upload deferrals aligned with the rolling uncached budget.
- * - Budget available: clear stale future next_attempt_at so the queue can resume immediately.
- * - Budget exhausted: refresh next_attempt_at from the current oldest uncached attempt.
+ * Rehydrate blocked quota state from persisted queue deferrals after restart.
  * @param {Object} userDb
  * @param {string} type
+ * @param {number} [nowMs]
+ * @returns {import('../config/torboxRateLimitHeaders.js').RateLimitState|null}
+ */
+export function inferRateLimitStateFromQueue(userDb, type, nowMs = Date.now()) {
+  const deferredUntil = getRateLimitDeferredUntil(userDb, type);
+  if (!deferredUntil) {
+    return null;
+  }
+
+  const resetAtMs = parseSqlUtcDate(deferredUntil).getTime();
+  if (resetAtMs <= nowMs) {
+    return null;
+  }
+
+  return {
+    limit: null,
+    remaining: 0,
+    resetAtMs,
+    observedAtMs: nowMs,
+  };
+}
+
+/**
+ * Keep queued upload deferrals aligned with cached TorBox rate-limit state.
+ * @param {Object} userDb
+ * @param {string} type
+ * @param {{
+ *   getAvailability?: (type: string) => import('../config/torboxRateLimitHeaders.js').RateLimitAvailability,
+ *   isBlocked?: (type: string) => boolean,
+ *   getResumeAtSql?: (type: string) => string|null
+ * }} [rateLimit]
  * @returns {{ released: number, refreshed: number }}
  */
-export function syncRateLimitDeferrals(userDb, type) {
-  const waitMs = getUncachedBudgetWaitMs(userDb, type);
-  if (waitMs <= 0) {
-    // Wake only rolling-window budget deferrals. External 429, connection, and transient
-    // pauses keep their tagged error_message until next_attempt_at expires.
+export function syncRateLimitDeferrals(userDb, type, rateLimit = {}) {
+  const availability =
+    rateLimit.getAvailability?.(type) ?? (rateLimit.isBlocked?.(type) ? 'blocked' : 'unknown');
+
+  if (availability === 'available') {
     const released = userDb.db
       .prepare(
         `
@@ -133,14 +184,22 @@ export function syncRateLimitDeferrals(userDb, type) {
           AND type = ?
           AND next_attempt_at IS NOT NULL
           AND datetime(next_attempt_at) > datetime('now')
-          AND error_message = ?
+          AND error_message IN (${RATE_LIMIT_MSG_PLACEHOLDERS})
       `
       )
-      .run(type, UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE);
+      .run(type, ...rateLimitMessageBindParams());
     return { released: released.changes, refreshed: 0 };
   }
 
-  const nextAttemptAt = getUncachedBudgetResumeAtSql(userDb, type);
+  if (availability !== 'blocked') {
+    return { released: 0, refreshed: 0 };
+  }
+
+  const nextAttemptAt = rateLimit.getResumeAtSql?.(type) ?? getRateLimitDeferredUntil(userDb, type);
+  if (!nextAttemptAt) {
+    return { released: 0, refreshed: 0 };
+  }
+
   const refreshed = userDb.db
     .prepare(
       `
@@ -151,21 +210,23 @@ export function syncRateLimitDeferrals(userDb, type) {
       WHERE status = 'queued'
         AND type = ?
         AND (
-          next_attempt_at IS NULL
-          OR datetime(next_attempt_at) > datetime('now')
+          error_message IN (${RATE_LIMIT_MSG_PLACEHOLDERS})
+          OR (
+            next_attempt_at IS NULL
+            AND error_message IS NULL
+          )
         )
     `
     )
-    .run(nextAttemptAt, UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE, type);
+    .run(nextAttemptAt, RATE_LIMIT_DEFERRAL_MESSAGE, type, ...rateLimitMessageBindParams());
 
   return { released: 0, refreshed: refreshed.changes };
 }
 
 /**
- * Active non-budget queue pause for a type (external 429, connection, transient).
+ * Active non-rate-limit queue pause for a type (connection, transient).
  * @param {Object} userDb
  * @param {string} type
- * @returns {{ pausedCount: number, pausedUntil: string|null, pauseReason: string|null }}
  */
 function getQueuePauseStatistics(userDb, type) {
   const anchor = userDb.db
@@ -207,15 +268,34 @@ function getQueuePauseStatistics(userDb, type) {
   };
 }
 
+function countQueuedForType(userDb, type) {
+  const row = userDb.db
+    .prepare(
+      `
+      SELECT COUNT(*) AS deferred_count
+      FROM uploads
+      WHERE status = 'queued'
+        AND type = ?
+    `
+    )
+    .get(type);
+  return row?.deferred_count ?? 0;
+}
+
 /**
  * Sync rate-limit deferrals for every upload type.
  * @param {Object} userDb
+ * @param {{
+ *   getAvailability?: (type: string) => import('../config/torboxRateLimitHeaders.js').RateLimitAvailability,
+ *   isBlocked?: (type: string) => boolean,
+ *   getResumeAtSql?: (type: string) => string|null
+ * }} [rateLimit]
  */
-export function syncAllRateLimitDeferrals(userDb) {
+export function syncAllRateLimitDeferrals(userDb, rateLimit = {}) {
   let released = 0;
   let refreshed = 0;
   for (const type of UPLOAD_TYPES) {
-    const result = syncRateLimitDeferrals(userDb, type);
+    const result = syncRateLimitDeferrals(userDb, type, rateLimit);
     released += result.released;
     refreshed += result.refreshed;
   }
@@ -228,13 +308,16 @@ export function syncAllRateLimitDeferrals(userDb) {
 }
 
 /**
- * Per-type deferral stats for queued uploads blocked on the rolling uncached budget.
- * Resume time is derived from the oldest uncached attempt in the current window, not a
- * stored next_attempt_at snapshot from when the limit was first hit.
+ * Per-type deferral stats for queued uploads.
  * @param {Object} userDb
- * @returns {{ byType: Record<string, { deferredCount: number, deferredUntil: string|null, pausedCount: number, pausedUntil: string|null, pauseReason: string|null }>, retryAt: string|null }}
+ * @param {{
+ *   getAvailability?: (type: string) => import('../config/torboxRateLimitHeaders.js').RateLimitAvailability,
+ *   isBlocked?: (type: string) => boolean,
+ *   getResumeAtSql?: (type: string) => string|null,
+ *   getResetAtSql?: (type: string) => string|null
+ * }} [rateLimit]
  */
-export function getUploadDeferralStatistics(userDb) {
+export function getUploadDeferralStatistics(userDb, rateLimit = {}) {
   const emptyTypeStats = () => ({
     deferredCount: 0,
     deferredUntil: null,
@@ -251,27 +334,49 @@ export function getUploadDeferralStatistics(userDb) {
 
   let retryAt = null;
   for (const type of UPLOAD_TYPES) {
-    if (isUncachedHourlyBudgetExhausted(userDb, type)) {
-      const row = userDb.db
+    const blocked = rateLimit.isBlocked?.(type) ?? false;
+    const deferredCount = countQueuedForType(userDb, type);
+
+    if (blocked && deferredCount > 0) {
+      const deferredUntil =
+        getRateLimitDeferredUntil(userDb, type) ??
+        rateLimit.getResumeAtSql?.(type) ??
+        rateLimit.getResetAtSql?.(type) ??
+        null;
+      byType[type] = { ...emptyTypeStats(), deferredCount, deferredUntil };
+      if (deferredUntil && (!retryAt || deferredUntil < retryAt)) {
+        retryAt = deferredUntil;
+      }
+      continue;
+    }
+
+    const rateLimitDeferredUntil = getRateLimitDeferredUntil(userDb, type);
+    if (rateLimitDeferredUntil) {
+      const rateLimitDeferredCount = userDb.db
         .prepare(
           `
           SELECT COUNT(*) AS deferred_count
           FROM uploads
           WHERE status = 'queued'
             AND type = ?
+            AND next_attempt_at IS NOT NULL
+            AND datetime(next_attempt_at) > datetime('now')
+            AND error_message IN (${RATE_LIMIT_MSG_PLACEHOLDERS})
         `
         )
-        .get(type);
+        .get(type, ...rateLimitMessageBindParams())?.deferred_count;
 
-      const deferredCount = row?.deferred_count ?? 0;
-      if (deferredCount > 0) {
-        const deferredUntil = getUncachedBudgetResumeAtSql(userDb, type);
-        byType[type] = { ...emptyTypeStats(), deferredCount, deferredUntil };
-        if (deferredUntil && (!retryAt || deferredUntil < retryAt)) {
-          retryAt = deferredUntil;
+      if (rateLimitDeferredCount > 0) {
+        byType[type] = {
+          ...emptyTypeStats(),
+          deferredCount: rateLimitDeferredCount,
+          deferredUntil: rateLimitDeferredUntil,
+        };
+        if (!retryAt || rateLimitDeferredUntil < retryAt) {
+          retryAt = rateLimitDeferredUntil;
         }
+        continue;
       }
-      continue;
     }
 
     const pauseStats = getQueuePauseStatistics(userDb, type);
@@ -284,4 +389,11 @@ export function getUploadDeferralStatistics(userDb) {
   }
 
   return { byType, retryAt };
+}
+
+export function resumeAtSqlFromMs(resumeAtMs, nowMs = Date.now()) {
+  if (resumeAtMs == null || resumeAtMs <= nowMs) {
+    return null;
+  }
+  return formatSqlUtcDate(new Date(resumeAtMs));
 }
