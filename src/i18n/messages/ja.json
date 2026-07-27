@@ -1586,8 +1586,7 @@
   },
   "UploadManager": {
     "cachedCreateAria": "キャッシュ済み",
-    "cachedCreateTooltipCounts": "TorBoxの共有キャッシュから提供されました。1時間あたりの作成上限にはカウントされます。",
-    "cachedCreateTooltipExcluded": "TorBoxの共有キャッシュから提供されました。1時間あたりの作成上限にはカウントされません。"
+    "cachedCreateTooltip": "TorBoxの共有キャッシュから提供されました。"
   },
   "UploadProgress": {
     "approachingRateLimit": "作成レート制限に近づいています:",
@@ -1609,9 +1608,12 @@
     "deferredTypeSummary": "{label}: {count, plural, other {# 件のアップロード待機中 — {time} に再開}}",
     "externalRateLimitWaiting": "{count, plural, other {# 件待機中 — TorBoxレート制限}}",
     "firstSlotOpens": "次の枠が開くのは {time}",
+    "noQuotaActivity": "直近のTorBox作成クォータの活動はありません",
     "noUncached": "直近1時間に作成アップロードはありません",
+    "quotaUnknown": "クォータ不明",
     "rateLimitReached": "レート制限に達しました",
     "rateLimitedWaiting": "{count, plural, other {# 件待機中 — 時間あたり上限}}",
+    "remainingQuota": "{limit} 中 {remaining} 残り",
     "resumesIn": "{time} に再開",
     "resumesProcessing": "処理再開 {time}",
     "soon": "まもなく",

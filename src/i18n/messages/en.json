@@ -1681,8 +1681,7 @@
   },
   "UploadManager": {
     "cachedCreateAria": "Cached",
-    "cachedCreateTooltipCounts": "TorBox served this from its shared cache. Still counts toward the hourly create limit.",
-    "cachedCreateTooltipExcluded": "TorBox served this from its shared cache. Does not count toward the hourly create limit."
+    "cachedCreateTooltip": "TorBox served this from its shared cache."
   },
   "UploadProgress": {
     "approachingRateLimit": "Approaching create rate limit:",
@@ -1704,13 +1703,16 @@
     "deferredTypeSummary": "{label}: {count, plural, one {# upload waiting — resumes {time}} other {# uploads waiting — resumes {time}}}",
     "externalRateLimitWaiting": "{count, plural, one {# waiting — TorBox rate limit} other {# waiting — TorBox rate limit}}",
     "firstSlotOpens": "First slot opens {time}",
+    "noQuotaActivity": "No recent TorBox create quota activity",
     "noUncached": "No create uploads in the last hour",
+    "quotaUnknown": "Quota unknown",
     "rateLimitReached": "Rate limit reached",
     "rateLimitedWaiting": "{count, plural, one {# waiting — hourly limit} other {# waiting — hourly limit}}",
+    "remainingQuota": "{remaining} of {limit} remaining",
     "resumesIn": "Resumes {time}",
     "resumesProcessing": "Resumes processing {time}",
     "soon": "soon",
-    "title": "Create Uploads (Last Hour)",
+    "title": "TorBox Create Quota",
     "transientPausedWaiting": "{count, plural, one {# waiting — TorBox still processing} other {# waiting — TorBox still processing}}",
     "typeTorrents": "Torrents",
     "typeUncached": "/ {limit} creates",
