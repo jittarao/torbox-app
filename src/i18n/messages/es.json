@@ -1574,6 +1574,8 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "Acercándose al límite",
+    "budgetLive": "Cuota en vivo",
+    "budgetUncached": "Creaciones no almacenadas en caché (última hora)",
     "connectionPausedWaiting": "{count, plural, one {# en espera — TorBox no disponible} other {# en espera — TorBox no disponible}}",
     "deferredCount": "{count, plural, one {# en cola} other {# en cola}}",
     "deferredSummary": "{count, plural, one {# subida en espera — reanuda {time}} other {# subidas en espera — reanudan {time}}}",

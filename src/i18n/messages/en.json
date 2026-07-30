@@ -1697,6 +1697,8 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "Approaching limit",
+    "budgetLive": "Live uncached quota",
+    "budgetUncached": "Uncached creates (last hour)",
     "connectionPausedWaiting": "{count, plural, one {# waiting — TorBox unavailable} other {# waiting — TorBox unavailable}}",
     "deferredCount": "{count, plural, one {# waiting} other {# waiting}}",
     "deferredSummary": "{count, plural, one {# upload waiting — resumes {time}} other {# uploads waiting — resumes {time}}}",

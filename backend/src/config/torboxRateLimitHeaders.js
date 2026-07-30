@@ -1,16 +1,38 @@
 /**
- * TorBox create API rate-limit headers (authoritative hourly quota).
+ * TorBox create API rate-limit headers.
+ *
+ * TorBox returns two different x-ratelimit-* envelopes on create endpoints:
+ * - Uncached creates: limit ≈ 60 (rolling hour) — authoritative for gating
+ * - Cached creates: limit ≈ 300 (short window, ~per minute) — ignore for gating
  *
  * Headers observed on createtorrent / createusenet / createwebdownload responses:
  * - x-ratelimit-limit
  * - x-ratelimit-remaining
  * - x-ratelimit-reset
- * - retry-after (oldest-request expiry in rolling window; preferred for resume when blocking)
+ * - retry-after (when present; preferred for resume when blocking)
+ *
+ * HTTP 429 for the uncached hourly cap often has no rate-limit headers; the body
+ * is typically `{"detail":"60 per 1 hour"}`.
  */
 
 import { UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS } from './uploadProcessorConfig.js';
 
 const UPLOAD_TYPES = ['torrent', 'usenet', 'webdl'];
+
+/** TorBox rolling hourly uncached create budget (observed on createtorrent). */
+export const TORBOX_UNCACHED_CREATE_LIMIT = 60;
+
+/**
+ * TorBox cached-create short-window limit (observed ~per minute).
+ * Not used for hourly gating; retained for envelope classification / telemetry.
+ */
+export const TORBOX_CACHED_CREATE_LIMIT = 300;
+
+/** TorBox rolling hourly uncached create window. */
+export const TORBOX_CREATE_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+
+/** Midpoint between uncached (60) and cached (300) envelopes for classification. */
+const UNCACHED_ENVELOPE_LIMIT_MAX = 120;
 
 /** @typedef {{ limit: number|null, remaining: number|null, resetAtMs: number|null, observedAtMs: number }} RateLimitState */
 
@@ -45,14 +67,31 @@ function parseNonNegativeInt(value) {
 }
 
 /**
+ * Parse a non-negative number (int or float string) then floor.
+ * TorBox may send float unix timestamps like `1785453098.556586`.
+ * @param {unknown} value
+ * @returns {number|null}
+ */
+function parseNonNegativeNumber(value) {
+  if (value == null || value === '') {
+    return null;
+  }
+  const parsed = Number.parseFloat(String(value));
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+  return Math.floor(parsed);
+}
+
+/**
  * Normalize x-ratelimit-reset to epoch milliseconds.
- * TorBox may send delta seconds or a unix timestamp.
+ * TorBox may send delta seconds or a unix timestamp (possibly float).
  * @param {unknown} resetValue
  * @param {number} [nowMs]
  * @returns {number|null}
  */
 export function normalizeResetAtMs(resetValue, nowMs = Date.now()) {
-  const parsed = parseNonNegativeInt(resetValue);
+  const parsed = parseNonNegativeNumber(resetValue);
   if (parsed == null) {
     return null;
   }
@@ -85,6 +124,39 @@ export function parseTorboxRateLimitHeaders(headers, nowMs = Date.now()) {
   };
 }
 
+/**
+ * Whether parsed headers look like the uncached hourly create budget (limit ≈ 60).
+ * @param {{ limit?: number|null }} parsed
+ */
+export function isUncachedRateLimitEnvelope(parsed) {
+  const limit = parsed?.limit;
+  return limit != null && limit > 0 && limit <= UNCACHED_ENVELOPE_LIMIT_MAX;
+}
+
+/**
+ * Whether parsed headers look like the cached short-window budget (limit ≈ 300).
+ * @param {{ limit?: number|null }} parsed
+ */
+export function isCachedRateLimitEnvelope(parsed) {
+  const limit = parsed?.limit;
+  return limit != null && limit > UNCACHED_ENVELOPE_LIMIT_MAX;
+}
+
+/**
+ * Detect TorBox uncached hourly 429 body (`{"detail":"60 per 1 hour"}`).
+ * @param {unknown} detailOrBody
+ */
+export function isUncachedHourlyRateLimitDetail(detailOrBody) {
+  let detail = detailOrBody;
+  if (detail != null && typeof detail === 'object') {
+    detail = detail.detail ?? detail.message ?? null;
+  }
+  if (detail == null) {
+    return false;
+  }
+  return /\b60\s*per\s*1\s*hour\b/i.test(String(detail));
+}
+
 /** @param {number} [nowMs] @returns {RateLimitState} */
 export function createEmptyRateLimitState(nowMs = Date.now()) {
   return {
@@ -96,7 +168,8 @@ export function createEmptyRateLimitState(nowMs = Date.now()) {
 }
 
 /**
- * Merge parsed headers into cached state and expire stale windows.
+ * Merge parsed headers into uncached gating state and expire stale windows.
+ * Callers must only pass uncached envelopes (limit ≈ 60).
  * @param {RateLimitState} state
  * @param {ReturnType<typeof parseTorboxRateLimitHeaders>} parsed
  * @param {number} [nowMs]
@@ -121,6 +194,25 @@ export function applyParsedHeaders(state, parsed, nowMs = Date.now(), options = 
     next.resetAtMs = parsed.resetAtMs;
   }
   return normalizeExpiredRateLimitState(next, nowMs);
+}
+
+/**
+ * Force uncached gating state to blocked (e.g. 429 with no headers).
+ * @param {RateLimitState} state
+ * @param {{ resetAtMs?: number|null, nowMs?: number }} [options]
+ * @returns {RateLimitState}
+ */
+export function markUncachedRateLimitBlocked(state, { resetAtMs = null, nowMs = Date.now() } = {}) {
+  return normalizeExpiredRateLimitState(
+    {
+      ...state,
+      limit: state.limit ?? TORBOX_UNCACHED_CREATE_LIMIT,
+      remaining: 0,
+      resetAtMs: resetAtMs ?? state.resetAtMs,
+      observedAtMs: nowMs,
+    },
+    nowMs
+  );
 }
 
 /**
@@ -159,7 +251,7 @@ export function normalizeExpiredRateLimitState(
 }
 
 /**
- * Whether proactive gating should block creates for this type.
+ * Whether proactive gating should block creates for this type (uncached budget).
  * @param {RateLimitState} state
  * @param {number} [nowMs]
  * @param {number} [blockFallbackMs]
@@ -274,7 +366,9 @@ export function parseSqlUtcDate(sqlDate) {
 }
 
 /**
- * API/UI snapshot for one upload type.
+ * API/UI snapshot for one upload type (uncached gating state only).
+ * Cached envelopes must not be stored in state; if a stale cached limit slipped
+ * in, treat the snapshot as unknown so the UI does not show 300/min as quota.
  * @param {RateLimitState} state
  * @param {number} [nowMs]
  * @param {number} [blockFallbackMs]
@@ -285,6 +379,16 @@ export function getRateLimitSnapshotForApi(
   blockFallbackMs = UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS
 ) {
   const normalized = normalizeExpiredRateLimitState(state, nowMs, blockFallbackMs);
+  if (isCachedRateLimitEnvelope(normalized)) {
+    return {
+      limit: null,
+      remaining: null,
+      used: null,
+      resetAt: null,
+      known: false,
+    };
+  }
+
   const known = normalized.remaining != null || normalized.limit != null;
   const used =
     known && normalized.limit != null && normalized.remaining != null

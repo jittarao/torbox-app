@@ -1580,6 +1580,8 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "Zbliżanie się do limitu",
+    "budgetLive": "Bieżący limit",
+    "budgetUncached": "Utworzenia spoza cache (ostatnia godzina)",
     "connectionPausedWaiting": "{count, plural, one {# oczekuje — TorBox niedostępny} few {# oczekują — TorBox niedostępny} many {# oczekuje — TorBox niedostępny} other {# oczekuje — TorBox niedostępny}}",
     "deferredCount": "{count, plural, one {# w kolejce} few {# w kolejce} many {# w kolejce} other {# w kolejce}}",
     "deferredSummary": "{count, plural, one {# przesyłanie oczekuje — wznowienie {time}} few {# przesyłania oczekują — wznowienie {time}} many {# przesyłań oczekuje — wznowienie {time}} other {# przesyłania oczekują — wznowienie {time}}}",
