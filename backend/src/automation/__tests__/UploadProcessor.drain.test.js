@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import UploadProcessor from '../UploadProcessor.js';
 import {
+  RATE_LIMIT_DEFERRAL_MESSAGE,
+  UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
+} from '../uploadDeferral.js';
+import {
   cleanupUploadTestEnv,
   createUploadTestEnv,
 } from '../../routes/__tests__/helpers/uploadTestHelper.js';
@@ -457,9 +461,9 @@ describe('UploadProcessor drain integration (real claim path)', () => {
         .all();
       expect(rows.every((row) => row.status === 'queued')).toBe(true);
       expect(rows.every((row) => row.next_attempt_at != null)).toBe(true);
-      expect(
-        rows.every((row) => row.error_message === 'Rate limit reached. Will retry automatically.')
-      ).toBe(true);
+      expect(rows.every((row) => row.error_message === UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE)).toBe(
+        true
+      );
     });
   });
 
@@ -482,7 +486,7 @@ describe('UploadProcessor drain integration (real claim path)', () => {
           VALUES ('torrent', 'magnet', 'magnet:?xt=urn:btih:ready', 'ready', 'queued', 0, datetime('now', '+4 minutes'), ?)
         `
         )
-        .run('Rate limit reached. Will retry automatically.');
+        .run(RATE_LIMIT_DEFERRAL_MESSAGE);
 
       stubTorboxCreateApi(processor, { remaining: 10 });
 
@@ -510,10 +514,7 @@ describe('UploadProcessor drain integration (real claim path)', () => {
             ('torrent', 'magnet', 'magnet:?xt=urn:btih:b', 'deferred-b', 'queued', 1, datetime('now', '+45 minutes'), ?)
         `
         )
-        .run(
-          'Rate limit reached. Will retry automatically.',
-          'Rate limit reached. Will retry automatically.'
-        );
+        .run(RATE_LIMIT_DEFERRAL_MESSAGE, RATE_LIMIT_DEFERRAL_MESSAGE);
 
       let apiCalls = 0;
       processor.getApiClient = async () => ({});
@@ -533,9 +534,9 @@ describe('UploadProcessor drain integration (real claim path)', () => {
         .all();
       expect(rows.every((row) => row.status === 'queued')).toBe(true);
       expect(rows.every((row) => row.next_attempt_at != null)).toBe(true);
-      expect(
-        rows.every((row) => row.error_message === 'Rate limit reached. Will retry automatically.')
-      ).toBe(true);
+      expect(rows.every((row) => row.error_message === UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE)).toBe(
+        true
+      );
     });
   });
 

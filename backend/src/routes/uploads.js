@@ -896,6 +896,7 @@ export function setupUploadsRoutes(app, backend) {
           used: quota.used,
           resetAt: quota.resetAt,
           known: quota.known,
+          window: quota.window ?? null,
           deferredCount: deferral.deferredCount,
           deferredUntil: deferral.deferredUntil,
           pausedCount: deferral.pausedCount,

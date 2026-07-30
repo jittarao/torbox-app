@@ -21,7 +21,11 @@ import {
   getRateLimitAvailability,
   getRateLimitResumeWaitMs,
   getRateLimitSnapshotForApi,
+  isCachedRateLimitEnvelope,
   isRateLimitBlocked,
+  isUncachedHourlyRateLimitDetail,
+  isUncachedRateLimitEnvelope,
+  markUncachedRateLimitBlocked,
   normalizeExpiredRateLimitState,
   parseTorboxRateLimitHeaders,
 } from '../config/torboxRateLimitHeaders.js';
@@ -35,10 +39,14 @@ import {
   syncAllRateLimitDeferrals,
   deferQueuedUploadSiblings,
   inferRateLimitStateFromQueue,
+  getCreateQuotaWindowUsage,
+  formatCreateQuotaWindowForApi,
   RATE_LIMIT_DEFERRAL_MESSAGE,
+  UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
   CONNECTION_DEFERRAL_MESSAGE,
   TRANSIENT_TORBOX_DEFERRAL_MESSAGE,
   resumeAtSqlFromMs,
+  TORBOX_UNCACHED_CREATE_LIMIT,
 } from './uploadDeferral.js';
 import FormData from 'form-data';
 import { readFileSync } from 'fs';
@@ -223,10 +231,10 @@ class UploadProcessor {
     }
     if (userDb) {
       try {
-        const inferred = inferRateLimitStateFromQueue(userDb, type);
-        if (inferred) {
-          this._getUserRateLimitMap(authId)[type] = inferred;
-          return inferred;
+        const fromQueue = inferRateLimitStateFromQueue(userDb, type);
+        if (fromQueue) {
+          this._getUserRateLimitMap(authId)[type] = fromQueue;
+          return fromQueue;
         }
       } catch {
         // Best-effort rehydration; ignore invalid or partial test doubles.
@@ -236,13 +244,23 @@ class UploadProcessor {
   }
 
   /**
-   * Update cached TorBox quota from any create response (success or error).
+   * Update uncached TorBox create quota from a create response (success or error).
+   * Cached envelopes (limit ≈ 300) are ignored so they never overwrite uncached state.
    * @param {string} authId
    * @param {string} type
    * @param {{ headers?: Record<string, string> }|{ response?: { headers?: Record<string, string> } }|undefined|null} source
+   * @param {{ isCached?: boolean, forceUncached?: boolean }} [options]
    */
-  updateRateLimitFromResponse(authId, type, source) {
+  updateRateLimitFromResponse(
+    authId,
+    type,
+    source,
+    { isCached = false, forceUncached = false } = {}
+  ) {
     if (!authId || !type || !source) {
+      return;
+    }
+    if (isCached && !forceUncached) {
       return;
     }
     const headers = source.headers ?? source.response?.headers;
@@ -250,8 +268,50 @@ class UploadProcessor {
       return;
     }
     const parsed = parseTorboxRateLimitHeaders(headers);
+    if (!forceUncached) {
+      // Cached short-window envelopes (limit ≈ 300) must never overwrite uncached state.
+      if (isCachedRateLimitEnvelope(parsed) || !isUncachedRateLimitEnvelope(parsed)) {
+        return;
+      }
+    }
     const map = this._getUserRateLimitMap(authId);
     map[type] = applyParsedHeaders(map[type], parsed, undefined, { clearRemainingIfAbsent: true });
+  }
+
+  /**
+   * Force uncached gating state to blocked and return resume wait ms.
+   * Used when TorBox returns 429 with no rate-limit headers.
+   * @param {string} authId
+   * @param {string} type
+   * @param {Object|null} [userDb]
+   * @param {number} [nowMs]
+   * @returns {number} wait ms
+   */
+  applyUncachedHourlyBlock(authId, type, userDb = null, nowMs = Date.now()) {
+    const map = this._getUserRateLimitMap(authId);
+    const current = map[type];
+    const candidates = [];
+
+    if (current.resetAtMs != null && current.resetAtMs > nowMs) {
+      candidates.push(current.resetAtMs);
+    }
+
+    if (userDb) {
+      try {
+        const usage = getCreateQuotaWindowUsage(userDb, type, nowMs);
+        if (usage.uncachedResetAtMs != null && usage.uncachedResetAtMs > nowMs) {
+          candidates.push(usage.uncachedResetAtMs);
+        }
+      } catch {
+        // Best-effort window resume.
+      }
+    }
+
+    const resetAtMs =
+      candidates.length > 0 ? Math.min(...candidates) : nowMs + UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS;
+
+    map[type] = markUncachedRateLimitBlocked(current, { resetAtMs, nowMs });
+    return Math.max(0, resetAtMs - nowMs);
   }
 
   isTypeRateLimitBlocked(authId, type, userDb = null) {
@@ -281,11 +341,33 @@ class UploadProcessor {
 
   _rateLimitSyncContext(authId, userDb = null) {
     return {
-      getAvailability: (type) =>
-        getRateLimitAvailability(this.getEffectiveRateLimitState(authId, type, userDb)),
-      isBlocked: (type) => this.isTypeRateLimitBlocked(authId, type, userDb),
-      getResumeAtSql: (type) => this.getTypeRateLimitResumeAtSql(authId, type, userDb),
+      getAvailability: (type) => {
+        const headerAvailability = getRateLimitAvailability(
+          this.getEffectiveRateLimitState(authId, type, userDb)
+        );
+        if (headerAvailability === 'blocked') {
+          return 'blocked';
+        }
+        if (userDb && this.isUncachedCreateQuotaExhausted(userDb, type)) {
+          return 'blocked';
+        }
+        return headerAvailability;
+      },
+      isBlocked: (type) =>
+        this.isTypeRateLimitBlocked(authId, type, userDb) ||
+        (userDb != null && this.isUncachedCreateQuotaExhausted(userDb, type)),
+      getResumeAtSql: (type) => {
+        if (
+          (userDb && this.isUncachedCreateQuotaExhausted(userDb, type)) ||
+          this.isTypeRateLimitBlocked(authId, type, userDb)
+        ) {
+          return this.getUncachedQuotaPauseUntilSql(authId, type, userDb);
+        }
+        return this.getTypeRateLimitResumeAtSql(authId, type, userDb);
+      },
       getResetAtSql: (type) => this.getTypeRateLimitResetAtSql(authId, type, userDb),
+      // Both header and durable gates are uncached-only; always use the uncached message.
+      getDeferralMessage: () => UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
     };
   }
 
@@ -293,25 +375,126 @@ class UploadProcessor {
     const types = ['torrent', 'usenet', 'webdl'];
     const stats = {};
     for (const type of types) {
-      stats[type] = getRateLimitSnapshotForApi(
+      const snapshot = getRateLimitSnapshotForApi(
         this.getEffectiveRateLimitState(authId, type, userDb)
       );
+      let window = {
+        uncachedUsed: 0,
+        uncachedLimit: TORBOX_UNCACHED_CREATE_LIMIT,
+        uncachedResetAt: null,
+      };
+      if (userDb) {
+        try {
+          window = formatCreateQuotaWindowForApi(getCreateQuotaWindowUsage(userDb, type));
+        } catch {
+          // Best-effort window stats for API responses.
+        }
+      }
+      stats[type] = { ...snapshot, window };
     }
     return stats;
   }
 
-  async handleRateLimitDeferral(upload, userDb, type) {
-    const state = this.getEffectiveRateLimitState(upload.authId, type, userDb);
-    const waitTime = getRateLimitResumeWaitMs(state, {}, UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS);
-    const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + waitTime));
+  /**
+   * Whether the rolling-hour uncached create budget is exhausted for this type.
+   * @param {Object} userDb
+   * @param {string} type
+   */
+  isUncachedCreateQuotaExhausted(userDb, type) {
+    try {
+      return getCreateQuotaWindowUsage(userDb, type).uncachedExhausted;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Resume timestamp for an uncached-budget pause (window + uncached header reset + fallback).
+   * Prefers the soonest valid future open time among known candidates.
+   * @param {string} authId
+   * @param {string} type
+   * @param {Object} userDb
+   * @returns {string} SQL UTC datetime
+   */
+  getUncachedQuotaPauseUntilSql(authId, type, userDb) {
+    const nowMs = Date.now();
+    const candidates = [];
+
+    try {
+      const usage = getCreateQuotaWindowUsage(userDb, type, nowMs);
+      if (usage.uncachedResetAtMs != null && usage.uncachedResetAtMs > nowMs) {
+        candidates.push(usage.uncachedResetAtMs);
+      }
+    } catch {
+      // ignore
+    }
+
+    const state = this.getEffectiveRateLimitState(authId, type, userDb);
+    if (state.resetAtMs != null && state.resetAtMs > nowMs) {
+      candidates.push(state.resetAtMs);
+    }
+
+    const pauseAtMs =
+      candidates.length > 0 ? Math.min(...candidates) : nowMs + UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS;
+
+    return resumeAtSqlFromMs(pauseAtMs);
+  }
+
+  /**
+   * Pause remaining queued items of this type until the uncached window opens.
+   * @param {string} authId
+   * @param {Object} userDb
+   * @param {string} type
+   * @param {number|null} [excludeUploadId]
+   */
+  pauseTypeForUncachedQuota(authId, userDb, type, excludeUploadId = null) {
+    const nextAttemptAt = this.getUncachedQuotaPauseUntilSql(authId, type, userDb);
+
+    if (excludeUploadId != null) {
+      userDb.db
+        .prepare(
+          `
+          UPDATE uploads
+          SET status = 'queued',
+              error_message = ?,
+              next_attempt_at = ?,
+              last_processed_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND status IN ('queued', 'processing')
+        `
+        )
+        .run(UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE, nextAttemptAt, excludeUploadId);
+    }
+
+    const deferredCount = deferQueuedUploadSiblings(
+      userDb,
+      type,
+      excludeUploadId ?? -1,
+      nextAttemptAt,
+      { siblingErrorMessage: UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE }
+    );
+
+    logger.debug('Paused upload type for uncached TorBox create quota', {
+      authId,
+      type,
+      nextAttemptAt,
+      deferredCount,
+      excludeUploadId,
+    });
+
+    return nextAttemptAt;
+  }
+
+  async handleRateLimitDeferral(upload, userDb, type, _options = {}) {
+    // Header and durable gates are both uncached-only; pause until the hourly window opens.
+    const nextAttemptAt = this.getUncachedQuotaPauseUntilSql(upload.authId, type, userDb);
+    const message = UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE;
 
     logger.debug('TorBox rate limit reached, deferring upload', {
       uploadId: upload.id,
       type,
-      waitTimeMs: waitTime,
       nextAttemptAt,
-      remaining: state.remaining,
-      resetAtMs: state.resetAtMs,
+      uncached: true,
     });
 
     userDb.db
@@ -326,10 +509,10 @@ class UploadProcessor {
         WHERE id = ?
       `
       )
-      .run(RATE_LIMIT_DEFERRAL_MESSAGE, nextAttemptAt, upload.id);
+      .run(message, nextAttemptAt, upload.id);
 
     const deferredCount = deferQueuedUploadSiblings(userDb, type, upload.id, nextAttemptAt, {
-      siblingErrorMessage: RATE_LIMIT_DEFERRAL_MESSAGE,
+      siblingErrorMessage: message,
     });
 
     if (deferredCount > 0) {
@@ -337,6 +520,7 @@ class UploadProcessor {
         type,
         deferredCount,
         nextAttemptAt,
+        uncached: true,
       });
     }
 
@@ -950,23 +1134,44 @@ class UploadProcessor {
   }
 
   /**
-   * Calculate rate limit delay from TorBox response headers.
+   * Calculate rate limit delay from TorBox response headers or uncached 429 body.
    * @param {Error} error - Error object
    * @param {string} authId
    * @param {string} type - Upload type
-   * @returns {number} Delay in milliseconds
+   * @param {Object|null} [userDb]
+   * @returns {{ waitMs: number, uncached: boolean }}
    */
-  calculateRateLimitDelay(error, authId, type) {
-    this.updateRateLimitFromResponse(authId, type, error);
+  calculateRateLimitDelay(error, authId, type, userDb = null) {
     const headers = error.response?.headers;
-    const parsed = parseTorboxRateLimitHeaders(headers);
-    const state = this.getRateLimitState(authId, type);
-    const waitMs = getRateLimitResumeWaitMs(
-      state,
-      { retryAfterSeconds: parsed.retryAfterSeconds },
-      UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS
-    );
-    return waitMs > 0 ? waitMs : UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS;
+    const parsed = headers ? parseTorboxRateLimitHeaders(headers) : null;
+    const detail = error.response?.data?.detail ?? error.response?.data;
+    const uncachedHourlyBody = isUncachedHourlyRateLimitDetail(detail);
+    const hasUncachedHeaders = parsed != null && isUncachedRateLimitEnvelope(parsed);
+    const hasCachedHeaders = parsed != null && isCachedRateLimitEnvelope(parsed);
+
+    if (hasUncachedHeaders) {
+      this.updateRateLimitFromResponse(authId, type, error, { forceUncached: true });
+      const state = this.getRateLimitState(authId, type);
+      const waitMs = getRateLimitResumeWaitMs(
+        state,
+        { retryAfterSeconds: parsed.retryAfterSeconds },
+        UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS
+      );
+      return {
+        waitMs: waitMs > 0 ? waitMs : UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
+        uncached: true,
+      };
+    }
+
+    // Cached short-window headers on a 429 are unexpected and must not overwrite
+    // uncached gating state (limit ≈ 300 must never enter the uncached map).
+    if (hasCachedHeaders && !uncachedHourlyBody) {
+      return { waitMs: UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS, uncached: false };
+    }
+
+    // Typical uncached hourly 429: no rate-limit headers, body "60 per 1 hour".
+    const waitMs = this.applyUncachedHourlyBlock(authId, type, userDb);
+    return { waitMs, uncached: true };
   }
 
   /**
@@ -1068,11 +1273,10 @@ class UploadProcessor {
       : Math.max(1, (upload.retry_count ?? 0) + 1);
     const finalStatus = shouldDefer ? 'queued' : 'failed';
 
-    const deferMs = isConnection
-      ? CONNECTION_DEFER_MS
-      : isRateLimit
-        ? this.calculateRateLimitDelay(error, upload.authId, type)
-        : 0;
+    const rateLimitDelay = isRateLimit
+      ? this.calculateRateLimitDelay(error, upload.authId, type, userDb)
+      : null;
+    const deferMs = isConnection ? CONNECTION_DEFER_MS : isRateLimit ? rateLimitDelay.waitMs : 0;
 
     const nextAttemptAt =
       deferMs > 0 ? this.formatDateForSQL(new Date(Date.now() + deferMs)) : null;
@@ -1080,7 +1284,9 @@ class UploadProcessor {
     const deferralMessage = isConnection
       ? CONNECTION_DEFERRAL_MESSAGE
       : isRateLimit
-        ? RATE_LIMIT_DEFERRAL_MESSAGE
+        ? rateLimitDelay?.uncached
+          ? UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE
+          : RATE_LIMIT_DEFERRAL_MESSAGE
         : null;
     const userFriendlyError = shouldDefer
       ? deferralMessage
@@ -1117,7 +1323,7 @@ class UploadProcessor {
       }
     } else if (isRateLimit && nextAttemptAt) {
       const deferredCount = deferQueuedUploadSiblings(userDb, type, id, nextAttemptAt, {
-        siblingErrorMessage: RATE_LIMIT_DEFERRAL_MESSAGE,
+        siblingErrorMessage: deferralMessage,
       });
       if (deferredCount > 0) {
         logger.debug('Deferred other queued uploads due to TorBox backoff', {
@@ -1197,6 +1403,11 @@ class UploadProcessor {
         return uploadProcessResult(false, true);
       }
 
+      if (this.isUncachedCreateQuotaExhausted(userDb, type)) {
+        await this.handleRateLimitDeferral(upload, userDb, type, { uncached: true });
+        return uploadProcessResult(false, true);
+      }
+
       // Build FormData
       const formData = await this.buildFormData(upload);
 
@@ -1225,7 +1436,9 @@ class UploadProcessor {
         throw apiError;
       }
 
-      this.updateRateLimitFromResponse(upload.authId, type, response);
+      this.updateRateLimitFromResponse(upload.authId, type, response, {
+        isCached: isTorboxCachedUploadResponse(response),
+      });
 
       // Duplicate submissions mean TorBox already has this item — treat as success.
       if (isTorboxDuplicateUploadResponse(response)) {
@@ -1236,7 +1449,9 @@ class UploadProcessor {
           response,
           apiClient
         );
-        const stopTypeDrain = this.isTypeRateLimitBlocked(upload.authId, type, userDb);
+        const stopTypeDrain =
+          this.isTypeRateLimitBlocked(upload.authId, type, userDb) ||
+          this.isUncachedCreateQuotaExhausted(userDb, type);
         return uploadProcessResult(duplicateOk, stopTypeDrain);
       }
 
@@ -1300,8 +1515,12 @@ class UploadProcessor {
       // since the upload already succeeded on TorBox
       try {
         this.handleSuccessfulUpload(upload, userDb, type, response);
-        const stopTypeDrain = this.isTypeRateLimitBlocked(upload.authId, type, userDb);
-        return uploadProcessResult(true, stopTypeDrain);
+        const stopForHeaders = this.isTypeRateLimitBlocked(upload.authId, type, userDb);
+        const stopForUncached = this.isUncachedCreateQuotaExhausted(userDb, type);
+        if (stopForHeaders || stopForUncached) {
+          this.pauseTypeForUncachedQuota(upload.authId, userDb, type, null);
+        }
+        return uploadProcessResult(true, stopForHeaders || stopForUncached);
       } catch (dbError) {
         // Database error after successful API call - retry the database update
         // but do NOT re-queue the upload since it already succeeded on TorBox
@@ -1342,12 +1561,16 @@ class UploadProcessor {
 
             // Re-attempt the database update
             this.handleSuccessfulUpload(upload, currentUserDb, type, response);
-            const stopTypeDrain = this.isTypeRateLimitBlocked(upload.authId, type, userDb);
+            const stopForHeaders = this.isTypeRateLimitBlocked(upload.authId, type, currentUserDb);
+            const stopForUncached = this.isUncachedCreateQuotaExhausted(currentUserDb, type);
+            if (stopForHeaders || stopForUncached) {
+              this.pauseTypeForUncachedQuota(upload.authId, currentUserDb, type, null);
+            }
             logger.info('Successfully completed database update after retry', {
               uploadId: id,
               attempt: attempt + 1,
             });
-            return uploadProcessResult(true, stopTypeDrain);
+            return uploadProcessResult(true, stopForHeaders || stopForUncached);
           } catch (retryError) {
             lastDbError = retryError;
             const isRetryClosedDbError = isClosedDatabaseError(retryError);
@@ -1521,7 +1744,9 @@ class UploadProcessor {
         }
 
         // Return true since the API call succeeded, even though database update failed
-        const stopTypeDrain = this.isTypeRateLimitBlocked(upload.authId, type, userDb);
+        const stopTypeDrain =
+          this.isTypeRateLimitBlocked(upload.authId, type, userDb) ||
+          this.isUncachedCreateQuotaExhausted(userDb, type);
         return uploadProcessResult(true, stopTypeDrain);
       }
     } catch (error) {

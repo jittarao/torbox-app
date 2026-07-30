@@ -2,13 +2,16 @@ import { describe, expect, test } from 'bun:test';
 import {
   getUploadDeferralStatistics,
   inferRateLimitStateFromQueue,
+  getCreateQuotaWindowUsage,
   isTransientDeferralMessage,
   syncRateLimitDeferrals,
   syncAllRateLimitDeferrals,
   RATE_LIMIT_DEFERRAL_MESSAGE,
   CONNECTION_DEFERRAL_MESSAGE,
   TRANSIENT_TORBOX_DEFERRAL_MESSAGE,
+  UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
   resumeAtSqlFromMs,
+  TORBOX_UNCACHED_CREATE_LIMIT,
 } from '../uploadDeferral.js';
 import {
   createUploadTestEnv,
@@ -252,7 +255,7 @@ describe('uploadDeferral', () => {
       const resumeMs = parseSqlUtcDate(row.next_attempt_at).getTime() - Date.now();
       expect(resumeMs).toBeGreaterThan(25 * 60 * 1000);
       expect(resumeMs).toBeLessThan(35 * 60 * 1000);
-      expect(row.error_message).toBe(RATE_LIMIT_DEFERRAL_MESSAGE);
+      expect(row.error_message).toBe(UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE);
     } finally {
       if (env) cleanupUploadTestEnv(env);
     }
@@ -346,6 +349,96 @@ describe('uploadDeferral', () => {
       expect(state).not.toBeNull();
       expect(state.remaining).toBe(0);
       expect(state.resetAtMs).toBeGreaterThan(Date.now());
+    } finally {
+      if (env) cleanupUploadTestEnv(env);
+    }
+  });
+
+  test('getCreateQuotaWindowUsage splits cached vs uncached and flags exhaustion', async () => {
+    let env;
+    try {
+      env = await createUploadTestEnv();
+      const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
+
+      for (let i = 0; i < 3; i++) {
+        const uploadId = userDb.db
+          .prepare(
+            `
+            INSERT INTO uploads (type, upload_type, url, name, status, queue_order)
+            VALUES ('torrent', 'magnet', ?, ?, 'completed', ?)
+          `
+          )
+          .run(`magnet:?xt=urn:btih:u${i}`, `uncached-${i}`, i).lastInsertRowid;
+        userDb.db
+          .prepare(
+            `
+            INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
+            VALUES (?, 'torrent', 200, 1, 0, datetime('now', '-10 minutes'))
+          `
+          )
+          .run(uploadId);
+      }
+
+      for (let i = 0; i < 2; i++) {
+        const uploadId = userDb.db
+          .prepare(
+            `
+            INSERT INTO uploads (type, upload_type, url, name, status, queue_order)
+            VALUES ('torrent', 'magnet', ?, ?, 'completed', ?)
+          `
+          )
+          .run(`magnet:?xt=urn:btih:c${i}`, `cached-${i}`, 10 + i).lastInsertRowid;
+        userDb.db
+          .prepare(
+            `
+            INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
+            VALUES (?, 'torrent', 200, 1, 1, datetime('now', '-5 minutes'))
+          `
+          )
+          .run(uploadId);
+      }
+
+      const usage = getCreateQuotaWindowUsage(userDb, 'torrent');
+      expect(usage.uncachedUsed).toBe(3);
+      expect(usage.uncachedLimit).toBe(TORBOX_UNCACHED_CREATE_LIMIT);
+      expect(usage.uncachedExhausted).toBe(false);
+      expect(usage.uncachedResetAtMs).toBeGreaterThan(Date.now());
+      expect(usage.totalUsed).toBeUndefined();
+      expect(usage.totalLimit).toBeUndefined();
+      expect(usage.totalResetAtMs).toBeUndefined();
+    } finally {
+      if (env) cleanupUploadTestEnv(env);
+    }
+  });
+
+  test('getCreateQuotaWindowUsage marks uncachedExhausted at the uncached cap', async () => {
+    let env;
+    try {
+      env = await createUploadTestEnv();
+      const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
+
+      for (let i = 0; i < TORBOX_UNCACHED_CREATE_LIMIT; i++) {
+        const uploadId = userDb.db
+          .prepare(
+            `
+            INSERT INTO uploads (type, upload_type, url, name, status, queue_order)
+            VALUES ('torrent', 'magnet', ?, ?, 'completed', ?)
+          `
+          )
+          .run(`magnet:?xt=urn:btih:ex${i}`, `ex-${i}`, i).lastInsertRowid;
+        userDb.db
+          .prepare(
+            `
+            INSERT INTO upload_attempts (upload_id, type, status_code, success, is_cached, attempted_at)
+            VALUES (?, 'torrent', 200, 1, 0, datetime('now', '-15 minutes'))
+          `
+          )
+          .run(uploadId);
+      }
+
+      const usage = getCreateQuotaWindowUsage(userDb, 'torrent');
+      expect(usage.uncachedUsed).toBe(TORBOX_UNCACHED_CREATE_LIMIT);
+      expect(usage.uncachedExhausted).toBe(true);
     } finally {
       if (env) cleanupUploadTestEnv(env);
     }

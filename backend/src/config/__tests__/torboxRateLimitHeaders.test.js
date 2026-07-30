@@ -5,7 +5,10 @@ import {
   getRateLimitAvailability,
   getRateLimitResumeWaitMs,
   getRateLimitSnapshotForApi,
+  isCachedRateLimitEnvelope,
   isRateLimitBlocked,
+  isUncachedHourlyRateLimitDetail,
+  isUncachedRateLimitEnvelope,
   normalizeExpiredRateLimitState,
   normalizeResetAtMs,
   parseTorboxRateLimitHeaders,
@@ -48,6 +51,37 @@ describe('torboxRateLimitHeaders', () => {
 
   test('normalizeResetAtMs treats large values as unix timestamps', () => {
     expect(normalizeResetAtMs('1700000060', nowMs)).toBe(1_700_000_060_000);
+  });
+
+  test('normalizeResetAtMs accepts float unix timestamps', () => {
+    expect(normalizeResetAtMs('1785453098.556586', nowMs)).toBe(1_785_453_098_000);
+  });
+
+  test('isUncachedRateLimitEnvelope / isCachedRateLimitEnvelope classify by limit', () => {
+    expect(isUncachedRateLimitEnvelope({ limit: 60 })).toBe(true);
+    expect(isUncachedRateLimitEnvelope({ limit: 300 })).toBe(false);
+    expect(isCachedRateLimitEnvelope({ limit: 300 })).toBe(true);
+    expect(isCachedRateLimitEnvelope({ limit: 60 })).toBe(false);
+  });
+
+  test('isUncachedHourlyRateLimitDetail matches TorBox 429 body', () => {
+    expect(isUncachedHourlyRateLimitDetail('60 per 1 hour')).toBe(true);
+    expect(isUncachedHourlyRateLimitDetail({ detail: '60 per 1 hour' })).toBe(true);
+    expect(isUncachedHourlyRateLimitDetail('too many requests')).toBe(false);
+  });
+
+  test('getRateLimitSnapshotForApi hides cached envelopes', () => {
+    const snapshot = getRateLimitSnapshotForApi(
+      {
+        limit: 300,
+        remaining: 297,
+        resetAtMs: nowMs + 30_000,
+        observedAtMs: nowMs,
+      },
+      nowMs
+    );
+    expect(snapshot.known).toBe(false);
+    expect(snapshot.limit).toBeNull();
   });
 
   test('isRateLimitBlocked is true only when remaining is zero before reset', () => {

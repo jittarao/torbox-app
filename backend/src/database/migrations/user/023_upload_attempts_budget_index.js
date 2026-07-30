@@ -1,7 +1,8 @@
 /**
- * Hourly create budget now includes Found Cached responses (TorBox still enforces
- * the 60/hour cap against them in practice). Index successful attempts by type/time
- * instead of the old is_cached=0 partial index.
+ * Index successful upload_attempts by type/time for the durable rolling-hour
+ * uncached create budget (is_cached = 0 counted in application SQL; this index
+ * covers success rows so both uncached-budget and legacy scans stay cheap).
+ * Replaces the old is_cached=0 partial index.
  */
 export const up = (db) => {
   db.prepare('DROP INDEX IF EXISTS idx_upload_attempts_uncached_type_time').run();

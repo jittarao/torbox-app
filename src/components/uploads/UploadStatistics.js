@@ -9,6 +9,30 @@ const TYPE_CONFIG = [
   { typeKey: 'webdl', labelKey: 'typeWebdl' },
 ];
 
+/** Live header snapshots above this look like TorBox's cached short-window envelope. */
+const UNCACHED_LIVE_LIMIT_MAX = 120;
+
+function getWindowStats(entry) {
+  const window = entry?.window;
+  if (window == null || typeof window !== 'object') {
+    return null;
+  }
+  return {
+    uncachedUsed: window.uncachedUsed ?? 0,
+    uncachedLimit: window.uncachedLimit ?? 60,
+    uncachedResetAt: window.uncachedResetAt ?? null,
+  };
+}
+
+function isUncachedLiveQuota(type) {
+  return (
+    type.known === true &&
+    type.limit != null &&
+    type.limit > 0 &&
+    type.limit <= UNCACHED_LIVE_LIMIT_MAX
+  );
+}
+
 function getTypeStats(byType, typeKey) {
   const entry = byType?.[typeKey];
   if (entry != null && typeof entry === 'object') {
@@ -18,6 +42,7 @@ function getTypeStats(byType, typeKey) {
       used: entry.used ?? null,
       known: entry.known === true,
       resetAt: entry.resetAt ?? null,
+      window: getWindowStats(entry),
       deferredCount: entry.deferredCount ?? 0,
       deferredUntil: entry.deferredUntil ?? null,
       pausedCount: entry.pausedCount ?? 0,
@@ -31,6 +56,7 @@ function getTypeStats(byType, typeKey) {
     used: null,
     known: false,
     resetAt: null,
+    window: null,
     deferredCount: 0,
     deferredUntil: null,
     pausedCount: 0,
@@ -39,15 +65,51 @@ function getTypeStats(byType, typeKey) {
   };
 }
 
-function getUsageState(type) {
-  if (!type.known || type.limit == null || type.remaining == null) {
-    return { pct: 0, isAtLimit: false, isApproaching: false, showBar: false };
+function getBudgetUsageState(used, limit) {
+  if (limit == null || used == null) {
+    return { pct: 0, isAtLimit: false, isApproaching: false, showBar: false, used: null };
   }
-  const used = type.used ?? Math.max(0, type.limit - type.remaining);
-  const pct = type.limit > 0 ? Math.min(100, Math.round((used / type.limit) * 100)) : 0;
-  const isAtLimit = type.remaining <= 0;
-  const isApproaching = !isAtLimit && used >= type.limit * 0.8;
-  return { pct, isAtLimit, isApproaching, showBar: true, used };
+  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const isAtLimit = used >= limit;
+  const isApproaching = !isAtLimit && used >= limit * 0.8;
+  return { pct, isAtLimit, isApproaching, showBar: used > 0 || isAtLimit, used };
+}
+
+function getLiveHeaderUsed(type) {
+  return (
+    type.used ??
+    (type.remaining != null && type.limit != null ? Math.max(0, type.limit - type.remaining) : null)
+  );
+}
+
+/** Prefer durable window when it has activity; otherwise live uncached headers. */
+function shouldShowWindowBudget(type) {
+  return type.window != null && type.window.uncachedUsed > 0;
+}
+
+function getDisplayedBudgetState(type) {
+  if (shouldShowWindowBudget(type)) {
+    return getBudgetUsageState(type.window.uncachedUsed, type.window.uncachedLimit);
+  }
+  if (isUncachedLiveQuota(type)) {
+    return getBudgetUsageState(getLiveHeaderUsed(type), type.limit);
+  }
+  return { pct: 0, isAtLimit: false, isApproaching: false, showBar: false, used: null };
+}
+
+/** At-limit if the displayed budget is exhausted, or live headers report remaining === 0. */
+function typeIsAtLimit(type) {
+  if (isUncachedLiveQuota(type) && type.remaining != null && type.remaining <= 0) {
+    return true;
+  }
+  return getDisplayedBudgetState(type).isAtLimit;
+}
+
+function typeIsApproaching(type) {
+  if (typeIsAtLimit(type)) {
+    return false;
+  }
+  return getDisplayedBudgetState(type).isApproaching;
 }
 
 function getQueueStatusCopy(type, t, tCommon) {
@@ -56,9 +118,11 @@ function getQueueStatusCopy(type, t, tCommon) {
       waitingLabel: t('rateLimitedWaiting', { count: type.deferredCount }),
       resumeLabel: type.deferredUntil
         ? t('firstSlotOpens', { time: formatTimeAgo(type.deferredUntil, tCommon) })
-        : type.resetAt
-          ? t('resumesIn', { time: formatTimeAgo(type.resetAt, tCommon) })
-          : null,
+        : type.window?.uncachedResetAt
+          ? t('resumesIn', { time: formatTimeAgo(type.window.uncachedResetAt, tCommon) })
+          : type.resetAt
+            ? t('resumesIn', { time: formatTimeAgo(type.resetAt, tCommon) })
+            : null,
     };
   }
 
@@ -101,9 +165,11 @@ function TypeUsageBar({ pct, isAtLimit, isApproaching }) {
   );
 }
 
-function TypeStatCard({ type, t, tCommon }) {
-  const usage = getUsageState(type);
-  const { waitingLabel, resumeLabel } = getQueueStatusCopy(type, t, tCommon);
+function BudgetRow({ label, used, limit, t }) {
+  const usage = getBudgetUsageState(used, limit);
+  if (!usage.showBar && used === 0) {
+    return null;
+  }
 
   const countClass = usage.isAtLimit
     ? 'text-label-warning-text dark:text-label-warning-text-dark'
@@ -111,21 +177,14 @@ function TypeStatCard({ type, t, tCommon }) {
       ? 'text-label-active-text dark:text-label-active-text-dark'
       : 'text-primary-text dark:text-primary-text-dark';
 
-  const countLabel = type.known
-    ? usage.showBar
-      ? `${usage.used ?? 0} / ${type.limit}`
-      : t('quotaUnknown')
-    : t('quotaUnknown');
-
   return (
-    <div className="rounded-md border border-border/60 bg-surface/50 px-3 py-2.5 dark:border-border-dark/60 dark:bg-surface-dark/40">
-      <div className="mb-2 flex items-baseline justify-between gap-3">
-        <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-          {type.label}
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">{label}</span>
+        <span className={`text-xs tabular-nums ${countClass}`}>
+          {usage.used ?? 0} / {limit}
         </span>
-        <span className={`text-sm tabular-nums ${countClass}`}>{countLabel}</span>
       </div>
-
       {usage.showBar && (
         <TypeUsageBar
           pct={usage.pct}
@@ -133,10 +192,66 @@ function TypeStatCard({ type, t, tCommon }) {
           isApproaching={usage.isApproaching}
         />
       )}
+      <p className="text-[11px] text-primary-text/45 dark:text-primary-text-dark/45">
+        {t('remainingQuota', {
+          remaining: Math.max(0, limit - (usage.used ?? 0)),
+          limit,
+        })}
+      </p>
+    </div>
+  );
+}
 
-      {type.known && type.remaining != null && type.limit != null && (
-        <p className="mt-1.5 text-xs text-primary-text/50 dark:text-primary-text-dark/50">
-          {t('remainingQuota', { remaining: type.remaining, limit: type.limit })}
+function TypeStatCard({ type, t, tCommon }) {
+  const { waitingLabel, resumeLabel } = getQueueStatusCopy(type, t, tCommon);
+  const window = type.window;
+  const showWindow = shouldShowWindowBudget(type);
+  const showLive = isUncachedLiveQuota(type);
+  const headerUsed = getLiveHeaderUsed(type);
+  const headerUsage = getBudgetUsageState(headerUsed, type.limit);
+
+  return (
+    <div className="rounded-md border border-border/60 bg-surface/50 px-3 py-2.5 dark:border-border-dark/60 dark:bg-surface-dark/40">
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
+          {type.label}
+        </span>
+      </div>
+
+      {showWindow ? (
+        <BudgetRow
+          label={t('budgetUncached')}
+          used={window.uncachedUsed}
+          limit={window.uncachedLimit}
+          t={t}
+        />
+      ) : showLive && headerUsage.showBar ? (
+        <div className="space-y-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+              {t('budgetLive')}
+            </span>
+            <span
+              className={`text-xs tabular-nums ${
+                headerUsage.isAtLimit
+                  ? 'text-label-warning-text dark:text-label-warning-text-dark'
+                  : headerUsage.isApproaching
+                    ? 'text-label-active-text dark:text-label-active-text-dark'
+                    : 'text-primary-text dark:text-primary-text-dark'
+              }`}
+            >
+              {headerUsage.used ?? 0} / {type.limit}
+            </span>
+          </div>
+          <TypeUsageBar
+            pct={headerUsage.pct}
+            isAtLimit={headerUsage.isAtLimit}
+            isApproaching={headerUsage.isApproaching}
+          />
+        </div>
+      ) : (
+        <p className="text-xs text-primary-text/50 dark:text-primary-text-dark/50">
+          {t('quotaUnknown')}
         </p>
       )}
 
@@ -176,6 +291,27 @@ function StatusBadge({ isAtLimit, isApproaching, label }) {
   );
 }
 
+function typeHasQuotaActivity(type) {
+  if (type.deferredCount > 0 || type.pausedCount > 0) {
+    return true;
+  }
+  if (type.window != null && type.window.uncachedUsed > 0) {
+    return true;
+  }
+  if (!isUncachedLiveQuota(type)) {
+    return false;
+  }
+  const used =
+    type.used ?? (type.remaining != null ? Math.max(0, type.limit - type.remaining) : null);
+  if (used != null && used > 0) {
+    return true;
+  }
+  if (type.remaining == null) {
+    return false;
+  }
+  return type.remaining < type.limit;
+}
+
 export default function UploadStatistics({ uploadStatistics }) {
   const t = useTranslations('UploadStatistics');
   const tCommon = useTranslations('Common');
@@ -193,31 +329,10 @@ export default function UploadStatistics({ uploadStatistics }) {
     };
   });
 
-  const visibleTypes = types.filter((type) => {
-    if (type.deferredCount > 0 || type.pausedCount > 0) {
-      return true;
-    }
-    if (!type.known) {
-      return false;
-    }
-    if (type.limit == null || type.remaining == null) {
-      return false;
-    }
-    return type.remaining < type.limit;
-  });
+  const visibleTypes = types.filter(typeHasQuotaActivity);
 
-  const isAtLimit = visibleTypes.some(
-    (type) => type.known && type.remaining != null && type.remaining <= 0
-  );
-  const isApproaching =
-    !isAtLimit &&
-    visibleTypes.some((type) => {
-      if (!type.known || type.limit == null || type.remaining == null) {
-        return false;
-      }
-      const used = type.used ?? type.limit - type.remaining;
-      return used >= type.limit * 0.8;
-    });
+  const isAtLimit = visibleTypes.some(typeIsAtLimit);
+  const isApproaching = !isAtLimit && visibleTypes.some(typeIsApproaching);
 
   if (visibleTypes.length === 0) {
     return (

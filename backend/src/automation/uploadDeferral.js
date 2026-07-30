@@ -1,10 +1,17 @@
-import { formatSqlUtcDate, parseSqlUtcDate } from '../config/torboxRateLimitHeaders.js';
+import {
+  formatSqlUtcDate,
+  parseSqlUtcDate,
+  TORBOX_CREATE_RATE_LIMIT_WINDOW_MS,
+  TORBOX_UNCACHED_CREATE_LIMIT,
+} from '../config/torboxRateLimitHeaders.js';
 import logger from '../utils/logger.js';
+
+export { TORBOX_CREATE_RATE_LIMIT_WINDOW_MS, TORBOX_UNCACHED_CREATE_LIMIT };
 
 /** TorBox hourly create quota deferral (server-reported rate limit). */
 export const RATE_LIMIT_DEFERRAL_MESSAGE = 'Rate limit reached. Will retry automatically.';
 
-/** @deprecated Legacy message kept for clearing stale queue rows. */
+/** Uncached hourly create budget exhausted — pause whole type until window opens. */
 export const UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE =
   'Uncached rate limit reached. Will retry automatically.';
 
@@ -158,13 +165,81 @@ export function inferRateLimitStateFromQueue(userDb, type, nowMs = Date.now()) {
 }
 
 /**
- * Keep queued upload deferrals aligned with cached TorBox rate-limit state.
+ * Uncached create usage from successful upload_attempts in the rolling hour.
+ * TorBox's hard create cap is ~60 uncached/hour; cached creates use a separate
+ * short-window budget and are not counted toward this gate.
+ * @param {Object} userDb
+ * @param {string} type
+ * @param {number} [nowMs]
+ * @param {number} [windowMs]
+ * @returns {{
+ *   uncachedUsed: number,
+ *   uncachedLimit: number,
+ *   uncachedResetAtMs: number|null,
+ *   uncachedExhausted: boolean
+ * }}
+ */
+export function getCreateQuotaWindowUsage(
+  userDb,
+  type,
+  nowMs = Date.now(),
+  windowMs = TORBOX_CREATE_RATE_LIMIT_WINDOW_MS
+) {
+  const windowStartSql = formatSqlUtcDate(new Date(nowMs - windowMs));
+  const row = userDb.db
+    .prepare(
+      `
+      SELECT
+        SUM(CASE WHEN is_cached = 0 THEN 1 ELSE 0 END) AS uncached_used,
+        MIN(CASE WHEN is_cached = 0 THEN attempted_at ELSE NULL END) AS oldest_uncached_attempt
+      FROM upload_attempts
+      WHERE type = ?
+        AND success = 1
+        AND attempted_at >= ?
+    `
+    )
+    .get(type, windowStartSql);
+
+  const uncachedUsed = row?.uncached_used ?? 0;
+
+  const resetFromOldest = (oldestSql) => {
+    if (!oldestSql) {
+      return null;
+    }
+    const windowEndMs = parseSqlUtcDate(oldestSql).getTime() + windowMs;
+    return windowEndMs > nowMs ? windowEndMs : null;
+  };
+
+  return {
+    uncachedUsed,
+    uncachedLimit: TORBOX_UNCACHED_CREATE_LIMIT,
+    uncachedResetAtMs: resetFromOldest(row?.oldest_uncached_attempt),
+    uncachedExhausted: uncachedUsed >= TORBOX_UNCACHED_CREATE_LIMIT,
+  };
+}
+
+/**
+ * API/UI snapshot of uncached rolling-hour window usage.
+ * @param {ReturnType<typeof getCreateQuotaWindowUsage>} usage
+ */
+export function formatCreateQuotaWindowForApi(usage) {
+  return {
+    uncachedUsed: usage.uncachedUsed,
+    uncachedLimit: usage.uncachedLimit,
+    uncachedResetAt:
+      usage.uncachedResetAtMs != null ? formatSqlUtcDate(new Date(usage.uncachedResetAtMs)) : null,
+  };
+}
+
+/**
+ * Keep queued upload deferrals aligned with uncached TorBox rate-limit state.
  * @param {Object} userDb
  * @param {string} type
  * @param {{
  *   getAvailability?: (type: string) => import('../config/torboxRateLimitHeaders.js').RateLimitAvailability,
  *   isBlocked?: (type: string) => boolean,
- *   getResumeAtSql?: (type: string) => string|null
+ *   getResumeAtSql?: (type: string) => string|null,
+ *   getDeferralMessage?: (type: string) => string
  * }} [rateLimit]
  * @returns {{ released: number, refreshed: number }}
  */
@@ -200,6 +275,9 @@ export function syncRateLimitDeferrals(userDb, type, rateLimit = {}) {
     return { released: 0, refreshed: 0 };
   }
 
+  const deferralMessage =
+    rateLimit.getDeferralMessage?.(type) ?? UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE;
+
   const refreshed = userDb.db
     .prepare(
       `
@@ -218,7 +296,7 @@ export function syncRateLimitDeferrals(userDb, type, rateLimit = {}) {
         )
     `
     )
-    .run(nextAttemptAt, RATE_LIMIT_DEFERRAL_MESSAGE, type, ...rateLimitMessageBindParams());
+    .run(nextAttemptAt, deferralMessage, type, ...rateLimitMessageBindParams());
 
   return { released: 0, refreshed: refreshed.changes };
 }

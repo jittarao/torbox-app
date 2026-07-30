@@ -1602,6 +1602,8 @@
   },
   "UploadStatistics": {
     "approachingRateLimit": "制限に近づいています",
+    "budgetLive": "ライブクォータ",
+    "budgetUncached": "非キャッシュ作成（直近1時間）",
     "connectionPausedWaiting": "{count, plural, other {# 件待機中 — TorBox利用不可}}",
     "deferredCount": "{count, plural, other {# 件キュー}}",
     "deferredSummary": "{count, plural, other {# 件のアップロード待機中 — {time} に再開}}",
