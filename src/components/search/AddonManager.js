@@ -194,6 +194,8 @@ export default function AddonManager() {
     }))
   );
 
+  // Safety net: session fan-out usually loads addons on API key set.
+  // fetchAddons coalesces in-flight calls and no-ops once hasLoaded.
   useEffect(() => {
     fetchAddons();
   }, [fetchAddons]);
