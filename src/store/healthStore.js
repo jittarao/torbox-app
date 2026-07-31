@@ -160,39 +160,14 @@ export const useHealthStore = create((set, get) => ({
     };
 
     const backendStore = getBackendModeSnapshot();
-
     if (backendStore.hasChecked) {
       applyBackendMode(backendStore.mode);
       return;
     }
 
-    if (!backendStore.isChecking) {
-      await checkBackendAvailability();
-    }
-
-    const { mode, hasChecked } = getBackendModeSnapshot();
-    if (hasChecked) {
-      applyBackendMode(mode);
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/backend/status', {
-        method: 'GET',
-        signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
-      });
-
-      const { ok: responseOk, data } = await readJsonFromResponse(response);
-      applyBackendMode(responseOk && data.available ? 'backend' : 'local');
-    } catch (err) {
-      set({
-        backendHealth: {
-          status: 'unavailable',
-          message: err.message,
-          responseTime: null,
-        },
-      });
-    }
+    await checkBackendAvailability();
+    const { mode } = getBackendModeSnapshot();
+    applyBackendMode(mode);
   },
 
   performHealthCheck: async (apiKey, options = {}) => {
