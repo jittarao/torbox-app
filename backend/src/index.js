@@ -28,6 +28,7 @@ import { setupAutomationRoutes } from './routes/automation.js';
 import { setupArchivedDownloadsRoutes } from './routes/archivedDownloads.js';
 import { setupCustomViewsRoutes } from './routes/customViews.js';
 import { setupStremioAddonsRoutes } from './routes/stremioAddons.js';
+import { setupTmdbRoutes } from './routes/tmdb.js';
 import { setupTagsRoutes } from './routes/tags.js';
 import { setupDownloadTagsRoutes } from './routes/downloadTags.js';
 import { setupProtectedDownloadsRoutes } from './routes/protectedDownloads.js';
@@ -235,6 +236,7 @@ class TorBoxBackend {
     setupArchivedDownloadsRoutes(this.app, this);
     setupCustomViewsRoutes(this.app, this);
     setupStremioAddonsRoutes(this.app, this);
+    setupTmdbRoutes(this.app, this);
     setupTagsRoutes(this.app, this);
     setupDownloadTagsRoutes(this.app, this);
     setupProtectedDownloadsRoutes(this.app, this);

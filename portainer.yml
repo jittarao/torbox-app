@@ -25,6 +25,7 @@
 #   STREMIO_ALLOW_HTTP           — "true" to allow http:// Stremio manifests (default HTTPS-only)
 #   STREMIO_MAX_ADDONS           — max installed addons per user (default 25)
 #   STREMIO_FETCH_RATE_LIMIT_MAX — external addon fetch rate limit per user / 15 min (default 120)
+#   TMDB_FETCH_RATE_LIMIT_MAX    — TMDB route hits per user / minute (default 60; search fans out upstream)
 #   DOWNLOAD_SYNC_CACHE_TTL_MS — download list cache eviction when idle (default 1800000)
 #   DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS — background full reconcile interval for multi-page catalogs (default 300000)
 #   DOWNLOAD_SYNC_RECONCILE_JITTER_MS — per-user reconcile jitter (default 60000)
@@ -72,6 +73,7 @@ services:
       STREMIO_ALLOW_HTTP: ${STREMIO_ALLOW_HTTP:-}
       STREMIO_MAX_ADDONS: ${STREMIO_MAX_ADDONS:-25}
       STREMIO_FETCH_RATE_LIMIT_MAX: ${STREMIO_FETCH_RATE_LIMIT_MAX:-120}
+      TMDB_FETCH_RATE_LIMIT_MAX: ${TMDB_FETCH_RATE_LIMIT_MAX:-60}
 
     volumes:
       # Persist SQLite DBs and uploads only — never mount over /app/src or /app/config

@@ -50,6 +50,7 @@ services:
       - STREMIO_ALLOW_HTTP=${STREMIO_ALLOW_HTTP:-}
       - STREMIO_MAX_ADDONS=${STREMIO_MAX_ADDONS:-25}
       - STREMIO_FETCH_RATE_LIMIT_MAX=${STREMIO_FETCH_RATE_LIMIT_MAX:-120}
+      - TMDB_FETCH_RATE_LIMIT_MAX=${TMDB_FETCH_RATE_LIMIT_MAX:-60}
     # Persistent volume for backend data (databases, user files, etc.)
     volumes:
       - backend-data:/app/data
