@@ -30,9 +30,9 @@ function retryPendingSearch() {
   // Lazy import avoids circular init issues (searchStore imports this store).
   import('@/store/searchStore')
     .then(({ useSearchStore }) => {
-      const { pendingSearchQuery, fetchResults } = useSearchStore.getState();
+      const { pendingSearchQuery, pendingSearchOptions, fetchResults } = useSearchStore.getState();
       if (pendingSearchQuery) {
-        fetchResults(pendingSearchQuery);
+        fetchResults(pendingSearchQuery, pendingSearchOptions || {});
       }
     })
     .catch(() => {});

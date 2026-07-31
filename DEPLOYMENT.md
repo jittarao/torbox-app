@@ -83,9 +83,10 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 The search page queries **user-installed Stremio stream addons** (not TorBox search-api). Requires the backend and a TorBox API key.
 
 - Users paste a manifest URL (`…/manifest.json`); the backend fetches it via SSRF-hardened HTTPS (`safeExternalFetch`), stores metadata in per-user SQLite (`stremio_addons`), and proxies stream lookups.
+- Optional **TMDB title search**: each user can save a TMDB v3 API key on the Search page (encrypted in per-user SQLite). Free-text queries are resolved via backend-proxied TMDB search to an IMDb id (or `tmdb:` when an enabled addon supports that prefix). TV titles use a season/episode picker. The plaintext TMDB key is never returned to the browser.
 - Manifest URLs default to **HTTPS only**. Set `STREMIO_ALLOW_HTTP=true` on the backend to allow `http://` (e.g. local addon development). Private/link-local IPs remain blocked.
-- Cap installs with `STREMIO_MAX_ADDONS` (default 25). External fetch routes (install / refresh / stream) use a stricter per-user limit (`STREMIO_FETCH_RATE_LIMIT_MAX`, default 120 / 15 min) in addition to `USER_RATE_LIMIT_MAX`.
-- If the backend port is reachable without the TorBox API key, set `BACKEND_REQUIRE_API_KEY=true` (recommended whenever `:3001` is exposed).
+- Cap installs with `STREMIO_MAX_ADDONS` (default 25). External fetch routes (install / refresh / stream) use a stricter per-user limit (`STREMIO_FETCH_RATE_LIMIT_MAX`, default 120 / 15 min) in addition to `USER_RATE_LIMIT_MAX`. TMDB proxy routes use `TMDB_FETCH_RATE_LIMIT_MAX` (default 60 **Express requests** / minute per user). Each title-search request may fan out to ~11 upstream TMDB HTTP calls (multi-search + external_ids enrichment); the limiter counts the route hit, not each upstream call.
+- `SEARCH_PAGE_DISABLED` is enforced on Next.js `/api/tmdb/*` and `/api/stremio/*` proxies (and the Search UI). Direct callers of the backend on `:3001` are not gated by that flag — keep the backend loopback-only or set `BACKEND_REQUIRE_API_KEY=true` when exposing it.
 
 ### Download list sync
 
@@ -162,37 +163,38 @@ bun run dev
 
 ### Environment Variables
 
-| Variable                                  | Description                                                                                  | Default                  | Required |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------ | -------- |
-| `FRONTEND_URL`                            | Frontend URL for CORS                                                                        | `http://localhost:3000`  | Yes      |
-| `ENCRYPTION_KEY`                          | Base64-encoded key for API key encryption                                                    | -                        | Yes      |
-| `PORT`                                    | Port for backend server                                                                      | `3001`                   | No       |
-| `NODE_ENV`                                | Node environment                                                                             | `production`             | No       |
-| `TORBOX_API_BASE`                         | TorBox API base URL                                                                          | `https://api.torbox.app` | No       |
-| `TORBOX_API_VERSION`                      | TorBox API version                                                                           | `v1`                     | No       |
-| `AUTOMATION_RULES_MYLIST_FULL_PAGINATION` | When `true`/`1`, automation **rules** fetch every TorBox mylist page (libraries >1000 items) | unset (`false`)          | No       |
-| `MASTER_DB_PATH`                          | Directory for master database                                                                | `/app/data/master.db`    | No       |
-| `USER_DB_DIR`                             | Directory for user database files                                                            | `/app/data/users`        | No       |
-| `MAX_DB_CONNECTIONS`                      | Maximum pooled database connections                                                          | `200`                    | No       |
-| `SQLITE_CACHE_SIZE_KB`                    | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB)                   | `-1000`                  | No       |
-| `IP_RATE_LIMIT_MAX`                       | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped)             | `1000`                   | No       |
-| `USER_RATE_LIMIT_MAX`                     | Max API requests per authenticated user per 15 minutes                                       | `500`                    | No       |
-| `STREMIO_ALLOW_HTTP`                      | Allow `http://` Stremio manifest/stream URLs (default HTTPS-only)                            | unset (`false`)          | No       |
-| `STREMIO_MAX_ADDONS`                      | Max installed Stremio addons per user (capped at 100)                                        | `25`                     | No       |
-| `STREMIO_FETCH_RATE_LIMIT_MAX`            | Max external addon fetch requests (install/refresh/stream) per user per 15 minutes           | `120`                    | No       |
-| `TRUST_PROXY`                             | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)                       | unset                    | No       |
-| `BACKEND_REQUIRE_API_KEY`                 | Require `x-api-key` on all user routes (disables legacy `authId`-only access)                | unset (`false`)          | No       |
-| `BACKEND_SERVICE_SECRET`                  | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE)              | unset                    | No       |
-| `UPLOAD_LIMIT_MAX_STORAGE_MB`             | Max staged upload storage (MB) per **LIMITED** tier user                                     | `100`                    | No       |
-| `UPLOAD_LIMIT_MAX_FILES`                  | Max retained staged files per **LIMITED** tier user                                          | `500`                    | No       |
-| `UPLOAD_PROCESSOR_INTERVAL_MS`            | Upload queue processor poll interval (ms)                                                    | `5000`                   | No       |
-| `UPLOAD_PROCESS_CONCURRENCY`              | Max users processed in parallel per upload processor cycle                                   | `6`                      | No       |
-| `UPLOAD_BATCH_FETCH_SIZE`                 | SQL rows fetched per in-memory queue buffer (not the per-drain work cap)                     | `50`                     | No       |
-| `UPLOAD_MAX_WORK_PER_DRAIN`               | Max uploads processed per drain invocation before yielding worker                            | `25`                     | No       |
-| `CREATE_UPLOAD_TIMEOUT_MS`                | TorBox create API request timeout (ms)                                                       | `30000`                  | No       |
-| `UPLOAD_CONNECTION_DEFER_MS`              | Defer queued uploads (ms) when TorBox API is unreachable                                     | `900000` (15 min)        | No       |
-| `UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS`     | TorBox 429 cool-down (ms) when response headers omit reset/retry timing                      | `300000` (5 min)         | No       |
-| `AUTOMATION_INACTIVE_USER_DAYS`           | Skip automation for users inactive longer than N days (`last_seen_at`; `0` disables)         | `30`                     | No       |
+| Variable                                  | Description                                                                                                                            | Default                  | Required |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------- |
+| `FRONTEND_URL`                            | Frontend URL for CORS                                                                                                                  | `http://localhost:3000`  | Yes      |
+| `ENCRYPTION_KEY`                          | Base64-encoded key for API key encryption                                                                                              | -                        | Yes      |
+| `PORT`                                    | Port for backend server                                                                                                                | `3001`                   | No       |
+| `NODE_ENV`                                | Node environment                                                                                                                       | `production`             | No       |
+| `TORBOX_API_BASE`                         | TorBox API base URL                                                                                                                    | `https://api.torbox.app` | No       |
+| `TORBOX_API_VERSION`                      | TorBox API version                                                                                                                     | `v1`                     | No       |
+| `AUTOMATION_RULES_MYLIST_FULL_PAGINATION` | When `true`/`1`, automation **rules** fetch every TorBox mylist page (libraries >1000 items)                                           | unset (`false`)          | No       |
+| `MASTER_DB_PATH`                          | Directory for master database                                                                                                          | `/app/data/master.db`    | No       |
+| `USER_DB_DIR`                             | Directory for user database files                                                                                                      | `/app/data/users`        | No       |
+| `MAX_DB_CONNECTIONS`                      | Maximum pooled database connections                                                                                                    | `200`                    | No       |
+| `SQLITE_CACHE_SIZE_KB`                    | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB)                                                             | `-1000`                  | No       |
+| `IP_RATE_LIMIT_MAX`                       | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped)                                                       | `1000`                   | No       |
+| `USER_RATE_LIMIT_MAX`                     | Max API requests per authenticated user per 15 minutes                                                                                 | `500`                    | No       |
+| `STREMIO_ALLOW_HTTP`                      | Allow `http://` Stremio manifest/stream URLs (default HTTPS-only)                                                                      | unset (`false`)          | No       |
+| `STREMIO_MAX_ADDONS`                      | Max installed Stremio addons per user (capped at 100)                                                                                  | `25`                     | No       |
+| `STREMIO_FETCH_RATE_LIMIT_MAX`            | Max external addon fetch requests (install/refresh/stream) per user per 15 minutes                                                     | `120`                    | No       |
+| `TMDB_FETCH_RATE_LIMIT_MAX`               | Max TMDB **route** requests (search/find/tv/credentials PUT) per user per minute. One search may trigger ~11 upstream TMDB HTTP calls. | `60`                     | No       |
+| `TRUST_PROXY`                             | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)                                                                 | unset                    | No       |
+| `BACKEND_REQUIRE_API_KEY`                 | Require `x-api-key` on all user routes (disables legacy `authId`-only access)                                                          | unset (`false`)          | No       |
+| `BACKEND_SERVICE_SECRET`                  | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE)                                                        | unset                    | No       |
+| `UPLOAD_LIMIT_MAX_STORAGE_MB`             | Max staged upload storage (MB) per **LIMITED** tier user                                                                               | `100`                    | No       |
+| `UPLOAD_LIMIT_MAX_FILES`                  | Max retained staged files per **LIMITED** tier user                                                                                    | `500`                    | No       |
+| `UPLOAD_PROCESSOR_INTERVAL_MS`            | Upload queue processor poll interval (ms)                                                                                              | `5000`                   | No       |
+| `UPLOAD_PROCESS_CONCURRENCY`              | Max users processed in parallel per upload processor cycle                                                                             | `6`                      | No       |
+| `UPLOAD_BATCH_FETCH_SIZE`                 | SQL rows fetched per in-memory queue buffer (not the per-drain work cap)                                                               | `50`                     | No       |
+| `UPLOAD_MAX_WORK_PER_DRAIN`               | Max uploads processed per drain invocation before yielding worker                                                                      | `25`                     | No       |
+| `CREATE_UPLOAD_TIMEOUT_MS`                | TorBox create API request timeout (ms)                                                                                                 | `30000`                  | No       |
+| `UPLOAD_CONNECTION_DEFER_MS`              | Defer queued uploads (ms) when TorBox API is unreachable                                                                               | `900000` (15 min)        | No       |
+| `UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS`     | TorBox 429 cool-down (ms) when response headers omit reset/retry timing                                                                | `300000` (5 min)         | No       |
+| `AUTOMATION_INACTIVE_USER_DAYS`           | Skip automation for users inactive longer than N days (`last_seen_at`; `0` disables)                                                   | `30`                     | No       |
 
 Set the same `BACKEND_SERVICE_SECRET` on the **frontend** (`.env.local` / compose `torbox-app` service) when you use it on the backend.
 

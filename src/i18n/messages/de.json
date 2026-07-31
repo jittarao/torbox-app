@@ -1375,8 +1375,9 @@
     },
     "placeholderDownloads": "Suchen {itemType}…",
     "placeholderDownloadsShort": "Suchen…",
-    "placeholderSearch": "Medien-ID eingeben (z. B. tt0111161 oder anilist:16498)",
+    "placeholderSearch": "Titel, IMDb-ID (tt…) oder prefix:id (z. B. anilist:16498)",
     "recentSearches": "Letzte Suchen",
+    "removeSearch": "Aus letzten Suchen entfernen",
     "search": "Suchen",
     "searchDownloadsAria": "{itemType} oder Dateinamen suchen",
     "searchDownloadsHelpAnd": "Plus — alle Wörter müssen vorkommen (z. B. matrix+1999)",
@@ -1390,16 +1391,16 @@
     "streamFilters": "Stream-Filter",
     "validation": {
       "addonsLoading": "Addons werden geladen… bitte gleich erneut versuchen.",
-      "empty": "Geben Sie eine Medien-ID zum Suchen ein.",
-      "invalid": "Verwenden Sie eine IMDb-ID (tt…), Folgen-ID (tt…:S:E) oder prefix:id, die Ihre Addons unterstützen.",
+      "empty": "Titel oder Medien-ID eingeben.",
+      "invalid": "Nutzen Sie einen Film-/Serientitel, eine IMDb-ID (tt…), Folgen-ID (tt…:S:E) oder eine von Ihren Addons unterstützte prefix:id.",
       "noAddons": "Installieren und aktivieren Sie oben mindestens ein Stremio-Stream-Addon.",
       "noMatchingAddons": "Kein aktiviertes Addon unterstützt diese Medien-ID.",
       "unknownPrefix": "Dieses ID-Präfix wird von Ihren installierten Addons nicht unterstützt."
     }
   },
   "SearchPage": {
-    "backendRequired": "Die Suche benötigt das TorBox Manager-Backend. Aktivieren Sie das Backend, um Stremio-Addons zu installieren und nach Medien-ID zu suchen.",
-    "subtitle": "Durchsuchen Sie Streams Ihrer Stremio-Addons per Medien-ID und fügen Sie Torrents oder NZBs zu TorBox hinzu.",
+    "backendRequired": "Die Suche benötigt das TorBox Manager-Backend. Aktivieren Sie das Backend, um Stremio-Addons zu installieren und nach Titel oder Medien-ID zu suchen.",
+    "subtitle": "Durchsuchen Sie Streams Ihrer Stremio-Addons per Titel oder Medien-ID und fügen Sie Torrents oder NZBs zu TorBox hinzu.",
     "title": "Stream-Suche"
   },
   "SearchResults": {
@@ -1587,6 +1588,48 @@
       "copyLink": "Link wurde in die Zwischenablage kopiert",
       "copyLinkFailed": "Link konnte nicht kopiert werden"
     }
+  },
+  "TmdbKey": {
+    "confirmRemove": "Gespeicherten TMDB-API-Schlüssel entfernen?",
+    "docsLink": "TMDB-API-Schlüssel holen",
+    "errors": {
+      "removeFailed": "TMDB-API-Schlüssel konnte nicht entfernt werden",
+      "saveFailed": "TMDB-API-Schlüssel konnte nicht gespeichert werden"
+    },
+    "help": "Ihr Schlüssel wird verschlüsselt auf dem Server gespeichert und nur zur Titelsuche für Filme und Serien verwendet.",
+    "keyTypeHint": "Verwenden Sie den API-Schlüssel (v3) oder den Read Access Token (v4) aus Ihren TMDB-Einstellungen.",
+    "loading": "Laden…",
+    "placeholder": "TMDB-API-Schlüssel (v3)",
+    "placeholderReplace": "Neuen TMDB-API-Schlüssel zum Ersetzen eingeben",
+    "remove": "Entfernen",
+    "save": "Speichern",
+    "statusConfigured": "Konfiguriert — Titelsuche aktiv",
+    "statusNotConfigured": "Nicht konfiguriert — TMDB-API-Schlüssel für Titelsuche einfügen",
+    "title": "TMDB-API-Schlüssel",
+    "update": "Aktualisieren"
+  },
+  "TmdbSearch": {
+    "back": "Zurück",
+    "cancel": "Abbrechen",
+    "configureKeyHint": "Fügen Sie oben einen TMDB-API-Schlüssel hinzu, um nach Film- oder Serientiteln zu suchen.",
+    "episode": "Folge",
+    "episodeCount": "{count, plural, one {# Folge} other {# Folgen}}",
+    "errors": {
+      "apiKeyMissing": "TorBox-API-Schlüssel fehlt",
+      "seasonLoadFailed": "Episoden für diese Staffel konnten nicht geladen werden",
+      "tvLoadFailed": "Staffeln für diese Serie konnten nicht geladen werden"
+    },
+    "invalidKeyHint": "Ihr TMDB-API-Schlüssel scheint ungültig. Aktualisieren Sie ihn oben und versuchen Sie es erneut.",
+    "noEpisodes": "Keine Episoden für diese Staffel verfügbar",
+    "noResults": "Keine passenden Titel gefunden",
+    "noSeasons": "Für diese Serie sind keine Staffeln verfügbar",
+    "pickEpisode": "Folge von {title} wählen",
+    "searchEpisode": "Streams suchen",
+    "searchFailed": "Titelsuche fehlgeschlagen. Bitte erneut versuchen.",
+    "season": "Staffel",
+    "titleSuggestions": "Titel",
+    "typeMovie": "Film",
+    "typeTv": "Serie"
   },
   "TorrentOptions": {
     "allowZip": {

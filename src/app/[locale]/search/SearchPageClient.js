@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import AppShell from '@/components/navigation/AppShell';
 import AddonManager from '@/components/search/AddonManager';
+import TmdbKeyManager from '@/components/search/TmdbKeyManager';
 import SearchBar from '@/components/search/SearchBar';
 import SearchResults from '@/components/search/SearchResults';
 import { useSession } from '@/components/shared/hooks/useSession';
@@ -41,6 +42,7 @@ export default function SearchPageClient() {
         ) : (
           <Suspense fallback={null}>
             <div className="space-y-4">
+              <TmdbKeyManager />
               <AddonManager />
               <SearchBar />
               <SearchResults apiKey={apiKey} />

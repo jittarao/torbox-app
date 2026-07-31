@@ -63,6 +63,11 @@ export function inferTypesForMediaId(mediaId) {
     return ['movie', 'series'];
   }
 
+  // tmdb:{id}:{S}:{E} episode form
+  if (/^tmdb:\d+:\d+:\d+$/i.test(id)) {
+    return ['series'];
+  }
+
   const prefixMatch = id.match(/^([a-zA-Z][a-zA-Z0-9]*):/);
   if (prefixMatch) {
     const prefix = prefixMatch[1].toLowerCase();

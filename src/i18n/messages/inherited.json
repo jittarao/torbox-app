@@ -234,6 +234,7 @@
     "SearchBar.filters.hdr": "HDR",
     "StremioAddons.manifestUrlPlaceholder": "https://addon.example.com/.../manifest.json",
     "StremioAddons.moreTypes": "+{count}",
+    "TmdbSearch.typeTv": "TV",
     "UploadStatistics.typeTorrents": "Torrents",
     "UploadStatistics.typeUsenet": "Usenet",
     "UploadStatistics.typeWebdl": "WebDL",

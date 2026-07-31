@@ -1376,8 +1376,9 @@
     },
     "placeholderDownloads": "Szukaj {itemType}…",
     "placeholderDownloadsShort": "Szukaj…",
-    "placeholderSearch": "Wprowadź ID multimediów (np. tt0111161 lub anilist:16498)",
+    "placeholderSearch": "Tytuł, ID IMDb (tt…) lub prefix:id (np. anilist:16498)",
     "recentSearches": "Ostatnie wyszukiwania",
+    "removeSearch": "Usuń z ostatnich wyszukiwań",
     "search": "Szukaj",
     "searchDownloadsAria": "Szukaj {itemType} lub nazw plików",
     "searchDownloadsHelpAnd": "Plus — pasuje tylko gdy pojawią się wszystkie słowa (np. matrix+1999)",
@@ -1391,16 +1392,16 @@
     "streamFilters": "Filtry streamów",
     "validation": {
       "addonsLoading": "Ładowanie addonów… spróbuj ponownie za chwilę.",
-      "empty": "Wprowadź ID multimediów, aby wyszukać.",
-      "invalid": "Użyj ID IMDb (tt…), odcinka (tt…:S:E) lub prefix:id obsługiwanego przez Twoje dodatki.",
+      "empty": "Wprowadź tytuł lub ID multimediów.",
+      "invalid": "Użyj tytułu filmu/serialu, ID IMDb (tt…), ID odcinka (tt…:S:E) lub prefix:id obsługiwanego przez Twoje dodatki.",
       "noAddons": "Zainstaluj i włącz co najmniej jeden dodatek strumieni Stremio powyżej.",
       "noMatchingAddons": "Żaden włączony dodatek nie obsługuje tego ID multimediów.",
       "unknownPrefix": "Ten prefiks ID nie jest obsługiwany przez zainstalowane dodatki."
     }
   },
   "SearchPage": {
-    "backendRequired": "Wyszukiwanie wymaga backendu TorBox Manager. Włącz backend, aby instalować dodatki Stremio i wyszukiwać po ID multimediów.",
-    "subtitle": "Wyszukuj streamy z dodatków Stremio po ID mediów i dodawaj torrenty lub NZB do TorBox.",
+    "backendRequired": "Wyszukiwanie wymaga backendu TorBox Manager. Włącz backend, aby instalować dodatki Stremio i wyszukiwać po tytule lub ID multimediów.",
+    "subtitle": "Wyszukuj streamy z dodatków Stremio po tytule lub ID mediów i dodawaj torrenty lub NZB do TorBox.",
     "title": "Wyszukiwanie streamów"
   },
   "SearchResults": {
@@ -1592,6 +1593,48 @@
       "copyLink": "Link skopiowany do schowka",
       "copyLinkFailed": "Nie udało się skopiować linku"
     }
+  },
+  "TmdbKey": {
+    "confirmRemove": "Usunąć zapisany klucz API TMDB?",
+    "docsLink": "Uzyskaj klucz API TMDB",
+    "errors": {
+      "removeFailed": "Nie udało się usunąć klucza API TMDB",
+      "saveFailed": "Nie udało się zapisać klucza API TMDB"
+    },
+    "help": "Twój klucz jest szyfrowany i przechowywany na serwerze. Służy tylko do wyszukiwania tytułów filmów i seriali w wyszukiwaniu streamów.",
+    "keyTypeHint": "Użyj klucza API (v3) lub Read Access Token (v4) z ustawień TMDB.",
+    "loading": "Ładowanie…",
+    "placeholder": "Klucz API TMDB (v3)",
+    "placeholderReplace": "Wpisz nowy klucz API TMDB, aby go zastąpić",
+    "remove": "Usuń",
+    "save": "Zapisz",
+    "statusConfigured": "Skonfigurowano — wyszukiwanie tytułów włączone",
+    "statusNotConfigured": "Nieskonfigurowano — wklej klucz API TMDB do wyszukiwania tytułów",
+    "title": "Klucz API TMDB",
+    "update": "Aktualizuj"
+  },
+  "TmdbSearch": {
+    "back": "Wstecz",
+    "cancel": "Anuluj",
+    "configureKeyHint": "Dodaj powyżej klucz API TMDB, aby wyszukiwać po tytule filmu lub serialu.",
+    "episode": "Odcinek",
+    "episodeCount": "{count, plural, one {# odcinek} few {# odcinki} many {# odcinków} other {# odcinka}}",
+    "errors": {
+      "apiKeyMissing": "Brak klucza API TorBox",
+      "seasonLoadFailed": "Nie udało się wczytać odcinków tego sezonu",
+      "tvLoadFailed": "Nie udało się załadować sezonów tego serialu"
+    },
+    "invalidKeyHint": "Twój klucz API TMDB wygląda na nieprawidłowy. Zaktualizuj go powyżej i spróbuj ponownie.",
+    "noEpisodes": "Brak odcinków dla tego sezonu",
+    "noResults": "Nie znaleziono pasujących tytułów",
+    "noSeasons": "Brak dostępnych sezonów dla tego serialu",
+    "pickEpisode": "Wybierz odcinek: {title}",
+    "searchEpisode": "Szukaj streamów",
+    "searchFailed": "Wyszukiwanie tytułów nie powiodło się. Spróbuj ponownie.",
+    "season": "Sezon",
+    "titleSuggestions": "Tytuły",
+    "typeMovie": "Film",
+    "typeTv": "Serial"
   },
   "TorrentOptions": {
     "allowZip": {
