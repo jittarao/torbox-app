@@ -1,136 +1,127 @@
 'use client';
 
-import { useId } from 'react';
 import { useTranslations } from 'next-intl';
 import Dropdown from '@/components/shared/Dropdown';
-import { EyeOff } from '@/components/icons';
+import { ToggleSwitch } from '@/components/downloads/apiKeyManagerHelpers';
 
-const SORT_OPTIONS = {
-  torrents: [
-    { value: 'seeders', label: 'Most Seeders' },
-    { value: 'size', label: 'Largest Size' },
-    { value: 'age', label: 'Most Recent' },
-  ],
-  usenet: [
-    { value: 'size', label: 'Largest Size' },
-    { value: 'age', label: 'Most Recent' },
-  ],
-};
+const segmentBtnBase =
+  'px-2.5 py-1 text-xs border rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
+
+function densityBtnClass(active, { segment, otherActive } = {}) {
+  const inactive =
+    'border-border text-primary-text/70 hover:text-primary-text dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:text-primary-text-dark';
+  const activeAccent = 'border-accent text-accent dark:border-accent-dark dark:text-accent-dark';
+
+  if (!active) {
+    const hideSharedBorder =
+      segment === 'left' && otherActive
+        ? ' border-r-transparent dark:border-r-transparent'
+        : segment === 'right' && otherActive
+          ? ' border-l-transparent dark:border-l-transparent'
+          : '';
+    return `${segmentBtnBase} ${inactive}${hideSharedBorder}`;
+  }
+
+  return `${segmentBtnBase} ${activeAccent} relative z-10`;
+}
 
 export default function SearchResultsToolbar({
   resultCount,
-  searchType,
   showCachedOnly,
   onShowCachedOnlyChange,
-  hideTorBoxIndexers,
-  onHideTorBoxIndexersChange,
   sortKey,
   sortDir,
   onSortKeyChange,
   onSortDirToggle,
+  addonOptions = [],
+  addonId,
+  onAddonIdChange,
+  density = 'full',
+  onDensityChange,
 }) {
   const t = useTranslations('SearchResults');
-  const cachedOnlySwitchId = useId();
-  const hideTorBoxIndexersSwitchId = useId();
+
+  const sortOptions = [
+    { value: 'default', label: t('sort.default') },
+    { value: 'size', label: t('sort.size') },
+    { value: 'resolution', label: t('sort.resolution') },
+    { value: 'title', label: t('sort.title') },
+  ];
+
+  const sourceOptions = [
+    { value: '', label: t('filters.allAddons') },
+    ...addonOptions.map((a) => ({ value: a.addonId, label: a.addonName || a.addonId })),
+  ];
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
-      <div className="flex items-center gap-4">
-        <h2 className="text-lg md:text-xl font-semibold text-primary-text dark:text-primary-text-dark">
+    <div className="sticky top-0 z-10 -mx-1 mb-3 flex flex-col gap-2.5 rounded-md border border-border/60 bg-surface/95 px-3 py-2.5 backdrop-blur-sm dark:border-border-dark/60 dark:bg-surface-dark/95 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3">
+        <h2 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark sm:text-base">
           {t('results', { count: resultCount })}
         </h2>
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <label
-          htmlFor={cachedOnlySwitchId}
-          className="flex items-center gap-2 cursor-pointer order-2 md:order-1"
-        >
-          <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap">
-            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            {t('cachedOnly')}
-          </span>
-
-          <div
-            id={cachedOnlySwitchId}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors
-                      ${
-                        showCachedOnly
-                          ? 'bg-accent dark:bg-accent-dark'
-                          : 'bg-border dark:bg-border-dark'
-                      }`}
-            onClick={() => onShowCachedOnlyChange(!showCachedOnly)}
-            role="switch"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onShowCachedOnlyChange(!showCachedOnly);
-              }
-            }}
-            aria-checked={showCachedOnly}
-          >
-            <span
-              className={`inline-block size-4 transform rounded-full bg-white transition-transform
-                        ${showCachedOnly ? 'translate-x-4' : 'translate-x-1'}`}
-            />
-          </div>
-        </label>
-
-        {searchType === 'usenet' && (
-          <label htmlFor={hideTorBoxIndexersSwitchId} className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-sm text-primary-text/70 dark:text-primary-text-dark/70">
-              <EyeOff />
-              {t('hideTorBoxIndexers')}
-            </span>
-
-            <div
-              id={hideTorBoxIndexersSwitchId}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer
-              ${
-                hideTorBoxIndexers
-                  ? 'bg-accent dark:bg-accent-dark'
-                  : 'bg-border dark:bg-border-dark'
-              }`}
-              onClick={() => onHideTorBoxIndexersChange(!hideTorBoxIndexers)}
-              role="switch"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onHideTorBoxIndexersChange(!hideTorBoxIndexers);
-                }
-              }}
-              aria-checked={hideTorBoxIndexers}
-            >
-              <span
-                className={`inline-block size-4 transform rounded-full bg-white transition-transform
-                ${hideTorBoxIndexers ? 'translate-x-4' : 'translate-x-1'}`}
-              />
-            </div>
-          </label>
-        )}
-
-        <div className="flex items-center gap-2 flex-1 md:flex-none order-1 md:order-2">
-          <Dropdown
-            options={SORT_OPTIONS[searchType]}
-            value={sortKey}
-            onChange={onSortKeyChange}
-            className="w-full md:w-40"
-          />
+        <fieldset className="flex items-center gap-0" aria-label={t('density.group')}>
           <button
             type="button"
-            onClick={onSortDirToggle}
-            className="p-2 hover:text-accent dark:hover:text-accent-dark hover:bg-surface-alt-hover dark:hover:bg-surface-alt-hover-dark rounded-lg transition-colors shrink-0"
+            aria-pressed={density === 'compact'}
+            onClick={() => onDensityChange?.('compact')}
+            className={`${densityBtnClass(density === 'compact', {
+              segment: 'left',
+              otherActive: density === 'full',
+            })} rounded-r-none`}
           >
-            {sortDir === 'desc' ? '↓' : '↑'}
+            {t('density.compact')}
           </button>
+          <button
+            type="button"
+            aria-pressed={density === 'full'}
+            onClick={() => onDensityChange?.('full')}
+            className={`${densityBtnClass(density === 'full', {
+              segment: 'right',
+              otherActive: density === 'compact',
+            })} -ml-px rounded-l-none`}
+          >
+            {t('density.full')}
+          </button>
+        </fieldset>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="whitespace-nowrap text-xs text-primary-text/60 dark:text-primary-text-dark/60">
+            {t('cachedOnly')}
+          </span>
+          <ToggleSwitch
+            checked={showCachedOnly}
+            onChange={onShowCachedOnlyChange}
+            ariaLabel={t('cachedOnly')}
+          />
+        </div>
+
+        {sourceOptions.length > 1 && (
+          <Dropdown
+            options={sourceOptions}
+            value={addonId || ''}
+            onChange={onAddonIdChange}
+            className="w-full min-w-[8rem] sm:w-36"
+          />
+        )}
+
+        <div className="flex items-center gap-1.5">
+          <Dropdown
+            options={sortOptions}
+            value={sortKey}
+            onChange={onSortKeyChange}
+            className="w-full min-w-[8rem] sm:w-32"
+          />
+          {sortKey !== 'default' && (
+            <button
+              type="button"
+              onClick={onSortDirToggle}
+              className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/80 text-sm hover:bg-surface-alt dark:border-border-dark/80 dark:hover:bg-surface-alt-dark"
+              aria-label={sortDir === 'desc' ? 'Sort descending' : 'Sort ascending'}
+            >
+              {sortDir === 'desc' ? '↓' : '↑'}
+            </button>
+          )}
         </div>
       </div>
     </div>

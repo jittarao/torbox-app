@@ -1,130 +1,107 @@
-export const TORBOX_NATIVE_TRACKERS = ['Newznab'];
-
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 /**
- * Apply server-side search filters to raw results (derived, not stored).
+ * Client-side filter/sort for normalized Stremio stream results.
  */
-export function applySearchFilters(results, filters) {
-  const { seasonFilter, episodeFilter, yearFilter, qualityFilter, sizeFilter, seedersFilter } =
-    filters;
 
-  if (!results?.length) return [];
+import {
+  getCodecMatchAliases,
+  getHdrMatchAliases,
+  getLanguageMatchAliases,
+} from '@/components/search/searchFilterOptions';
 
-  let filtered = [...results];
-
-  if (seasonFilter) {
-    const escapedSeason = escapeRegExp(seasonFilter);
-    const s0 = escapeRegExp(seasonFilter.padStart(2, '0'));
-    const seasonPatterns = [
-      new RegExp(`s${s0}`, 'i'),
-      new RegExp(`season\\s*${escapedSeason}`, 'i'),
-      new RegExp(`\\b${escapedSeason}x\\d+`, 'i'),
-      new RegExp(`season\\s*${s0}`, 'i'),
-    ];
-    filtered = filtered.filter((item) => {
-      const title = (item.raw_title || item.title || '').toLowerCase();
-      return seasonPatterns.some((pattern) => pattern.test(title));
-    });
-  }
-
-  if (episodeFilter) {
-    const escapedEpisode = escapeRegExp(episodeFilter);
-    const e0 = escapeRegExp(episodeFilter.padStart(2, '0'));
-    const episodePatterns = [
-      new RegExp(`e${e0}`, 'i'),
-      new RegExp(`episode\\s*${escapedEpisode}`, 'i'),
-      new RegExp(`\\b\\d+x${e0}`, 'i'),
-      new RegExp(`episode\\s*${e0}`, 'i'),
-    ];
-    filtered = filtered.filter((item) => {
-      const title = (item.raw_title || item.title || '').toLowerCase();
-      return episodePatterns.some((pattern) => pattern.test(title));
-    });
-  }
-
-  if (yearFilter) {
-    filtered = filtered.filter((item) => {
-      const title = item.raw_title || item.title || '';
-      const titleMatch = title.includes(yearFilter);
-      const parsedMatch = item.title_parsed_data?.year === yearFilter;
-      return titleMatch || parsedMatch;
-    });
-  }
-
-  if (qualityFilter) {
-    filtered = filtered.filter((item) => {
-      const title = (item.raw_title || item.title || '').toLowerCase();
-      const quality = qualityFilter.toLowerCase();
-      const titleMatch = title.includes(quality);
-      const parsedMatch =
-        item.title_parsed_data?.quality?.toLowerCase() === quality ||
-        item.title_parsed_data?.resolution?.toLowerCase() === quality;
-      return titleMatch || parsedMatch;
-    });
-  }
-
-  if (sizeFilter) {
-    const minSizeBytes = parseFloat(sizeFilter) * 1024 * 1024 * 1024;
-    filtered = filtered.filter((item) => item.size >= minSizeBytes);
-  }
-
-  if (seedersFilter) {
-    const minSeeders = parseInt(seedersFilter, 10);
-    filtered = filtered.filter((item) => (item.last_known_seeders || 0) >= minSeeders);
-  }
-
-  return filtered;
-}
-
-export function selectFilteredResults(state, filters) {
-  return applySearchFilters(state.results, filters);
-}
-
-function sortSearchResults(items, sortKey, sortDir, searchType) {
-  return items.toSorted((a, b) => {
-    const modifier = sortDir === 'desc' ? -1 : 1;
-
-    switch (sortKey) {
-      case 'seeders': {
-        if (searchType === 'usenet') return 0;
-        const aValue = parseInt(a.last_known_seeders || 0, 10);
-        const bValue = parseInt(b.last_known_seeders || 0, 10);
-        return (aValue - bValue) * modifier;
-      }
-      case 'size': {
-        const aValue = BigInt(a.size || 0);
-        const bValue = BigInt(b.size || 0);
-        return Number(aValue - bValue) * modifier;
-      }
-      case 'age': {
-        const aValue = parseInt(String(a.age).replace('d', '') || 0, 10);
-        const bValue = parseInt(String(b.age).replace('d', '') || 0, 10);
-        return (aValue - bValue) * modifier;
-      }
-      default:
-        return 0;
-    }
+function matchesAliases(haystack, aliases, { upper = false } = {}) {
+  if (!aliases.length) return true;
+  const text = upper ? String(haystack || '').toUpperCase() : String(haystack || '').toLowerCase();
+  if (!text) return false;
+  return aliases.some((alias) => {
+    const needle = upper ? String(alias).toUpperCase() : String(alias).toLowerCase();
+    return text.includes(needle);
   });
 }
 
-/**
- * Single display pipeline: store filters → sort → client UI filters.
- */
-export function selectDisplayResults(state, uiPrefs, filters) {
-  const { sortKey, sortDir, showCachedOnly, hideTorBoxIndexers } = uiPrefs;
-  const filtered = selectFilteredResults(state, filters);
-  const sorted = sortSearchResults(filtered, sortKey, sortDir, state.searchType);
+export function applyStreamFilters(results, filters = {}) {
+  const {
+    showCachedOnly = false,
+    resolution = '',
+    codec = '',
+    hdr = '',
+    language = '',
+    addonId = '',
+    streamTypes = [],
+    minSizeBytes = null,
+    maxSizeBytes = null,
+  } = filters;
 
-  let display = sorted;
-  if (hideTorBoxIndexers) {
-    display = display.filter((t) => !TORBOX_NATIVE_TRACKERS.includes(t.tracker));
-  }
-  if (showCachedOnly) {
-    display = display.filter((t) => t.cached);
+  const codecAliases = getCodecMatchAliases(codec);
+  const hdrAliases = getHdrMatchAliases(hdr);
+  const languageAliases = getLanguageMatchAliases(language);
+  const typeSet = Array.isArray(streamTypes)
+    ? streamTypes.map((t) => String(t).toLowerCase()).filter(Boolean)
+    : [];
+
+  return (results || []).filter((item) => {
+    if (showCachedOnly && !item.cached) return false;
+
+    if (resolution) {
+      if (String(item.resolution || '').toLowerCase() !== String(resolution).toLowerCase()) {
+        return false;
+      }
+    }
+
+    if (codec && !matchesAliases(item.codec, codecAliases)) return false;
+
+    if (hdr && !matchesAliases(item.hdr, hdrAliases, { upper: true })) return false;
+
+    if (language) {
+      const langHaystack = `${item.language || ''} ${item.filename || ''} ${item.title || ''} ${item.description || ''}`;
+      if (!matchesAliases(langHaystack, languageAliases)) return false;
+    }
+
+    if (typeSet.length > 0) {
+      const itemType = String(item.streamType || '').toLowerCase();
+      if (!typeSet.includes(itemType)) return false;
+    }
+
+    if (addonId) {
+      const sources = item.sources || [];
+      const match = item.addonId === addonId || sources.some((s) => s.addonId === addonId);
+      if (!match) return false;
+    }
+
+    if (minSizeBytes != null && Number.isFinite(minSizeBytes) && minSizeBytes > 0) {
+      if (item.size == null || item.size < minSizeBytes) return false;
+    }
+
+    if (maxSizeBytes != null && Number.isFinite(maxSizeBytes) && maxSizeBytes > 0) {
+      if (item.size == null || item.size >= maxSizeBytes) return false;
+    }
+
+    return true;
+  });
+}
+
+export function sortStreamResults(results, sortBy = 'default', direction = 'desc') {
+  if (sortBy === 'default') {
+    // Already sorted by store merge; preserve order unless direction flips cached bias
+    return results;
   }
 
-  return display;
+  const mult = direction === 'asc' ? 1 : -1;
+  return [...(results || [])].sort((a, b) => {
+    if (sortBy === 'size') {
+      return ((a.size ?? 0) - (b.size ?? 0)) * mult;
+    }
+    if (sortBy === 'title') {
+      return String(a.title || '').localeCompare(String(b.title || '')) * mult;
+    }
+    if (sortBy === 'resolution') {
+      const order = { '2160p': 4, '1080p': 3, '720p': 2, '480p': 1 };
+      return ((order[a.resolution] || 0) - (order[b.resolution] || 0)) * mult;
+    }
+    return 0;
+  });
+}
+
+export function selectDisplayResults(results, filters, sortBy, sortDirection) {
+  const filtered = applyStreamFilters(results, filters);
+  return sortStreamResults(filtered, sortBy, sortDirection);
 }

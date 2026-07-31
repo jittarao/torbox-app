@@ -1355,17 +1355,22 @@
     "clearFilters": "Limpiar filtros",
     "clearHistory": "Limpiar",
     "clearSearch": "Borrar búsqueda",
-    "customEngines": "Motores personalizados",
-    "episode": "Episodio",
-    "episodePlaceholder": "p. ej. E01",
-    "hideAdvanced": "Ocultar avanzado",
-    "minSeeders": "Seeders min.",
-    "minSize": "Tamaño min. (GB)",
+    "examples": {
+      "anime": "Anime de AniList",
+      "episode": "Episodio de serie",
+      "movie": "Película de IMDb"
+    },
+    "filters": {
+      "any": "Cualquiera",
+      "codec": "Códec",
+      "language": "Idioma",
+      "maxSize": "Tamaño máx.",
+      "minSize": "Tamaño mín. (GB)",
+      "resolution": "Resolución"
+    },
     "placeholderDownloads": "Buscar {itemType}…",
     "placeholderDownloadsShort": "Buscar…",
-    "placeholderSearch": "Buscar por título o IMDB ID (e.g. imdb:tt0133093)...",
-    "quality": "Calidad",
-    "qualityAll": "Todas las calidades",
+    "placeholderSearch": "Introduce un ID de medio (p. ej. tt0111161 o anilist:16498)",
     "recentSearches": "Búsquedas recientes",
     "search": "Buscar",
     "searchDownloadsAria": "Buscar {itemType} o nombres de archivo",
@@ -1377,12 +1382,20 @@
     "searchDownloadsHelpOr": "Varias palabras — coincide si aparece cualquiera (p. ej. 1080p bluray)",
     "searchDownloadsHelpPhrase": "Comillas — coincide con la frase exacta (p. ej. \"season 1\")",
     "searchExamples": "Ejemplos de búsqueda",
-    "season": "Temporada",
-    "seasonPlaceholder": "p. ej. S01",
-    "showAdvanced": "Mostrar avanzado",
-    "torrentSearchWarning": "La búsqueda de torrents de TorBox actualmente no es confiable y puede devolver resultados incompletos o incorrectos. Se recomienda la búsqueda en Usenet cuando esté disponible.",
-    "year": "Año",
-    "yearPlaceholder": "p. ej. 2024"
+    "streamFilters": "Filtros de stream",
+    "validation": {
+      "addonsLoading": "Cargando tus addons… inténtalo de nuevo en un momento.",
+      "empty": "Introduce un ID de medio para buscar.",
+      "invalid": "Usa un ID de IMDb (tt…), de episodio (tt…:S:E) o prefix:id admitido por tus addons.",
+      "noAddons": "Instala y activa al menos un addon de streams de Stremio arriba.",
+      "noMatchingAddons": "Ningún addon activo admite este ID de medio.",
+      "unknownPrefix": "Ese prefijo de ID no es compatible con tus addons instalados."
+    }
+  },
+  "SearchPage": {
+    "backendRequired": "La búsqueda requiere el backend de TorBox Manager. Actívalo para instalar addons de Stremio y buscar por ID de medio.",
+    "subtitle": "Busca streams de tus addons de Stremio por ID de medio y añade torrents o NZBs a TorBox.",
+    "title": "Búsqueda de streams"
   },
   "SearchResults": {
     "actions": {
@@ -1390,32 +1403,50 @@
       "added": "Añadido",
       "adding": "Añadiendo...",
       "copyLink": "Copiar enlace",
-      "copyMagnet": "Copiar imán"
+      "copyMagnet": "Copiar imán",
+      "download": "Descargar",
+      "unavailable": "No disponible"
+    },
+    "addonStatus": {
+      "empty": "vacío",
+      "pending": "cargando"
     },
     "cachedOnly": "Solo en caché",
-    "hideTorBoxIndexers": "Ocultar indexadores de TorBox",
+    "density": {
+      "compact": "Compacto",
+      "full": "Completo",
+      "group": "Densidad de resultados"
+    },
+    "filteredEmpty": "Ningún stream coincide con tus filtros",
+    "filteredEmptyHint": "Borra o ajusta los filtros de resolución, códec, tamaño o addon para ver resultados.",
+    "filters": {
+      "allAddons": "Todos los addons"
+    },
     "metadata": {
       "cached": "Caché",
-      "days": "días"
+      "sources": "{count} fuentes"
     },
-    "noResults": "No se han encontrado resultados",
-    "noResultsHint": "Pruebe con una consulta diferente, habilite motores personalizados o cambie el tipo de búsqueda.",
+    "noResults": "No se encontraron streams",
+    "noResultsHint": "Prueba otro ID de medio, activa más addons o actualiza los manifiestos.",
     "results": "{count} resultados",
     "sort": {
-      "age": "El más reciente",
-      "seeders": "La mayoría de los seeders",
-      "size": "El tamaño más grande"
+      "default": "Mejor coincidencia",
+      "resolution": "Resolución",
+      "size": "El tamaño más grande",
+      "title": "Título"
     },
     "toast": {
+      "addFailed": "Error al añadir: {error}",
+      "copyFailed": "No se pudo copiar al portapapeles",
+      "linkCopied": "Enlace copiado al portapapeles",
       "magnetCopied": "Enlace magnético copiado al portapapeles",
-      "nzbAddFailed": "Error al añadir NZB: {error}",
       "nzbAdded": "NZB añadido a TorBox correctamente",
       "nzbCopied": "Enlace NZB copiado al portapapeles",
-      "torrentAddFailed": "Error al añadir torrent: {error}",
       "torrentAdded": "Torrent añadido a TorBox correctamente",
       "uploadSuccess": "Cargado {count} {type}",
       "uploadSuccessPlural": "Cargado {count} {type}s"
-    }
+    },
+    "typeFilterToggle": "Alternar resultados de {type}"
   },
   "SpeedChart": {
     "chart": {
@@ -1461,6 +1492,27 @@
     "stalled": "En pausa",
     "unknown": "Desconocido",
     "uploading": "Subiendo"
+  },
+  "StremioAddons": {
+    "add": "Añadir addon",
+    "confirmRemove": "¿Eliminar el addon \"{name}\"?",
+    "empty": "Aún no hay addons instalados. Pega la URL del manifest de un addon de Stremio para empezar.",
+    "enabled": "Activado",
+    "errors": {
+      "addFailed": "Error al añadir el addon",
+      "updateFailed": "Error al actualizar el addon"
+    },
+    "help": "Pega la URL completa del manifest configurado (termina en /manifest.json). Los addons configurables deben incluir la ruta de configuración en la URL.",
+    "hidePrefixes": "Ocultar prefijos",
+    "hideTypes": "Ocultar tipos",
+    "moveDown": "Bajar",
+    "moveUp": "Subir",
+    "prefixCount": "{count} prefijos de ID",
+    "refresh": "Actualizar",
+    "remove": "Eliminar",
+    "subtitle": "{count, plural, =0 {Sin addons} one {# addon} other {# addons}}",
+    "summary": "{total, plural, =0 {Ningún addon instalado} one {# addon · {enabled} activado} other {# addons · {enabled} activados}}",
+    "title": "Addons de Stremio"
   },
   "SystemStatus": {
     "fullStatusPage": "Estado completo",

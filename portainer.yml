@@ -22,6 +22,9 @@
 #   UPLOAD_MAX_WORK_PER_DRAIN    — max uploads per drain invocation (default 25)
 #   CREATE_UPLOAD_TIMEOUT_MS     — TorBox create request timeout ms (default 30000)
 #   AUTOMATION_INACTIVE_USER_DAYS — skip automation for users inactive N days (default 30; 0 disables)
+#   STREMIO_ALLOW_HTTP           — "true" to allow http:// Stremio manifests (default HTTPS-only)
+#   STREMIO_MAX_ADDONS           — max installed addons per user (default 25)
+#   STREMIO_FETCH_RATE_LIMIT_MAX — external addon fetch rate limit per user / 15 min (default 120)
 #   DOWNLOAD_SYNC_CACHE_TTL_MS — download list cache eviction when idle (default 1800000)
 #   DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS — background full reconcile interval for multi-page catalogs (default 300000)
 #   DOWNLOAD_SYNC_RECONCILE_JITTER_MS — per-user reconcile jitter (default 60000)
@@ -66,6 +69,9 @@ services:
       CREATE_UPLOAD_TIMEOUT_MS: ${CREATE_UPLOAD_TIMEOUT_MS:-30000}
       AUTOMATION_INACTIVE_USER_DAYS: ${AUTOMATION_INACTIVE_USER_DAYS:-30}
       AUTOMATION_RULES_MYLIST_FULL_PAGINATION: ${AUTOMATION_RULES_MYLIST_FULL_PAGINATION:-}
+      STREMIO_ALLOW_HTTP: ${STREMIO_ALLOW_HTTP:-}
+      STREMIO_MAX_ADDONS: ${STREMIO_MAX_ADDONS:-25}
+      STREMIO_FETCH_RATE_LIMIT_MAX: ${STREMIO_FETCH_RATE_LIMIT_MAX:-120}
 
     volumes:
       # Persist SQLite DBs and uploads only — never mount over /app/src or /app/config

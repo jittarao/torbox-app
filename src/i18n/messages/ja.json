@@ -1380,17 +1380,22 @@
     "clearFilters": "フィルターをクリア",
     "clearHistory": "クリア",
     "clearSearch": "検索をクリア",
-    "customEngines": "カスタムエンジン",
-    "episode": "エピソード",
-    "episodePlaceholder": "例: E01",
-    "hideAdvanced": "詳細を隠す",
-    "minSeeders": "最小シーダー",
-    "minSize": "最小サイズ (GB)",
+    "examples": {
+      "anime": "AniListアニメ",
+      "episode": "シリーズのエピソード",
+      "movie": "IMDb映画"
+    },
+    "filters": {
+      "any": "すべて",
+      "codec": "コーデック",
+      "language": "言語",
+      "maxSize": "最大サイズ",
+      "minSize": "最小サイズ (GB)",
+      "resolution": "解像度"
+    },
     "placeholderDownloads": "検索 {itemType}…",
     "placeholderDownloadsShort": "検索…",
-    "placeholderSearch": "タイトルまたはIMDB ID (e.g. imdb:tt0133093) で検索...",
-    "quality": "品質",
-    "qualityAll": "すべての品質",
+    "placeholderSearch": "メディアIDを入力（例: tt0111161 または anilist:16498）",
     "recentSearches": "最近の検索",
     "search": "検索",
     "searchDownloadsAria": "{itemType} またはファイル名を検索",
@@ -1402,12 +1407,20 @@
     "searchDownloadsHelpOr": "複数の単語 — いずれかの単語が含まれていれば一致（例: 1080p bluray）",
     "searchDownloadsHelpPhrase": "引用符 — 完全一致のフレーズ（例: \"season 1\"）",
     "searchExamples": "検索例",
-    "season": "シーズン",
-    "seasonPlaceholder": "例: S01",
-    "showAdvanced": "詳細を表示",
-    "torrentSearchWarning": "TorBoxのトレント検索は現在信頼性が低く、不完全または誤った結果を返す可能性があります。利用可能な場合はUsenet検索をお勧めします。",
-    "year": "年",
-    "yearPlaceholder": "例: 2024"
+    "streamFilters": "ストリームフィルター",
+    "validation": {
+      "addonsLoading": "アドオンを読み込み中… しばらくしてからもう一度お試しください。",
+      "empty": "検索するメディアIDを入力してください。",
+      "invalid": "IMDb ID（tt…）、エピソードID（tt…:S:E）、またはアドオンが対応する prefix:id を使用してください。",
+      "noAddons": "上でStremioストリームアドオンを少なくとも1つインストールして有効にしてください。",
+      "noMatchingAddons": "有効なアドオンがこのメディアIDに対応していません。",
+      "unknownPrefix": "そのIDプレフィックスはインストール済みアドオンでサポートされていません。"
+    }
+  },
+  "SearchPage": {
+    "backendRequired": "検索にはTorBox Managerバックエンドが必要です。StremioアドオンをインストールしてメディアIDで検索するには、バックエンドを有効にしてください。",
+    "subtitle": "メディア ID で Stremio アドオンからストリームを検索し、トレントや NZB を TorBox に追加します。",
+    "title": "ストリーム検索"
   },
   "SearchResults": {
     "actions": {
@@ -1415,32 +1428,52 @@
       "added": "追加済み",
       "adding": "追加中...",
       "copyLink": "リンクをコピー",
-      "copyMagnet": "マグネットリンクをコピー"
+      "copyMagnet": "マグネットリンクをコピー",
+      "download": "ダウンロード",
+      "unavailable": "利用不可"
+    },
+    "addonStatus": {
+      "empty": "空",
+      "error": "エラー",
+      "ok": "OK",
+      "pending": "読み込み中"
     },
     "cachedOnly": "キャッシュのみ",
-    "hideTorBoxIndexers": "TorBoxのインデックスを非表示にする",
+    "density": {
+      "compact": "コンパクト",
+      "full": "詳細",
+      "group": "結果の表示密度"
+    },
+    "filteredEmpty": "フィルターに一致するストリームがありません",
+    "filteredEmptyHint": "解像度・コーデック・サイズ・アドオンのフィルターをクリアまたは調整してください。",
+    "filters": {
+      "allAddons": "すべてのアドオン"
+    },
     "metadata": {
       "cached": "キャッシュ",
-      "days": "日"
+      "sources": "{count}件のソース"
     },
-    "noResults": "該当なし",
-    "noResultsHint": "別のクエリを試すか、カスタムエンジンを有効にするか、検索タイプを切り替えてください。",
+    "noResults": "ストリームが見つかりません",
+    "noResultsHint": "別のメディアIDを試すか、アドオンを有効にするか、マニフェストを更新してください。",
     "results": "{count} 件ヒット",
     "sort": {
-      "age": "最新",
-      "seeders": "最多シーダー",
-      "size": "最大サイズ"
+      "default": "最適",
+      "resolution": "解像度",
+      "size": "最大サイズ",
+      "title": "タイトル"
     },
     "toast": {
+      "addFailed": "追加に失敗しました: {error}",
+      "copyFailed": "クリップボードにコピーできませんでした",
+      "linkCopied": "リンクをクリップボードにコピーしました",
       "magnetCopied": "マグネットリンクがクリップボードにコピーされました",
-      "nzbAddFailed": "NZBの追加に失敗しました: {error}",
-      "nzbAdded": "NZBがTorBoxに正常に追加されました",
-      "nzbCopied": "NZBリンクがクリップボードにコピーされました",
-      "torrentAddFailed": "Torrentの追加に失敗しました: {error}",
+      "nzbAdded": "NZBをTorBoxに追加しました",
+      "nzbCopied": "NZBリンクをクリップボードにコピーしました",
       "torrentAdded": "TorrentがTorBoxに正常に追加されました",
       "uploadSuccess": "正常に {count} {type} がアップロードされました",
       "uploadSuccessPlural": "正常に {count} {type}s がアップロードされました"
-    }
+    },
+    "typeFilterToggle": "{type} の結果を切り替え"
   },
   "SpeedChart": {
     "chart": {
@@ -1487,6 +1520,27 @@
     "stalled": "ブロックされた",
     "unknown": "不明",
     "uploading": "アップロード中"
+  },
+  "StremioAddons": {
+    "add": "アドオンを追加",
+    "confirmRemove": "アドオン「{name}」を削除しますか？",
+    "empty": "アドオンはまだインストールされていません。StremioアドオンのマニフェストURLを貼り付けて開始してください。",
+    "enabled": "有効",
+    "errors": {
+      "addFailed": "アドオンの追加に失敗しました",
+      "updateFailed": "アドオンの更新に失敗しました"
+    },
+    "help": "設定済みの完全なマニフェストURL（末尾が /manifest.json）を貼り付けてください。設定可能なアドオンはURLに設定パスを含める必要があります。",
+    "hidePrefixes": "プレフィックスを隠す",
+    "hideTypes": "タイプを隠す",
+    "moveDown": "下へ",
+    "moveUp": "上へ",
+    "prefixCount": "{count} 件の ID プレフィックス",
+    "refresh": "更新",
+    "remove": "削除",
+    "subtitle": "{count, plural, =0 {アドオンなし} other {# 件のアドオン}}",
+    "summary": "{total, plural, =0 {アドオン未インストール} one {# アドオン · {enabled} 有効} other {# アドオン · {enabled} 有効}}",
+    "title": "Stremioアドオン"
   },
   "SystemStatus": {
     "error": "エラー",
