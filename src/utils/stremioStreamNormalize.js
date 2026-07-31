@@ -411,23 +411,92 @@ export function triggerBrowserDownload(url, filename) {
 }
 
 /**
+ * Hit an http(s) Stremio stream URL without opening a tab or triggering a download.
+ *
+ * Many TorBox-oriented addons add the video to the user's account when this URL is
+ * requested, then redirect to a generated download link. We only need the request
+ * itself; the opaque no-cors response is ignored.
+ *
+ * Races the fetch against a short timeout, then aborts. Opaque no-cors responses
+ * often expose a null body, so we cannot reliably cancel via `body.cancel()` and
+ * must abort the request to avoid buffering multi-GB media.
+ *
+ * Success is optimistic — opaque responses cannot be inspected.
+ *
+ * @param {string} url
+ * @returns {Promise<true>}
+ */
+export async function triggerSilentStreamAdd(url) {
+  const trimmed = typeof url === 'string' ? url.trim() : '';
+  if (!/^https?:\/\//i.test(trimmed)) {
+    throw new Error('Invalid stream URL');
+  }
+
+  const controller = new AbortController();
+  const fetchPromise = fetch(trimmed, {
+    method: 'GET',
+    mode: 'no-cors',
+    redirect: 'follow',
+    credentials: 'omit',
+    cache: 'no-store',
+    referrerPolicy: 'no-referrer',
+    signal: controller.signal,
+  }).then(async (response) => {
+    try {
+      await response.body?.cancel?.();
+    } catch {
+      // ignore cancel errors on opaque / already-closed bodies
+    }
+    return response;
+  });
+
+  const settled = await Promise.race([
+    fetchPromise
+      .then(() => 'ok')
+      .catch((err) => {
+        if (err?.name === 'AbortError') return 'aborted';
+        throw err;
+      }),
+    new Promise((resolve) => {
+      setTimeout(() => resolve('timeout'), 3_000);
+    }),
+  ]);
+
+  if (settled === 'timeout') {
+    controller.abort();
+    await fetchPromise.catch(() => {});
+  }
+
+  return true;
+}
+
+/**
  * Map a normalized stream to actions.
- * Add to TorBox only for infoHash (torrent) or nzbUrl (usenet).
- * http(s) url streams are listable/copyable/downloadable but not uploaded.
- * @returns {{ kind: 'magnet'|'usenet'|'link'|'none', canUpload: boolean, data?: string, name?: string, copyValue?: string }}
+ * - infoHash / magnet → upload via TorBox API
+ * - nzbUrl → upload via TorBox API
+ * - http(s) url → copy + download + silent Add (hit URL; no TorBox API upload)
+ * @returns {{ kind: 'magnet'|'usenet'|'link'|'none', canUpload: boolean, canSilentAdd: boolean, data?: string, name?: string, copyValue?: string }}
  */
 export function streamToUploadTarget(stream) {
   const name = stream?.title || stream?.filename || 'Stream';
 
   if (stream?.infoHash) {
     const magnet = `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}`;
-    return { kind: 'magnet', canUpload: true, data: magnet, name, copyValue: magnet };
+    return {
+      kind: 'magnet',
+      canUpload: true,
+      canSilentAdd: false,
+      data: magnet,
+      name,
+      copyValue: magnet,
+    };
   }
 
   if (stream?.nzbUrl) {
     return {
       kind: 'usenet',
       canUpload: true,
+      canSilentAdd: false,
       data: stream.nzbUrl,
       name,
       copyValue: stream.nzbUrl,
@@ -438,11 +507,12 @@ export function streamToUploadTarget(stream) {
     return {
       kind: 'link',
       canUpload: false,
+      canSilentAdd: true,
       data: stream.url,
       name,
       copyValue: stream.url,
     };
   }
 
-  return { kind: 'none', canUpload: false, copyValue: '', name };
+  return { kind: 'none', canUpload: false, canSilentAdd: false, copyValue: '', name };
 }

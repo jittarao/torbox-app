@@ -1561,6 +1561,7 @@
     "toast": {
       "addFailed": "Failed to add: {error}",
       "copyFailed": "Could not copy to clipboard",
+      "linkAdded": "Stream requested — check your TorBox downloads shortly",
       "linkCopied": "Link copied to clipboard",
       "magnetCopied": "Magnet link copied to clipboard",
       "nzbAdded": "NZB added to TorBox successfully",

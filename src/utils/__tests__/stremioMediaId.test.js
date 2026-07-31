@@ -98,13 +98,14 @@ describe('stremioStreamNormalize', () => {
     expect(fromMagnet.infoHash).toBe('abcdef1234567890abcdef1234567890abcdef12');
   });
 
-  test('lists http url streams without Add-to-TorBox upload', () => {
+  test('lists http url streams with silent Add-to-TorBox (no API upload)', () => {
     const nzb = normalizeStream(
       { name: 'NZB', nzbUrl: 'https://indexer.example.com/get?id=1' },
       { addonId: 'x', addonName: 'X' }
     );
     expect(nzb).not.toBeNull();
     expect(streamToUploadTarget(nzb).canUpload).toBe(true);
+    expect(streamToUploadTarget(nzb).canSilentAdd).toBe(false);
     expect(streamToUploadTarget(nzb).kind).toBe('usenet');
 
     const direct = normalizeStream(
@@ -121,6 +122,7 @@ describe('stremioStreamNormalize', () => {
     const target = streamToUploadTarget(direct);
     expect(target.kind).toBe('link');
     expect(target.canUpload).toBe(false);
+    expect(target.canSilentAdd).toBe(true);
     expect(target.copyValue).toContain('cdn.example.com');
 
     const withLangInFilename = normalizeStream(

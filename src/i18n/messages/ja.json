@@ -1465,6 +1465,7 @@
     "toast": {
       "addFailed": "追加に失敗しました: {error}",
       "copyFailed": "クリップボードにコピーできませんでした",
+      "linkAdded": "ストリームをリクエストしました — まもなくTorBoxのダウンロードを確認してください",
       "linkCopied": "リンクをクリップボードにコピーしました",
       "magnetCopied": "マグネットリンクがクリップボードにコピーされました",
       "nzbAdded": "NZBをTorBoxに追加しました",

@@ -9,7 +9,7 @@ import { useSearchFilterParams } from '@/hooks/useSearchFilterParams';
 import Toast from '@/components/shared/Toast';
 import Spinner from '@/components/shared/Spinner';
 import { useUpload } from '@/components/shared/hooks/useUpload';
-import { streamToUploadTarget } from '@/utils/stremioStreamNormalize';
+import { streamToUploadTarget, triggerSilentStreamAdd } from '@/utils/stremioStreamNormalize';
 import { getItem, setItem } from '@/utils/storage';
 import SearchResultsToolbar from './SearchResultsToolbar';
 import SearchResultRow from './SearchResultRow';
@@ -136,10 +136,20 @@ export default function SearchResults({ apiKey }) {
 
   const handleUpload = async (item) => {
     const target = streamToUploadTarget(item);
-    if (!target.canUpload) return;
+    if (!target.canUpload && !target.canSilentAdd) return;
 
     setIsUploading((prev) => ({ ...prev, [item.key]: true }));
     try {
+      if (target.kind === 'link' && target.canSilentAdd) {
+        await triggerSilentStreamAdd(target.data);
+        setAddedItems((prev) => [...prev, item.key]);
+        setToast({
+          message: t('toast.linkAdded'),
+          type: 'success',
+        });
+        return;
+      }
+
       let result;
       if (target.kind === 'magnet') {
         result = await uploadItem({

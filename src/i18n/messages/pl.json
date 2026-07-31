@@ -1445,6 +1445,7 @@
     "toast": {
       "addFailed": "Nie udało się dodać: {error}",
       "copyFailed": "Nie udało się skopiować do schowka",
+      "linkAdded": "Poproszono o stream — wkrótce sprawdź pobierania TorBox",
       "linkCopied": "Link skopiowany do schowka",
       "magnetCopied": "Link magnet skopiowany do schowka",
       "nzbAdded": "NZB dodany do TorBox pomyślnie",
