@@ -1438,6 +1438,7 @@
     "toast": {
       "addFailed": "Error al añadir: {error}",
       "copyFailed": "No se pudo copiar al portapapeles",
+      "linkAdded": "Stream solicitado — revise sus descargas de TorBox en breve",
       "linkCopied": "Enlace copiado al portapapeles",
       "magnetCopied": "Enlace magnético copiado al portapapeles",
       "nzbAdded": "NZB añadido a TorBox correctamente",

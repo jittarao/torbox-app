@@ -1422,6 +1422,7 @@
     "toast": {
       "addFailed": "Échec de l'ajout : {error}",
       "copyFailed": "Impossible de copier dans le presse-papiers",
+      "linkAdded": "Flux demandé — vérifiez vos téléchargements TorBox sous peu",
       "linkCopied": "Lien copié dans le presse-papiers",
       "magnetCopied": "Lien magnétique copié dans le presse-papiers",
       "nzbAdded": "NZB ajouté à TorBox avec succès",

@@ -1444,6 +1444,7 @@
     "toast": {
       "addFailed": "Hinzufügen fehlgeschlagen: {error}",
       "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
+      "linkAdded": "Stream angefordert — prüfen Sie in Kürze Ihre TorBox-Downloads",
       "linkCopied": "Link in Zwischenablage kopiert",
       "magnetCopied": "Magnet-Link in Zwischenablage kopiert",
       "nzbAdded": "NZB erfolgreich zu TorBox hinzugefügt",

@@ -75,7 +75,7 @@ function ActionButtons({ item, target, isUploading, isAdded, onCopyLink, onUploa
         </button>
       ) : null}
 
-      {target.canUpload ? (
+      {target.canUpload || target.canSilentAdd ? (
         <button
           type="button"
           onClick={() => onUpload(item)}
