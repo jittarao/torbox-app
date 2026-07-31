@@ -141,7 +141,7 @@ export default function SearchResults({ apiKey }) {
     setIsUploading((prev) => ({ ...prev, [item.key]: true }));
     try {
       if (target.kind === 'link' && target.canSilentAdd) {
-        await triggerSilentStreamAdd(target.data);
+        await triggerSilentStreamAdd(target.data, apiKey);
         setAddedItems((prev) => [...prev, item.key]);
         setToast({
           message: t('toast.linkAdded'),
