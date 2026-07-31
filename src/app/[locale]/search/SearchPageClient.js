@@ -1,56 +1,19 @@
 'use client';
-import { Suspense, useEffect, useMemo } from 'react';
+
+import { Suspense } from 'react';
+import { useTranslations } from 'next-intl';
 import AppShell from '@/components/navigation/AppShell';
-import ApiKeyInput from '@/components/downloads/ApiKeyInput';
+import AddonManager from '@/components/search/AddonManager';
 import SearchBar from '@/components/search/SearchBar';
 import SearchResults from '@/components/search/SearchResults';
-import { hasDownloadAccess } from '@/utils/userProfile';
-import { useSearchStore } from '@/store/searchStore';
 import { useSession } from '@/components/shared/hooks/useSession';
-
-function initEnsureUserDb(key) {
-  if (key) {
-    import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-      ensureUserDb(key)
-        .then((result) => {
-          if (result.success && result.wasCreated) {
-            console.log('User database created for existing API key');
-          }
-        })
-        .catch((error) => {
-          console.error('Error ensuring user database on load:', error);
-        });
-    });
-  }
-}
+import { useBackendMode } from '@/hooks/useBackendMode';
 
 export default function SearchPageClient() {
-  const { apiKey, hydrated, permissions, setApiKey } = useSession();
-
-  const searchType = useSearchStore((state) => state.searchType);
-  const setSearchType = useSearchStore((state) => state.setSearchType);
-
-  useEffect(() => {
-    initEnsureUserDb(apiKey);
-  }, [apiKey]);
-
-  useEffect(() => {
-    if (permissions && searchType === 'usenet' && !hasDownloadAccess('usenet', permissions)) {
-      setSearchType('torrents');
-    }
-  }, [permissions, searchType, setSearchType]);
-
-  const searchTypeOptions = useMemo(() => {
-    const torrents = { value: 'torrents', labelKey: 'itemTypes.Torrents' };
-    const usenet = { value: 'usenet', labelKey: 'itemTypes.Usenet' };
-    const canUsenet = hasDownloadAccess('usenet', permissions);
-    return [...(canUsenet ? [usenet] : []), torrents];
-  }, [permissions]);
-
-  const handleKeyChange = (newKey) => {
-    setApiKey(newKey);
-    initEnsureUserDb(newKey);
-  };
+  const t = useTranslations('SearchPage');
+  const { apiKey, hydrated } = useSession();
+  const { mode, isLoading: isChecking } = useBackendMode();
+  const isBackendAvailable = mode === 'backend';
 
   if (!hydrated) {
     return <div className="min-h-dvh bg-surface dark:bg-surface-dark font-sans" aria-hidden />;
@@ -61,12 +24,29 @@ export default function SearchPageClient() {
       apiKey={apiKey}
       className="min-h-dvh bg-surface dark:bg-surface-dark font-sans text-primary-text dark:text-primary-text-dark"
     >
-      <div className="max-w-7xl mx-auto p-4">
-        <ApiKeyInput value={apiKey} onKeyChange={handleKeyChange} allowKeyManager={true} />
-        <Suspense fallback={null}>
-          <SearchBar searchTypeOptions={searchTypeOptions} />
-          <SearchResults apiKey={apiKey} />
-        </Suspense>
+      <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-5">
+        <header className="mb-4">
+          <h1 className="text-xl font-semibold tracking-tight text-primary-text dark:text-primary-text-dark sm:text-2xl">
+            {t('title')}
+          </h1>
+          <p className="mt-1 text-sm text-primary-text/60 dark:text-primary-text-dark/60">
+            {t('subtitle')}
+          </p>
+        </header>
+
+        {!isChecking && !isBackendAvailable ? (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200">
+            {t('backendRequired')}
+          </div>
+        ) : (
+          <Suspense fallback={null}>
+            <div className="space-y-4">
+              <AddonManager />
+              <SearchBar />
+              <SearchResults apiKey={apiKey} />
+            </div>
+          </Suspense>
+        )}
       </div>
     </AppShell>
   );

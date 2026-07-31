@@ -5,7 +5,7 @@ import SearchPageClient from './SearchPageClient';
 export const metadata = {
   title: 'Search — TorBox Manager',
   description:
-    'Search and explore content available on TorBox. Find torrents, usenet, and direct downloads.',
+    'Search streams from your Stremio addons by media ID and add torrents or NZBs to TorBox.',
 };
 
 export default async function SearchPage({ params }) {

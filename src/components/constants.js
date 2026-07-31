@@ -8,7 +8,6 @@ export const GITHUB_REPO_URL = 'https://github.com/jittarao/torbox-app';
 
 export {
   API_BASE,
-  API_SEARCH_BASE,
   API_VERSION,
   TORBOX_MANAGER_VERSION,
   FETCH_TIMEOUT_MS,

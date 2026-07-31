@@ -1475,17 +1475,23 @@
     "clearFilters": "Clear Filters",
     "clearHistory": "Clear",
     "clearSearch": "Clear search",
-    "customEngines": "Custom Engines",
-    "episode": "Episode",
-    "episodePlaceholder": "E01",
-    "hideAdvanced": "Hide Advanced",
-    "minSeeders": "Min Seeders",
-    "minSize": "Min Size (GB)",
+    "examples": {
+      "anime": "AniList anime",
+      "episode": "Series episode",
+      "movie": "IMDb movie"
+    },
+    "filters": {
+      "any": "Any",
+      "codec": "Codec",
+      "hdr": "HDR",
+      "language": "Language",
+      "maxSize": "Max size",
+      "minSize": "Min size",
+      "resolution": "Resolution"
+    },
     "placeholderDownloads": "Search {itemType}…",
     "placeholderDownloadsShort": "Search…",
-    "placeholderSearch": "Search by title or IMDB ID (e.g. imdb:tt0133093)...",
-    "quality": "Quality",
-    "qualityAll": "All Qualities",
+    "placeholderSearch": "Enter a media ID (e.g. tt0111161 or anilist:16498)",
     "recentSearches": "Recent Searches",
     "search": "Search",
     "searchDownloadsAria": "Search {itemType} or file names",
@@ -1497,12 +1503,20 @@
     "searchDownloadsHelpOr": "Several words — matches if any word appears (e.g. 1080p bluray)",
     "searchDownloadsHelpPhrase": "Quotes — matches the exact phrase (e.g. \"season 1\")",
     "searchExamples": "Search Examples",
-    "season": "Season",
-    "seasonPlaceholder": "S01",
-    "showAdvanced": "Show Advanced",
-    "torrentSearchWarning": "TorBox torrent search is currently unreliable and may return incomplete or incorrect results. Usenet search is recommended when available.",
-    "year": "Year",
-    "yearPlaceholder": "2024"
+    "streamFilters": "Stream filters",
+    "validation": {
+      "addonsLoading": "Loading your addons… try again in a moment.",
+      "empty": "Enter a media ID to search.",
+      "invalid": "Use an IMDb id (tt…), episode id (tt…:S:E), or prefix:id supported by your addons.",
+      "noAddons": "Install and enable at least one Stremio stream addon above.",
+      "noMatchingAddons": "No enabled addon supports this media ID.",
+      "unknownPrefix": "That ID prefix is not supported by your installed addons."
+    }
+  },
+  "SearchPage": {
+    "backendRequired": "Search requires the TorBox Manager backend. Enable the backend to install Stremio addons and search by media ID.",
+    "subtitle": "Search streams from your Stremio addons by media ID and add torrents or NZBs to TorBox.",
+    "title": "Stream Search"
   },
   "SearchResults": {
     "actions": {
@@ -1510,32 +1524,52 @@
       "added": "Added",
       "adding": "Adding...",
       "copyLink": "Copy Link",
-      "copyMagnet": "Copy Magnet"
+      "copyMagnet": "Copy Magnet",
+      "download": "Download",
+      "unavailable": "Unavailable"
+    },
+    "addonStatus": {
+      "empty": "empty",
+      "error": "error",
+      "ok": "ok",
+      "pending": "loading"
     },
     "cachedOnly": "Cached Only",
-    "hideTorBoxIndexers": "Hide TorBox Indexers",
+    "density": {
+      "compact": "Compact",
+      "full": "Full",
+      "group": "Result density"
+    },
+    "filteredEmpty": "No streams match your filters",
+    "filteredEmptyHint": "Clear or adjust resolution, codec, size, or addon filters to see results.",
+    "filters": {
+      "allAddons": "All addons"
+    },
     "metadata": {
       "cached": "Cached",
-      "days": "days"
+      "sources": "{count} sources"
     },
-    "noResults": "No results found",
-    "noResultsHint": "Try a different query, enable custom engines, or switch search type.",
+    "noResults": "No streams found",
+    "noResultsHint": "Try another media ID, enable more addons, or refresh addon manifests.",
     "results": "{count} results",
     "sort": {
-      "age": "Most Recent",
-      "seeders": "Most Seeders",
-      "size": "Largest Size"
+      "default": "Best match",
+      "resolution": "Resolution",
+      "size": "Largest Size",
+      "title": "Title"
     },
     "toast": {
+      "addFailed": "Failed to add: {error}",
+      "copyFailed": "Could not copy to clipboard",
+      "linkCopied": "Link copied to clipboard",
       "magnetCopied": "Magnet link copied to clipboard",
-      "nzbAddFailed": "Failed to add NZB: {error}",
       "nzbAdded": "NZB added to TorBox successfully",
       "nzbCopied": "NZB link copied to clipboard",
-      "torrentAddFailed": "Failed to add torrent: {error}",
       "torrentAdded": "Torrent added to TorBox successfully",
       "uploadSuccess": "Successfully uploaded {count} {type}",
       "uploadSuccessPlural": "Successfully uploaded {count} {type}s"
-    }
+    },
+    "typeFilterToggle": "Toggle {type} results"
   },
   "SpeedChart": {
     "chart": {
@@ -1582,6 +1616,29 @@
     "stalled": "Stalled",
     "unknown": "Unknown",
     "uploading": "Uploading"
+  },
+  "StremioAddons": {
+    "add": "Add addon",
+    "confirmRemove": "Remove addon \"{name}\"?",
+    "empty": "No addons installed yet. Paste a Stremio addon manifest URL to get started.",
+    "enabled": "Enabled",
+    "errors": {
+      "addFailed": "Failed to add addon",
+      "updateFailed": "Failed to update addon"
+    },
+    "help": "Paste the full configured manifest URL (ending in /manifest.json).",
+    "hidePrefixes": "Hide prefixes",
+    "hideTypes": "Hide types",
+    "manifestUrlPlaceholder": "https://addon.example.com/.../manifest.json",
+    "moreTypes": "+{count}",
+    "moveDown": "Move down",
+    "moveUp": "Move up",
+    "prefixCount": "{count} ID prefixes",
+    "refresh": "Refresh",
+    "remove": "Remove",
+    "subtitle": "{count, plural, =0 {No addons} one {# addon} other {# addons}}",
+    "summary": "{total, plural, =0 {No addons installed} one {# addon · {enabled} enabled} other {# addons · {enabled} enabled}}",
+    "title": "Stremio addons"
   },
   "SystemStatus": {
     "error": "Error",

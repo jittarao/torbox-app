@@ -65,18 +65,27 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 
 ### Environment Variables
 
-| Variable                              | Description                                                                                                   | Default                 | Required |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------- | -------- |
-| `BACKEND_URL`                         | URL of the backend API server                                                                                 | `http://localhost:3001` | No       |
-| `BACKEND_DISABLED`                    | Disable backend usage (set to `true`/`false`)                                                                 | `false`                 | No       |
-| `SEARCH_PAGE_DISABLED`                | Hide the search page and top-nav link (`true`/`1`/`yes`)                                                      | `false`                 | No       |
-| `FFPROBE_PATH`                        | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used.                | —                       | No       |
-| `FFPROBE_AUTO_DIR`                    | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set).                | `<project>/.ffprobe`    | No       |
-| `DOWNLOAD_SYNC_CACHE_TTL_MS`          | In-memory download list cache eviction when a user/type has no requests for this long (ms).                   | `1800000` (30 min)      | No       |
-| `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` | Minimum interval between background full reconciles for multi-page catalogs (ms).                             | `300000` (5 min)        | No       |
-| `DOWNLOAD_SYNC_RECONCILE_JITTER_MS`   | Per-user/type jitter added to reconcile interval (ms).                                                        | `60000` (1 min)         | No       |
-| `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`  | Min interval between TorBox shallow refreshes per user/type (ms); stale reads block until refresh completes.  | `10000` (10 s)          | No       |
-| `BACKEND_SERVICE_SECRET`              | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout)) | unset                   | No       |
+| Variable                              | Description                                                                                                                    | Default                 | Required |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | -------- |
+| `BACKEND_URL`                         | URL of the backend API server                                                                                                  | `http://localhost:3001` | No       |
+| `BACKEND_DISABLED`                    | Disable backend usage (set to `true`/`false`)                                                                                  | `false`                 | No       |
+| `SEARCH_PAGE_DISABLED`                | Hide the search page and top-nav link (`true`/`1`/`yes`). Search uses user-configured Stremio stream addons (backend required) | `false`                 | No       |
+| `FFPROBE_PATH`                        | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used.                                 | —                       | No       |
+| `FFPROBE_AUTO_DIR`                    | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set).                                 | `<project>/.ffprobe`    | No       |
+| `DOWNLOAD_SYNC_CACHE_TTL_MS`          | In-memory download list cache eviction when a user/type has no requests for this long (ms).                                    | `1800000` (30 min)      | No       |
+| `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` | Minimum interval between background full reconciles for multi-page catalogs (ms).                                              | `300000` (5 min)        | No       |
+| `DOWNLOAD_SYNC_RECONCILE_JITTER_MS`   | Per-user/type jitter added to reconcile interval (ms).                                                                         | `60000` (1 min)         | No       |
+| `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`  | Min interval between TorBox shallow refreshes per user/type (ms); stale reads block until refresh completes.                   | `10000` (10 s)          | No       |
+| `BACKEND_SERVICE_SECRET`              | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout))                  | unset                   | No       |
+
+### Stream search (Stremio addons)
+
+The search page queries **user-installed Stremio stream addons** (not TorBox search-api). Requires the backend and a TorBox API key.
+
+- Users paste a manifest URL (`…/manifest.json`); the backend fetches it via SSRF-hardened HTTPS (`safeExternalFetch`), stores metadata in per-user SQLite (`stremio_addons`), and proxies stream lookups.
+- Manifest URLs default to **HTTPS only**. Set `STREMIO_ALLOW_HTTP=true` on the backend to allow `http://` (e.g. local addon development). Private/link-local IPs remain blocked.
+- Cap installs with `STREMIO_MAX_ADDONS` (default 25). External fetch routes (install / refresh / stream) use a stricter per-user limit (`STREMIO_FETCH_RATE_LIMIT_MAX`, default 120 / 15 min) in addition to `USER_RATE_LIMIT_MAX`.
+- If the backend port is reachable without the TorBox API key, set `BACKEND_REQUIRE_API_KEY=true` (recommended whenever `:3001` is exposed).
 
 ### Download list sync
 
@@ -168,6 +177,9 @@ bun run dev
 | `SQLITE_CACHE_SIZE_KB`                    | Per-connection SQLite page cache in KB (negative = KB; e.g. `-1000` = 1MB)                   | `-1000`                  | No       |
 | `IP_RATE_LIMIT_MAX`                       | Max API requests per public IP per 15 minutes (private/Docker proxy IPs skipped)             | `1000`                   | No       |
 | `USER_RATE_LIMIT_MAX`                     | Max API requests per authenticated user per 15 minutes                                       | `500`                    | No       |
+| `STREMIO_ALLOW_HTTP`                      | Allow `http://` Stremio manifest/stream URLs (default HTTPS-only)                            | unset (`false`)          | No       |
+| `STREMIO_MAX_ADDONS`                      | Max installed Stremio addons per user (capped at 100)                                        | `25`                     | No       |
+| `STREMIO_FETCH_RATE_LIMIT_MAX`            | Max external addon fetch requests (install/refresh/stream) per user per 15 minutes           | `120`                    | No       |
 | `TRUST_PROXY`                             | Trust `X-Forwarded-For` when behind a reverse proxy (`true` to enable)                       | unset                    | No       |
 | `BACKEND_REQUIRE_API_KEY`                 | Require `x-api-key` on all user routes (disables legacy `authId`-only access)                | unset (`false`)          | No       |
 | `BACKEND_SERVICE_SECRET`                  | Shared secret for Next.js → backend internal routes (≥16 chars; set on FE + BE)              | unset                    | No       |
@@ -514,7 +526,7 @@ docker network create torbox-network
 | ------------------------------------- | -------------------------------------------------------------------------------------- |
 | `SENTRY_DSN`                          | Sentry DSN; omit to disable (stack defaults `SENTRY_ENABLED=true` when set)            |
 | `BACKEND_SERVICE_SECRET`              | Same value on both services; optional hardening                                        |
-| `SEARCH_PAGE_DISABLED`                | `true` to hide the search page                                                         |
+| `SEARCH_PAGE_DISABLED`                | `true` to hide the search page (Stremio addon search; requires backend)                |
 | `UPLOAD_LIMIT_MAX_STORAGE_MB`         | Staged upload storage cap (MB) per LIMITED user (default `100`)                        |
 | `UPLOAD_LIMIT_MAX_FILES`              | Staged file count cap per LIMITED user (default `500`)                                 |
 | `UPLOAD_PROCESSOR_INTERVAL_MS`        | Upload queue poll interval in ms (default `5000`)                                      |

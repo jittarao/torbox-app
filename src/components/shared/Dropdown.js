@@ -55,7 +55,7 @@ export default function Dropdown({ id, options, value, onChange, className = '',
 
       {isOpen && (
         <div
-          className="absolute z-10 min-w-full mt-1 bg-surface dark:bg-surface-dark 
+          className="absolute z-50 min-w-full mt-1 bg-surface dark:bg-surface-dark 
           border border-border dark:border-border-dark rounded shadow-lg"
         >
           {options.map((option) => (

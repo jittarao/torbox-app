@@ -1,122 +1,123 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  applySearchFilters,
-  selectDisplayResults,
-  selectFilteredResults,
-} from '../searchSelectors.js';
+import { applyStreamFilters, selectDisplayResults } from '../searchSelectors.js';
 
-describe('searchSelectors', () => {
-  const baseResults = [
+describe('searchSelectors (stremio streams)', () => {
+  const results = [
     {
-      title: 'Show S01E02 2020 1080p',
-      raw_title: 'Show S01E02 2020 1080p',
-      size: 2 * 1024 * 1024 * 1024,
-      last_known_seeders: 10,
+      key: 'a',
+      title: 'Cached 1080p',
       cached: true,
-      tracker: 'Example',
+      resolution: '1080p',
+      codec: 'x265',
+      hdr: 'HDR',
+      language: 'ENG',
+      streamType: 'movie',
+      size: 2 * 1024 * 1024 * 1024,
+      addonId: 'com.a',
+      sources: [{ addonId: 'com.a', addonName: 'A' }],
     },
     {
-      title: 'Movie 2019 720p',
-      raw_title: 'Movie 2019 720p',
-      size: 500 * 1024 * 1024,
-      last_known_seeders: 2,
+      key: 'b',
+      title: 'Uncached 720p',
       cached: false,
-      tracker: 'Newznab',
+      resolution: '720p',
+      codec: 'x264',
+      hdr: null,
+      language: 'Multi',
+      streamType: 'series',
+      size: 500 * 1024 * 1024,
+      addonId: 'com.b',
+      sources: [{ addonId: 'com.b', addonName: 'B' }],
+    },
+    {
+      key: 'c',
+      title: 'HEVC DV',
+      cached: true,
+      resolution: '2160p',
+      codec: 'HEVC',
+      hdr: 'DV',
+      language: 'English',
+      streamType: 'movie',
+      size: 40 * 1024 * 1024 * 1024,
+      addonId: 'com.a',
+      sources: [{ addonId: 'com.a', addonName: 'A' }],
     },
   ];
 
-  test('applySearchFilters escapes regex metacharacters in season and episode filters', () => {
-    const filtered = applySearchFilters(
-      [
-        {
-          title: 'Show season 1.5 special',
-          raw_title: 'Show season 1.5 special',
-          size: 0,
-          last_known_seeders: 0,
-        },
-        {
-          title: 'Show season 1 special',
-          raw_title: 'Show season 1 special',
-          size: 0,
-          last_known_seeders: 0,
-        },
-        {
-          title: 'Show S01X special',
-          raw_title: 'Show S01X special',
-          size: 0,
-          last_known_seeders: 0,
-        },
-      ],
-      {
-        seasonFilter: '1.',
-        episodeFilter: '',
-        yearFilter: '',
-        qualityFilter: '',
-        sizeFilter: '',
-        seedersFilter: '',
-      }
-    );
-
-    // Unescaped "." in padded s0 (`01.`) would incorrectly match "S01X".
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0].title).toContain('1.5');
-  });
-
-  test('applySearchFilters filters by season and quality', () => {
-    const filtered = applySearchFilters(baseResults, {
-      seasonFilter: '1',
-      episodeFilter: '',
-      yearFilter: '',
-      qualityFilter: '1080p',
-      sizeFilter: '',
-      seedersFilter: '',
+  test('applyStreamFilters cached-only and resolution', () => {
+    const filtered = applyStreamFilters(results, {
+      showCachedOnly: true,
+      resolution: '1080p',
     });
     expect(filtered).toHaveLength(1);
-    expect(filtered[0].title).toContain('1080p');
+    expect(filtered[0].key).toBe('a');
   });
 
-  test('selectFilteredResults uses passed filter fields', () => {
-    const state = { results: baseResults };
-    expect(
-      selectFilteredResults(state, {
-        seasonFilter: '',
-        episodeFilter: '',
-        yearFilter: '2019',
-        qualityFilter: '',
-        sizeFilter: '',
-        seedersFilter: '',
-      })
-    ).toHaveLength(1);
+  test('applyStreamFilters by addon and codec', () => {
+    const filtered = applyStreamFilters(results, {
+      addonId: 'com.b',
+      codec: 'avc',
+    });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].key).toBe('b');
   });
 
-  test('selectDisplayResults applies cached-only and hides native indexers', () => {
-    const state = {
-      results: baseResults,
-      searchType: 'torrents',
-    };
+  test('applyStreamFilters codec aliases match HEVC and x265', () => {
+    const filtered = applyStreamFilters(results, { codec: 'hevc' });
+    expect(filtered.map((r) => r.key).sort()).toEqual(['a', 'c']);
+  });
 
-    const emptyFilters = {
-      seasonFilter: '',
-      episodeFilter: '',
-      yearFilter: '',
-      qualityFilter: '',
-      sizeFilter: '',
-      seedersFilter: '',
-    };
+  test('applyStreamFilters hdr aliases', () => {
+    const filtered = applyStreamFilters(results, { hdr: 'DV' });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].key).toBe('c');
+  });
 
-    const display = selectDisplayResults(
-      state,
+  test('applyStreamFilters by stream type', () => {
+    const filtered = applyStreamFilters(results, { streamTypes: ['series'] });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].key).toBe('b');
+  });
+
+  test('applyStreamFilters max size excludes larger files', () => {
+    const filtered = applyStreamFilters(results, {
+      maxSizeBytes: 20 * 1024 * 1024 * 1024,
+    });
+    expect(filtered.map((r) => r.key).sort()).toEqual(['a', 'b']);
+  });
+
+  test('applyStreamFilters min and max size range', () => {
+    const filtered = applyStreamFilters(results, {
+      minSizeBytes: 1 * 1024 * 1024 * 1024,
+      maxSizeBytes: 20 * 1024 * 1024 * 1024,
+    });
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].key).toBe('a');
+  });
+
+  test('applyStreamFilters language matches filename', () => {
+    const withFile = [
+      ...results,
       {
-        sortKey: 'size',
-        sortDir: 'desc',
-        showCachedOnly: true,
-        hideTorBoxIndexers: true,
+        key: 'd',
+        title: '⚡ 4K',
+        language: null,
+        filename: 'Show.S01E01.1080p.BluRay.x265.ENG.mkv',
+        description: '',
+        streamType: 'series',
+        size: 3 * 1024 * 1024 * 1024,
+        addonId: 'com.a',
+        sources: [{ addonId: 'com.a', addonName: 'A' }],
       },
-      emptyFilters
-    );
+    ];
+    const filtered = applyStreamFilters(withFile, { language: 'ENG' });
+    expect(filtered.map((r) => r.key).sort()).toEqual(['a', 'c', 'd']);
+  });
 
-    expect(display).toHaveLength(1);
-    expect(display[0].cached).toBe(true);
-    expect(display[0].tracker).not.toBe('Newznab');
+  test('selectDisplayResults sorts by size', () => {
+    const display = selectDisplayResults(results, {}, 'size', 'desc');
+    expect(display[0].key).toBe('c');
+    expect(display[1].key).toBe('a');
+    expect(display[2].key).toBe('b');
   });
 });

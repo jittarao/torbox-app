@@ -2,80 +2,76 @@
 
 import { useTranslations } from 'next-intl';
 
-const SEARCH_SUGGESTIONS = [
-  { label: 'IMDB Search', example: 'imdb:tt0133093' },
-  { label: 'TVDB Search', example: 'tvdb:12345' },
-  { label: 'Anime Search', example: 'jikan:12345' },
-  { label: 'TV Show Search', example: 'Breaking Bad' },
-  { label: 'Movie Search', example: 'Inception' },
-  { label: 'Year Search', example: 'Inception (2010)' },
-];
-
 export default function SearchBarDropdowns({
   showHistory,
   showSuggestions,
   searchHistory,
-  onHistoryClick,
+  suggestions,
+  onSelectHistory,
+  onSelectSuggestion,
   onClearHistory,
-  onSuggestionClick,
 }) {
   const t = useTranslations('SearchBar');
 
+  if (!showHistory && !showSuggestions) return null;
+
   return (
-    <>
+    <div className="absolute left-0 right-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-border-dark dark:bg-[#1a1a1d]">
       {showHistory && searchHistory.length > 0 && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-gray-800 border border-border dark:border-border-dark rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          <div className="p-2 border-b border-border dark:border-border-dark">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-                {t('recentSearches') || 'Recent Searches'}
-              </span>
-              <button
-                type="button"
-                onClick={onClearHistory}
-                className="text-xs text-red-500 hover:text-red-600 transition-colors"
-              >
-                {t('clearHistory') || 'Clear'}
-              </button>
-            </div>
-          </div>
-          {searchHistory.map((item) => (
+        <div className="border-b border-border p-2 dark:border-border-dark">
+          <div className="mb-1 flex items-center justify-between px-2">
+            <span className="text-xs font-medium text-primary-text/60 dark:text-primary-text-dark/60">
+              {t('recentSearches')}
+            </span>
             <button
               type="button"
-              key={item}
-              onClick={() => onHistoryClick(item)}
-              className="w-full p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-primary-text dark:text-primary-text-dark"
+              onClick={onClearHistory}
+              className="text-xs text-accent hover:underline dark:text-accent-dark"
             >
-              {item}
+              {t('clearHistory')}
             </button>
-          ))}
+          </div>
+          <ul>
+            {searchHistory.map((item) => (
+              <li key={item}>
+                <button
+                  type="button"
+                  className="w-full rounded px-2 py-1.5 text-left text-sm text-primary-text hover:bg-surface-alt dark:text-primary-text-dark dark:hover:bg-surface-alt-dark"
+                  onClick={() => onSelectHistory(item)}
+                >
+                  {item}
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      {showSuggestions && !showHistory && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-gray-800 border border-border dark:border-border-dark rounded-lg shadow-lg">
-          <div className="p-2 border-b border-border dark:border-border-dark">
-            <span className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-              {t('searchExamples') || 'Search Examples'}
-            </span>
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="p-2">
+          <div className="mb-1 px-2 text-xs font-medium text-primary-text/60 dark:text-primary-text-dark/60">
+            {t('searchExamples')}
           </div>
-          {SEARCH_SUGGESTIONS.map((suggestion) => (
-            <button
-              type="button"
-              key={suggestion.label}
-              onClick={() => onSuggestionClick(suggestion)}
-              className="w-full p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <div className="text-sm font-medium text-primary-text dark:text-primary-text-dark">
-                {suggestion.label}
-              </div>
-              <div className="text-xs text-primary-text/60 dark:text-primary-text-dark/60">
-                {suggestion.example}
-              </div>
-            </button>
-          ))}
+          <ul>
+            {suggestions.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className="w-full rounded px-2 py-1.5 text-left text-sm text-primary-text hover:bg-surface-alt dark:text-primary-text-dark dark:hover:bg-surface-alt-dark"
+                  onClick={() => onSelectSuggestion(item.id)}
+                >
+                  <span className="font-mono">{item.id}</span>
+                  {item.label ? (
+                    <span className="ml-2 text-primary-text/50 dark:text-primary-text-dark/50">
+                      {item.label}
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
-    </>
+    </div>
   );
 }

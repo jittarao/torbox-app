@@ -46,6 +46,10 @@ services:
       - AUTOMATION_INACTIVE_USER_DAYS=${AUTOMATION_INACTIVE_USER_DAYS:-30}
       # Automation rules: set true to paginate all TorBox mylist pages (default: first page only)
       - AUTOMATION_RULES_MYLIST_FULL_PAGINATION=${AUTOMATION_RULES_MYLIST_FULL_PAGINATION:-}
+      # Stremio stream addons (search page)
+      - STREMIO_ALLOW_HTTP=${STREMIO_ALLOW_HTTP:-}
+      - STREMIO_MAX_ADDONS=${STREMIO_MAX_ADDONS:-25}
+      - STREMIO_FETCH_RATE_LIMIT_MAX=${STREMIO_FETCH_RATE_LIMIT_MAX:-120}
     # Persistent volume for backend data (databases, user files, etc.)
     volumes:
       - backend-data:/app/data

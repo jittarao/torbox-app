@@ -13,6 +13,7 @@ import { useHealthStore } from '@/store/healthStore';
 import { useRssStore } from '@/store/rssStore';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 import { useSearchStore } from '@/store/searchStore';
+import { useStremioAddonsStore } from '@/store/stremioAddonsStore';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsPlayerStore } from '@/store/downloadsPlayerStore';
 import { useFileInteractionStore } from '@/store/fileInteractionStore';
@@ -44,12 +45,19 @@ function fanOutApiKey(apiKey, prevApiKey) {
     if (keyChanged && prevApiKey) {
       useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
       useSearchStore.getState().resetForSession();
+      useStremioAddonsStore.getState().resetForSession();
+      if (apiKey) {
+        useStremioAddonsStore.getState().fetchAddons();
+      }
       useDownloadsUiStore.getState().resetUi();
       useDownloadsPlayerStore.getState().closeAll();
       useFileInteractionStore.getState().clearAll();
       useDownloadHistoryStore.getState().clearDownloadHistory();
     } else if (keyChanged) {
       useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
+      if (apiKey) {
+        useStremioAddonsStore.getState().fetchAddons();
+      }
     } else {
       useDownloadsSelectionStore.getState().setApiKeyScope(apiKey);
     }
