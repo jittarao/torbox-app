@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useVideoPlayerKeyboard } from './useVideoPlayerKeyboard';
 
 export function useVideoPlayerPlaybackHandlers({
@@ -26,13 +26,20 @@ export function useVideoPlayerPlaybackHandlers({
   isFullscreen,
   showInfo,
   showInfoSheet,
+  error,
+  onClose,
 }) {
+  const volumeBeforeMuteRef = useRef(1);
+
   const handleVideoRef = useCallback(
     (videoElement) => {
       videoRef.current = videoElement;
       if (videoElement) {
         setVolume(videoElement.volume);
         setIsMuted(videoElement.muted);
+        if (videoElement.volume > 0) {
+          volumeBeforeMuteRef.current = videoElement.volume;
+        }
         if (videoElement.playbackRate !== playbackSpeed) {
           videoElement.playbackRate = playbackSpeed;
         }
@@ -49,9 +56,45 @@ export function useVideoPlayerPlaybackHandlers({
 
   const handlePlayPause = useCallback(() => {
     if (!videoRef.current) return;
-    if (isPlaying) videoRef.current.pause();
-    else videoRef.current.play();
-  }, [isPlaying, videoRef]);
+    if (isPlaying) {
+      videoRef.current.pause();
+      return;
+    }
+    // User gesture: always unmute so Search autoplay-muted streams regain audio.
+    const tracks = videoRef.current.audioTracks;
+    if (tracks && tracks.length > 0) {
+      let anyEnabled = false;
+      for (let i = 0; i < tracks.length; i++) {
+        if (tracks[i].enabled) {
+          anyEnabled = true;
+          break;
+        }
+      }
+      if (!anyEnabled) tracks[0].enabled = true;
+    }
+    videoRef.current.muted = false;
+    if (videoRef.current.volume === 0) {
+      videoRef.current.volume = 1;
+      setVolume(1);
+    }
+    setIsMuted(false);
+    videoRef.current.play().catch(() => {});
+  }, [isPlaying, videoRef, setVolume, setIsMuted]);
+
+  const handleVolumeStateChange = useCallback(
+    ({ volume: nextVolume, muted }) => {
+      if (typeof nextVolume === 'number' && Number.isFinite(nextVolume)) {
+        setVolume(nextVolume);
+        if (nextVolume > 0) {
+          volumeBeforeMuteRef.current = nextVolume;
+        }
+      }
+      if (typeof muted === 'boolean') {
+        setIsMuted(muted);
+      }
+    },
+    [setVolume, setIsMuted]
+  );
 
   const handleRewind = useCallback(() => {
     if (videoRef.current) {
@@ -132,21 +175,37 @@ export function useVideoPlayerPlaybackHandlers({
 
   const handleVolumeChange = useCallback(
     (newVolume) => {
-      if (videoRef.current) {
-        videoRef.current.volume = newVolume;
-        setVolume(newVolume);
-        setIsMuted(newVolume === 0);
+      if (!videoRef.current) return;
+      const clamped = Math.max(0, Math.min(1, newVolume));
+      videoRef.current.volume = clamped;
+      setVolume(clamped);
+      if (clamped > 0) {
+        volumeBeforeMuteRef.current = clamped;
+        if (videoRef.current.muted) {
+          videoRef.current.muted = false;
+        }
+        setIsMuted(false);
+      } else {
+        setIsMuted(true);
       }
     },
     [videoRef, setVolume, setIsMuted]
   );
 
   const handleMuteToggle = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
+    if (!videoRef.current) return;
+    if (videoRef.current.muted || videoRef.current.volume === 0) {
+      const restore = volumeBeforeMuteRef.current || 1;
+      videoRef.current.volume = restore;
+      videoRef.current.muted = false;
+      setVolume(restore);
+      setIsMuted(false);
+      return;
     }
-  }, [videoRef, setIsMuted]);
+    volumeBeforeMuteRef.current = videoRef.current.volume || 1;
+    videoRef.current.muted = true;
+    setIsMuted(true);
+  }, [videoRef, setVolume, setIsMuted]);
 
   const handlePlaybackSpeedChange = useCallback(
     (speed) => {
@@ -169,11 +228,13 @@ export function useVideoPlayerPlaybackHandlers({
     isPlaying,
     isFullscreen,
     showInfo: showInfo || showInfoSheet,
+    error,
     videoRef,
     onPlayPause: handlePlayPause,
     onFullscreen: toggleFullscreen,
     onMuteToggle: handleMuteToggle,
     onInfoClose: handleInfoClose,
+    onClose,
     onVolumeChange: handleVolumeChange,
   });
 
@@ -205,6 +266,7 @@ export function useVideoPlayerPlaybackHandlers({
     handleSeek,
     handleSeekbarMouseDown,
     handleVolumeChange,
+    handleVolumeStateChange,
     handleMuteToggle,
     handlePlaybackSpeedChange,
     handleInfoClose,

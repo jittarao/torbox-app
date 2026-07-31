@@ -7,11 +7,13 @@ import { useEffect } from 'react';
  * @param {boolean} options.isPlaying - Whether video is playing
  * @param {boolean} options.isFullscreen - Whether in fullscreen
  * @param {boolean} options.showInfo - Whether info overlay is open
+ * @param {string|null} [options.error] - Player error message when playback failed
  * @param {Object} options.videoRef - Ref to video element
  * @param {Function} options.onPlayPause - Callback for play/pause
  * @param {Function} options.onFullscreen - Callback for fullscreen
  * @param {Function} options.onMuteToggle - Callback for mute toggle
  * @param {Function} options.onInfoClose - Callback to close info overlay
+ * @param {Function} [options.onClose] - Callback to close the player (used when errored)
  * @param {Function} options.onVolumeChange - Callback when volume changes (for arrow keys)
  */
 export function useVideoPlayerKeyboard({
@@ -19,11 +21,13 @@ export function useVideoPlayerKeyboard({
   isPlaying,
   isFullscreen,
   showInfo,
+  error,
   videoRef,
   onPlayPause,
   onFullscreen,
   onMuteToggle,
   onInfoClose,
+  onClose,
   onVolumeChange,
 }) {
   useEffect(() => {
@@ -44,11 +48,18 @@ export function useVideoPlayerKeyboard({
         if (isFullscreen) {
           e.preventDefault();
           document.exitFullscreen();
+          return;
         }
         // If info modal is open, close it
         if (showInfo) {
           e.preventDefault();
           onInfoClose();
+          return;
+        }
+        // Playback failed: chrome is hidden, so Escape must dismiss the player
+        if (error && onClose) {
+          e.preventDefault();
+          onClose();
         }
       } else if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
         e.preventDefault();
@@ -96,11 +107,13 @@ export function useVideoPlayerKeyboard({
     isPlaying,
     isFullscreen,
     showInfo,
+    error,
     videoRef,
     onPlayPause,
     onFullscreen,
     onMuteToggle,
     onInfoClose,
+    onClose,
     onVolumeChange,
   ]);
 }

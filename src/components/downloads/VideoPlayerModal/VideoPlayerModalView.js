@@ -54,6 +54,7 @@ export default function VideoPlayerModalView({
   handleSeek,
   handleSeekbarMouseDown,
   handleVolumeChange,
+  handleVolumeStateChange,
   handleMuteToggle,
   setShowVolumeSlider,
   handleAudioTrackSelect,
@@ -131,6 +132,7 @@ export default function VideoPlayerModalView({
             onPlayStateChange={setIsPlaying}
             onError={setError}
             onLoadingChange={setIsLoading}
+            onVolumeStateChange={handleVolumeStateChange}
             onVideoRef={handleVideoRef}
             initialSeekTime={capturedSeekTime}
             shouldAutoPlay={capturedSeekTime !== null ? wasPlayingBeforeTrackChange : true}
@@ -158,7 +160,7 @@ export default function VideoPlayerModalView({
         {isInIntroRange && !isLoading && !error && <SkipIntroButton onSkip={handleSkipIntro} />}
 
         {isLoading && !error && <LoadingOverlay />}
-        {error && <ErrorOverlay error={error} onRetry={handleErrorRetry} />}
+        {error && <ErrorOverlay error={error} onRetry={handleErrorRetry} onClose={onClose} />}
 
         {!isTouchPlayer && (
           <VideoInfoOverlay

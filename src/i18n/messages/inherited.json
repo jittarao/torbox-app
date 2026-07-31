@@ -55,6 +55,13 @@
     "UploadStatistics.typeWebdl": "WebDL",
     "User.plans.pro": "Pro",
     "User.profile.plan": "Plan",
+    "VideoPlayer.infoBitrate": "Bitrate",
+    "VideoPlayer.infoBitrateValue": "{kbps} kbps",
+    "VideoPlayer.infoCodecValue": "{codec}",
+    "VideoPlayer.infoFrameRateValue": "{rate} fps",
+    "VideoPlayer.infoNotAvailable": "N/A",
+    "VideoPlayer.infoSampleRateValue": "{rate} Hz",
+    "VideoPlayer.infoSectionAudio": "Audio ({count})",
     "VideoPlayer.playbackSpeedNormal": "Normal"
   },
   "de": {
@@ -112,6 +119,14 @@
     "User.plans.standard": "Standard",
     "User.profile.plan": "Plan",
     "User.profile.status": "Status",
+    "VideoPlayer.infoBitrate": "Bitrate",
+    "VideoPlayer.infoBitrateValue": "{kbps} kbps",
+    "VideoPlayer.infoCodecValue": "{codec}",
+    "VideoPlayer.infoFrameRateValue": "{rate} fps",
+    "VideoPlayer.infoMediaDetails": "Details",
+    "VideoPlayer.infoNotAvailable": "N/A",
+    "VideoPlayer.infoSampleRateValue": "{rate} Hz",
+    "VideoPlayer.infoSectionAudio": "Audio ({count})",
     "VideoPlayer.pause": "Pause",
     "VideoPlayer.playbackSpeedNormal": "Normal"
   },
@@ -187,6 +202,14 @@
     "User.plans.pro": "Pro",
     "User.plans.standard": "Standard",
     "User.profile.ratio": "Ratio",
+    "VideoPlayer.infoBitrate": "Bitrate",
+    "VideoPlayer.infoBitrateValue": "{kbps} kbps",
+    "VideoPlayer.infoCodecValue": "{codec}",
+    "VideoPlayer.infoFrameRateValue": "{rate} fps",
+    "VideoPlayer.infoNotAvailable": "N/A",
+    "VideoPlayer.infoSampleRateValue": "{rate} Hz",
+    "VideoPlayer.infoSectionAudio": "Audio ({count})",
+    "VideoPlayer.infoType": "Type",
     "VideoPlayer.pause": "Pause",
     "VideoPlayer.volume": "Volume"
   },
@@ -213,7 +236,14 @@
     "StremioAddons.moreTypes": "+{count}",
     "UploadStatistics.typeTorrents": "Torrents",
     "UploadStatistics.typeUsenet": "Usenet",
-    "UploadStatistics.typeWebdl": "WebDL"
+    "UploadStatistics.typeWebdl": "WebDL",
+    "VideoPlayer.infoBitrateValue": "{kbps} kbps",
+    "VideoPlayer.infoChannelsValue": "{channels} ch ({layout})",
+    "VideoPlayer.infoCodecValue": "{codec}",
+    "VideoPlayer.infoFrameRateValue": "{rate} fps",
+    "VideoPlayer.infoImdbId": "IMDb ID",
+    "VideoPlayer.infoNotAvailable": "N/A",
+    "VideoPlayer.infoSampleRateValue": "{rate} Hz"
   },
   "pl": {
     "AutomationRules.assetTypes.usenet": "Usenet",
@@ -266,6 +296,13 @@
     "User.plans.pro": "Pro",
     "User.plans.standard": "Standard",
     "User.profile.plan": "Plan",
-    "User.profile.status": "Status"
+    "User.profile.status": "Status",
+    "VideoPlayer.infoBitrate": "Bitrate",
+    "VideoPlayer.infoBitrateValue": "{kbps} kbps",
+    "VideoPlayer.infoCodecValue": "{codec}",
+    "VideoPlayer.infoFrameRateValue": "{rate} fps",
+    "VideoPlayer.infoNotAvailable": "N/A",
+    "VideoPlayer.infoSampleRateValue": "{rate} Hz",
+    "VideoPlayer.infoSectionAudio": "Audio ({count})"
   }
 }

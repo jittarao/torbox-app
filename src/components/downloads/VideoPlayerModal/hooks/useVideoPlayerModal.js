@@ -166,7 +166,6 @@ export function useVideoPlayerModal({
     isOpen,
     isTouchPlayer,
     isLoading,
-    error,
     isFullscreen,
     exitFullscreen,
     onClose,
@@ -234,6 +233,7 @@ export function useVideoPlayerModal({
     handleSeek,
     handleSeekbarMouseDown,
     handleVolumeChange,
+    handleVolumeStateChange,
     handleMuteToggle,
     handlePlaybackSpeedChange,
     handleErrorRetry,
@@ -260,6 +260,8 @@ export function useVideoPlayerModal({
     isFullscreen,
     showInfo,
     showInfoSheet,
+    error,
+    onClose,
   });
 
   const handleSkipIntro = useCallback(() => {
@@ -344,6 +346,7 @@ export function useVideoPlayerModal({
     handleSeek,
     handleSeekbarMouseDown,
     handleVolumeChange,
+    handleVolumeStateChange,
     handleMuteToggle,
     setShowVolumeSlider,
     handleAudioTrackSelect,
