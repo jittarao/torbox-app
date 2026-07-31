@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { isAdaptiveStreamUrl, formatPlayerError } from '@/utils/streamUrl';
 
 /**
  * @param {HTMLVideoElement} video
@@ -9,7 +10,7 @@ import { useEffect, useRef } from 'react';
  */
 function subscribeVideoDomEvents(
   video,
-  { onTimeUpdate, onDurationChange, onPlayStateChange, onLoadingChange },
+  { onTimeUpdate, onDurationChange, onPlayStateChange, onLoadingChange, onVolumeStateChange },
   isSeekingRef
 ) {
   const handleTimeUpdate = () => {
@@ -40,7 +41,9 @@ function subscribeVideoDomEvents(
     onLoadingChange?.(false);
   };
 
-  const handleVolumeChange = () => {};
+  const handleVolumeChange = () => {
+    onVolumeStateChange?.({ volume: video.volume, muted: video.muted });
+  };
 
   video.addEventListener('timeupdate', handleTimeUpdate);
   video.addEventListener('play', handlePlay);
@@ -56,6 +59,154 @@ function subscribeVideoDomEvents(
     video.removeEventListener('loadedmetadata', handleLoadedMetadata);
     video.removeEventListener('canplay', handleCanPlay);
     video.removeEventListener('volumechange', handleVolumeChange);
+  };
+}
+
+/**
+ * Enable the first audio track when the AudioTrackList API exposes disabled tracks.
+ * @param {HTMLVideoElement} video
+ */
+function enableDefaultAudioTrack(video) {
+  const tracks = video.audioTracks;
+  if (!tracks || tracks.length === 0) return;
+  let anyEnabled = false;
+  for (let i = 0; i < tracks.length; i++) {
+    if (tracks[i].enabled) {
+      anyEnabled = true;
+      break;
+    }
+  }
+  if (!anyEnabled) {
+    tracks[0].enabled = true;
+  }
+}
+
+/**
+ * @param {HTMLVideoElement} video
+ * @param {{ onVolumeStateChange?: Function }} callbacks
+ */
+async function playWithAutoplayFallback(video, callbacks) {
+  enableDefaultAudioTrack(video);
+  video.defaultMuted = false;
+  video.muted = false;
+  if (video.volume === 0) {
+    video.volume = 1;
+  }
+  callbacks.onVolumeStateChange?.({ volume: video.volume, muted: false });
+
+  try {
+    await video.play();
+    callbacks.onVolumeStateChange?.({ volume: video.volume, muted: video.muted });
+  } catch (err) {
+    // Autoplay with sound is often blocked after async work. Fall back to muted
+    // autoplay and sync UI so the user can unmute with one click.
+    if (err?.name === 'NotAllowedError') {
+      video.muted = true;
+      callbacks.onVolumeStateChange?.({ volume: video.volume, muted: true });
+      try {
+        await video.play();
+      } catch {
+        // ignore
+      }
+      return;
+    }
+    throw err;
+  }
+}
+
+/**
+ * Progressive CDN URLs (TorBox download links) usually lack CORS for MSE.
+ * Native HTMLMediaElement can play them without CORS; Shaka cannot.
+ */
+function subscribeNativeVideoPlayer({
+  video,
+  streamUrl,
+  initialSeekTime,
+  shouldAutoPlay,
+  isCancelledRef,
+  callbacks: { onTimeUpdate, onDurationChange, onError, onLoadingChange, onVolumeStateChange },
+}) {
+  isCancelledRef.current = false;
+  const timeouts = [];
+  const safeTimeout = (fn, ms) => {
+    const id = setTimeout(fn, ms);
+    timeouts.push(id);
+    return id;
+  };
+
+  onLoadingChange?.(true);
+  onError?.(null);
+
+  video.controls = false;
+  video.removeAttribute('crossorigin');
+  video.removeAttribute('muted');
+  video.defaultMuted = false;
+  video.muted = false;
+  if (video.volume === 0) video.volume = 1;
+  onVolumeStateChange?.({ volume: video.volume, muted: false });
+
+  const handleError = () => {
+    if (isCancelledRef.current) return;
+    onLoadingChange?.(false);
+    const mediaError = video.error;
+    let message = 'Failed to load stream';
+    if (mediaError?.code === mediaError?.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+      message =
+        'This format cannot be played in the browser. Try Download, or open in an external player.';
+    } else if (mediaError?.message) {
+      message = mediaError.message;
+    }
+    onError?.(message);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (isCancelledRef.current) return;
+    onLoadingChange?.(false);
+    onError?.(null);
+    enableDefaultAudioTrack(video);
+    if (video.duration > 0) {
+      onDurationChange?.(video.duration);
+      onTimeUpdate?.(video.currentTime || 0);
+    }
+
+    if (initialSeekTime !== null && initialSeekTime > 0) {
+      const seekTime = Math.min(initialSeekTime, video.duration || initialSeekTime);
+      video.currentTime = seekTime;
+      onTimeUpdate?.(seekTime);
+    }
+
+    if (shouldAutoPlay) {
+      safeTimeout(() => {
+        if (isCancelledRef.current) return;
+        if (video.paused) {
+          playWithAutoplayFallback(video, { onVolumeStateChange }).catch(() => {});
+        }
+      }, 200);
+    }
+  };
+
+  const handlePlaying = () => {
+    if (isCancelledRef.current) return;
+    enableDefaultAudioTrack(video);
+    onVolumeStateChange?.({ volume: video.volume, muted: video.muted });
+  };
+
+  video.addEventListener('error', handleError);
+  video.addEventListener('loadedmetadata', handleLoadedMetadata);
+  video.addEventListener('playing', handlePlaying);
+
+  video.src = streamUrl;
+  video.load();
+
+  return () => {
+    isCancelledRef.current = true;
+    timeouts.forEach(clearTimeout);
+    timeouts.length = 0;
+    video.removeEventListener('error', handleError);
+    video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    video.removeEventListener('playing', handlePlaying);
+    video.removeAttribute('src');
+    video.load();
   };
 }
 
@@ -76,7 +227,7 @@ function subscribeShakaVideoPlayer({
   shouldAutoPlay,
   playerRef,
   isCancelledRef,
-  callbacks: { onTimeUpdate, onDurationChange, onError, onLoadingChange },
+  callbacks: { onTimeUpdate, onDurationChange, onError, onLoadingChange, onVolumeStateChange },
 }) {
   isCancelledRef.current = false;
 
@@ -108,6 +259,9 @@ function subscribeShakaVideoPlayer({
         onLoadingChange?.(false);
         return;
       }
+
+      // MSE / Shaka fetches require CORS; TorBox HLS transcoder URLs provide it.
+      video.crossOrigin = 'anonymous';
 
       const player = new shaka.Player(video);
       playerRef.current = player;
@@ -171,7 +325,7 @@ function subscribeShakaVideoPlayer({
                 safeTimeout(() => {
                   if (isCancelledRef.current) return;
                   if (video && video.paused) {
-                    video.play().catch(() => {});
+                    playWithAutoplayFallback(video, { onVolumeStateChange }).catch(() => {});
                   }
                 }, 300);
               }
@@ -187,7 +341,7 @@ function subscribeShakaVideoPlayer({
           safeTimeout(() => {
             if (isCancelledRef.current) return;
             if (video && video.paused) {
-              video.play().catch(() => {});
+              playWithAutoplayFallback(video, { onVolumeStateChange }).catch(() => {});
             }
           }, 500);
         }
@@ -197,8 +351,7 @@ function subscribeShakaVideoPlayer({
         if (isCancelledRef.current) return;
         onLoadingChange?.(false);
         const error = event.detail;
-        const errorMessage = error?.message || 'Failed to load stream';
-        onError?.(errorMessage);
+        onError?.(formatPlayerError(error));
         console.error('Shaka Player error:', error);
       });
 
@@ -208,8 +361,7 @@ function subscribeShakaVideoPlayer({
     } catch (error) {
       if (isCancelledRef.current) return;
       onLoadingChange?.(false);
-      const errorMessage = error?.message || error?.toString() || 'Failed to load stream';
-      onError?.(errorMessage);
+      onError?.(formatPlayerError(error));
       console.error('Error initializing player:', error);
     }
   };
@@ -238,9 +390,9 @@ function subscribeShakaVideoPlayer({
 }
 
 /**
- * VideoPlayer - Shaka Player wrapper component
+ * VideoPlayer - Shaka for HLS/DASH; native element for progressive CDN URLs
  * @param {Object} props
- * @param {string} props.streamUrl - HLS stream URL
+ * @param {string} props.streamUrl - HLS or progressive media URL
  * @param {Function} props.onTimeUpdate - Callback for time updates
  * @param {Function} props.onDurationChange - Callback for duration changes
  * @param {Function} props.onPlayStateChange - Callback for play/pause state
@@ -259,6 +411,7 @@ export default function VideoPlayer({
   onPlayStateChange,
   onError,
   onLoadingChange,
+  onVolumeStateChange,
   onVideoRef,
   initialSeekTime = null,
   shouldAutoPlay = false,
@@ -269,6 +422,7 @@ export default function VideoPlayer({
   const playerRef = useRef(null);
   const isSeekingRef = useRef(false);
   const isCancelledRef = useRef(false);
+  const useAdaptivePlayer = isAdaptiveStreamUrl(streamUrl);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -276,32 +430,66 @@ export default function VideoPlayer({
 
     return subscribeVideoDomEvents(
       video,
-      { onTimeUpdate, onDurationChange, onPlayStateChange, onLoadingChange },
+      {
+        onTimeUpdate,
+        onDurationChange,
+        onPlayStateChange,
+        onLoadingChange,
+        onVolumeStateChange,
+      },
       isSeekingRef
     );
-  }, [streamUrl, onTimeUpdate, onDurationChange, onPlayStateChange, onLoadingChange]);
+  }, [
+    streamUrl,
+    onTimeUpdate,
+    onDurationChange,
+    onPlayStateChange,
+    onLoadingChange,
+    onVolumeStateChange,
+  ]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
-    return subscribeShakaVideoPlayer({
+    const callbacks = {
+      onTimeUpdate,
+      onDurationChange,
+      onError,
+      onLoadingChange,
+      onVolumeStateChange,
+    };
+
+    if (useAdaptivePlayer) {
+      return subscribeShakaVideoPlayer({
+        video,
+        streamUrl,
+        initialSeekTime,
+        shouldAutoPlay,
+        playerRef,
+        isCancelledRef,
+        callbacks,
+      });
+    }
+
+    return subscribeNativeVideoPlayer({
       video,
       streamUrl,
       initialSeekTime,
       shouldAutoPlay,
-      playerRef,
       isCancelledRef,
-      callbacks: { onTimeUpdate, onDurationChange, onError, onLoadingChange },
+      callbacks,
     });
   }, [
     streamUrl,
+    useAdaptivePlayer,
     initialSeekTime,
     shouldAutoPlay,
     onTimeUpdate,
     onDurationChange,
     onError,
     onLoadingChange,
+    onVolumeStateChange,
   ]);
 
   useEffect(() => {
@@ -319,12 +507,10 @@ export default function VideoPlayer({
     <video
       ref={videoRef}
       className="w-full h-full object-contain cursor-pointer"
-      crossOrigin="anonymous"
+      crossOrigin={useAdaptivePlayer ? 'anonymous' : undefined}
       playsInline
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-    >
-      <track kind="captions" />
-    </video>
+    />
   );
 }

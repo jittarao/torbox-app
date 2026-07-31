@@ -5,7 +5,6 @@ export function useVideoPlayerTouchGestures({
   isOpen,
   isTouchPlayer,
   isLoading,
-  error,
   isFullscreen,
   exitFullscreen,
   onClose,
@@ -49,7 +48,8 @@ export function useVideoPlayerTouchGestures({
   }, [isFullscreen, exitFullscreen, onClose]);
 
   usePlayerGestures({
-    enabled: isOpen && isTouchPlayer && !isLoading && !error,
+    // Keep gestures on error so swipe-down can dismiss (chrome is hidden while errored).
+    enabled: isOpen && isTouchPlayer && !isLoading,
     targetRef: playerAreaRef,
     onToggleControls: toggleControls,
     onDoubleTapSeek: handleDoubleTapSeek,
