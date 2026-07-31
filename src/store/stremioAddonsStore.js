@@ -13,10 +13,13 @@ function authHeaders(apiKey) {
 
 let fetchGeneration = 0;
 let fetchAbortController = null;
+/** In-flight list fetch; concurrent callers share this promise. */
+let fetchPromise = null;
 
 function abortFetchAddons() {
   fetchAbortController?.abort();
   fetchAbortController = null;
+  fetchPromise = null;
   fetchGeneration += 1;
 }
 
@@ -40,17 +43,32 @@ export const useStremioAddonsStore = create((set, get) => ({
   loading: false,
   error: null,
   mutating: false,
+  /** True after a list fetch settles (success or error) for the current session. */
+  hasLoaded: false,
 
   resetForSession: () => {
     abortFetchAddons();
-    set({ addons: [], loading: false, error: null, mutating: false });
+    set({ addons: [], loading: false, error: null, mutating: false, hasLoaded: false });
   },
 
-  fetchAddons: async () => {
+  /**
+   * Load installed addons. Concurrent callers share one in-flight request.
+   * Subsequent calls no-op once hasLoaded unless `{ force: true }`.
+   */
+  fetchAddons: async (options = {}) => {
+    const force = options.force === true;
     const apiKey = getApiKey();
     if (!apiKey) {
       abortFetchAddons();
-      set({ error: 'API key is missing', addons: [], loading: false });
+      set({ error: 'API key is missing', addons: [], loading: false, hasLoaded: false });
+      return;
+    }
+
+    if (!force && fetchPromise) {
+      return fetchPromise;
+    }
+
+    if (!force && get().hasLoaded) {
       return;
     }
 
@@ -60,30 +78,40 @@ export const useStremioAddonsStore = create((set, get) => ({
     fetchAbortController = controller;
 
     set({ loading: true, error: null });
-    try {
-      const res = await fetch('/api/stremio/addons', {
-        headers: authHeaders(apiKey),
-        signal: controller.signal,
-      });
-      if (generation !== fetchGeneration) return;
 
-      const { ok, data } = await readJsonFromResponse(res);
-      if (generation !== fetchGeneration) return;
-
-      if (!ok || data.success === false || data.error) {
-        set({
-          loading: false,
-          error: data.error || `Request failed: ${res.status}`,
-          addons: [],
+    fetchPromise = (async () => {
+      try {
+        const res = await fetch('/api/stremio/addons', {
+          headers: authHeaders(apiKey),
+          signal: controller.signal,
         });
-        return;
+        if (generation !== fetchGeneration) return;
+
+        const { ok, data } = await readJsonFromResponse(res);
+        if (generation !== fetchGeneration) return;
+
+        if (!ok || data.success === false || data.error) {
+          set({
+            loading: false,
+            error: data.error || `Request failed: ${res.status}`,
+            addons: [],
+            hasLoaded: true,
+          });
+          return;
+        }
+        set({ addons: data.addons || [], loading: false, error: null, hasLoaded: true });
+        retryPendingSearch();
+      } catch (error) {
+        if (error?.name === 'AbortError' || generation !== fetchGeneration) return;
+        set({ loading: false, error: 'Failed to load addons', addons: [], hasLoaded: true });
+      } finally {
+        if (generation === fetchGeneration) {
+          fetchPromise = null;
+        }
       }
-      set({ addons: data.addons || [], loading: false, error: null });
-      retryPendingSearch();
-    } catch (error) {
-      if (error?.name === 'AbortError' || generation !== fetchGeneration) return;
-      set({ loading: false, error: 'Failed to load addons', addons: [] });
-    }
+    })();
+
+    return fetchPromise;
   },
 
   addAddon: async (manifestUrl) => {
