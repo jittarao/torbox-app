@@ -381,8 +381,14 @@ export function sortStreams(streams) {
 }
 
 /**
- * Trigger a browser download for an http(s) URL.
- * Cross-origin hosts may ignore the download filename and use Content-Disposition instead.
+ * Trigger a browser download (or open) for an http(s) stream URL.
+ *
+ * Cross-origin hosts ignore the `download` attribute, so video URLs often play
+ * instead of saving. Always open in a new tab so the search page is preserved.
+ * Same-origin / attachment responses may still download via `download` + filename.
+ *
+ * Do not fetch-as-blob or proxy: stream files are often multi-GB and addon hosts
+ * rarely allow CORS.
  */
 export function triggerBrowserDownload(url, filename) {
   if (typeof url !== 'string' || !/^https?:\/\//i.test(url.trim())) return false;
@@ -390,6 +396,7 @@ export function triggerBrowserDownload(url, filename) {
 
   const a = document.createElement('a');
   a.href = url.trim();
+  a.target = '_blank';
   a.rel = 'noopener noreferrer';
   if (filename) {
     a.download = filename;
