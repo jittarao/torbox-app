@@ -14,6 +14,7 @@ import { useRssStore } from '@/store/rssStore';
 import { useDownloadsSelectionStore } from '@/store/downloadsSelectionStore';
 import { useSearchStore } from '@/store/searchStore';
 import { useStremioAddonsStore } from '@/store/stremioAddonsStore';
+import { useTmdbCredentialsStore } from '@/store/tmdbCredentialsStore';
 import { useDownloadsUiStore } from '@/store/downloadsUiStore';
 import { useDownloadsPlayerStore } from '@/store/downloadsPlayerStore';
 import { useFileInteractionStore } from '@/store/fileInteractionStore';
@@ -46,8 +47,10 @@ function fanOutApiKey(apiKey, prevApiKey) {
       useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
       useSearchStore.getState().resetForSession();
       useStremioAddonsStore.getState().resetForSession();
+      useTmdbCredentialsStore.getState().resetForSession();
       if (apiKey) {
         useStremioAddonsStore.getState().fetchAddons();
+        useTmdbCredentialsStore.getState().fetchStatus();
       }
       useDownloadsUiStore.getState().resetUi();
       useDownloadsPlayerStore.getState().closeAll();
@@ -57,6 +60,7 @@ function fanOutApiKey(apiKey, prevApiKey) {
       useDownloadsSelectionStore.getState().resetForApiKey(apiKey);
       if (apiKey) {
         useStremioAddonsStore.getState().fetchAddons();
+        useTmdbCredentialsStore.getState().fetchStatus();
       }
     } else {
       useDownloadsSelectionStore.getState().setApiKeyScope(apiKey);

@@ -1491,8 +1491,9 @@
     },
     "placeholderDownloads": "Search {itemType}…",
     "placeholderDownloadsShort": "Search…",
-    "placeholderSearch": "Enter a media ID (e.g. tt0111161 or anilist:16498)",
+    "placeholderSearch": "Title, IMDb id (tt…), or prefix:id (e.g. anilist:16498)",
     "recentSearches": "Recent Searches",
+    "removeSearch": "Remove from recent searches",
     "search": "Search",
     "searchDownloadsAria": "Search {itemType} or file names",
     "searchDownloadsHelpAnd": "Plus — matches only when every word appears (e.g. matrix+1999)",
@@ -1506,16 +1507,16 @@
     "streamFilters": "Stream filters",
     "validation": {
       "addonsLoading": "Loading your addons… try again in a moment.",
-      "empty": "Enter a media ID to search.",
-      "invalid": "Use an IMDb id (tt…), episode id (tt…:S:E), or prefix:id supported by your addons.",
+      "empty": "Enter a title or media ID to search.",
+      "invalid": "Use a movie/series title, IMDb id (tt…), episode id (tt…:S:E), or prefix:id supported by your addons.",
       "noAddons": "Install and enable at least one Stremio stream addon above.",
       "noMatchingAddons": "No enabled addon supports this media ID.",
       "unknownPrefix": "That ID prefix is not supported by your installed addons."
     }
   },
   "SearchPage": {
-    "backendRequired": "Search requires the TorBox Manager backend. Enable the backend to install Stremio addons and search by media ID.",
-    "subtitle": "Search streams from your Stremio addons by media ID and add torrents or NZBs to TorBox.",
+    "backendRequired": "Search requires the TorBox Manager backend. Enable the backend to install Stremio addons and search by title or media ID.",
+    "subtitle": "Search streams from your Stremio addons by title or media ID and add torrents or NZBs to TorBox.",
     "title": "Stream Search"
   },
   "SearchResults": {
@@ -1713,6 +1714,48 @@
       "copyLink": "Link copied to clipboard",
       "copyLinkFailed": "Failed to copy link"
     }
+  },
+  "TmdbKey": {
+    "confirmRemove": "Remove your saved TMDB API key?",
+    "docsLink": "Get a TMDB API key",
+    "errors": {
+      "removeFailed": "Failed to remove TMDB API key",
+      "saveFailed": "Failed to save TMDB API key"
+    },
+    "help": "Your key is encrypted and stored on the server. It is used only to look up movie and series titles for stream search.",
+    "keyTypeHint": "Use the API Key (v3) or the Read Access Token (v4) from your TMDB settings.",
+    "loading": "Loading…",
+    "placeholder": "TMDB API key (v3) or read access token",
+    "placeholderReplace": "Enter a new TMDB API key to replace",
+    "remove": "Remove",
+    "save": "Save",
+    "statusConfigured": "Configured — title search enabled",
+    "statusNotConfigured": "Not configured — paste a TMDB API key for title search",
+    "title": "TMDB API key",
+    "update": "Update"
+  },
+  "TmdbSearch": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "configureKeyHint": "Add a TMDB API key above to search by movie or series title.",
+    "episode": "Episode",
+    "episodeCount": "{count, plural, one {# episode} other {# episodes}}",
+    "errors": {
+      "apiKeyMissing": "TorBox API key is missing",
+      "seasonLoadFailed": "Failed to load episodes for this season",
+      "tvLoadFailed": "Failed to load seasons for this series"
+    },
+    "invalidKeyHint": "Your TMDB API key looks invalid. Update it above and try again.",
+    "noEpisodes": "No episodes available for this season",
+    "noResults": "No matching titles found",
+    "noSeasons": "No seasons available for this series",
+    "pickEpisode": "Choose an episode of {title}",
+    "searchEpisode": "Search streams",
+    "searchFailed": "Title search failed. Try again.",
+    "season": "Season",
+    "titleSuggestions": "Titles",
+    "typeMovie": "Movie",
+    "typeTv": "TV"
   },
   "TorrentOptions": {
     "allowZip": {

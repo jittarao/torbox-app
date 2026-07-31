@@ -91,8 +91,8 @@ function ActionButtons({ item, target, isUploading, isAdded, onCopyLink, onUploa
             isUploading
               ? 'cursor-not-allowed bg-primary-text/30 dark:bg-primary-text-dark/30'
               : isAdded
-                ? 'cursor-not-allowed bg-label-success-text/60 dark:bg-label-success-text-dark/60'
-                : 'bg-label-success-text hover:bg-label-success-text/90 dark:bg-label-success-text-dark dark:hover:bg-label-success-text-dark/90'
+                ? 'cursor-not-allowed bg-label-success-text/60 dark:bg-emerald-700/60'
+                : 'bg-label-success-text hover:bg-label-success-text/90 dark:bg-emerald-700 dark:hover:bg-emerald-600'
           }`}
         >
           {isUploading ? (

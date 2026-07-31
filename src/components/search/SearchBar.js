@@ -4,12 +4,24 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
 import { useStremioAddonsStore } from '@/store/stremioAddonsStore';
+import { useTmdbCredentialsStore } from '@/store/tmdbCredentialsStore';
+import { useSessionStore } from '@/store/sessionStore';
 import { useSearchFilterParams } from '@/hooks/useSearchFilterParams';
 import { MagnifyingGlass, Times, Filter } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 import Dropdown from '@/components/shared/Dropdown';
 import SearchBarDropdowns from './SearchBarDropdowns';
+import EpisodePicker from './EpisodePicker';
 import { collectInstalledPrefixes } from '@/utils/stremioMediaId';
+import {
+  classifySearchQuery,
+  enabledAddonsSupportTmdbPrefix,
+  isFullImdbId,
+  suggestionToHistoryEntry,
+  mediaTypeToStreamTypes,
+} from '@/utils/tmdbSearchQuery';
+import { getItem } from '@/utils/storage';
+import { readJsonFromResponse } from '@/utils/fetchResponse';
 import {
   RESOLUTION_OPTIONS,
   CODEC_OPTIONS,
@@ -24,6 +36,10 @@ const EXAMPLE_IDS = [
   { id: 'tt0944947:1:1', labelKey: 'examples.episode' },
   { id: 'anilist:16498', labelKey: 'examples.anime' },
 ];
+
+/** Trailing debounce for TMDB title suggestions — longer than typical inter-keystroke gaps. */
+const TITLE_SEARCH_DEBOUNCE_MS = 600;
+const MIN_FREE_TEXT_LEN = 2;
 
 function toDropdownOptions(presets, t) {
   return presets.map((opt) => ({
@@ -43,26 +59,51 @@ function FilterField({ label, children }) {
   );
 }
 
+function getApiKey() {
+  return useSessionStore.getState().apiKey || getItem('torboxApiKey');
+}
+
 export default function SearchBar() {
   const t = useTranslations('SearchBar');
+  const tTmdb = useTranslations('TmdbSearch');
   const [localQuery, setLocalQuery] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [titleResults, setTitleResults] = useState([]);
+  const [titleLoading, setTitleLoading] = useState(false);
+  const [titleHint, setTitleHint] = useState(null);
+  const [episodePick, setEpisodePick] = useState(null);
   const searchRef = useRef(null);
+  const titleAbortRef = useRef(null);
 
-  const { setQuery, clearResults, searchHistory, loadHistory, clearHistory, validationError } =
-    useSearchStore(
-      useShallow((s) => ({
-        setQuery: s.setQuery,
-        clearResults: s.clearResults,
-        searchHistory: s.searchHistory,
-        loadHistory: s.loadHistory,
-        clearHistory: s.clearHistory,
-        validationError: s.validationError,
-      }))
-    );
+  const {
+    setQuery,
+    clearResults,
+    searchHistory,
+    loadHistory,
+    clearHistory,
+    removeFromHistory,
+    validationError,
+    pendingEpisodePick,
+    clearPendingEpisodePick,
+  } = useSearchStore(
+    useShallow((s) => ({
+      setQuery: s.setQuery,
+      clearResults: s.clearResults,
+      searchHistory: s.searchHistory,
+      loadHistory: s.loadHistory,
+      clearHistory: s.clearHistory,
+      removeFromHistory: s.removeFromHistory,
+      validationError: s.validationError,
+      pendingEpisodePick: s.pendingEpisodePick,
+      clearPendingEpisodePick: s.clearPendingEpisodePick,
+    }))
+  );
 
   const addons = useStremioAddonsStore((s) => s.addons);
+  const tmdbConfigured = useTmdbCredentialsStore((s) => s.configured);
+  const tmdbHasLoaded = useTmdbCredentialsStore((s) => s.hasLoaded);
+
   const {
     resolution,
     codec,
@@ -104,22 +145,216 @@ export default function SearchBar() {
   }, [loadHistory]);
 
   useEffect(() => {
+    if (!pendingEpisodePick) return;
+    setEpisodePick(pendingEpisodePick);
+    setLocalQuery(pendingEpisodePick.title || pendingEpisodePick.streamId || '');
+    setShowHistory(false);
+    setShowSuggestions(false);
+    clearPendingEpisodePick();
+  }, [pendingEpisodePick, clearPendingEpisodePick]);
+
+  useEffect(() => {
+    const dismissOverlays = () => {
+      setShowHistory(false);
+      setShowSuggestions(false);
+      setEpisodePick(null);
+    };
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setShowHistory(false);
-        setShowSuggestions(false);
+        dismissOverlays();
       }
     };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') dismissOverlays();
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
+
+  // Debounced TMDB title search (free text) or find (full IMDb id)
+  useEffect(() => {
+    const kind = classifySearchQuery(localQuery);
+    titleAbortRef.current?.abort();
+    titleAbortRef.current = null;
+
+    const q = localQuery.trim();
+    const fullImdb = isFullImdbId(q);
+    const freeText = kind === 'free_text' && q.length >= MIN_FREE_TEXT_LEN;
+
+    if (!freeText && !fullImdb) {
+      setTitleResults([]);
+      setTitleLoading(false);
+      setTitleHint(null);
+      return;
+    }
+
+    if (tmdbHasLoaded && !tmdbConfigured) {
+      setTitleResults([]);
+      setTitleLoading(false);
+      // Free text prompts to configure; IMDb id has no suggestion path without a key
+      setTitleHint(freeText ? tTmdb('configureKeyHint') : null);
+      return;
+    }
+
+    if (!tmdbConfigured) {
+      setTitleResults([]);
+      setTitleLoading(false);
+      setTitleHint(null);
+      return;
+    }
+
+    setTitleHint(null);
+    const timer = setTimeout(async () => {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        setTitleLoading(false);
+        setTitleHint(tTmdb('configureKeyHint'));
+        return;
+      }
+
+      const controller = new AbortController();
+      titleAbortRef.current = controller;
+      setTitleLoading(true);
+
+      const allowTmdbFallback = enabledAddonsSupportTmdbPrefix(addons);
+
+      try {
+        if (fullImdb) {
+          const params = new URLSearchParams({ imdbId: q.toLowerCase() });
+          if (allowTmdbFallback) params.set('allowTmdbFallback', '1');
+
+          const res = await fetch(`/api/tmdb/find?${params}`, {
+            headers: { 'x-api-key': apiKey },
+            signal: controller.signal,
+          });
+          const { ok, data } = await readJsonFromResponse(res);
+          if (controller.signal.aborted) return;
+
+          if (data.code === 'TMDB_NOT_CONFIGURED' || data.code === 'TMDB_INVALID_KEY') {
+            setTitleResults([]);
+            setTitleHint(
+              data.code === 'TMDB_INVALID_KEY' ? tTmdb('invalidKeyHint') : tTmdb('configureKeyHint')
+            );
+            setTitleLoading(false);
+            return;
+          }
+
+          if (!ok || data.success === false || !data.result) {
+            setTitleResults([]);
+            // 404 / empty result: no hint; other failures mirror free-text searchFailed
+            const isMiss = res.status === 404 || (ok && data.success && !data.result);
+            setTitleHint(isMiss ? null : data.error || tTmdb('searchFailed'));
+            setTitleLoading(false);
+            return;
+          }
+
+          setTitleResults([data.result]);
+          setTitleHint(null);
+          setTitleLoading(false);
+          return;
+        }
+
+        const params = new URLSearchParams({ q });
+        if (allowTmdbFallback) params.set('allowTmdbFallback', '1');
+
+        const res = await fetch(`/api/tmdb/search?${params}`, {
+          headers: { 'x-api-key': apiKey },
+          signal: controller.signal,
+        });
+        const { ok, data } = await readJsonFromResponse(res);
+        if (controller.signal.aborted) return;
+
+        if (data.code === 'TMDB_NOT_CONFIGURED' || data.code === 'TMDB_INVALID_KEY') {
+          setTitleResults([]);
+          setTitleHint(
+            data.code === 'TMDB_INVALID_KEY' ? tTmdb('invalidKeyHint') : tTmdb('configureKeyHint')
+          );
+          setTitleLoading(false);
+          return;
+        }
+
+        if (!ok || data.success === false) {
+          setTitleResults([]);
+          setTitleHint(data.error || tTmdb('searchFailed'));
+          setTitleLoading(false);
+          return;
+        }
+
+        setTitleResults(Array.isArray(data.results) ? data.results : []);
+        setTitleHint(null);
+        setTitleLoading(false);
+      } catch (err) {
+        if (err?.name === 'AbortError') return;
+        setTitleResults([]);
+        setTitleHint(tTmdb('searchFailed'));
+        setTitleLoading(false);
+      }
+    }, TITLE_SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(timer);
+      titleAbortRef.current?.abort();
+      titleAbortRef.current = null;
+    };
+  }, [localQuery, tmdbConfigured, tmdbHasLoaded, addons, tTmdb]);
+
+  const runMediaIdSearch = (id, options = {}) => {
+    setLocalQuery(id);
+    setShowHistory(false);
+    setShowSuggestions(false);
+    setEpisodePick(null);
+    setTitleResults([]);
+    setTitleHint(null);
+    setQuery(id, options);
+  };
+
+  const handleSelectTitle = (item) => {
+    if (item.mediaType === 'tv') {
+      setLocalQuery(item.title || item.streamId || '');
+      setEpisodePick(item);
+      setShowHistory(false);
+      setShowSuggestions(false);
+      return;
+    }
+    const meta = suggestionToHistoryEntry(item);
+    runMediaIdSearch(item.streamId, {
+      types: mediaTypeToStreamTypes(item.mediaType) || ['movie'],
+      historyMeta: meta,
+    });
+  };
 
   const handleSearch = () => {
     const q = localQuery.trim();
     if (!q) return;
-    setShowHistory(false);
-    setShowSuggestions(false);
-    setQuery(q);
+
+    const kind = classifySearchQuery(q);
+    if (kind === 'media_id') {
+      if (isFullImdbId(q) && titleResults.length === 1 && !titleLoading) {
+        handleSelectTitle(titleResults[0]);
+        return;
+      }
+      setShowHistory(false);
+      setShowSuggestions(false);
+      setEpisodePick(null);
+      setQuery(q);
+      return;
+    }
+
+    // Free text: select sole suggestion, else keep dropdown open
+    if (titleResults.length === 1 && !titleLoading) {
+      handleSelectTitle(titleResults[0]);
+      return;
+    }
+
+    setShowHistory(true);
+    setShowSuggestions(true);
+    if (tmdbHasLoaded && !tmdbConfigured) {
+      setTitleHint(tTmdb('configureKeyHint'));
+    }
   };
 
   const validationMessage = (() => {
@@ -140,6 +375,11 @@ export default function SearchBar() {
     [resolution, codec, hdr, language, minSizeGb, maxSizeGb].filter(Boolean).length +
     streamTypes.length;
 
+  const queryKind = classifySearchQuery(localQuery);
+  const showTitleDropdown =
+    (queryKind === 'free_text' && localQuery.trim().length >= MIN_FREE_TEXT_LEN) ||
+    (tmdbConfigured && isFullImdbId(localQuery));
+
   return (
     <section
       className="relative z-20 rounded-lg border border-border/70 bg-surface dark:border-border-dark/70 dark:bg-surface-dark"
@@ -154,6 +394,7 @@ export default function SearchBar() {
                 value={localQuery}
                 onChange={(e) => {
                   setLocalQuery(e.target.value);
+                  setEpisodePick(null);
                   setShowHistory(true);
                   setShowSuggestions(true);
                 }}
@@ -162,6 +403,7 @@ export default function SearchBar() {
                   setShowSuggestions(true);
                 }}
                 onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) return;
                   if (e.key === 'Enter') handleSearch();
                 }}
                 placeholder={t('placeholderSearch')}
@@ -177,6 +419,9 @@ export default function SearchBar() {
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-primary-text/40 hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/40 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
                   onClick={() => {
                     setLocalQuery('');
+                    setEpisodePick(null);
+                    setTitleResults([]);
+                    setTitleHint(null);
                     clearResults();
                   }}
                   aria-label={t('clearSearch')}
@@ -194,25 +439,56 @@ export default function SearchBar() {
             </button>
           </div>
 
-          <SearchBarDropdowns
-            showHistory={showHistory && searchHistory.length > 0}
-            showSuggestions={showSuggestions}
-            searchHistory={searchHistory}
-            suggestions={suggestions}
-            onSelectHistory={(item) => {
-              setLocalQuery(item);
-              setShowHistory(false);
-              setShowSuggestions(false);
-              setQuery(item);
-            }}
-            onSelectSuggestion={(id) => {
-              setLocalQuery(id);
-              setShowHistory(false);
-              setShowSuggestions(false);
-              setQuery(id);
-            }}
-            onClearHistory={clearHistory}
-          />
+          {!episodePick ? (
+            <SearchBarDropdowns
+              showHistory={showHistory && searchHistory.length > 0}
+              showSuggestions={showSuggestions && !showTitleDropdown}
+              searchHistory={searchHistory}
+              suggestions={suggestions}
+              titleResults={showSuggestions && showTitleDropdown ? titleResults : []}
+              titleLoading={showSuggestions && showTitleDropdown && titleLoading}
+              titleHint={showSuggestions && showTitleDropdown ? titleHint : null}
+              tmdbConfigured={tmdbConfigured}
+              onSelectHistory={(entry) => {
+                if (tmdbConfigured && entry?.kind === 'tmdb' && entry.mediaType === 'tv') {
+                  setLocalQuery(entry.title || entry.streamId || '');
+                  setEpisodePick(entry);
+                  setShowHistory(false);
+                  setShowSuggestions(false);
+                  return;
+                }
+                if (tmdbConfigured && entry?.kind === 'tmdb' && entry.mediaType === 'movie') {
+                  runMediaIdSearch(entry.streamId, {
+                    types: ['movie'],
+                    historyMeta: entry,
+                  });
+                  return;
+                }
+                const streamId = typeof entry === 'string' ? entry : entry?.streamId;
+                if (streamId) runMediaIdSearch(streamId);
+              }}
+              onSelectSuggestion={(id) => {
+                runMediaIdSearch(id);
+              }}
+              onSelectTitle={handleSelectTitle}
+              onClearHistory={clearHistory}
+              onRemoveHistory={removeFromHistory}
+            />
+          ) : null}
+
+          {episodePick ? (
+            <EpisodePicker
+              suggestion={episodePick}
+              onConfirm={(streamId, suggestion) => {
+                setEpisodePick(null);
+                runMediaIdSearch(streamId, {
+                  types: ['series'],
+                  historyMeta: suggestionToHistoryEntry(suggestion),
+                });
+              }}
+              onCancel={() => setEpisodePick(null)}
+            />
+          ) : null}
         </div>
 
         {validationMessage && (

@@ -18,6 +18,7 @@ describe('stremioMediaId', () => {
     expect(inferTypesForMediaId('tt0111161')).toEqual(['movie', 'series']);
     expect(inferTypesForMediaId('tt0944947:1:1')).toEqual(['series']);
     expect(inferTypesForMediaId('anilist:16498')).toEqual(['anime']);
+    expect(inferTypesForMediaId('tmdb:1399:1:1')).toEqual(['series']);
   });
 
   test('addonSupportsQuery respects types and prefixes', () => {
