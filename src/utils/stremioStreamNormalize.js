@@ -413,58 +413,43 @@ export function triggerBrowserDownload(url, filename) {
 /**
  * Hit an http(s) Stremio stream URL without opening a tab or triggering a download.
  *
- * Many TorBox-oriented addons add the video to the user's account when this URL is
- * requested, then redirect to a generated download link. We only need the request
- * itself; the opaque no-cors response is ignored.
- *
- * Races the fetch against a short timeout, then aborts. Opaque no-cors responses
- * often expose a null body, so we cannot reliably cancel via `body.cancel()` and
- * must abort the request to avoid buffering multi-GB media.
- *
- * Success is optimistic — opaque responses cannot be inspected.
+ * Browser-direct fetch cannot do this safely: `redirect: 'follow'` pulls the CDN
+ * video body (tens of MB before abort), and opaque `no-cors` responses often
+ * cannot cancel that transfer. Instead we POST to a same-origin proxy that uses
+ * `redirect: 'manual'` and cancels any body after headers — the addon add happens
+ * on the first hop; the download redirect is never followed.
  *
  * @param {string} url
+ * @param {string} apiKey
  * @returns {Promise<true>}
  */
-export async function triggerSilentStreamAdd(url) {
+export async function triggerSilentStreamAdd(url, apiKey) {
   const trimmed = typeof url === 'string' ? url.trim() : '';
   if (!/^https?:\/\//i.test(trimmed)) {
     throw new Error('Invalid stream URL');
   }
+  if (!apiKey) {
+    throw new Error('API key required');
+  }
 
-  const controller = new AbortController();
-  const fetchPromise = fetch(trimmed, {
-    method: 'GET',
-    mode: 'no-cors',
-    redirect: 'follow',
-    credentials: 'omit',
-    cache: 'no-store',
-    referrerPolicy: 'no-referrer',
-    signal: controller.signal,
-  }).then(async (response) => {
-    try {
-      await response.body?.cancel?.();
-    } catch {
-      // ignore cancel errors on opaque / already-closed bodies
-    }
-    return response;
+  const res = await fetch('/api/stremio/silent-add', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({ url: trimmed }),
   });
 
-  const settled = await Promise.race([
-    fetchPromise
-      .then(() => 'ok')
-      .catch((err) => {
-        if (err?.name === 'AbortError') return 'aborted';
-        throw err;
-      }),
-    new Promise((resolve) => {
-      setTimeout(() => resolve('timeout'), 3_000);
-    }),
-  ]);
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    // ignore parse errors; fall through to status check
+  }
 
-  if (settled === 'timeout') {
-    controller.abort();
-    await fetchPromise.catch(() => {});
+  if (!res.ok || !data?.success) {
+    throw new Error(data?.error || `Silent add failed (${res.status})`);
   }
 
   return true;

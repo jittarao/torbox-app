@@ -793,13 +793,6 @@ export function setupStremioAddonsRoutes(app, backend) {
 
         const streams = Array.isArray(response.json.streams) ? response.json.streams : [];
 
-        logger.info('Stremio stream fetch ok', {
-          addonId: addonMeta.addon_id,
-          type,
-          streamCount: streams.length,
-          durationMs: Date.now() - started,
-        });
-
         res.json({
           success: true,
           addon_id: addonMeta.addon_id,
