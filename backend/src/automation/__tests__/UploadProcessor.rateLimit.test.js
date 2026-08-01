@@ -371,6 +371,73 @@ describe('UploadProcessor TorBox rate-limit headers', () => {
     });
   });
 
+  test('handleIdempotentDuplicate after connection soft-defer counts as uncached', async () => {
+    await withUserDb(async (userDb) => {
+      const processor = new UploadProcessor(env.userDatabaseManager, {
+        updateUploadCounters: async () => {},
+      });
+
+      userDb.db
+        .prepare(
+          `
+          INSERT INTO uploads (type, upload_type, url, name, status, queue_order, error_message)
+          VALUES (
+            'torrent',
+            'magnet',
+            'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef02',
+            'timeout-dup',
+            'queued',
+            0,
+            'TorBox create timed out or failed to connect. Will retry shortly.'
+          )
+        `
+        )
+        .run();
+
+      const uploadId = userDb.db.prepare('SELECT last_insert_rowid() as id').get().id;
+
+      const apiClient = {
+        getTorrents: async () => [
+          {
+            id: 1001,
+            hash: 'abcdef0123456789abcdef0123456789abcdef02',
+            auth_id: 'torbox-auth',
+            name: 'timeout-dup',
+          },
+        ],
+      };
+
+      await processor.handleIdempotentDuplicate(
+        {
+          id: uploadId,
+          authId: env.authId,
+          type: 'torrent',
+          upload_type: 'magnet',
+          url: 'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef02',
+          name: 'timeout-dup',
+          error_message: 'TorBox create timed out or failed to connect. Will retry shortly.',
+        },
+        userDb,
+        'torrent',
+        {
+          status: 200,
+          data: {
+            success: false,
+            error: 'DUPLICATE_ITEM',
+            detail: 'Download already queued.',
+          },
+        },
+        apiClient
+      );
+
+      const attempts = userDb.db
+        .prepare('SELECT is_cached FROM upload_attempts WHERE upload_id = ?')
+        .all(uploadId);
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0].is_cached).toBe(0);
+    });
+  });
+
   test('429 responses are not logged to upload_attempts', async () => {
     await withUserDb(async (userDb) => {
       const processor = new UploadProcessor(env.userDatabaseManager, {

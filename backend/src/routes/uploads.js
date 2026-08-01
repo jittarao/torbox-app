@@ -18,7 +18,10 @@ import {
   UPLOAD_RETRY_SELECT_FIELDS,
 } from '../automation/uploadDuplicateResolve.js';
 import { isConnectionError } from '../utils/torboxErrors.js';
-import { getUploadDeferralStatistics } from '../automation/uploadDeferral.js';
+import {
+  getUploadDeferralStatistics,
+  alignCreateQuotaWindowForBlockedGate,
+} from '../automation/uploadDeferral.js';
 import { attachCreateWasCached } from '../automation/uploadAttemptLookup.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -896,7 +899,10 @@ export function setupUploadsRoutes(app, backend) {
           used: quota.used,
           resetAt: quota.resetAt,
           known: quota.known,
-          window: quota.window ?? null,
+          window: alignCreateQuotaWindowForBlockedGate(quota.window ?? null, {
+            remaining: quota.remaining,
+            deferredCount: deferral.deferredCount,
+          }),
           deferredCount: deferral.deferredCount,
           deferredUntil: deferral.deferredUntil,
           pausedCount: deferral.pausedCount,

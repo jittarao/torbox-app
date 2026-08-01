@@ -3,6 +3,7 @@ import {
   getUploadDeferralStatistics,
   inferRateLimitStateFromQueue,
   getCreateQuotaWindowUsage,
+  alignCreateQuotaWindowForBlockedGate,
   isTransientDeferralMessage,
   syncRateLimitDeferrals,
   syncAllRateLimitDeferrals,
@@ -33,6 +34,24 @@ describe('uploadDeferral', () => {
     ).toBe(true);
     expect(isTransientDeferralMessage('File not found')).toBe(false);
     expect(isTransientDeferralMessage(null)).toBe(false);
+  });
+
+  test('alignCreateQuotaWindowForBlockedGate clamps used when TorBox gate is blocked', () => {
+    const window = {
+      uncachedUsed: 58,
+      uncachedLimit: 60,
+      uncachedResetAt: '2026-08-01 08:29:40',
+    };
+    expect(
+      alignCreateQuotaWindowForBlockedGate(window, { remaining: 0, deferredCount: 37 })
+    ).toEqual({
+      uncachedUsed: 60,
+      uncachedLimit: 60,
+      uncachedResetAt: '2026-08-01 08:29:40',
+    });
+    expect(
+      alignCreateQuotaWindowForBlockedGate(window, { remaining: 2, deferredCount: 0 })
+    ).toEqual(window);
   });
 
   test('getUploadDeferralStatistics reports queued items while TorBox quota is blocked', async () => {

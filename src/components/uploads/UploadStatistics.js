@@ -97,8 +97,11 @@ function getDisplayedBudgetState(type) {
   return { pct: 0, isAtLimit: false, isApproaching: false, showBar: false, used: null };
 }
 
-/** At-limit if the displayed budget is exhausted, or live headers report remaining === 0. */
+/** At-limit if deferred for hourly quota, live remaining is 0, or displayed budget is exhausted. */
 function typeIsAtLimit(type) {
+  if (type.deferredCount > 0) {
+    return true;
+  }
   if (isUncachedLiveQuota(type) && type.remaining != null && type.remaining <= 0) {
     return true;
   }
