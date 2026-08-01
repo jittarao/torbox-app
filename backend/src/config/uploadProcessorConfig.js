@@ -21,6 +21,30 @@ export const CREATE_UPLOAD_TIMEOUT_MS = parsePositiveInt(
 );
 
 /**
+ * Short per-upload cool-down after a single create timeout / connection blip.
+ * Does not pause sibling queued uploads of the same type.
+ */
+export const UPLOAD_CONNECTION_SOFT_DEFER_MS = parsePositiveInt(
+  process.env.UPLOAD_CONNECTION_SOFT_DEFER_MS,
+  30 * 1000
+);
+
+/**
+ * Consecutive create connection failures (per user+type) before pausing the whole type.
+ * A single TorBox timeout must not mark the platform unavailable for 15 minutes.
+ */
+export const UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE = parsePositiveInt(
+  process.env.UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
+  3
+);
+
+/** Type-wide pause after sustained TorBox unreachability (ms). */
+export const UPLOAD_CONNECTION_DEFER_MS = parsePositiveInt(
+  process.env.UPLOAD_CONNECTION_DEFER_MS,
+  15 * 60 * 1000
+);
+
+/**
  * Fallback wait (ms) when TorBox blocks creates but response headers omit reset/retry timing.
  * Used for proactive gating, 429 deferral, and orphan block expiry (remaining=0 without reset).
  */

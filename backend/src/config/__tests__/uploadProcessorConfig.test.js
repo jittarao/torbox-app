@@ -28,11 +28,17 @@ describe('uploadProcessorConfig', () => {
     delete process.env.UPLOAD_MAX_WORK_PER_DRAIN;
     delete process.env.CREATE_UPLOAD_TIMEOUT_MS;
     delete process.env.UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS;
+    delete process.env.UPLOAD_CONNECTION_SOFT_DEFER_MS;
+    delete process.env.UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE;
+    delete process.env.UPLOAD_CONNECTION_DEFER_MS;
     const mod = await import('../uploadProcessorConfig.js?t=' + Date.now());
     expect(mod.UPLOAD_BATCH_FETCH_SIZE).toBe(50);
     expect(mod.UPLOAD_MAX_WORK_PER_DRAIN).toBe(25);
     expect(mod.CREATE_UPLOAD_TIMEOUT_MS).toBe(30000);
     expect(mod.UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS).toBe(5 * 60 * 1000);
+    expect(mod.UPLOAD_CONNECTION_SOFT_DEFER_MS).toBe(30 * 1000);
+    expect(mod.UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE).toBe(3);
+    expect(mod.UPLOAD_CONNECTION_DEFER_MS).toBe(15 * 60 * 1000);
   });
 
   test('falls back to defaults for non-positive values', async () => {

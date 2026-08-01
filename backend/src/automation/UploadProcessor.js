@@ -34,6 +34,9 @@ import {
   UPLOAD_BATCH_FETCH_SIZE,
   UPLOAD_MAX_WORK_PER_DRAIN,
   UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
+  UPLOAD_CONNECTION_SOFT_DEFER_MS,
+  UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
+  UPLOAD_CONNECTION_DEFER_MS,
 } from '../config/uploadProcessorConfig.js';
 import {
   syncAllRateLimitDeferrals,
@@ -44,6 +47,7 @@ import {
   RATE_LIMIT_DEFERRAL_MESSAGE,
   UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
   CONNECTION_DEFERRAL_MESSAGE,
+  CONNECTION_SOFT_DEFERRAL_MESSAGE,
   TRANSIENT_TORBOX_DEFERRAL_MESSAGE,
   resumeAtSqlFromMs,
   TORBOX_UNCACHED_CREATE_LIMIT,
@@ -100,7 +104,9 @@ class TypeQueueBuffer {
 }
 const INITIAL_BACKOFF_MS = 30000; // 30 seconds
 const MAX_BACKOFF_MS = 300000; // 5 minutes
-const CONNECTION_DEFER_MS = parseInt(process.env.UPLOAD_CONNECTION_DEFER_MS || '900000', 10); // 15 min
+const CONNECTION_DEFER_MS = UPLOAD_CONNECTION_DEFER_MS;
+const CONNECTION_SOFT_DEFER_MS = UPLOAD_CONNECTION_SOFT_DEFER_MS;
+const CONNECTION_STRIKES_BEFORE_PAUSE = UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE;
 const CLEANUP_RETENTION_DAYS = 7;
 const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes - if processing longer, consider stuck
 const API_CLIENT_CACHE_MAX = parseInt(process.env.UPLOAD_API_CLIENT_CACHE_MAX || '300', 10);
@@ -150,6 +156,9 @@ class UploadProcessor {
 
     /** @type {Map<string, Record<string, import('../config/torboxRateLimitHeaders.js').RateLimitState>>} */
     this._rateLimitByUser = new Map();
+
+    /** @type {Map<string, number>} Consecutive create connection failures keyed by authId:type. */
+    this._connectionStrikesByUserType = new Map();
   }
 
   /**
@@ -821,6 +830,88 @@ class UploadProcessor {
   }
 
   /**
+   * Soft-defer a single upload after a brief create timeout/connection blip.
+   * Sibling queue items keep processing — one slow create must not pause the type.
+   * @param {Object} upload
+   * @param {Object} userDb
+   * @param {string} type
+   * @param {Error} [error]
+   * @returns {Promise<boolean>}
+   */
+  async handleSoftConnectionDeferral(upload, userDb, type, error = null) {
+    const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + CONNECTION_SOFT_DEFER_MS));
+
+    logger.warn('TorBox create connection blip, soft-deferring upload', {
+      uploadId: upload.id,
+      type,
+      waitTimeMs: CONNECTION_SOFT_DEFER_MS,
+      nextAttemptAt,
+      error: error?.message,
+      errorCode: error?.code,
+    });
+
+    userDb.db
+      .prepare(
+        `
+        UPDATE uploads
+        SET status = 'queued',
+            error_message = ?,
+            next_attempt_at = ?,
+            last_processed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+      )
+      .run(CONNECTION_SOFT_DEFERRAL_MESSAGE, nextAttemptAt, upload.id);
+
+    await this.masterDatabase.updateUploadCounters(upload.authId, userDb);
+    return false;
+  }
+
+  _connectionStrikeKey(authId, type) {
+    return `${authId}:${type}`;
+  }
+
+  clearConnectionFailures(authId, type) {
+    if (!authId || !type) return;
+    this._connectionStrikesByUserType.delete(this._connectionStrikeKey(authId, type));
+  }
+
+  /**
+   * Record a create connection failure. Returns true when the type should hard-pause.
+   * @param {string} authId
+   * @param {string} type
+   * @returns {boolean}
+   */
+  noteConnectionFailure(authId, type) {
+    if (!authId || !type) return true;
+    const key = this._connectionStrikeKey(authId, type);
+    const strikes = (this._connectionStrikesByUserType.get(key) ?? 0) + 1;
+    this._connectionStrikesByUserType.set(key, strikes);
+    return strikes >= CONNECTION_STRIKES_BEFORE_PAUSE;
+  }
+
+  /**
+   * Soft-defer by default; escalate to type-wide outage pause after consecutive failures.
+   * @param {Object} upload
+   * @param {Object} userDb
+   * @param {string} type
+   * @param {Error} [error]
+   * @returns {Promise<{ stopTypeDrain: boolean }>}
+   */
+  async deferForConnectionError(upload, userDb, type, error = null) {
+    const escalate = this.noteConnectionFailure(upload.authId, type);
+    if (escalate) {
+      this.clearConnectionFailures(upload.authId, type);
+      await this.handleConnectionDeferral(upload, userDb, type, error);
+      return { stopTypeDrain: true };
+    }
+
+    await this.handleSoftConnectionDeferral(upload, userDb, type, error);
+    return { stopTypeDrain: false };
+  }
+
+  /**
    * Handle TorBox transient "queued but failed" response.
    * TorBox sometimes returns `success: false` with detail "Torrent Queued Successfully"
    * when the upload was accepted but not yet fully processed. Defer and retry with
@@ -1225,12 +1316,23 @@ class UploadProcessor {
    * @param {string} type - Upload type
    * @param {Error} error - Error object
    * @param {string} originalStatus - Original status before processing started (optional, defaults to upload.status)
+   * @returns {Promise<{ stopTypeDrain: boolean }|void>}
    */
   async handleFailedUpload(upload, userDb, type, error, originalStatus = null) {
     const { id } = upload;
 
     const isRateLimit = this.isRateLimitError(error);
     const isConnection = isConnectionError(error);
+
+    if (isConnection) {
+      logger.warn('TorBox connection error during upload', {
+        uploadId: id,
+        type,
+        message: error.message,
+        code: error.code,
+      });
+      return this.deferForConnectionError(upload, userDb, type, error);
+    }
 
     // Rate-limit attempts are not logged — they are retried after deferral.
     if (error.response && !isRateLimit) {
@@ -1255,19 +1357,12 @@ class UploadProcessor {
         }),
         message: error.message,
       });
-    } else if (isConnection) {
-      logger.warn('TorBox connection error during upload', {
-        uploadId: id,
-        type,
-        message: error.message,
-        code: error.code,
-      });
     }
 
     const isNonRetryable = this.isNonRetryableError(error);
-    // Only defer (and call TorBox again later) for rate limits and platform outages.
+    // Only defer (and call TorBox again later) for rate limits.
     // All other API failures get a single createtorrent attempt; use manual Retry to try again.
-    const shouldDefer = isConnection || isRateLimit;
+    const shouldDefer = isRateLimit;
     const finalRetryCount = shouldDefer
       ? (upload.retry_count ?? 0)
       : Math.max(1, (upload.retry_count ?? 0) + 1);
@@ -1276,18 +1371,16 @@ class UploadProcessor {
     const rateLimitDelay = isRateLimit
       ? this.calculateRateLimitDelay(error, upload.authId, type, userDb)
       : null;
-    const deferMs = isConnection ? CONNECTION_DEFER_MS : isRateLimit ? rateLimitDelay.waitMs : 0;
+    const deferMs = isRateLimit ? rateLimitDelay.waitMs : 0;
 
     const nextAttemptAt =
       deferMs > 0 ? this.formatDateForSQL(new Date(Date.now() + deferMs)) : null;
 
-    const deferralMessage = isConnection
-      ? CONNECTION_DEFERRAL_MESSAGE
-      : isRateLimit
-        ? rateLimitDelay?.uncached
-          ? UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE
-          : RATE_LIMIT_DEFERRAL_MESSAGE
-        : null;
+    const deferralMessage = isRateLimit
+      ? rateLimitDelay?.uncached
+        ? UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE
+        : RATE_LIMIT_DEFERRAL_MESSAGE
+      : null;
     const userFriendlyError = shouldDefer
       ? deferralMessage
       : this.createUserFriendlyError(error, isRateLimit);
@@ -1308,20 +1401,8 @@ class UploadProcessor {
       )
       .run(finalStatus, userFriendlyError, finalRetryCount, nextAttemptAt, id);
 
-    // TorBox 429/connection: pause siblings so we do not walk the queue one item per drain.
-    if (isConnection && nextAttemptAt) {
-      const deferredCount = deferQueuedUploadSiblings(userDb, type, id, nextAttemptAt, {
-        siblingErrorMessage: CONNECTION_DEFERRAL_MESSAGE,
-      });
-      if (deferredCount > 0) {
-        logger.debug('Deferred other queued uploads due to TorBox backoff', {
-          type,
-          reason: 'connection_error',
-          deferredCount,
-          nextAttemptAt,
-        });
-      }
-    } else if (isRateLimit && nextAttemptAt) {
+    // TorBox 429: pause siblings so we do not walk the queue one item per drain.
+    if (isRateLimit && nextAttemptAt) {
       const deferredCount = deferQueuedUploadSiblings(userDb, type, id, nextAttemptAt, {
         siblingErrorMessage: deferralMessage,
       });
@@ -1342,14 +1423,7 @@ class UploadProcessor {
     }
 
     // Log appropriate message (include TorBox response in rate-limit log so prod sees it in one place)
-    if (isConnection) {
-      logger.warn('TorBox unavailable, will retry later', {
-        uploadId: id,
-        type,
-        waitTimeMs: deferMs,
-        error: error.message,
-      });
-    } else if (isRateLimit) {
+    if (isRateLimit) {
       logger.warn('Rate limit hit, will retry later', {
         uploadId: id,
         type,
@@ -1430,8 +1504,13 @@ class UploadProcessor {
         response = await this.makeApiRequest(apiClient, endpoint, formData);
       } catch (apiError) {
         if (isConnectionError(apiError)) {
-          await this.handleConnectionDeferral(upload, userDb, type, apiError);
-          return uploadProcessResult(false, true);
+          const { stopTypeDrain } = await this.deferForConnectionError(
+            upload,
+            userDb,
+            type,
+            apiError
+          );
+          return uploadProcessResult(false, stopTypeDrain);
         }
         throw apiError;
       }
@@ -1442,6 +1521,7 @@ class UploadProcessor {
 
       // Duplicate submissions mean TorBox already has this item — treat as success.
       if (isTorboxDuplicateUploadResponse(response)) {
+        this.clearConnectionFailures(upload.authId, type);
         const duplicateOk = await this.handleIdempotentDuplicate(
           upload,
           userDb,
@@ -1458,7 +1538,7 @@ class UploadProcessor {
       // TorBox can return HTTP 200 with { success: false, error, detail } when the torrent was not created.
       if (isTorboxUploadApiFailure(response, type)) {
         if (isTorboxOutageResponse(response)) {
-          await this.handleConnectionDeferral(
+          const { stopTypeDrain } = await this.deferForConnectionError(
             upload,
             userDb,
             type,
@@ -1467,7 +1547,7 @@ class UploadProcessor {
               response,
             })
           );
-          return uploadProcessResult(false, true);
+          return uploadProcessResult(false, stopTypeDrain);
         }
 
         // TorBox may return success:false with contradictory detail like "Torrent Queued Successfully" —
@@ -1515,6 +1595,7 @@ class UploadProcessor {
       // since the upload already succeeded on TorBox
       try {
         this.handleSuccessfulUpload(upload, userDb, type, response);
+        this.clearConnectionFailures(upload.authId, type);
         const stopForHeaders = this.isTypeRateLimitBlocked(upload.authId, type, userDb);
         const stopForUncached = this.isUncachedCreateQuotaExhausted(userDb, type);
         if (stopForHeaders || stopForUncached) {
@@ -1767,8 +1848,14 @@ class UploadProcessor {
 
       // Handle failure (including auth errors on retry)
       // This catch block only handles errors from makeApiRequest, not from handleSuccessfulUpload
-      await this.handleFailedUpload(upload, userDb, type, error, originalStatusValue);
-      const stopTypeDrain = this.isRateLimitError(error) || isConnectionError(error);
+      const failureResult = await this.handleFailedUpload(
+        upload,
+        userDb,
+        type,
+        error,
+        originalStatusValue
+      );
+      const stopTypeDrain = failureResult?.stopTypeDrain ?? this.isRateLimitError(error);
       return uploadProcessResult(false, stopTypeDrain);
     }
   }
