@@ -240,6 +240,28 @@ export function formatCreateQuotaWindowForApi(usage) {
 }
 
 /**
+ * When TorBox headers/queue say the uncached gate is blocked, clamp displayed window usage
+ * to the limit so the UI does not claim spare slots (durable counts can lag timeouts).
+ * @param {{ uncachedUsed?: number, uncachedLimit?: number, uncachedResetAt?: string|null }|null|undefined} window
+ * @param {{ remaining?: number|null, deferredCount?: number }} gate
+ */
+export function alignCreateQuotaWindowForBlockedGate(window, gate = {}) {
+  if (window == null || typeof window !== 'object') {
+    return window;
+  }
+  const blocked = gate.remaining === 0 || (gate.deferredCount ?? 0) > 0;
+  if (!blocked) {
+    return window;
+  }
+  const limit = window.uncachedLimit ?? TORBOX_UNCACHED_CREATE_LIMIT;
+  const used = window.uncachedUsed ?? 0;
+  if (used >= limit) {
+    return window;
+  }
+  return { ...window, uncachedUsed: limit };
+}
+
+/**
  * Keep queued upload deferrals aligned with uncached TorBox rate-limit state.
  * @param {Object} userDb
  * @param {string} type

@@ -1032,6 +1032,13 @@ class UploadProcessor {
     const { id } = upload;
     const data = response?.data && typeof response.data === 'object' ? response.data : {};
 
+    // Timeout/connection soft-defer races: TorBox often accepted the create before our
+    // client timed out. The retry then hits DUPLICATE_ITEM — count that as uncached so
+    // the durable hourly budget does not lag TorBox's real usage.
+    const countDuplicateAsUncached =
+      upload.error_message === CONNECTION_SOFT_DEFERRAL_MESSAGE ||
+      upload.error_message === CONNECTION_DEFERRAL_MESSAGE;
+
     this.logUploadAttempt(
       userDb,
       id,
@@ -1040,7 +1047,7 @@ class UploadProcessor {
       true,
       data.error ?? 'DUPLICATE_ITEM',
       data.detail ?? null,
-      true
+      !countDuplicateAsUncached
     );
 
     logger.info('TorBox reported duplicate upload; resolving existing resource', {
