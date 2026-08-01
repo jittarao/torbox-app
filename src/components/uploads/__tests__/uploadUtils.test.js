@@ -22,6 +22,11 @@ describe('upload deferral helpers', () => {
     expect(isTransientDeferralMessage('TorBox API unavailable. Will retry automatically.')).toBe(
       true
     );
+    expect(
+      isTransientDeferralMessage(
+        'TorBox create timed out or failed to connect. Will retry shortly.'
+      )
+    ).toBe(true);
     expect(isTransientDeferralMessage('Permanent failure')).toBe(false);
   });
 

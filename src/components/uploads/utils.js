@@ -5,6 +5,8 @@ import { timeAgo } from '@/components/downloads/utils/formatters';
 export const UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE =
   'Uncached rate limit reached. Will retry automatically.';
 export const CONNECTION_DEFERRAL_MESSAGE = 'TorBox API unavailable. Will retry automatically.';
+export const CONNECTION_SOFT_DEFERRAL_MESSAGE =
+  'TorBox create timed out or failed to connect. Will retry shortly.';
 export const EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE =
   'Rate limit reached. Will retry automatically.';
 export const TRANSIENT_TORBOX_DEFERRAL_MESSAGE =
@@ -13,6 +15,7 @@ export const TRANSIENT_TORBOX_DEFERRAL_MESSAGE =
 const TRANSIENT_DEFERRAL_MESSAGES = [
   UNCACHED_RATE_LIMIT_DEFERRAL_MESSAGE,
   CONNECTION_DEFERRAL_MESSAGE,
+  CONNECTION_SOFT_DEFERRAL_MESSAGE,
   EXTERNAL_TORBOX_RATE_LIMIT_DEFERRAL_MESSAGE,
   TRANSIENT_TORBOX_DEFERRAL_MESSAGE,
 ];

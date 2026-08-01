@@ -7,6 +7,9 @@ import {
   UPLOAD_BATCH_FETCH_SIZE,
   UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
   UPLOAD_MAX_WORK_PER_DRAIN,
+  UPLOAD_CONNECTION_SOFT_DEFER_MS,
+  UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
+  UPLOAD_CONNECTION_DEFER_MS,
 } from '../../config/uploadProcessorConfig.js';
 
 /**
@@ -51,6 +54,9 @@ export function setupConfigRoutes(router, backend) {
           max_work_per_drain: UPLOAD_MAX_WORK_PER_DRAIN,
           create_upload_timeout_ms: CREATE_UPLOAD_TIMEOUT_MS,
           external_rate_limit_retry_ms: UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
+          connection_soft_defer_ms: UPLOAD_CONNECTION_SOFT_DEFER_MS,
+          connection_strikes_before_pause: UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
+          connection_defer_ms: UPLOAD_CONNECTION_DEFER_MS,
           rate_limit_source: 'torbox_headers',
         },
         frontend_url: process.env.FRONTEND_URL || 'http://localhost:3000',

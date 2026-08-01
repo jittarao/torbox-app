@@ -97,13 +97,15 @@ describe('UploadProcessor outage handling', () => {
     expect(result.stopTypeDrain).toBe(false);
   });
 
-  test('processUpload stops type drain on request timeout', async () => {
+  test('first create timeout soft-defers only that upload and keeps draining', async () => {
     const userDb = createRecordingDb();
     const processor = new UploadProcessor(null, {
       updateUploadCounters: async () => {},
     });
 
     processor.isAtUncachedHourlyLimit = () => false;
+    processor.isUncachedCreateQuotaExhausted = () => false;
+    processor.isTypeRateLimitBlocked = () => false;
     processor.getApiClient = async () => ({});
     processor.buildFormData = async () => ({ getHeaders: () => ({}) });
     processor.makeApiRequest = async () => {
@@ -124,7 +126,125 @@ describe('UploadProcessor outage handling', () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.stopTypeDrain).toBe(true);
+    expect(result.stopTypeDrain).toBe(false);
+
+    const selfUpdate = userDb.calls.find(
+      (call) =>
+        call.sql.includes('UPDATE uploads') &&
+        call.sql.includes('WHERE id = ?') &&
+        call.params.includes(11)
+    );
+    expect(selfUpdate).toBeDefined();
+    expect(selfUpdate.params[0]).toBe(
+      'TorBox create timed out or failed to connect. Will retry shortly.'
+    );
+
+    const siblingPause = userDb.calls.find(
+      (call) =>
+        call.sql.includes('UPDATE uploads') &&
+        call.sql.includes('AND id != ?') &&
+        call.params.includes('TorBox API unavailable. Will retry automatically.')
+    );
+    expect(siblingPause).toBeUndefined();
+  });
+
+  test('consecutive create timeouts escalate to type-wide outage pause', async () => {
+    const userDb = createRecordingDb();
+    const processor = new UploadProcessor(null, {
+      updateUploadCounters: async () => {},
+    });
+
+    processor.isAtUncachedHourlyLimit = () => false;
+    processor.isUncachedCreateQuotaExhausted = () => false;
+    processor.isTypeRateLimitBlocked = () => false;
+    processor.getApiClient = async () => ({});
+    processor.buildFormData = async () => ({ getHeaders: () => ({}) });
+    processor.makeApiRequest = async () => {
+      throw Object.assign(new Error('timeout of 30000ms exceeded'), { code: 'ECONNABORTED' });
+    };
+
+    const upload = {
+      id: 12,
+      authId: 'auth-1',
+      type: 'torrent',
+      upload_type: 'magnet',
+      url: 'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef01',
+      name: 'Timeout escalate',
+    };
+
+    const first = await processor.processUpload({ ...upload, id: 12 }, userDb, 'queued');
+    const second = await processor.processUpload({ ...upload, id: 13 }, userDb, 'queued');
+    const third = await processor.processUpload({ ...upload, id: 14 }, userDb, 'queued');
+
+    expect(first.stopTypeDrain).toBe(false);
+    expect(second.stopTypeDrain).toBe(false);
+    expect(third.success).toBe(false);
+    expect(third.stopTypeDrain).toBe(true);
+
+    const hardPause = userDb.calls.find(
+      (call) =>
+        call.sql.includes('UPDATE uploads') &&
+        call.sql.includes('WHERE id = ?') &&
+        call.params[0] === 'TorBox API unavailable. Will retry automatically.' &&
+        call.params.includes(14)
+    );
+    expect(hardPause).toBeDefined();
+
+    const siblingPause = userDb.calls.find(
+      (call) =>
+        call.sql.includes('AND id != ?') &&
+        call.params.includes('TorBox API unavailable. Will retry automatically.')
+    );
+    expect(siblingPause).toBeDefined();
+  });
+
+  test('successful create resets connection strikes so next timeout is soft again', async () => {
+    const userDb = createRecordingDb();
+    const processor = new UploadProcessor(null, {
+      updateUploadCounters: async () => {},
+    });
+
+    processor.isAtUncachedHourlyLimit = () => false;
+    processor.isUncachedCreateQuotaExhausted = () => false;
+    processor.isTypeRateLimitBlocked = () => false;
+    processor.getApiClient = async () => ({});
+    processor.buildFormData = async () => ({ getHeaders: () => ({}) });
+
+    let shouldTimeout = true;
+    processor.makeApiRequest = async () => {
+      if (shouldTimeout) {
+        throw Object.assign(new Error('timeout of 30000ms exceeded'), { code: 'ECONNABORTED' });
+      }
+      return {
+        status: 200,
+        data: {
+          success: true,
+          error: null,
+          detail: 'OK',
+          data: { hash: 'abc', torrent_id: 1, auth_id: 'torbox-auth' },
+        },
+      };
+    };
+    processor.handleSuccessfulUpload = () => {};
+
+    const base = {
+      authId: 'auth-1',
+      type: 'torrent',
+      upload_type: 'magnet',
+      url: 'magnet:?xt=urn:btih:abcdef0123456789abcdef0123456789abcdef01',
+      name: 'Reset strikes',
+    };
+
+    await processor.processUpload({ ...base, id: 20 }, userDb, 'queued');
+    await processor.processUpload({ ...base, id: 21 }, userDb, 'queued');
+
+    shouldTimeout = false;
+    const ok = await processor.processUpload({ ...base, id: 22 }, userDb, 'queued');
+    expect(ok.success).toBe(true);
+
+    shouldTimeout = true;
+    const afterSuccess = await processor.processUpload({ ...base, id: 23 }, userDb, 'queued');
+    expect(afterSuccess.stopTypeDrain).toBe(false);
   });
 
   test('handleFailedUpload fails immediately on TorBox API error without re-queue', async () => {

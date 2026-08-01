@@ -25,6 +25,12 @@ describe('uploadDeferral', () => {
     expect(
       isTransientDeferralMessage('Uncached rate limit reached. Will retry automatically.')
     ).toBe(true);
+    expect(isTransientDeferralMessage(CONNECTION_DEFERRAL_MESSAGE)).toBe(true);
+    expect(
+      isTransientDeferralMessage(
+        'TorBox create timed out or failed to connect. Will retry shortly.'
+      )
+    ).toBe(true);
     expect(isTransientDeferralMessage('File not found')).toBe(false);
     expect(isTransientDeferralMessage(null)).toBe(false);
   });
@@ -300,6 +306,14 @@ describe('uploadDeferral', () => {
         `
         )
         .run(CONNECTION_DEFERRAL_MESSAGE);
+      userDb.db
+        .prepare(
+          `
+          INSERT INTO uploads (type, upload_type, url, name, status, queue_order)
+          VALUES ('torrent', 'magnet', 'magnet:?xt=urn:btih:b', 'ready-b', 'queued', 1)
+        `
+        )
+        .run();
 
       const stats = getUploadDeferralStatistics(userDb, { isBlocked: () => false });
       expect(stats.byType.torrent.pausedCount).toBe(1);
