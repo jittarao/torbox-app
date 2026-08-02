@@ -34,6 +34,7 @@ describe('downloadListSync', () => {
   let applySinglePageShallowMerge;
   let computeDelta;
   let getDownloadListSyncCacheEntry;
+  let getDownloadListSyncRevHistoryForTests;
   let handleListSyncRequest;
   let isSinglePageCatalog;
   let isMultiPageFromFullReconcile;
@@ -68,6 +69,7 @@ describe('downloadListSync', () => {
       applySinglePageShallowMerge,
       computeDelta,
       getDownloadListSyncCacheEntry,
+      getDownloadListSyncRevHistoryForTests,
       handleListSyncRequest,
       isSinglePageCatalog,
       isMultiPageFromFullReconcile,
@@ -289,6 +291,32 @@ describe('downloadListSync', () => {
       expect(body.data.map((row) => row.id)).toEqual([2]);
       expect(body.removed).toEqual([]);
       expect(fetchFullDownloadListMock).not.toHaveBeenCalled();
+    });
+
+    test('rev history archives gzip only (no uncompressed data copies)', async () => {
+      const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+
+      fetchShallowDownloadListMock.mockResolvedValueOnce(
+        shallowResult([item(2, '2020-01-03'), item(1, '2020-01-02')])
+      );
+      await runShallowRefresh(API_KEY, TYPE, { blocking: true });
+
+      const history = getDownloadListSyncRevHistoryForTests(API_KEY, TYPE);
+      expect(history).toHaveLength(1);
+      expect(history[0].rev).toBe(rev);
+      expect(history[0].hasCompressedBody).toBe(true);
+      expect(history[0].hasUncompressedData).toBe(false);
+
+      // Delta path still works via decompress
+      const result = await handleListSyncRequest({
+        apiKey: API_KEY,
+        type: TYPE,
+        rev,
+        bypassCache: false,
+      });
+      expect(result.headers['x-sync-mode']).toBe('delta');
+      const body = parseCompressedBody(result.compressedBody);
+      expect(body.data.map((row) => row.id)).toEqual([2]);
     });
 
     test('stale rev multiple behind returns accumulated delta', async () => {

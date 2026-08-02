@@ -76,6 +76,8 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 | `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` | Minimum interval between background full reconciles for multi-page catalogs (ms).                                              | `300000` (5 min)        | No       |
 | `DOWNLOAD_SYNC_RECONCILE_JITTER_MS`   | Per-user/type jitter added to reconcile interval (ms).                                                                         | `60000` (1 min)         | No       |
 | `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`  | Min interval between TorBox shallow refreshes per user/type (ms); stale reads block until refresh completes.                   | `10000` (10 s)          | No       |
+| `DOWNLOAD_SYNC_REV_HISTORY_LIMIT`     | Max gzip list snapshots retained per user/type for client deltas. Older revs fall back to a full snapshot (`stale-full`).      | `8`                     | No       |
+| `NODE_OPTIONS`                        | Frontend V8 flags. Compose defaults to `--max-old-space-size=896` so heap cannot consume a whole small VPS.                    | see Compose             | No       |
 | `BACKEND_SERVICE_SECRET`              | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout))                  | unset                   | No       |
 
 ### Stream search (Stremio addons)
@@ -113,7 +115,25 @@ The downloads page syncs torrent, Usenet, and WebDL lists through Next.js (`src/
 
 **Debugging:** Responses include `x-list-rev`, `x-sync-item-count`, and `x-sync-mode` (`full`, `shallow`, `stale-full`, `delta`, `unchanged`). Bodies are gzip JSON `{ success, data, rev }` (or `{ delta: true, ... }` for deltas). Server logs tag full reconciles with `[downloadListSync]`.
 
-**Tuning:** Optional `DOWNLOAD_SYNC_*` variables (table above). Restart the **frontend** container/process after changes. `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` applies only to types with **≥1000 regular** `mylist` rows. `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS` controls TorBox shallow poll deduplication across tabs.
+**Tuning:** Optional `DOWNLOAD_SYNC_*` variables (table above). Restart the **frontend** container/process after changes. `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` applies only to types with **≥1000 regular** `mylist` rows. `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS` controls TorBox shallow poll deduplication across tabs. Rev history stores **gzip only** (not uncompressed catalogs); keep `DOWNLOAD_SYNC_REV_HISTORY_LIMIT` small on ≤4GB hosts.
+
+### Memory / small VPS (≤4GB RAM)
+
+Compose defaults target a single-user 4GB host:
+
+| Service          | Memory limit | Notes                                                                           |
+| ---------------- | ------------ | ------------------------------------------------------------------------------- |
+| `torbox-backend` | 768M         | Automation + SQLite                                                             |
+| `torbox-app`     | 1280M        | Next.js + in-memory download list sync; `NODE_OPTIONS=--max-old-space-size=896` |
+
+If the host OOM-kills `next-server`:
+
+1. Confirm limits are applied: `docker stats` (RSS should stay under the limits above).
+2. Prefer **≥2GB swap** on the VPS so brief spikes do not kill the kernel.
+3. Do not run unrelated heavy containers (browsers, scrapers) on the same 4GB box — kernel logs may show `chromium` beside `next-server`; Chromium is **not** part of TorBox.
+4. After pulling a fixed image, recreate containers so the process restarts with an empty sync cache: `docker compose pull && docker compose up -d`.
+
+Raise limits only when the host has spare RAM (e.g. 8GB+) and catalogs are very large.
 
 ### Backend
 
@@ -347,6 +367,8 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 # DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS=300000
 # DOWNLOAD_SYNC_RECONCILE_JITTER_MS=60000
 # DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS=10000
+# DOWNLOAD_SYNC_REV_HISTORY_LIMIT=8
+# NODE_OPTIONS=--max-old-space-size=896
 
 # Optional: upload retention quotas (backend — LIMITED tier users)
 # UPLOAD_LIMIT_MAX_STORAGE_MB=100
