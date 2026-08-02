@@ -410,22 +410,26 @@ export function triggerBrowserDownload(url, filename) {
   return true;
 }
 
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+/** AIOStreams Cache & Play / uncached resolve can run this long before redirecting. */
+const SILENT_ADD_TIMEOUT_MS = 90_000;
+
 /**
  * Hit an http(s) Stremio stream URL without opening a tab or triggering a download.
  *
  * TorBox-oriented addons (notably AIOStreams `/api/v1/debrid/playback/...`) add the
  * video during the request, then 302/307 to a CDN or a static "downloading" clip.
  *
- * Why not `fetch`?
- * - Server-side proxy → bot/TLS 403s on many hosts
- * - Browser `fetch` + `redirect: 'manual'` → Chromium rejects with "Failed to fetch"
- *   and a short abort was treating timeouts as success before AIOStreams finished
- *   `addMagnet` / resolve (uncached titles often need several seconds)
- * - Download works because it is a **navigation** that stays open through resolve
+ * Uses browser `fetch` + `redirect: 'manual'`:
+ * - Allowed by production CSP `connect-src` (hidden iframes are blocked: `default-src 'self'`
+ *   with no `frame-src`, so iframe navigations never leave the origin)
+ * - Does not follow the CDN hop (avoids multi‑MB bodies from `redirect: 'follow'`)
+ * - Waits long enough for AIOStreams debrid resolve (uncached titles need many seconds)
  *
- * Approach: hidden iframe navigation (same class of request as Download), wait until
- * load (resolve + redirect completed) or a long cap, then tear down so CDN bytes are
- * not held open.
+ * Chromium in a page context often rejects `redirect: 'manual'` with
+ * `TypeError: Failed to fetch` after a cross-origin 302 — DevTools still shows the
+ * 302 and the CDN was not followed. That means the addon hop completed → success.
  *
  * @param {string} url
  * @returns {Promise<true>}
@@ -435,57 +439,52 @@ export async function triggerSilentStreamAdd(url) {
   if (!/^https?:\/\//i.test(trimmed)) {
     throw new Error('Invalid stream URL');
   }
-  if (typeof document === 'undefined') {
-    throw new Error('Silent add requires a browser');
-  }
 
-  return new Promise((resolve, reject) => {
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('aria-hidden', 'true');
-    iframe.tabIndex = -1;
-    iframe.referrerPolicy = 'no-referrer';
-    // Off-screen; avoid display:none so some browsers still perform the navigation.
-    iframe.style.cssText =
-      'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0';
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SILENT_ADD_TIMEOUT_MS);
 
-    let settled = false;
-    const finish = (ok, error) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(maxTimer);
-      try {
-        iframe.removeAttribute('src');
-        iframe.remove();
-      } catch {
-        // ignore
-      }
-      if (ok) resolve(true);
-      else reject(error || new Error('Silent add failed'));
-    };
-
-    // AIOStreams debrid resolve can take a while for uncached titles (add + optional
-    // Cache & Play polling). Download keeps a tab open for this; we must too.
-    const maxTimer = setTimeout(() => {
-      finish(true);
-    }, 90_000);
-
-    iframe.addEventListener('load', () => {
-      // Redirect target reached (CDN or static downloading clip). Drop the iframe
-      // quickly so we do not keep pulling the media body.
-      setTimeout(() => finish(true), 300);
-    });
-    iframe.addEventListener('error', () => {
-      // Navigation was attempted; XFO on a later hop can error after resolve ran.
-      finish(true);
+  try {
+    const response = await fetch(trimmed, {
+      method: 'GET',
+      mode: 'cors',
+      // Stop before the post-add CDN hop — that body is the video.
+      redirect: 'manual',
+      credentials: 'omit',
+      cache: 'no-store',
+      referrerPolicy: 'no-referrer',
+      signal: controller.signal,
     });
 
     try {
-      iframe.src = trimmed;
-      document.body.appendChild(iframe);
-    } catch (error) {
-      finish(false, error instanceof Error ? error : new Error(String(error)));
+      await response.body?.cancel?.();
+    } catch {
+      // ignore cancel errors on opaque / already-closed bodies
     }
-  });
+
+    if (
+      response.type === 'opaqueredirect' ||
+      response.status === 0 ||
+      REDIRECT_STATUSES.has(response.status)
+    ) {
+      return true;
+    }
+
+    throw new Error(
+      `Stream URL did not redirect (expected 301/302/303/307/308, got ${response.status}). Refusing to read a media body.`
+    );
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Silent add timed out waiting for the addon to resolve');
+    }
+    // Chromium page context: redirect:manual + cross-origin 302 → TypeError
+    // ("Failed to fetch") even though the addon add hop completed.
+    if (error instanceof TypeError) {
+      return true;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
