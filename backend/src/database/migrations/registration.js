@@ -38,6 +38,8 @@ import * as user020_protected_downloads_schema from './user/020_protected_downlo
 import * as user021_custom_views_sort_order from './user/021_custom_views_sort_order.js';
 import * as user022_upload_attempts_is_cached from './user/022_upload_attempts_is_cached.js';
 import * as user023_upload_attempts_budget_index from './user/023_upload_attempts_budget_index.js';
+import * as user024_stremio_addons_schema from './user/024_stremio_addons_schema.js';
+import * as user025_tmdb_credentials_schema from './user/025_tmdb_credentials_schema.js';
 
 /** Keeps migration exports reachable for static analysis (see MigrationRunner). */
 export const MIGRATION_MODULE_BINDINGS = [
@@ -76,4 +78,6 @@ export const MIGRATION_MODULE_BINDINGS = [
   user021_custom_views_sort_order,
   user022_upload_attempts_is_cached,
   user023_upload_attempts_budget_index,
+  user024_stremio_addons_schema,
+  user025_tmdb_credentials_schema,
 ];

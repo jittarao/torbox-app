@@ -155,6 +155,33 @@ class MigrationRunner {
   }
 
   /**
+   * Highest numeric migration version present on disk for this dbType.
+   * Static so callers (e.g. UserDatabaseManager cache) do not need a stub DB.
+   * Used by the connection pool to detect connections opened before newer migrations shipped.
+   * @param {string} [dbType='user']
+   * @returns {Promise<number>}
+   */
+  static async getLatestMigrationVersionNumber(dbType = 'user') {
+    const migrationsDir = path.join(__dirname, 'migrations', dbType);
+    let files;
+    try {
+      files = await fsPromises.readdir(migrationsDir);
+    } catch {
+      return 0;
+    }
+
+    let max = 0;
+    for (const file of files) {
+      if (!file.endsWith('.js')) continue;
+      const match = file.match(/^(\d+)_/);
+      if (!match) continue;
+      const n = parseInt(match[1], 10);
+      if (Number.isFinite(n) && n > max) max = n;
+    }
+    return max;
+  }
+
+  /**
    * Run all pending migrations
    */
   async runMigrations() {

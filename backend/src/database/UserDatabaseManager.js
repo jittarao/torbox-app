@@ -517,6 +517,39 @@ class UserDatabaseManager {
     // Set to maxConnections - 1 to reserve one slot for the eviction mechanism.
     const poolLimit = Math.max(1, this.pool.maxSize - 1);
     this.connectionSemaphore = new Semaphore(poolLimit);
+
+    // Cached max user-migration version on disk (process lifetime; files only change on restart).
+    this._latestUserMigrationVersion = null;
+  }
+
+  /**
+   * Highest user-migration version shipped in this process.
+   * @returns {Promise<number>}
+   */
+  async getLatestUserMigrationVersion() {
+    if (this._latestUserMigrationVersion != null) {
+      return this._latestUserMigrationVersion;
+    }
+    this._latestUserMigrationVersion =
+      await MigrationRunner.getLatestMigrationVersionNumber('user');
+    return this._latestUserMigrationVersion;
+  }
+
+  /**
+   * Apply any migrations newer than when this pooled connection was opened.
+   * No-op when schemaVersion is already current (typical after a container restart).
+   * @param {Object} connection
+   * @returns {Promise<Object>}
+   * @private
+   */
+  async _ensureConnectionMigrations(connection) {
+    if (!connection?.migrationRunner) return connection;
+    const latest = await this.getLatestUserMigrationVersion();
+    if ((connection.schemaVersion ?? 0) >= latest) return connection;
+
+    await connection.migrationRunner.runMigrations();
+    connection.schemaVersion = latest;
+    return connection;
   }
 
   /**
@@ -582,6 +615,7 @@ class UserDatabaseManager {
       try {
         cached.db.prepare('SELECT 1').get();
         // Connection is valid - refCount was incremented by get()
+        await this._ensureConnectionMigrations(cached);
         return this._finalizeGetUserDatabase(authId, cached, pin);
       } catch (error) {
         if (isClosedDatabaseError(error)) {
@@ -595,6 +629,7 @@ class UserDatabaseManager {
             authId,
             error: error.message,
           });
+          await this._ensureConnectionMigrations(cached);
           return this._finalizeGetUserDatabase(authId, cached, pin);
         }
       }
@@ -612,6 +647,7 @@ class UserDatabaseManager {
       try {
         const result = await connectionPromise;
         this.connectionSemaphore.release();
+        await this._ensureConnectionMigrations(result);
         return this._finalizeGetUserDatabase(authId, result, pin);
       } catch (error) {
         // If the existing creation failed, we'll try again below
@@ -625,6 +661,7 @@ class UserDatabaseManager {
 
     try {
       const connection = await connectionPromise;
+      await this._ensureConnectionMigrations(connection);
       return this._finalizeGetUserDatabase(authId, connection, pin);
     } finally {
       // Remove lock after connection is created (or fails)
@@ -742,7 +779,13 @@ class UserDatabaseManager {
     const migrationRunner = new MigrationRunner(db, 'user');
     await migrationRunner.runMigrations();
 
-    const dbConnection = { db, migrationRunner, authId, dbPath };
+    const dbConnection = {
+      db,
+      migrationRunner,
+      authId,
+      dbPath,
+      schemaVersion: await this.getLatestUserMigrationVersion(),
+    };
     this.pool.set(authId, dbConnection);
     return dbConnection;
   }
