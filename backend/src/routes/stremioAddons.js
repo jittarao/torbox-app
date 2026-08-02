@@ -4,7 +4,6 @@ import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import { safeExternalFetch } from '../utils/safeExternalFetch.js';
 import { validateExternalUrl } from '../utils/validateExternalUrl.js';
-import MigrationRunner from '../database/MigrationRunner.js';
 import {
   validateAndExtractManifest,
   buildStreamUrl,
@@ -74,35 +73,6 @@ function serviceUnavailable(res) {
     success: false,
     error: 'Service is initializing, please try again in a moment',
   });
-}
-
-/**
- * Self-heal when a pooled user DB is missing stremio_addons (e.g. connection opened
- * before migration 024, or schema_migrations marked applied without the table).
- */
-async function ensureStremioAddonsTable(userDb) {
-  const exists = userDb.db
-    .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='stremio_addons'")
-    .get();
-  if (exists) return;
-
-  logger.warn('stremio_addons table missing; reapplying migrations 024/025');
-  userDb.db.prepare("DELETE FROM schema_migrations WHERE version IN ('024', '025')").run();
-  userDb.schemaVersion = 0;
-  if (userDb.migrationRunner) {
-    userDb.migrationRunner.clearCache();
-    await userDb.migrationRunner.runMigrations();
-    userDb.schemaVersion = await MigrationRunner.getLatestMigrationVersionNumber('user');
-  }
-
-  const healed = userDb.db
-    .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='stremio_addons'")
-    .get();
-  if (!healed) {
-    const err = new Error('stremio_addons schema is unavailable after migration retry');
-    err.code = 'STREMIO_SCHEMA_MISSING';
-    throw err;
-  }
 }
 
 async function fetchAndValidateManifest(manifestUrl) {
@@ -197,7 +167,6 @@ export function setupStremioAddonsRoutes(app, backend) {
         if (!backend.userDatabaseManager) return serviceUnavailable(res);
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-        await ensureStremioAddonsTable(userDb);
         const rows = userDb.db
           .prepare(
             `
@@ -254,7 +223,6 @@ export function setupStremioAddonsRoutes(app, backend) {
         }
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-        await ensureStremioAddonsTable(userDb);
 
         const countRow = userDb.db.prepare('SELECT COUNT(*) AS c FROM stremio_addons').get();
         if ((countRow?.c ?? 0) >= MAX_STREMIO_ADDONS) {

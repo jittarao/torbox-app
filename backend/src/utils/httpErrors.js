@@ -22,6 +22,11 @@ export function serverErrorPayload(err) {
   // Include machine-readable error code when available (e.g. SQLITE_BUSY, VALIDATION_ERROR)
   if (isError && err.code) {
     payload.code = err.code;
+  } else if (isError && /no such table/i.test(msg)) {
+    // bun:sqlite often omits err.code; still expose a stable client-facing code
+    payload.code = 'SQLITE_MISSING_TABLE';
+  } else if (isError && err.errno != null) {
+    payload.code = `SQLITE_ERRNO_${err.errno}`;
   }
 
   // Include detail when in dev or when error has a detail property

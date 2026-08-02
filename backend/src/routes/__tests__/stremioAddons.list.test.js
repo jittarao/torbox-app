@@ -5,8 +5,9 @@ import {
   buildBackendApp,
 } from './helpers/backendTestHelper.js';
 import { setupStremioAddonsRoutes } from '../stremioAddons.js';
+import { setupTmdbRoutes } from '../tmdb.js';
 
-describe('GET /api/stremio/addons', () => {
+describe('user DB migration ensure on getUserDatabase', () => {
   let env;
   let server;
   let port;
@@ -16,7 +17,10 @@ describe('GET /api/stremio/addons', () => {
     const app = buildBackendApp({
       masterDatabase: env.masterDatabase,
       userDatabaseManager: env.userDatabaseManager,
-      routeSetupFn: setupStremioAddonsRoutes,
+      routeSetupFn: (app, backend) => {
+        setupStremioAddonsRoutes(app, backend);
+        setupTmdbRoutes(app, backend);
+      },
     });
     server = app.listen(0);
     port = server.address().port;
@@ -27,55 +31,42 @@ describe('GET /api/stremio/addons', () => {
     cleanupBackendTestEnv(env);
   });
 
-  async function listAddons() {
-    const res = await fetch(`http://127.0.0.1:${port}/api/stremio/addons?authId=${env.authId}`, {
+  async function get(path) {
+    const res = await fetch(`http://127.0.0.1:${port}${path}?authId=${env.authId}`, {
       headers: { 'x-api-key': env.apiKey },
     });
-    const body = await res.json();
-    return { status: res.status, body };
+    return { status: res.status, body: await res.json() };
   }
 
-  test('returns empty addons list for a fresh user', async () => {
-    const { status, body } = await listAddons();
+  test('GET /api/stremio/addons returns empty list for a fresh user', async () => {
+    const { status, body } = await get('/api/stremio/addons');
     expect(status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.addons).toEqual([]);
   });
 
-  test('applies pending migrations on pooled connections before listing', async () => {
-    // Open + migrate (creates stremio_addons), keep connection pooled.
+  test('pooled connection applies any pending migrations before serving routes', async () => {
+    // Simulate a long-lived pool entry opened before migrations 024/025 existed:
+    // markers and tables are gone, but the handle stays pooled.
     const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
-
-    // Simulate a long-lived pool entry opened before migration 024 existed:
-    // schema_migrations and tables for 024/025 are gone, but the handle stays pooled.
     userDb.db.prepare('DELETE FROM schema_migrations WHERE version IN (?, ?)').run('024', '025');
     userDb.db.prepare('DROP TABLE IF EXISTS stremio_addons').run();
     userDb.db.prepare('DROP TABLE IF EXISTS tmdb_credentials').run();
-    // Pretend this connection last applied migrations through 023 only.
-    userDb.schemaVersion = 23;
     env.userDatabaseManager.releaseConnection(env.authId);
 
-    const missing = userDb.db
-      .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='stremio_addons'")
-      .get();
-    expect(missing).toBeFalsy();
+    expect(
+      userDb.db
+        .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='stremio_addons'")
+        .get()
+    ).toBeFalsy();
 
-    const { status, body } = await listAddons();
-    expect(status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(Array.isArray(body.addons)).toBe(true);
-  });
+    const stremio = await get('/api/stremio/addons');
+    expect(stremio.status).toBe(200);
+    expect(stremio.body.success).toBe(true);
+    expect(Array.isArray(stremio.body.addons)).toBe(true);
 
-  test('self-heals when schema_migrations claims 024 applied but table is missing', async () => {
-    const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
-    userDb.db.prepare('DROP TABLE IF EXISTS stremio_addons').run();
-    // Leave 024 marked applied and schemaVersion current — pool thinks migrations are done.
-    userDb.schemaVersion = await env.userDatabaseManager.getLatestUserMigrationVersion();
-    env.userDatabaseManager.releaseConnection(env.authId);
-
-    const { status, body } = await listAddons();
-    expect(status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.addons).toEqual([]);
+    const tmdb = await get('/api/tmdb/credentials');
+    expect(tmdb.status).toBe(200);
+    expect(tmdb.body).toEqual({ success: true, configured: false });
   });
 });
