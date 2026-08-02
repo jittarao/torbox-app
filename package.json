@@ -52,6 +52,7 @@
     "next-intl": "^4.9.2",
     "next-pwa": "^5.6.0",
     "posthog-js": "^1.360.2",
+    "protobufjs": "7.5.5",
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
