@@ -27,7 +27,9 @@ const RECONCILE_FAILURE_BACKOFF_BASE_MS = 15 * 1000;
 const RECONCILE_FAILURE_BACKOFF_MAX_MS = RECONCILE_INTERVAL_MS;
 const SHALLOW_FAILURE_BACKOFF_BASE_MS = 5 * 1000;
 const SHALLOW_FAILURE_BACKOFF_MAX_MS = SHALLOW_FRESHNESS_MS;
-const REV_HISTORY_LIMIT = Number(process.env.DOWNLOAD_SYNC_REV_HISTORY_LIMIT) || 64;
+// Keep this small: each archived rev retains a gzip snapshot. Uncompressed
+// catalog copies must NOT be archived (see archiveRevSnapshot)
+const REV_HISTORY_LIMIT = Math.max(1, Number(process.env.DOWNLOAD_SYNC_REV_HISTORY_LIMIT) || 8);
 const GZIP_LEVEL = 6;
 
 /** @type {Map<string, CacheEntry>} */
@@ -56,7 +58,6 @@ const syncStateByKey = new Map();
  * @typedef {object} RevSnapshot
  * @property {number} rev
  * @property {Buffer} compressedBody
- * @property {object[] | undefined} [data]
  */
 
 /**
@@ -277,11 +278,12 @@ function pruneRevHistory(revHistory, currentRev) {
  * @param {number} nextRev
  */
 function archiveRevSnapshot(state, existing, nextRev) {
-  if (!existing) return;
+  if (!existing?.compressedBody) return;
+  // Gzip only — never retain the live uncompressed `data` array here. Deltas
+  // decompress via getSnapshotData when a client polls with a stale rev.
   state.revHistory.set(existing.rev, {
     rev: existing.rev,
     compressedBody: existing.compressedBody,
-    data: Array.isArray(existing.data) ? existing.data : undefined,
   });
   pruneRevHistory(state.revHistory, nextRev);
 }
@@ -940,6 +942,18 @@ export function getDownloadListSyncCacheEntry(apiKey, type) {
     isMultiPage: entry.isMultiPage,
     reconcileFailureCount: entry.reconcileFailureCount ?? 0,
   };
+}
+
+/** @internal test helper — gzip-only rev archives (no uncompressed data copies). */
+export function getDownloadListSyncRevHistoryForTests(apiKey, type) {
+  const authId = hashApiKey(apiKey);
+  const state = syncStateByKey.get(getCacheKey(authId, type));
+  if (!state) return [];
+  return [...state.revHistory.values()].map((snap) => ({
+    rev: snap.rev,
+    hasCompressedBody: Buffer.isBuffer(snap.compressedBody),
+    hasUncompressedData: Array.isArray(snap.data),
+  }));
 }
 
 /** @internal test helper */

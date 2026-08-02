@@ -82,14 +82,13 @@ services:
     # Security option: prevent container from gaining new privileges
     security_opt:
       - no-new-privileges:true
-    # Resource limits - cap memory to avoid unbounded growth; container restarts if exceeded
+    # Resource limits — keep stack under ~2.5G so a 4GB VPS retains headroom for the OS.
+    # Compose applies deploy.resources.limits without Swarm (Docker Compose v2+).
     deploy:
       resources:
         limits:
-          # cpus: '1.0'
-          memory: 1G
+          memory: 768M
         # reservations:
-        #   cpus: '0.5'
         #   memory: 256M
 
   # Frontend Next.js application - user interface for Torbox
@@ -115,6 +114,8 @@ services:
       - BACKEND_SERVICE_SECRET=${BACKEND_SERVICE_SECRET}
       # Node.js environment mode
       - NODE_ENV=production
+      # Cap V8 heap so a runaway download-list cache cannot eat the whole host (4GB VPS)
+      - NODE_OPTIONS=${NODE_OPTIONS:---max-old-space-size=896}
       # Disable Next.js telemetry data collection
       - NEXT_TELEMETRY_DISABLED=1
       # Sentry error tracking (optional - set in .env file)
@@ -134,6 +135,7 @@ services:
       - DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS=${DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS:-}
       - DOWNLOAD_SYNC_RECONCILE_JITTER_MS=${DOWNLOAD_SYNC_RECONCILE_JITTER_MS:-}
       - DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS=${DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS:-}
+      - DOWNLOAD_SYNC_REV_HISTORY_LIMIT=${DOWNLOAD_SYNC_REV_HISTORY_LIMIT:-}
     # Service dependencies: wait for backend to be healthy before starting
     depends_on:
       torbox-backend:
@@ -171,16 +173,14 @@ services:
       retries: 3
       # Allow time for Next.js cold start before marking unhealthy
       start_period: 30s
-    # Resource limits - uncomment to restrict CPU and memory usage
-    # Useful for production environments with resource constraints
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '1.0'
-    #       memory: 512M
-    #     reservations:
-    #       cpus: '0.5'
-    #       memory: 256M
+    # Cap RSS so OOM kills the container (restart) instead of thrashing the host.
+    # ~1.25G limit + 896MB V8 heap leaves room for native buffers on a 4GB VPS.
+    deploy:
+      resources:
+        limits:
+          memory: 1280M
+        # reservations:
+        #   memory: 384M
     # Traefik reverse proxy labels - uncomment if using Traefik as reverse proxy
     # Provides automatic HTTPS, routing, and middleware integration
     # labels:
