@@ -87,6 +87,12 @@ export const down = (db) => {
 
 ## Creating a New Migration
 
+**Required checklist (every new migration):**
+
+1. Add `NNN_description.js` under `master/` or `user/` with `up` / `down`.
+2. **Register it in `registration.js`**: add a static import and append the module to `MIGRATION_MODULE_BINDINGS`. Runtime still discovers files from disk via `MigrationRunner`; the registry keeps static analysis / agent tooling from drifting behind new schemas.
+3. Restart (or reopen) the affected DB so migrations apply — user DBs remigrate on open / when pooled `schemaVersion` is behind.
+
 ### For Master Database
 
 1. Create a new file in `master/` directory:
