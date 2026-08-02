@@ -10,6 +10,7 @@ import {
   UPLOAD_CONNECTION_SOFT_DEFER_MS,
   UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
   UPLOAD_CONNECTION_DEFER_MS,
+  UPLOAD_RECOVERY_CONCURRENCY,
 } from '../../config/uploadProcessorConfig.js';
 
 /**
@@ -57,6 +58,7 @@ export function setupConfigRoutes(router, backend) {
           connection_soft_defer_ms: UPLOAD_CONNECTION_SOFT_DEFER_MS,
           connection_strikes_before_pause: UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
           connection_defer_ms: UPLOAD_CONNECTION_DEFER_MS,
+          recovery_concurrency: UPLOAD_RECOVERY_CONCURRENCY,
           rate_limit_source: 'torbox_headers',
         },
         frontend_url: process.env.FRONTEND_URL || 'http://localhost:3000',

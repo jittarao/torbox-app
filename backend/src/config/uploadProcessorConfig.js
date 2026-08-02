@@ -45,6 +45,15 @@ export const UPLOAD_CONNECTION_DEFER_MS = parsePositiveInt(
 );
 
 /**
+ * Max concurrent user DB opens during startup stuck-upload recovery.
+ * Keeps recovery from flooding the LRU pool on large installs.
+ */
+export const UPLOAD_RECOVERY_CONCURRENCY = parsePositiveInt(
+  process.env.UPLOAD_RECOVERY_CONCURRENCY,
+  8
+);
+
+/**
  * Fallback wait (ms) when TorBox blocks creates but response headers omit reset/retry timing.
  * Used for proactive gating, 429 deferral, and orphan block expiry (remaining=0 without reset).
  */

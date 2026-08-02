@@ -211,6 +211,7 @@ bun run dev
 | `UPLOAD_PROCESS_CONCURRENCY`              | Max users processed in parallel per upload processor cycle                                                                             | `6`                      | No       |
 | `UPLOAD_BATCH_FETCH_SIZE`                 | SQL rows fetched per in-memory queue buffer (not the per-drain work cap)                                                               | `50`                     | No       |
 | `UPLOAD_MAX_WORK_PER_DRAIN`               | Max uploads processed per drain invocation before yielding worker                                                                      | `25`                     | No       |
+| `UPLOAD_RECOVERY_CONCURRENCY`             | Max concurrent user DBs during startup stuck-upload recovery                                                                           | `8`                      | No       |
 | `CREATE_UPLOAD_TIMEOUT_MS`                | TorBox create API request timeout (ms)                                                                                                 | `30000`                  | No       |
 | `UPLOAD_CONNECTION_SOFT_DEFER_MS`         | Per-upload cool-down (ms) after a single create timeout/connection blip (siblings keep processing)                                     | `30000`                  | No       |
 | `UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE`  | Consecutive create connection failures before type-wide outage pause                                                                   | `3`                      | No       |
@@ -378,6 +379,7 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 # UPLOAD_PROCESS_CONCURRENCY=6
 # UPLOAD_BATCH_FETCH_SIZE=50
 # UPLOAD_MAX_WORK_PER_DRAIN=25
+# UPLOAD_RECOVERY_CONCURRENCY=8
 # CREATE_UPLOAD_TIMEOUT_MS=30000
 # UPLOAD_CONNECTION_SOFT_DEFER_MS=30000
 # UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE=3
@@ -561,6 +563,7 @@ docker network create torbox-network
 | `UPLOAD_PROCESS_CONCURRENCY`             | Parallel users per upload processor cycle (default `6`)                                |
 | `UPLOAD_BATCH_FETCH_SIZE`                | SQL fetch size per in-memory queue buffer (default `50`; not the per-drain work cap)   |
 | `UPLOAD_MAX_WORK_PER_DRAIN`              | Max uploads per drain invocation (default `25`)                                        |
+| `UPLOAD_RECOVERY_CONCURRENCY`            | Max concurrent user DBs during startup stuck-upload recovery (default `8`)             |
 | `CREATE_UPLOAD_TIMEOUT_MS`               | TorBox create request timeout in ms (default `30000`)                                  |
 | `UPLOAD_CONNECTION_SOFT_DEFER_MS`        | Per-upload cool-down after a single create timeout (default `30000`)                   |
 | `UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE` | Consecutive create connection failures before type-wide pause (default `3`)            |
