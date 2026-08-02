@@ -517,38 +517,19 @@ class UserDatabaseManager {
     // Set to maxConnections - 1 to reserve one slot for the eviction mechanism.
     const poolLimit = Math.max(1, this.pool.maxSize - 1);
     this.connectionSemaphore = new Semaphore(poolLimit);
-
-    // Cached max user-migration version on disk (process lifetime; files only change on restart).
-    this._latestUserMigrationVersion = null;
   }
 
   /**
-   * Highest user-migration version shipped in this process.
-   * @returns {Promise<number>}
-   */
-  async getLatestUserMigrationVersion() {
-    if (this._latestUserMigrationVersion != null) {
-      return this._latestUserMigrationVersion;
-    }
-    this._latestUserMigrationVersion =
-      await MigrationRunner.getLatestMigrationVersionNumber('user');
-    return this._latestUserMigrationVersion;
-  }
-
-  /**
-   * Apply any migrations newer than when this pooled connection was opened.
-   * No-op when schemaVersion is already current (typical after a container restart).
+   * Apply any pending on-disk migrations for a pooled (or freshly opened) connection.
+   * Always delegates to MigrationRunner so new versions are picked up without a
+   * hardcoded table/version list — cheap no-op when schema_migrations is current.
    * @param {Object} connection
    * @returns {Promise<Object>}
    * @private
    */
   async _ensureConnectionMigrations(connection) {
     if (!connection?.migrationRunner) return connection;
-    const latest = await this.getLatestUserMigrationVersion();
-    if ((connection.schemaVersion ?? 0) >= latest) return connection;
-
     await connection.migrationRunner.runMigrations();
-    connection.schemaVersion = latest;
     return connection;
   }
 
@@ -779,13 +760,7 @@ class UserDatabaseManager {
     const migrationRunner = new MigrationRunner(db, 'user');
     await migrationRunner.runMigrations();
 
-    const dbConnection = {
-      db,
-      migrationRunner,
-      authId,
-      dbPath,
-      schemaVersion: await this.getLatestUserMigrationVersion(),
-    };
+    const dbConnection = { db, migrationRunner, authId, dbPath };
     this.pool.set(authId, dbConnection);
     return dbConnection;
   }
