@@ -410,49 +410,78 @@ export function triggerBrowserDownload(url, filename) {
   return true;
 }
 
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
 /**
  * Hit an http(s) Stremio stream URL without opening a tab or triggering a download.
  *
- * Browser-direct fetch cannot do this safely: `redirect: 'follow'` pulls the CDN
- * video body (tens of MB before abort), and opaque `no-cors` responses often
- * cannot cancel that transfer. Instead we POST to a same-origin proxy that uses
- * `redirect: 'manual'` and cancels any body after headers — the addon add happens
- * on the first hop; the download redirect is never followed.
+ * TorBox-oriented addons add the video on the first GET, then 302/303 to a CDN
+ * download link. We must:
+ * - Use a **browser** request (server-side fetch often gets 403 from bot/TLS filters)
+ * - Not follow the CDN hop (`redirect: 'follow'` previously buffered tens of MB)
+ *
+ * `mode: 'cors'` + `redirect: 'manual'` stops before the CDN. Spec-compliant engines
+ * resolve with `opaqueredirect` (status 0). Chromium in a page context often **rejects**
+ * with `TypeError: Failed to fetch` instead — while DevTools still shows the 302 and
+ * the CDN was never requested. That rejection means the addon hop completed, so we
+ * treat it as success.
  *
  * @param {string} url
- * @param {string} apiKey
  * @returns {Promise<true>}
  */
-export async function triggerSilentStreamAdd(url, apiKey) {
+export async function triggerSilentStreamAdd(url) {
   const trimmed = typeof url === 'string' ? url.trim() : '';
   if (!/^https?:\/\//i.test(trimmed)) {
     throw new Error('Invalid stream URL');
   }
-  if (!apiKey) {
-    throw new Error('API key required');
-  }
 
-  const res = await fetch('/api/stremio/silent-add', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-    },
-    body: JSON.stringify({ url: trimmed }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3_000);
 
-  let data = null;
   try {
-    data = await res.json();
-  } catch {
-    // ignore parse errors; fall through to status check
-  }
+    const response = await fetch(trimmed, {
+      method: 'GET',
+      mode: 'cors',
+      // Stop before the post-add CDN hop — that body is the video.
+      redirect: 'manual',
+      credentials: 'omit',
+      cache: 'no-store',
+      referrerPolicy: 'no-referrer',
+      signal: controller.signal,
+    });
 
-  if (!res.ok || !data?.success) {
-    throw new Error(data?.error || `Silent add failed (${res.status})`);
-  }
+    try {
+      await response.body?.cancel?.();
+    } catch {
+      // ignore cancel errors on opaque / already-closed bodies
+    }
 
-  return true;
+    if (
+      response.type === 'opaqueredirect' ||
+      response.status === 0 ||
+      REDIRECT_STATUSES.has(response.status)
+    ) {
+      return true;
+    }
+
+    throw new Error(
+      `Stream URL did not redirect (expected 301/302/303/307/308, got ${response.status}). Refusing to read a media body.`
+    );
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      // Slow first hop — request was sent (add may have run); stop any body read.
+      return true;
+    }
+    // Chromium page context: redirect:manual + cross-origin 302 → TypeError
+    // ("Failed to fetch") even though the addon add hop completed. See caller DevTools:
+    // status 302, no CDN follow.
+    if (error instanceof TypeError) {
+      return true;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
