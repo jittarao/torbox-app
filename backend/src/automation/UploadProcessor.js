@@ -37,7 +37,9 @@ import {
   UPLOAD_CONNECTION_SOFT_DEFER_MS,
   UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
   UPLOAD_CONNECTION_DEFER_MS,
+  UPLOAD_RECOVERY_CONCURRENCY,
 } from '../config/uploadProcessorConfig.js';
+import { runWithConcurrency } from '../routes/admin/concurrency.js';
 import {
   syncAllRateLimitDeferrals,
   deferQueuedUploadSiblings,
@@ -2006,25 +2008,35 @@ class UploadProcessor {
       const activeUsers = this.masterDatabase.getActiveUsers();
       let totalRecovered = 0;
 
-      const recoveryResults = await Promise.allSettled(
-        activeUsers.map(async (user) => {
-          const userDb = await this.userDatabaseManager.getUserDatabase(user.auth_id);
-          return this.recoverStuckProcessingUploads(userDb, user.auth_id);
-        })
+      const recoveryResults = await runWithConcurrency(
+        activeUsers,
+        async (user) => {
+          try {
+            const userDb = await this.userDatabaseManager.getUserDatabase(user.auth_id);
+            try {
+              return await this.recoverStuckProcessingUploads(userDb, user.auth_id);
+            } finally {
+              this.userDatabaseManager.closeConnection(user.auth_id);
+            }
+          } catch (error) {
+            logger.error('Error recovering stuck uploads for user', error, {
+              authId: user.auth_id,
+            });
+            return 0;
+          }
+        },
+        UPLOAD_RECOVERY_CONCURRENCY
       );
 
-      for (const r of recoveryResults) {
-        if (r.status === 'fulfilled') {
-          totalRecovered += r.value;
-        } else {
-          logger.error('Error recovering stuck uploads for user', r.reason);
-        }
+      for (const recovered of recoveryResults) {
+        totalRecovered += recovered || 0;
       }
 
       if (totalRecovered > 0) {
         logger.info('Recovery completed for all users', {
           totalRecovered,
           userCount: activeUsers.length,
+          concurrency: UPLOAD_RECOVERY_CONCURRENCY,
         });
       }
 
@@ -2167,15 +2179,34 @@ class UploadProcessor {
         false
       );
     } finally {
-      const after = currentUserDb.db
-        .prepare('SELECT status FROM uploads WHERE id = ?')
-        .get(upload.id);
+      currentUserDb = await this._releaseClaimedUploadIfStillProcessing(
+        authId,
+        upload.id,
+        currentUserDb,
+        processOutcome
+      );
+    }
+
+    return { userDb: currentUserDb, outcome: processOutcome };
+  }
+
+  /**
+   * If processUpload left the row in `processing` without success, reset to `queued`.
+   * Re-opens the user DB when the pooled handle was closed mid-await (e.g. counter sync).
+   * Never throws — claim finally must not abort the drain.
+   * @returns {Promise<Object>} Possibly refreshed userDb
+   */
+  async _releaseClaimedUploadIfStillProcessing(authId, uploadId, userDb, processOutcome) {
+    let currentUserDb = userDb;
+
+    const resetIfNeeded = (db) => {
+      const after = db.db.prepare('SELECT status FROM uploads WHERE id = ?').get(uploadId);
       if (after?.status === 'processing' && !processOutcome.success) {
         logger.warn('Upload still processing after processUpload; resetting to queued', {
-          uploadId: upload.id,
+          uploadId,
           authId,
         });
-        currentUserDb.db
+        db.db
           .prepare(
             `
             UPDATE uploads
@@ -2186,12 +2217,40 @@ class UploadProcessor {
             WHERE id = ? AND status = 'processing'
           `
           )
-          .run(upload.id);
+          .run(uploadId);
+        return true;
+      }
+      return false;
+    };
+
+    try {
+      let needsCounterUpdate = false;
+      try {
+        needsCounterUpdate = resetIfNeeded(currentUserDb);
+      } catch (error) {
+        if (!isClosedDatabaseError(error)) {
+          throw error;
+        }
+        logger.warn('Database closed during claim release; reopening', {
+          authId,
+          uploadId,
+          error: error.message,
+        });
+        currentUserDb = await this.userDatabaseManager.getUserDatabase(authId);
+        needsCounterUpdate = resetIfNeeded(currentUserDb);
+      }
+
+      if (needsCounterUpdate) {
         await this.masterDatabase.updateUploadCounters(authId, currentUserDb);
       }
+    } catch (error) {
+      logger.error('Failed to release claimed upload after processUpload', error, {
+        authId,
+        uploadId,
+      });
     }
 
-    return { userDb: currentUserDb, outcome: processOutcome };
+    return currentUserDb;
   }
 
   /**
@@ -2304,8 +2363,8 @@ class UploadProcessor {
    */
   async _processUserUploads(user, { shouldCleanup, shouldRecover }) {
     const { auth_id } = user;
-    const userDb = await this.userDatabaseManager.getUserDatabase(auth_id);
-    this.userDatabaseManager.pool.markActive(auth_id);
+    // Pin atomically with get so counter sync / backfill cannot closeConnection mid-drain.
+    const userDb = await this.userDatabaseManager.getUserDatabase(auth_id, { pin: true });
 
     try {
       if (shouldCleanup) {
@@ -2335,6 +2394,8 @@ class UploadProcessor {
       logger.error('Error processing uploads for user', error, {
         authId: auth_id,
       });
+    } finally {
+      this.userDatabaseManager.markInactive(auth_id);
     }
   }
 
@@ -2470,7 +2531,8 @@ class UploadProcessor {
     });
 
     // Note: Recovery is called separately before start() in initializeServices()
-    // to ensure it completes before syncUploadCountersForAllUsers()
+    // (after counter sync / quota backfill) so the first processUploads() does not
+    // race batch closeConnection sweeps.
 
     // Process immediately on start (to process any recovered uploads)
     this.processUploads();

@@ -39,6 +39,7 @@ class UserPoller {
     this.userDatabaseManager = userDatabaseManager;
     this.isPolling = false;
     this._pollGeneration = 0; // So zombie poll finally doesn't clear isPolling after timeout + new poll
+    this._dbPinned = false; // true while poll-cycle pin is held on userDatabaseManager
     this.lastPollAt = null; // When poller last completed a poll (used for scheduling and cleanup)
     this.lastPollError = null;
     /** Cancellation token set by the scheduler when the per-user timeout fires so ghost polls exit early */
@@ -243,15 +244,29 @@ class UserPoller {
   async _ensureDbManager() {
     if (this.dbManager) return;
     if (!this.userDatabaseManager) return;
-    const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId);
+    const userDbConnection = await this.userDatabaseManager.getUserDatabase(this.authId, {
+      pin: true,
+    });
     if (userDbConnection?.db) {
       this.dbManager = new DatabaseConnectionManager(
         this.authId,
         userDbConnection.db,
         this.userDatabaseManager
       );
-      this.userDatabaseManager.markActive(this.authId);
+      this._dbPinned = true;
     }
+  }
+
+  /**
+   * Drop the poll-cycle pin so closeConnection can remove the pooled handle.
+   * @private
+   */
+  _releaseDbPin() {
+    if (!this._dbPinned || !this.userDatabaseManager) {
+      return;
+    }
+    this.userDatabaseManager.markInactive(this.authId);
+    this._dbPinned = false;
   }
 
   /**
@@ -747,6 +762,7 @@ class UserPoller {
         errorMessage: error.message,
       });
       if (this.userDatabaseManager) {
+        this._releaseDbPin();
         this.userDatabaseManager.closeConnection(this.authId);
       }
       this.dbManager = null;
@@ -766,6 +782,7 @@ class UserPoller {
         hasAutomationEngine: !!this.automationEngine,
       });
       if (this.userDatabaseManager) {
+        this._releaseDbPin();
         this.userDatabaseManager.closeConnection(this.authId);
       }
       this.dbManager = null;
@@ -926,6 +943,7 @@ class UserPoller {
       }
       // Close connection after poll so we don't hold 100s of idle connections; next poll will open fresh
       if (this.userDatabaseManager) {
+        this._releaseDbPin();
         this.userDatabaseManager.closeConnection(this.authId);
       }
       this.dbManager = null;

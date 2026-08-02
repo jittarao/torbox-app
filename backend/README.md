@@ -188,6 +188,7 @@ Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uplo
 | ------------------------------------- | ----------------------------------------------------------------------------- | ---------------- |
 | `UPLOAD_BATCH_FETCH_SIZE`             | SQL rows fetched per in-memory per-type queue buffer                          | `50`             |
 | `UPLOAD_MAX_WORK_PER_DRAIN`           | Max uploads processed per drain invocation before yielding the worker         | `25`             |
+| `UPLOAD_RECOVERY_CONCURRENCY`         | Max concurrent user DBs during startup stuck-upload recovery                  | `8`              |
 | `CREATE_UPLOAD_TIMEOUT_MS`            | TorBox create API request timeout (ms)                                        | `30000`          |
 | `UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS` | TorBox rate-limit fallback (ms) when response headers omit reset/retry timing | `300000` (5 min) |
 

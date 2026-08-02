@@ -645,3 +645,81 @@ describe('UploadProcessor drain integration (real claim path)', () => {
     });
   });
 });
+
+describe('UploadProcessor closed-DB / pool race guards', () => {
+  let env;
+
+  beforeEach(async () => {
+    env = await createUploadTestEnv();
+  });
+
+  afterEach(() => {
+    cleanupUploadTestEnv(env);
+  });
+
+  test('closeConnection skips while pinned (pinCounts / activeOperations)', async () => {
+    const userDb = await env.userDatabaseManager.getUserDatabase(env.authId, { pin: true });
+
+    expect(env.userDatabaseManager.closeConnection(env.authId)).toBe(false);
+    expect(userDb.db.prepare('SELECT 1 as ok').get().ok).toBe(1);
+
+    env.userDatabaseManager.markInactive(env.authId);
+    expect(env.userDatabaseManager.closeConnection(env.authId)).toBe(true);
+  });
+
+  test('pin survives pool delete + reconnect so closeConnection still skips', async () => {
+    await env.userDatabaseManager.getUserDatabase(env.authId, { pin: true });
+    env.userDatabaseManager.pool.delete(env.authId);
+
+    const reopened = await env.userDatabaseManager.getUserDatabase(env.authId);
+    expect(env.userDatabaseManager.closeConnection(env.authId)).toBe(false);
+    expect(reopened.db.prepare('SELECT 1 as ok').get().ok).toBe(1);
+
+    env.userDatabaseManager.markInactive(env.authId);
+    expect(env.userDatabaseManager.closeConnection(env.authId)).toBe(true);
+  });
+
+  test('claim finally reopens closed DB and resets stuck processing row', async () => {
+    const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
+    const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
+
+    userDb.db
+      .prepare(
+        `
+        INSERT INTO uploads (type, upload_type, url, name, status, queue_order)
+        VALUES ('torrent', 'magnet', 'magnet:?xt=urn:btih:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'stuck', 'queued', 1)
+      `
+      )
+      .run();
+    const uploadId = userDb.db.prepare('SELECT last_insert_rowid() as id').get().id;
+    const upload = userDb.db.prepare('SELECT * FROM uploads WHERE id = ?').get(uploadId);
+
+    processor.processUpload = async () => {
+      env.userDatabaseManager.pool.delete(env.authId);
+      return { success: false, stopTypeDrain: false };
+    };
+
+    const { outcome } = await processor._claimAndProcessUpload(upload, env.authId, userDb);
+    expect(outcome.success).toBe(false);
+
+    const freshDb = await env.userDatabaseManager.getUserDatabase(env.authId);
+    const row = freshDb.db.prepare('SELECT status FROM uploads WHERE id = ?').get(uploadId);
+    expect(row.status).toBe('queued');
+    env.userDatabaseManager.closeConnection(env.authId);
+  });
+
+  test('_processUserUploads pins via getUserDatabase and unpins so closeConnection works after drain', async () => {
+    const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
+    processor._drainUserQueues = async () => ({ userDb: null, totalProcessed: 1 });
+
+    await processor._processUserUploads(
+      { auth_id: env.authId, queued_uploads_count: 1 },
+      { shouldCleanup: false, shouldRecover: false }
+    );
+
+    expect(env.userDatabaseManager.pinCounts.get(env.authId) ?? 0).toBe(0);
+    const entry = env.userDatabaseManager.pool.cache.get(env.authId);
+    expect(entry?.activeOperations ?? 0).toBe(0);
+    expect(env.userDatabaseManager.closeConnection(env.authId)).toBe(true);
+  });
+});

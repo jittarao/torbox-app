@@ -5,6 +5,7 @@ describe('uploadProcessorConfig', () => {
     batch: process.env.UPLOAD_BATCH_FETCH_SIZE,
     work: process.env.UPLOAD_MAX_WORK_PER_DRAIN,
     timeout: process.env.CREATE_UPLOAD_TIMEOUT_MS,
+    recovery: process.env.UPLOAD_RECOVERY_CONCURRENCY,
   };
 
   afterEach(() => {
@@ -14,7 +15,9 @@ describe('uploadProcessorConfig', () => {
           ? 'UPLOAD_BATCH_FETCH_SIZE'
           : key === 'work'
             ? 'UPLOAD_MAX_WORK_PER_DRAIN'
-            : 'CREATE_UPLOAD_TIMEOUT_MS';
+            : key === 'recovery'
+              ? 'UPLOAD_RECOVERY_CONCURRENCY'
+              : 'CREATE_UPLOAD_TIMEOUT_MS';
       if (val === undefined) {
         delete process.env[envKey];
       } else {
@@ -31,6 +34,7 @@ describe('uploadProcessorConfig', () => {
     delete process.env.UPLOAD_CONNECTION_SOFT_DEFER_MS;
     delete process.env.UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE;
     delete process.env.UPLOAD_CONNECTION_DEFER_MS;
+    delete process.env.UPLOAD_RECOVERY_CONCURRENCY;
     const mod = await import('../uploadProcessorConfig.js?t=' + Date.now());
     expect(mod.UPLOAD_BATCH_FETCH_SIZE).toBe(50);
     expect(mod.UPLOAD_MAX_WORK_PER_DRAIN).toBe(25);
@@ -39,15 +43,18 @@ describe('uploadProcessorConfig', () => {
     expect(mod.UPLOAD_CONNECTION_SOFT_DEFER_MS).toBe(30 * 1000);
     expect(mod.UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE).toBe(3);
     expect(mod.UPLOAD_CONNECTION_DEFER_MS).toBe(15 * 60 * 1000);
+    expect(mod.UPLOAD_RECOVERY_CONCURRENCY).toBe(8);
   });
 
   test('falls back to defaults for non-positive values', async () => {
     process.env.UPLOAD_BATCH_FETCH_SIZE = '0';
     process.env.UPLOAD_MAX_WORK_PER_DRAIN = '-5';
     process.env.CREATE_UPLOAD_TIMEOUT_MS = 'abc';
+    process.env.UPLOAD_RECOVERY_CONCURRENCY = '0';
     const mod = await import('../uploadProcessorConfig.js?t=' + Date.now());
     expect(mod.UPLOAD_BATCH_FETCH_SIZE).toBe(50);
     expect(mod.UPLOAD_MAX_WORK_PER_DRAIN).toBe(25);
     expect(mod.CREATE_UPLOAD_TIMEOUT_MS).toBe(30000);
+    expect(mod.UPLOAD_RECOVERY_CONCURRENCY).toBe(8);
   });
 });

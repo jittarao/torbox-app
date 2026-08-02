@@ -22,6 +22,7 @@
 #   UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS — TorBox rate-limit fallback when headers omit timing (default 300000)
 #   UPLOAD_BATCH_FETCH_SIZE      — SQL fetch size per queue buffer (default 50)
 #   UPLOAD_MAX_WORK_PER_DRAIN    — max uploads per drain invocation (default 25)
+#   UPLOAD_RECOVERY_CONCURRENCY  — max concurrent user DBs during startup stuck-upload recovery (default 8)
 #   CREATE_UPLOAD_TIMEOUT_MS     — TorBox create request timeout ms (default 30000)
 #   AUTOMATION_INACTIVE_USER_DAYS — skip automation for users inactive N days (default 30; 0 disables)
 #   STREMIO_ALLOW_HTTP           — "true" to allow http:// Stremio manifests (default HTTPS-only)
@@ -73,6 +74,7 @@ services:
       UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS: ${UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS:-300000}
       UPLOAD_BATCH_FETCH_SIZE: ${UPLOAD_BATCH_FETCH_SIZE:-50}
       UPLOAD_MAX_WORK_PER_DRAIN: ${UPLOAD_MAX_WORK_PER_DRAIN:-25}
+      UPLOAD_RECOVERY_CONCURRENCY: ${UPLOAD_RECOVERY_CONCURRENCY:-8}
       CREATE_UPLOAD_TIMEOUT_MS: ${CREATE_UPLOAD_TIMEOUT_MS:-30000}
       AUTOMATION_INACTIVE_USER_DAYS: ${AUTOMATION_INACTIVE_USER_DAYS:-30}
       AUTOMATION_RULES_MYLIST_FULL_PAGINATION: ${AUTOMATION_RULES_MYLIST_FULL_PAGINATION:-}

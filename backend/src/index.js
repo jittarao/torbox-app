@@ -324,12 +324,9 @@ class TorBoxBackend {
         logger.info('No stuck uploads found on startup');
       }
 
-      // Start the upload processor
-      this.uploadProcessor.start();
-      logger.info('Upload processor started');
-
       // Sync upload counters on startup (safety net to fix any drift)
-      // This runs after recovery to ensure recovered uploads are counted
+      // Runs after recovery so recovered uploads are counted, and *before* starting
+      // the upload processor so batch closeConnection cannot race active drains.
       logger.info('Syncing upload counters for all users...');
       await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
       logger.info('Upload counter sync completed');
@@ -339,6 +336,10 @@ class TorBoxBackend {
       );
       await this.uploadQuotaService.backfillAllUsers(this.userDatabaseManager);
       logger.info('Upload quota backfill completed');
+
+      // Start the upload processor after startup DB sweeps finish
+      this.uploadProcessor.start();
+      logger.info('Upload processor started');
 
       // Sync has_active_rules before the scheduler starts so spreadOverdueUsersOnStartup() and
       // the first poll tick see corrected flags (admin: POST /api/admin/automation/sync-rules-flags).
