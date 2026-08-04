@@ -141,6 +141,18 @@ export function setupAutomationRoutes(app, backend) {
         }
         res.json({ success: true, message: 'Rules saved successfully', rules: savedRules });
       } catch (error) {
+        if (error?.isValidationError || error?.name === 'RuleValidationError') {
+          logger.warn('Automation rules rejected (validation)', {
+            endpoint: '/api/automation/rules',
+            method: 'POST',
+            authId,
+            message: error.message,
+          });
+          return res.status(400).json({
+            success: false,
+            error: error.message,
+          });
+        }
         logger.error('Error saving automation rules', error, {
           endpoint: '/api/automation/rules',
           method: 'POST',

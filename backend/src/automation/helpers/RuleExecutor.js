@@ -3,6 +3,7 @@ import {
   isDestructiveOperation,
   PROTECTION_SKIP_REASON,
 } from '../../config/destructiveDownloadOperations.mjs';
+import { isActiveDownloadLimitError } from '../../api/ApiClient.js';
 
 /**
  * Executor for rule actions
@@ -23,12 +24,13 @@ class RuleExecutor {
    *
    * @param {Object} rule - Rule configuration
    * @param {Array} torrents - Torrents to process
-   * @returns {Promise<Object>} - { successCount, errorCount }
+   * @returns {Promise<Object>} - { successCount, errorCount, protectedSkippedCount, abortedCount }
    */
   async executeActions(rule, torrents) {
     let successCount = 0;
     let errorCount = 0;
     let protectedSkippedCount = 0;
+    let abortedCount = 0;
 
     // Resolve the evaluator once outside the loop to avoid N async pool lookups per rule execution
     const ruleEvaluator = await this.getRuleEvaluator();
@@ -60,22 +62,34 @@ class RuleExecutor {
     // Worker-pool: each worker drains the shared queue until empty.
     // Node.js is single-threaded so queue.shift() and counter mutations are safe across workers.
     const queue = [...torrents];
+    let abortRemaining = false;
+    let abortReason = null;
+
+    const discardRemaining = () => {
+      const remaining = queue.splice(0, queue.length);
+      abortedCount += remaining.length;
+    };
 
     const worker = async () => {
       while (queue.length > 0) {
+        if (abortRemaining) {
+          discardRemaining();
+          return;
+        }
+
         const torrent = queue.shift();
         if (!torrent) continue;
 
         try {
           const action = rule.action;
-          const actionType = action?.type;
+          const currentActionType = action?.type;
           logger.debug('Executing action on torrent', {
             authId: this.authId,
             ruleId: rule.id,
             ruleName: rule.name,
             torrentId: torrent.id,
             torrentName: torrent.name,
-            action: actionType,
+            action: currentActionType,
             torrentStatus: ruleEvaluator.getTorrentStatus(torrent),
           });
 
@@ -92,7 +106,7 @@ class RuleExecutor {
               ruleName: rule.name,
               torrentId: torrent.id,
               torrentName: torrent.name,
-              action: actionType,
+              action: currentActionType,
             });
             continue;
           }
@@ -104,7 +118,23 @@ class RuleExecutor {
               ruleName: rule.name,
               torrentId: torrent.id,
               torrentName: torrent.name,
-              action: actionType,
+              action: currentActionType,
+            });
+            continue;
+          }
+
+          // Soft connection fallback returns { success: false, isConnectionError: true }
+          // — must not count as a successful action.
+          if (result?.success === false || result?.isConnectionError === true) {
+            errorCount++;
+            logger.debug('Action soft-failed (connection/API fallback)', {
+              authId: this.authId,
+              ruleId: rule.id,
+              ruleName: rule.name,
+              torrentId: torrent.id,
+              action: currentActionType,
+              error: result?.error,
+              message: result?.message,
             });
             continue;
           }
@@ -117,9 +147,32 @@ class RuleExecutor {
             ruleName: rule.name,
             torrentId: torrent.id,
             torrentName: torrent.name,
-            action: actionType,
+            action: currentActionType,
           });
         } catch (error) {
+          // Active download limit: further force_starts in this batch cannot succeed.
+          if (actionType === 'force_start' && isActiveDownloadLimitError(error)) {
+            if (!abortRemaining) {
+              abortRemaining = true;
+              abortReason = error.message || 'Active download limit reached';
+              errorCount++;
+              discardRemaining();
+              logger.warn(
+                'Active download limit reached — aborting remaining force_start actions',
+                {
+                  authId: this.authId,
+                  ruleId: rule.id,
+                  ruleName: rule.name,
+                  torrentId: torrent.id,
+                  abortedRemaining: abortedCount,
+                  message: abortReason,
+                }
+              );
+            }
+            // In-flight siblings that also hit the limit: skip without extra logs/counts.
+            continue;
+          }
+
           let torrentStatus = 'unknown';
           try {
             torrentStatus = ruleEvaluator.getTorrentStatus(torrent);
@@ -144,7 +197,7 @@ class RuleExecutor {
     const workerCount = Math.min(concurrency, torrents.length);
     await Promise.all(Array.from({ length: workerCount }, worker));
 
-    return { successCount, errorCount, protectedSkippedCount };
+    return { successCount, errorCount, protectedSkippedCount, abortedCount };
   }
 }
 

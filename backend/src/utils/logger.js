@@ -215,10 +215,14 @@ class Logger {
       res.statusCode <= 504 &&
       typeof safeUrl === 'string' &&
       safeUrl.startsWith('/api/stremio/');
+    // Unregistered / inactive users (requireRegisteredUser) — expected frontend probes.
+    const isExpectedClientError = res.locals?.expectedClientError === true && res.statusCode < 500;
 
     if (res.statusCode >= 500 && !isExpectedUpstreamProxyFailure) {
       this.logger.error(message, logData);
-    } else if (res.statusCode >= 400 || isExpectedUpstreamProxyFailure) {
+    } else if (isExpectedClientError || isExpectedUpstreamProxyFailure) {
+      this.logger.info(message, logData);
+    } else if (res.statusCode >= 400) {
       this.logger.warn(message, logData);
     } else if (this.isDebugEnabled()) {
       this.logger.info(message, logData);
