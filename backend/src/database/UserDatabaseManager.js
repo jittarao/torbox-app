@@ -9,15 +9,6 @@ import cache from '../utils/cache.js';
 import Semaphore from '../utils/semaphore.js';
 
 /**
- * Applied migrations whose tables can be missing when schema_migrations is stale
- * (e.g. pooled connection opened before migration shipped, or partial apply).
- */
-const APPLIED_MIGRATION_TABLE_CHECKS = [
-  { version: '024', table: 'stremio_addons' },
-  { version: '025', table: 'tmdb_credentials' },
-];
-
-/**
  * LRU Cache for database connections with metrics and monitoring.
  * Eviction is driven by lastAccess and activeOperations; refCount is a hint for LRU priority.
  * Connections with activeOperations > 0 are never evicted (e.g. during a poll).
@@ -526,66 +517,53 @@ class UserDatabaseManager {
     // Set to maxConnections - 1 to reserve one slot for the eviction mechanism.
     const poolLimit = Math.max(1, this.pool.maxSize - 1);
     this.connectionSemaphore = new Semaphore(poolLimit);
+
+    // Cached max user-migration version on disk (process lifetime; files only change on restart).
+    this._latestUserMigrationVersion = null;
   }
 
   /**
-   * @param {import('bun:sqlite').Database} db
-   * @param {string} tableName
-   * @returns {boolean}
-   * @private
+   * Highest user-migration version shipped in this process.
+   * @returns {Promise<number>}
    */
-  _userTableExists(db, tableName) {
-    return Boolean(
-      db.prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name=?").get(tableName)
-    );
-  }
-
-  /**
-   * Re-run migrations marked applied when their tables are missing (self-heal).
-   * @param {Object} connection
-   * @returns {Promise<void>}
-   * @private
-   */
-  async _repairMissingAppliedMigrations(connection) {
-    if (!connection?.migrationRunner || !connection?.db) return;
-
-    const missingVersions = [];
-    for (const { version, table } of APPLIED_MIGRATION_TABLE_CHECKS) {
-      if (this._userTableExists(connection.db, table)) continue;
-      const applied = connection.db
-        .prepare('SELECT 1 AS ok FROM schema_migrations WHERE version = ?')
-        .get(version);
-      if (applied) missingVersions.push(version);
+  async getLatestUserMigrationVersion() {
+    if (this._latestUserMigrationVersion != null) {
+      return this._latestUserMigrationVersion;
     }
-
-    if (missingVersions.length === 0) return;
-
-    logger.warn('User DB tables missing despite applied migrations; re-running', {
-      authId: connection.authId,
-      versions: missingVersions,
-    });
-
-    connection.db
-      .prepare(
-        `DELETE FROM schema_migrations WHERE version IN (${missingVersions.map(() => '?').join(', ')})`
-      )
-      .run(...missingVersions);
-    connection.migrationRunner.clearCache();
-    await connection.migrationRunner.runMigrations();
+    this._latestUserMigrationVersion =
+      await MigrationRunner.getLatestMigrationVersionNumber('user');
+    return this._latestUserMigrationVersion;
   }
 
   /**
-   * Apply any pending on-disk migrations for a pooled (or freshly opened) connection.
-   * Always delegates to MigrationRunner so new versions are picked up without a
-   * hardcoded table/version list — cheap no-op when schema_migrations is current.
+   * Apply pending migrations when this pooled connection may be behind on-disk versions.
+   * Cheap no-op when schemaVersion is current. Coalesces concurrent callers on the same handle.
+   * One-time schema heals belong in a new migration (e.g. 026), not per-request table checks.
    * @param {Object} connection
    * @returns {Promise<Object>}
    * @private
    */
   async _ensureConnectionMigrations(connection) {
     if (!connection?.migrationRunner) return connection;
-    await connection.migrationRunner.runMigrations();
-    await this._repairMissingAppliedMigrations(connection);
+
+    if (connection._migrationInFlight) {
+      await connection._migrationInFlight;
+      return connection;
+    }
+
+    const latest = await this.getLatestUserMigrationVersion();
+    if ((connection.schemaVersion ?? 0) >= latest) return connection;
+
+    connection._migrationInFlight = (async () => {
+      await connection.migrationRunner.runMigrations();
+      connection.schemaVersion = latest;
+    })();
+
+    try {
+      await connection._migrationInFlight;
+    } finally {
+      connection._migrationInFlight = null;
+    }
     return connection;
   }
 
@@ -651,9 +629,6 @@ class UserDatabaseManager {
       // Validate connection is still alive
       try {
         cached.db.prepare('SELECT 1').get();
-        // Connection is valid - refCount was incremented by get()
-        await this._ensureConnectionMigrations(cached);
-        return this._finalizeGetUserDatabase(authId, cached, pin);
       } catch (error) {
         if (isClosedDatabaseError(error)) {
           logger.warn('Cached database connection is stale, removing from pool', {
@@ -666,9 +641,14 @@ class UserDatabaseManager {
             authId,
             error: error.message,
           });
-          await this._ensureConnectionMigrations(cached);
-          return this._finalizeGetUserDatabase(authId, cached, pin);
+          // Still attempt to use the handle; migrations / queries may succeed.
         }
+      }
+
+      // pool.get already bumped refCount; only proceed if this handle is still pooled.
+      if (this.pool.cache.get(authId)?.value === cached) {
+        await this._ensureConnectionMigrations(cached);
+        return this._finalizeGetUserDatabase(authId, cached, pin);
       }
     }
 
@@ -816,7 +796,13 @@ class UserDatabaseManager {
     const migrationRunner = new MigrationRunner(db, 'user');
     await migrationRunner.runMigrations();
 
-    const dbConnection = { db, migrationRunner, authId, dbPath };
+    const dbConnection = {
+      db,
+      migrationRunner,
+      authId,
+      dbPath,
+      schemaVersion: await this.getLatestUserMigrationVersion(),
+    };
     this.pool.set(authId, dbConnection);
     return dbConnection;
   }
