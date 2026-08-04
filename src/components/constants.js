@@ -13,7 +13,7 @@ export {
   FETCH_TIMEOUT_MS,
 } from '@/config/apiConstants';
 
-export { NON_RETRYABLE_ERRORS } from '@/config/errors';
+export { NON_RETRYABLE_ERRORS, TORBOX_ERROR_CODES } from '@/config/errors';
 
 // Columns for the downloads page
 export const COLUMNS = {

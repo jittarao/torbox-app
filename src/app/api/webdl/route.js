@@ -9,7 +9,7 @@ import {
   patchCacheRemoveIds,
 } from '@/app/api/lib/downloadListSync';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
-import { sanitizeError } from '@/utils/sanitizeError';
+import { publicApiErrorResponse, sanitizeError } from '@/utils/sanitizeError';
 import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 
 const CACHE_TYPE = 'webdl';
@@ -44,7 +44,8 @@ export async function GET(request) {
     return buildListSyncResponse(result, CACHE_HEADERS);
   } catch (error) {
     console.error('Error fetching web download data:', error);
-    return NextResponse.json({ error: sanitizeError(error) }, { status: 500 });
+    const { body, status } = publicApiErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

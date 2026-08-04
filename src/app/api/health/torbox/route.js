@@ -3,12 +3,8 @@ import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { NextResponse } from 'next/server';
 
 import { sanitizeError } from '@/utils/sanitizeError';
-import {
-  API_BASE,
-  API_VERSION,
-  NON_RETRYABLE_ERRORS,
-  TORBOX_MANAGER_VERSION,
-} from '@/components/constants';
+import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import { TORBOX_ERROR_CODES } from '@/config/errors';
 
 export async function GET() {
   const headersList = await headers();
@@ -39,6 +35,7 @@ export async function GET() {
     const responseTime = Date.now() - startTime;
     const data = await response.json().catch(() => ({}));
 
+    // TorBox contract: prefer `success`, not only HTTP status.
     if (response.ok && data.success === true) {
       return NextResponse.json({
         status: 'healthy',
@@ -48,13 +45,15 @@ export async function GET() {
       });
     }
 
-    const authErrors = [
-      NON_RETRYABLE_ERRORS.AUTH_ERROR,
-      NON_RETRYABLE_ERRORS.BAD_TOKEN,
-      NON_RETRYABLE_ERRORS.NO_AUTH,
-    ];
+    // Permanent credential failures (client faults). AUTH_ERROR is a TorBox
+    // server-side verification fault and is treated as unhealthy/retryable.
+    const permanentAuthErrors = [TORBOX_ERROR_CODES.BAD_TOKEN, TORBOX_ERROR_CODES.NO_AUTH];
 
-    if (authErrors.includes(data.error) || response.status === 401 || response.status === 403) {
+    if (
+      permanentAuthErrors.includes(data.error) ||
+      response.status === 401 ||
+      response.status === 403
+    ) {
       return NextResponse.json({
         status: 'invalid-key',
         message: data.detail || 'Invalid or expired API key',
