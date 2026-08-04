@@ -13,7 +13,7 @@ import {
   isTorboxUploadApiFailure,
 } from './uploadResponseValidation.js';
 import { getExpectedTorrentHash, matchTorboxResource } from './uploadDuplicateResolve.js';
-import { isConnectionError } from '../utils/torboxErrors.js';
+import { isConnectionError, isTorboxServerError } from '../utils/torboxErrors.js';
 import {
   applyParsedHeaders,
   createEmptyRateLimitState,
@@ -36,6 +36,7 @@ import {
   UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
   UPLOAD_CONNECTION_SOFT_DEFER_MS,
   UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
+  UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE,
   UPLOAD_CONNECTION_DEFER_MS,
   UPLOAD_RECOVERY_CONCURRENCY,
 } from '../config/uploadProcessorConfig.js';
@@ -109,6 +110,9 @@ const MAX_BACKOFF_MS = 300000; // 5 minutes
 const CONNECTION_DEFER_MS = UPLOAD_CONNECTION_DEFER_MS;
 const CONNECTION_SOFT_DEFER_MS = UPLOAD_CONNECTION_SOFT_DEFER_MS;
 const CONNECTION_STRIKES_BEFORE_PAUSE = UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE;
+const GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE = UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE;
+/** Min interval between per-type connection-defer warn logs (soft or hard). */
+const CONNECTION_DEFER_WARN_THROTTLE_MS = 10_000;
 const CLEANUP_RETENTION_DAYS = 7;
 const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes - if processing longer, consider stuck
 const API_CLIENT_CACHE_MAX = parseInt(process.env.UPLOAD_API_CLIENT_CACHE_MAX || '300', 10);
@@ -161,6 +165,18 @@ class UploadProcessor {
 
     /** @type {Map<string, number>} Consecutive create connection failures keyed by authId:type. */
     this._connectionStrikesByUserType = new Map();
+
+    /** @type {Map<string, number>} Cross-user consecutive create failures keyed by upload type. */
+    this._globalConnectionStrikesByType = new Map();
+
+    /** @type {Map<string, number>} Process-wide create outage pause-until (epoch ms) keyed by type. */
+    this._globalConnectionPauseUntilByType = new Map();
+
+    /** @type {Map<string, number>} Last connection-defer warn timestamp keyed by type. */
+    this._connectionDeferWarnAtByType = new Map();
+
+    /** @type {Map<string, number>} Suppressed connection-defer warns since last emitted warn. */
+    this._connectionDeferSuppressedByType = new Map();
   }
 
   /**
@@ -770,24 +786,29 @@ class UploadProcessor {
    * @param {Object} userDb
    * @param {string} type
    * @param {Error} [error]
+   * @param {{ quiet?: boolean, suppressedCount?: number }} [options]
    * @returns {Promise<boolean>}
    */
-  async handleConnectionDeferral(upload, userDb, type, error = null) {
+  async handleConnectionDeferral(upload, userDb, type, error = null, options = {}) {
+    const { quiet = false, suppressedCount = 0 } = options;
     const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + CONNECTION_DEFER_MS));
 
-    logger.warn('TorBox API unavailable, deferring upload', {
-      uploadId: upload.id,
-      type,
-      waitTimeMs: CONNECTION_DEFER_MS,
-      nextAttemptAt,
-      error: error?.message,
-    });
-
-    if (error) {
-      logger.warn('TorBox connection error during upload deferral', {
+    if (!quiet) {
+      logger.warn('TorBox API unavailable, deferring upload', {
         uploadId: upload.id,
         type,
-        error: error.message,
+        waitTimeMs: CONNECTION_DEFER_MS,
+        nextAttemptAt,
+        error: error?.message,
+        ...(suppressedCount > 0 ? { suppressedSimilarWarns: suppressedCount } : {}),
+      });
+    } else {
+      logger.debug('TorBox API unavailable, deferring upload (quiet)', {
+        uploadId: upload.id,
+        type,
+        waitTimeMs: CONNECTION_DEFER_MS,
+        nextAttemptAt,
+        error: error?.message,
       });
     }
 
@@ -838,19 +859,33 @@ class UploadProcessor {
    * @param {Object} userDb
    * @param {string} type
    * @param {Error} [error]
+   * @param {{ quiet?: boolean, suppressedCount?: number }} [options]
    * @returns {Promise<boolean>}
    */
-  async handleSoftConnectionDeferral(upload, userDb, type, error = null) {
+  async handleSoftConnectionDeferral(upload, userDb, type, error = null, options = {}) {
+    const { quiet = false, suppressedCount = 0 } = options;
     const nextAttemptAt = this.formatDateForSQL(new Date(Date.now() + CONNECTION_SOFT_DEFER_MS));
 
-    logger.warn('TorBox create connection blip, soft-deferring upload', {
-      uploadId: upload.id,
-      type,
-      waitTimeMs: CONNECTION_SOFT_DEFER_MS,
-      nextAttemptAt,
-      error: error?.message,
-      errorCode: error?.code,
-    });
+    if (!quiet) {
+      logger.warn('TorBox create connection blip, soft-deferring upload', {
+        uploadId: upload.id,
+        type,
+        waitTimeMs: CONNECTION_SOFT_DEFER_MS,
+        nextAttemptAt,
+        error: error?.message,
+        errorCode: error?.code,
+        ...(suppressedCount > 0 ? { suppressedSimilarWarns: suppressedCount } : {}),
+      });
+    } else {
+      logger.debug('TorBox create connection blip, soft-deferring upload (quiet)', {
+        uploadId: upload.id,
+        type,
+        waitTimeMs: CONNECTION_SOFT_DEFER_MS,
+        nextAttemptAt,
+        error: error?.message,
+        errorCode: error?.code,
+      });
+    }
 
     userDb.db
       .prepare(
@@ -874,27 +909,103 @@ class UploadProcessor {
     return `${authId}:${type}`;
   }
 
+  /**
+   * Throttle per-type connection-defer warns; returns whether to emit warn + suppressed count.
+   * @param {string} type
+   * @returns {{ shouldWarn: boolean, suppressedCount: number }}
+   */
+  _consumeConnectionDeferWarnSlot(type) {
+    const now = Date.now();
+    const lastAt = this._connectionDeferWarnAtByType.get(type) ?? 0;
+    const suppressed = this._connectionDeferSuppressedByType.get(type) ?? 0;
+    if (now - lastAt >= CONNECTION_DEFER_WARN_THROTTLE_MS) {
+      this._connectionDeferWarnAtByType.set(type, now);
+      this._connectionDeferSuppressedByType.set(type, 0);
+      return { shouldWarn: true, suppressedCount: suppressed };
+    }
+    this._connectionDeferSuppressedByType.set(type, suppressed + 1);
+    return { shouldWarn: false, suppressedCount: 0 };
+  }
+
+  isGlobalConnectionPaused(type) {
+    if (!type) return false;
+    const untilMs = this._globalConnectionPauseUntilByType.get(type);
+    if (untilMs == null) return false;
+    if (untilMs <= Date.now()) {
+      this._globalConnectionPauseUntilByType.delete(type);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Open a process-wide create pause for this upload type.
+   * @param {string} type
+   * @param {string} [reason]
+   */
+  openGlobalConnectionPause(type, reason = 'consecutive_failures') {
+    if (!type) return;
+    const untilMs = Date.now() + CONNECTION_DEFER_MS;
+    const alreadyPaused = this.isGlobalConnectionPaused(type);
+    this._globalConnectionPauseUntilByType.set(type, untilMs);
+    this._globalConnectionStrikesByType.set(type, 0);
+    if (!alreadyPaused) {
+      logger.warn('TorBox create API global outage pause', {
+        type,
+        reason,
+        waitTimeMs: CONNECTION_DEFER_MS,
+        nextAttemptAt: this.formatDateForSQL(new Date(untilMs)),
+        globalStrikesBeforePause: GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE,
+      });
+    }
+  }
+
+  /**
+   * Record a cross-user create failure. Returns true when a new global pause was opened.
+   * @param {string} type
+   * @returns {boolean}
+   */
+  noteGlobalConnectionFailure(type) {
+    if (!type) return true;
+    if (this.isGlobalConnectionPaused(type)) return false;
+    const strikes = (this._globalConnectionStrikesByType.get(type) ?? 0) + 1;
+    this._globalConnectionStrikesByType.set(type, strikes);
+    if (strikes >= GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE) {
+      this.openGlobalConnectionPause(type, 'global_strike_threshold');
+      return true;
+    }
+    return false;
+  }
+
   clearConnectionFailures(authId, type) {
     if (!authId || !type) return;
     this._connectionStrikesByUserType.delete(this._connectionStrikeKey(authId, type));
+    // Do not clear global strikes while an outage pause is active.
+    if (!this.isGlobalConnectionPaused(type)) {
+      this._globalConnectionStrikesByType.set(type, 0);
+    }
   }
 
   /**
    * Record a create connection failure. Returns true when the type should hard-pause.
    * @param {string} authId
    * @param {string} type
+   * @param {{ forceEscalate?: boolean }} [options]
    * @returns {boolean}
    */
-  noteConnectionFailure(authId, type) {
+  noteConnectionFailure(authId, type, { forceEscalate = false } = {}) {
     if (!authId || !type) return true;
     const key = this._connectionStrikeKey(authId, type);
-    const strikes = (this._connectionStrikesByUserType.get(key) ?? 0) + 1;
+    const strikes = forceEscalate
+      ? CONNECTION_STRIKES_BEFORE_PAUSE
+      : (this._connectionStrikesByUserType.get(key) ?? 0) + 1;
     this._connectionStrikesByUserType.set(key, strikes);
     return strikes >= CONNECTION_STRIKES_BEFORE_PAUSE;
   }
 
   /**
    * Soft-defer by default; escalate to type-wide outage pause after consecutive failures.
+   * HTTP 5xx escalates the user immediately. Cross-user failures open a global pause.
    * @param {Object} upload
    * @param {Object} userDb
    * @param {string} type
@@ -902,14 +1013,29 @@ class UploadProcessor {
    * @returns {Promise<{ stopTypeDrain: boolean }>}
    */
   async deferForConnectionError(upload, userDb, type, error = null) {
-    const escalate = this.noteConnectionFailure(upload.authId, type);
-    if (escalate) {
-      this.clearConnectionFailures(upload.authId, type);
-      await this.handleConnectionDeferral(upload, userDb, type, error);
+    const serverError = isTorboxServerError(error);
+    const escalate = this.noteConnectionFailure(upload.authId, type, {
+      forceEscalate: serverError,
+    });
+    const globalOpened = this.noteGlobalConnectionFailure(type);
+    const globalPaused = this.isGlobalConnectionPaused(type);
+    const warnSlot = this._consumeConnectionDeferWarnSlot(type);
+
+    if (escalate || globalOpened || globalPaused) {
+      if (escalate) {
+        this._connectionStrikesByUserType.delete(this._connectionStrikeKey(upload.authId, type));
+      }
+      await this.handleConnectionDeferral(upload, userDb, type, error, {
+        quiet: !warnSlot.shouldWarn,
+        suppressedCount: warnSlot.suppressedCount,
+      });
       return { stopTypeDrain: true };
     }
 
-    await this.handleSoftConnectionDeferral(upload, userDb, type, error);
+    await this.handleSoftConnectionDeferral(upload, userDb, type, error, {
+      quiet: !warnSlot.shouldWarn,
+      suppressedCount: warnSlot.suppressedCount,
+    });
     return { stopTypeDrain: false };
   }
 
@@ -1334,12 +1460,6 @@ class UploadProcessor {
     const isConnection = isConnectionError(error);
 
     if (isConnection) {
-      logger.warn('TorBox connection error during upload', {
-        uploadId: id,
-        type,
-        message: error.message,
-        code: error.code,
-      });
       return this.deferForConnectionError(upload, userDb, type, error);
     }
 
@@ -1488,6 +1608,15 @@ class UploadProcessor {
 
       if (this.isUncachedCreateQuotaExhausted(userDb, type)) {
         await this.handleRateLimitDeferral(upload, userDb, type, { uncached: true });
+        return uploadProcessResult(false, true);
+      }
+
+      if (this.isGlobalConnectionPaused(type)) {
+        const warnSlot = this._consumeConnectionDeferWarnSlot(type);
+        await this.handleConnectionDeferral(upload, userDb, type, null, {
+          quiet: !warnSlot.shouldWarn,
+          suppressedCount: warnSlot.suppressedCount,
+        });
         return uploadProcessResult(false, true);
       }
 
@@ -2283,6 +2412,32 @@ class UploadProcessor {
           break;
         }
         if (typeStopped[type]) {
+          continue;
+        }
+
+        if (this.isGlobalConnectionPaused(type)) {
+          // Still claim one item so siblings get deferred to nextAttemptAt, then stop.
+          const { upload, userDb: dbAfterFetch } = await buffers[type].next(
+            this,
+            currentUserDb,
+            authId,
+            type
+          );
+          currentUserDb = dbAfterFetch;
+          if (upload) {
+            const { userDb: dbAfterClaim, outcome } = await this._claimAndProcessUpload(
+              upload,
+              authId,
+              currentUserDb
+            );
+            currentUserDb = dbAfterClaim;
+            if (outcome) {
+              workRemaining--;
+              totalProcessed++;
+              processedThisCycle++;
+            }
+          }
+          typeStopped[type] = true;
           continue;
         }
 

@@ -24,3 +24,15 @@ export function isConnectionError(error) {
 
   return error.response.status >= 500;
 }
+
+/**
+ * TorBox HTTP 5xx (or flagged outage) — not a single-request timeout blip.
+ * @param {Error|undefined|null} error
+ * @returns {boolean}
+ */
+export function isTorboxServerError(error) {
+  if (!error) return false;
+  if (error.isTorboxServerError === true) return true;
+  const status = error.response?.status;
+  return typeof status === 'number' && status >= 500;
+}

@@ -33,6 +33,7 @@ describe('uploadProcessorConfig', () => {
     delete process.env.UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS;
     delete process.env.UPLOAD_CONNECTION_SOFT_DEFER_MS;
     delete process.env.UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE;
+    delete process.env.UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE;
     delete process.env.UPLOAD_CONNECTION_DEFER_MS;
     delete process.env.UPLOAD_RECOVERY_CONCURRENCY;
     const mod = await import('../uploadProcessorConfig.js?t=' + Date.now());
@@ -42,6 +43,7 @@ describe('uploadProcessorConfig', () => {
     expect(mod.UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS).toBe(5 * 60 * 1000);
     expect(mod.UPLOAD_CONNECTION_SOFT_DEFER_MS).toBe(30 * 1000);
     expect(mod.UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE).toBe(3);
+    expect(mod.UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE).toBe(5);
     expect(mod.UPLOAD_CONNECTION_DEFER_MS).toBe(15 * 60 * 1000);
     expect(mod.UPLOAD_RECOVERY_CONCURRENCY).toBe(8);
   });

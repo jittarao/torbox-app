@@ -247,6 +247,108 @@ describe('UploadProcessor outage handling', () => {
     expect(afterSuccess.stopTypeDrain).toBe(false);
   });
 
+  test('HTTP 5xx hard-pauses the user type immediately (not soft-defer)', async () => {
+    const userDb = createRecordingDb();
+    const processor = new UploadProcessor(null, {
+      updateUploadCounters: async () => {},
+    });
+
+    processor.isAtUncachedHourlyLimit = () => false;
+    processor.isUncachedCreateQuotaExhausted = () => false;
+    processor.isTypeRateLimitBlocked = () => false;
+    processor.getApiClient = async () => ({});
+    processor.buildFormData = async () => ({ getHeaders: () => ({}) });
+    processor.makeApiRequest = async () => {
+      throw Object.assign(new Error('Request failed with status code 500'), {
+        code: 'ERR_BAD_RESPONSE',
+        response: { status: 500, data: { detail: 'internal error' } },
+      });
+    };
+
+    const result = await processor.processUpload(
+      {
+        id: 40,
+        authId: 'auth-5xx',
+        type: 'webdl',
+        upload_type: 'url',
+        url: 'https://example.com/file.bin',
+        name: '5xx test',
+      },
+      userDb,
+      'queued'
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.stopTypeDrain).toBe(true);
+
+    const hardPause = userDb.calls.find(
+      (call) =>
+        call.sql.includes('UPDATE uploads') &&
+        call.sql.includes('WHERE id = ?') &&
+        call.params[0] === 'TorBox API unavailable. Will retry automatically.'
+    );
+    expect(hardPause).toBeDefined();
+  });
+
+  test('cross-user connection failures open a global create outage pause', async () => {
+    const processor = new UploadProcessor(null, {
+      updateUploadCounters: async () => {},
+    });
+
+    processor.isAtUncachedHourlyLimit = () => false;
+    processor.isUncachedCreateQuotaExhausted = () => false;
+    processor.isTypeRateLimitBlocked = () => false;
+    processor.getApiClient = async () => ({});
+    processor.buildFormData = async () => ({ getHeaders: () => ({}) });
+    processor.makeApiRequest = async () => {
+      throw Object.assign(new Error('Request failed with status code 500'), {
+        code: 'ERR_BAD_RESPONSE',
+        response: { status: 500 },
+      });
+    };
+
+    for (let i = 0; i < 5; i++) {
+      const userDb = createRecordingDb();
+      await processor.processUpload(
+        {
+          id: 100 + i,
+          authId: `auth-global-${i}`,
+          type: 'webdl',
+          upload_type: 'url',
+          url: 'https://example.com/file.bin',
+          name: `global ${i}`,
+        },
+        userDb,
+        'queued'
+      );
+    }
+
+    expect(processor.isGlobalConnectionPaused('webdl')).toBe(true);
+
+    const quietDb = createRecordingDb();
+    let apiCalled = false;
+    processor.makeApiRequest = async () => {
+      apiCalled = true;
+      throw new Error('should not call TorBox while globally paused');
+    };
+
+    const paused = await processor.processUpload(
+      {
+        id: 999,
+        authId: 'auth-after-pause',
+        type: 'webdl',
+        upload_type: 'url',
+        url: 'https://example.com/file.bin',
+        name: 'after pause',
+      },
+      quietDb,
+      'queued'
+    );
+
+    expect(apiCalled).toBe(false);
+    expect(paused.stopTypeDrain).toBe(true);
+  });
+
   test('handleFailedUpload fails immediately on TorBox API error without re-queue', async () => {
     const userDb = createRecordingDb();
     const processor = new UploadProcessor(null, {

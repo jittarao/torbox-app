@@ -120,7 +120,7 @@ class AutomationEngine {
 
   async initialize() {
     try {
-      logger.info('AutomationEngine initializing', { authId: this.authId });
+      logger.debug('AutomationEngine initializing', { authId: this.authId });
 
       // Initialize rule evaluator, load rules, and sync flag in parallel
       const [enabledRules] = await Promise.all([
@@ -164,7 +164,7 @@ class AutomationEngine {
       cache.invalidateUserRegistry(this.authId);
       const userInfo = this.masterDb.getUserRegistryInfo(this.authId);
 
-      logger.info('Checking next_poll_at during initialization', {
+      logger.debug('Checking next_poll_at during initialization', {
         authId: this.authId,
         hasUserInfo: !!userInfo,
         nextPollAt: userInfo?.next_poll_at,
@@ -192,7 +192,7 @@ class AutomationEngine {
           verificationSuccess: !!updatedUserInfo?.next_poll_at,
         });
       } else if (userInfo) {
-        logger.info('next_poll_at is already valid, skipping reset', {
+        logger.debug('next_poll_at is already valid, skipping reset', {
           authId: this.authId,
           nextPollAt: userInfo.next_poll_at,
         });
@@ -332,7 +332,7 @@ class AutomationEngine {
     }
     try {
       this.masterDb.updateActiveRulesFlag(this.authId, hasActiveRules);
-      logger.info('Updated active rules flag in master DB', {
+      logger.debug('Updated active rules flag in master DB', {
         authId: this.authId,
         hasActiveRules,
       });
@@ -362,7 +362,7 @@ class AutomationEngine {
       return;
     }
 
-    logger.info('Syncing active rules flag to master DB', {
+    logger.debug('Syncing active rules flag to master DB', {
       authId: this.authId,
       hasActiveRules: hasActive,
       previousMasterFlag: userInfo?.has_active_rules,
@@ -452,7 +452,7 @@ class AutomationEngine {
   async evaluateRules(torrents, changes = null) {
     const evaluationStartTime = Date.now();
     try {
-      logger.info('Starting rule evaluation', {
+      logger.debug('Starting rule evaluation', {
         authId: this.authId,
         torrentCount: torrents.length,
         timestamp: new Date().toISOString(),
@@ -488,7 +488,7 @@ class AutomationEngine {
       const results = await this.evaluateRulesBatch(enabledRules, torrents, changes);
       const evaluationDuration = ((Date.now() - evaluationStartTime) / 1000).toFixed(2);
 
-      logger.info('Rule evaluation cycle completed', {
+      const cycleMeta = {
         authId: this.authId,
         totalRules: enabledRules.length,
         executedCount: results.executedCount,
@@ -500,7 +500,13 @@ class AutomationEngine {
           enabledRules.length > 0
             ? `${(evaluationDuration / enabledRules.length).toFixed(2)}s`
             : '0s',
-      });
+      };
+      // Quiet no-op cycles; keep info when rules executed or errored.
+      if (results.executedCount > 0 || results.errorCount > 0) {
+        logger.info('Rule evaluation cycle completed', cycleMeta);
+      } else {
+        logger.debug('Rule evaluation cycle completed', cycleMeta);
+      }
 
       return {
         evaluated: enabledRules.length,
@@ -705,7 +711,7 @@ class AutomationEngine {
     );
 
     if (matchingTorrents.length === 0) {
-      logger.info('Rule did not match any torrents', {
+      logger.debug('Rule did not match any torrents', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
@@ -717,7 +723,7 @@ class AutomationEngine {
       return { executed: false, skipped: true, ruleId: rule.id };
     }
 
-    logger.info('Rule matched torrents', {
+    logger.debug('Rule matched torrents', {
       authId: this.authId,
       ruleId: rule.id,
       ruleName: rule.name,
@@ -990,7 +996,7 @@ class AutomationEngine {
           reason: 'No torrents matched rule conditions',
           executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
         };
-        logger.info('Rule did not match any torrents', {
+        logger.debug('Rule did not match any torrents', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,
@@ -999,7 +1005,7 @@ class AutomationEngine {
         return result;
       }
 
-      logger.info('Rule matched torrents', {
+      logger.debug('Rule matched torrents', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
