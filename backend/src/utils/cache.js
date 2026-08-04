@@ -21,6 +21,14 @@ class Cache {
       noUpdateTTL: true,
     });
 
+    // Path-only lookups for opening user DBs. Kept separate from userRegistryCache so
+    // SELECT db_path results never poison getUserRegistryInfo (which needs encrypted_key).
+    this.userDbPathCache = new TTLCache({
+      max: 8000,
+      ttl: 60000,
+      noUpdateTTL: true,
+    });
+
     // Explicit invalidateActiveUsers() is called on every mutation, so a longer TTL is safe
     this.activeUsersCache = new TTLCache({
       max: 1000,
@@ -80,7 +88,29 @@ class Cache {
    */
   setUserRegistry(authId, userInfo) {
     this.userRegistryCache.set(`userRegistry:${authId}`, userInfo);
+    if (userInfo?.db_path) {
+      this.setUserDbPath(authId, userInfo.db_path);
+    }
     logger.debug('Cached user registry info', { authId });
+  }
+
+  /**
+   * Get cached user DB path (path-only; safe for getUserDatabase hot path).
+   * @param {string} authId
+   * @returns {string|undefined}
+   */
+  getUserDbPath(authId) {
+    return this.userDbPathCache.get(`userDbPath:${authId}`);
+  }
+
+  /**
+   * Cache user DB path without writing a partial row into userRegistryCache.
+   * @param {string} authId
+   * @param {string} dbPath
+   */
+  setUserDbPath(authId, dbPath) {
+    if (!dbPath) return;
+    this.userDbPathCache.set(`userDbPath:${authId}`, dbPath);
   }
 
   /**
@@ -90,10 +120,12 @@ class Cache {
   invalidateUserRegistry(authId = null) {
     if (authId) {
       this.userRegistryCache.delete(`userRegistry:${authId}`);
+      this.userDbPathCache.delete(`userDbPath:${authId}`);
       logger.debug('Invalidated user registry cache', { authId });
     } else {
       // Invalidate all user registry entries
       this.userRegistryCache.clear();
+      this.userDbPathCache.clear();
       logger.debug('Invalidated all user registry cache');
     }
   }
@@ -168,6 +200,7 @@ class Cache {
   clear() {
     this.activeRulesCache.clear();
     this.userRegistryCache.clear();
+    this.userDbPathCache.clear();
     this.activeUsersCache.clear();
     this.recentRuleExecutionsCache.clear();
     logger.debug('Cleared all caches');
