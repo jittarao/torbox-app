@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { publicApiErrorResponse } from '@/utils/sanitizeError';
+import { logRouteError } from '@/utils/routeLog';
 
 export async function GET(request) {
   const headersList = await headers();
@@ -53,14 +54,18 @@ export async function GET(request) {
     }
 
     const errorCode = data.error || `API responded with status: ${response.status}`;
-    console.error('Error creating stream:', errorCode, data.detail || '');
+    logRouteError('Error creating stream', {
+      error: errorCode,
+      detail: data.detail,
+      message: data.detail ? `${errorCode} ${data.detail}` : errorCode,
+    });
     const { body, status } = publicApiErrorResponse(
       { error: errorCode, detail: data.detail },
       { fallbackStatus: response.ok ? 502 : response.status || 500 }
     );
     return NextResponse.json(body, { status });
   } catch (error) {
-    console.error('Error creating stream:', error);
+    logRouteError('Error creating stream', error);
     const { body, status } = publicApiErrorResponse(error);
     return NextResponse.json(body, { status });
   }

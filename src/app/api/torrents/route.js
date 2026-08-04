@@ -8,6 +8,7 @@ import {
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { queueTorrentUpload } from '@/app/api/lib/queueTorrentUpload';
 import { publicApiErrorResponse, sanitizeError } from '@/utils/sanitizeError';
+import { logRouteError } from '@/utils/routeLog';
 import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
@@ -42,7 +43,7 @@ export async function GET(request) {
 
     return buildListSyncResponse(result, CACHE_HEADERS);
   } catch (error) {
-    console.error('Error fetching torrents:', error);
+    logRouteError('Error fetching torrents', error);
 
     if (isTorboxFetchTimeout(error)) {
       return Response.json({ success: false, error: sanitizeError(error) }, { status: 408 });

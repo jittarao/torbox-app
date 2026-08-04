@@ -1,0 +1,59 @@
+import { describe, expect, test, afterEach, mock } from 'bun:test';
+import {
+  backendProxyErrorResponse,
+  isExpectedApiError,
+  logRouteError,
+  resetRouteLogForTests,
+} from '../routeLog.js';
+
+describe('routeLog', () => {
+  afterEach(() => {
+    resetRouteLogForTests();
+    mock.restore();
+  });
+
+  test('isExpectedApiError recognizes plan and auth faults', () => {
+    expect(isExpectedApiError(new Error('PLAN_RESTRICTED_FEATURE'))).toBe(true);
+    expect(isExpectedApiError(new Error('AUTH_ERROR'))).toBe(true);
+    expect(isExpectedApiError(new Error('Backend responded with status: 404'))).toBe(true);
+    expect(isExpectedApiError(new Error('SQL blew up'))).toBe(false);
+  });
+
+  test('logRouteError rate-limits expected faults without stacks', () => {
+    const warn = mock(() => {});
+    const error = mock(() => {});
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    console.warn = warn;
+    console.error = error;
+
+    try {
+      logRouteError('Error fetching torrents', new Error('PLAN_RESTRICTED_FEATURE'));
+      logRouteError('Error fetching torrents', new Error('PLAN_RESTRICTED_FEATURE'));
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      console.warn = originalWarn;
+      console.error = originalError;
+    }
+  });
+
+  test('backendProxyErrorResponse preserves 404 for unregistered users', async () => {
+    const warn = mock(() => {});
+    const originalWarn = console.warn;
+    console.warn = warn;
+
+    try {
+      const response = backendProxyErrorResponse(
+        { status: 404, data: { success: false, error: 'User not registered' } },
+        'Error fetching tags from backend'
+      );
+      expect(response.status).toBe(404);
+      const body = await response.json();
+      expect(body).toEqual({ success: false, error: 'User not registered' });
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      console.warn = originalWarn;
+    }
+  });
+});

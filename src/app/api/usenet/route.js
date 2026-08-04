@@ -10,6 +10,7 @@ import {
 } from '@/app/api/lib/downloadListSync';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { publicApiErrorResponse, sanitizeError } from '@/utils/sanitizeError';
+import { logRouteError } from '@/utils/routeLog';
 import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 
 const CACHE_TYPE = 'usenet';
@@ -43,7 +44,7 @@ export async function GET(request) {
 
     return buildListSyncResponse(result, CACHE_HEADERS);
   } catch (error) {
-    console.error('Error fetching usenet data:', error);
+    logRouteError('Error fetching usenet data', error);
 
     const message = error?.message || '';
     if (message.includes('502')) {
