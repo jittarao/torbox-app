@@ -9,6 +9,15 @@ import cache from '../utils/cache.js';
 import Semaphore from '../utils/semaphore.js';
 
 /**
+ * Applied migrations whose tables can be missing when schema_migrations is stale
+ * (e.g. pooled connection opened before migration shipped, or partial apply).
+ */
+const APPLIED_MIGRATION_TABLE_CHECKS = [
+  { version: '024', table: 'stremio_addons' },
+  { version: '025', table: 'tmdb_credentials' },
+];
+
+/**
  * LRU Cache for database connections with metrics and monitoring.
  * Eviction is driven by lastAccess and activeOperations; refCount is a hint for LRU priority.
  * Connections with activeOperations > 0 are never evicted (e.g. during a poll).
@@ -520,6 +529,52 @@ class UserDatabaseManager {
   }
 
   /**
+   * @param {import('bun:sqlite').Database} db
+   * @param {string} tableName
+   * @returns {boolean}
+   * @private
+   */
+  _userTableExists(db, tableName) {
+    return Boolean(
+      db.prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name=?").get(tableName)
+    );
+  }
+
+  /**
+   * Re-run migrations marked applied when their tables are missing (self-heal).
+   * @param {Object} connection
+   * @returns {Promise<void>}
+   * @private
+   */
+  async _repairMissingAppliedMigrations(connection) {
+    if (!connection?.migrationRunner || !connection?.db) return;
+
+    const missingVersions = [];
+    for (const { version, table } of APPLIED_MIGRATION_TABLE_CHECKS) {
+      if (this._userTableExists(connection.db, table)) continue;
+      const applied = connection.db
+        .prepare('SELECT 1 AS ok FROM schema_migrations WHERE version = ?')
+        .get(version);
+      if (applied) missingVersions.push(version);
+    }
+
+    if (missingVersions.length === 0) return;
+
+    logger.warn('User DB tables missing despite applied migrations; re-running', {
+      authId: connection.authId,
+      versions: missingVersions,
+    });
+
+    connection.db
+      .prepare(
+        `DELETE FROM schema_migrations WHERE version IN (${missingVersions.map(() => '?').join(', ')})`
+      )
+      .run(...missingVersions);
+    connection.migrationRunner.clearCache();
+    await connection.migrationRunner.runMigrations();
+  }
+
+  /**
    * Apply any pending on-disk migrations for a pooled (or freshly opened) connection.
    * Always delegates to MigrationRunner so new versions are picked up without a
    * hardcoded table/version list — cheap no-op when schema_migrations is current.
@@ -530,6 +585,7 @@ class UserDatabaseManager {
   async _ensureConnectionMigrations(connection) {
     if (!connection?.migrationRunner) return connection;
     await connection.migrationRunner.runMigrations();
+    await this._repairMissingAppliedMigrations(connection);
     return connection;
   }
 

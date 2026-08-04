@@ -69,4 +69,20 @@ describe('user DB migration ensure on getUserDatabase', () => {
     expect(tmdb.status).toBe(200);
     expect(tmdb.body).toEqual({ success: true, configured: false });
   });
+
+  test('dropped tables with migration markers still applied self-heal on next request', async () => {
+    const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
+    userDb.db.prepare('DROP TABLE IF EXISTS stremio_addons').run();
+    userDb.db.prepare('DROP TABLE IF EXISTS tmdb_credentials').run();
+    env.userDatabaseManager.releaseConnection(env.authId);
+
+    const stremio = await get('/api/stremio/addons');
+    expect(stremio.status).toBe(200);
+    expect(stremio.body.success).toBe(true);
+    expect(Array.isArray(stremio.body.addons)).toBe(true);
+
+    const tmdb = await get('/api/tmdb/credentials');
+    expect(tmdb.status).toBe(200);
+    expect(tmdb.body).toEqual({ success: true, configured: false });
+  });
 });
