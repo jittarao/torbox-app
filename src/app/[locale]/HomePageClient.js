@@ -8,10 +8,7 @@ import useIsClient from '@/hooks/useIsClient';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 import { useSession } from '@/components/shared/hooks/useSession';
 import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
-import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { useAppAlert } from '@/hooks/useAppAlert';
-
-const landingShell = <div className="min-h-dvh bg-[#0a0a0b]" aria-hidden />;
 
 const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
   loading: () => (
@@ -19,11 +16,6 @@ const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
       <div className="animate-spin rounded-full size-8 border-2 border-amber-500/30 border-t-amber-500"></div>
     </div>
   ),
-  ssr: false,
-});
-
-const LandingPage = dynamic(() => import('@/components/LandingPage'), {
-  loading: () => landingShell,
   ssr: false,
 });
 
@@ -80,31 +72,20 @@ export default function HomePageClient() {
   );
 
   useEffect(() => {
-    if (!isClient || !hydrated || didFocusMainRef.current) return;
+    if (!isClient || !hydrated || !apiKey || didFocusMainRef.current) return;
     didFocusMainRef.current = true;
     const el = mainRef.current;
     if (el && typeof el.focus === 'function') {
       el.focus({ preventScroll: true });
     }
-  }, [isClient, hydrated]);
+  }, [isClient, hydrated, apiKey]);
 
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
   };
 
-  if (!isClient || !hydrated) {
+  if (!isClient || !hydrated || !apiKey) {
     return <div className="min-h-dvh bg-[#0a0a0b] font-sans" aria-hidden inert />;
-  }
-
-  if (!apiKey) {
-    return (
-      <>
-        <SectionErrorBoundary>
-          <LandingPage onKeyChange={handleKeyChange} />
-        </SectionErrorBoundary>
-        <AppAlert />
-      </>
-    );
   }
 
   return (

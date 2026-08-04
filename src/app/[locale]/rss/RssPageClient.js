@@ -106,23 +106,7 @@ export default function RssPageClient() {
   }
 
   if (!apiKey) {
-    return (
-      <div className={`min-h-dvh bg-surface dark:bg-surface-dark font-sans`}>
-        <div className="flex min-h-dvh items-center justify-center">
-          <div className="text-center">
-            <h1 className="mb-4 text-2xl font-bold">API Key Required</h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Please enter your TorBox API key to access RSS feeds.
-            </p>
-            <div className="mt-4">
-              <p className="text-sm text-gray-500">
-                Please go to the main Downloads page to enter your API key.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
