@@ -91,7 +91,7 @@ export const down = (db) => {
 
 1. Add `NNN_description.js` under `master/` or `user/` with `up` / `down`.
 2. **Register it in `registration.js`**: add a static import and append the module to `MIGRATION_MODULE_BINDINGS`. Runtime still discovers files from disk via `MigrationRunner`; the registry keeps static analysis / agent tooling from drifting behind new schemas.
-3. Prefer idempotent DDL (`CREATE TABLE IF NOT EXISTS`, etc.). `UserDatabaseManager.getUserDatabase` always runs pending migrations on the pooled connection, so new versions apply without per-feature heal lists.
+3. Prefer idempotent DDL (`CREATE TABLE IF NOT EXISTS`, column-exists checks before `ALTER TABLE ADD COLUMN`). `UserDatabaseManager` applies pending migrations on DB open and when a pooled connection's `schemaVersion` is behind on-disk; do **not** add per-request table heal lists — ship a new migration for one-time schema repairs when an audit (e.g. `stremio_tmdb_schema_heal_summary`) shows they are needed.
 
 ### For Master Database
 

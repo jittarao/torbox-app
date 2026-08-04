@@ -37,6 +37,7 @@ import { setupLinkHistoryRoutes } from './routes/linkHistory.js';
 import UploadQuotaService from './services/UploadQuotaService.js';
 import ActivityTracker from './services/ActivityTracker.js';
 import { setupActivityRoutes } from './routes/activity.js';
+import { auditStremioTmdbSchema } from './database/stremioTmdbSchemaCheck.js';
 
 class TorBoxBackend {
   constructor() {
@@ -350,6 +351,9 @@ class TorBoxBackend {
         skipped: syncResult.skipped,
       };
       logger.info('has_active_rules sync completed before scheduler start', { ...syncStats });
+
+      // Audit only — does not create tables. Grep: stremio_tmdb_schema_heal_summary
+      await auditStremioTmdbSchema(this.masterDatabase, this.userDatabaseManager);
 
       // Initialize polling scheduler (pass automation engines map for sharing)
       this.pollingScheduler = new PollingScheduler(

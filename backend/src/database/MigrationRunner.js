@@ -11,12 +11,53 @@ void _migrationModuleBindings;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Normalize migration version keys so "16" and "016" compare equal.
+ * schema_migrations.version is TEXT; legacy/corrupt rows may omit zero-padding.
+ * @param {string|number} version
+ * @returns {string}
+ */
+export function normalizeMigrationVersion(version) {
+  const raw = String(version ?? '').trim();
+  if (!raw) return raw;
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 0) return raw;
+  return String(n).padStart(3, '0');
+}
+
 class MigrationRunner {
   constructor(db, dbType = 'user') {
     this.db = db;
     this.dbType = dbType; // 'master' or 'user'
     this.migrationsDir = path.join(__dirname, 'migrations', dbType);
     this._migrationFilesCache = null; // Cache migration files list
+  }
+
+  /**
+   * Highest numeric migration version present on disk for this dbType.
+   * Static so callers (e.g. UserDatabaseManager cache) do not need a stub DB.
+   * Used by the connection pool to skip remigration when already current.
+   * @param {string} [dbType='user']
+   * @returns {Promise<number>}
+   */
+  static async getLatestMigrationVersionNumber(dbType = 'user') {
+    const migrationsDir = path.join(__dirname, 'migrations', dbType);
+    let files;
+    try {
+      files = await fsPromises.readdir(migrationsDir);
+    } catch {
+      return 0;
+    }
+
+    let max = 0;
+    for (const file of files) {
+      if (!file.endsWith('.js')) continue;
+      const match = file.match(/^(\d+)_/);
+      if (!match) continue;
+      const n = parseInt(match[1], 10);
+      if (Number.isFinite(n) && n > max) max = n;
+    }
+    return max;
   }
 
   /**
@@ -93,14 +134,14 @@ class MigrationRunner {
   }
 
   /**
-   * Get applied migrations from database
+   * Get applied migrations from database (normalized version keys).
    */
   getAppliedMigrations() {
     try {
       const result = this.db
         .prepare('SELECT version FROM schema_migrations ORDER BY version')
         .all();
-      return result.map((row) => row.version);
+      return result.map((row) => normalizeMigrationVersion(row.version));
     } catch (error) {
       // Check if error is due to missing table (expected) or other issues
       if (error.message && error.message.includes('no such table')) {
@@ -117,9 +158,10 @@ class MigrationRunner {
   }
 
   /**
-   * Mark a migration as applied
+   * Mark a migration as applied (always store zero-padded version).
    */
   markMigrationApplied(version, name) {
+    const normalized = normalizeMigrationVersion(version);
     this.db
       .prepare(
         `
@@ -127,17 +169,16 @@ class MigrationRunner {
       VALUES (?, ?, CURRENT_TIMESTAMP)
     `
       )
-      .run(version, name);
+      .run(normalized, name);
   }
 
   /**
-   * Check if migration is applied
+   * Check if migration is applied (padding-insensitive).
    */
   isMigrationApplied(version) {
-    const result = this.db
-      .prepare('SELECT version FROM schema_migrations WHERE version = ?')
-      .get(version);
-    return !!result;
+    const normalized = normalizeMigrationVersion(version);
+    const result = this.db.prepare('SELECT version FROM schema_migrations').all();
+    return result.some((row) => normalizeMigrationVersion(row.version) === normalized);
   }
 
   /**
@@ -149,7 +190,7 @@ class MigrationRunner {
       throw new Error(`Invalid migration filename format: ${filename}`);
     }
     return {
-      version: match[1],
+      version: normalizeMigrationVersion(match[1]),
       name: match[2],
     };
   }
@@ -303,11 +344,14 @@ class MigrationRunner {
       }
 
       // Remove from applied migrations (only after successful rollback)
-      this.db.prepare('DELETE FROM schema_migrations WHERE version = ?').run(version);
+      const normalized = normalizeMigrationVersion(version);
+      this.db
+        .prepare('DELETE FROM schema_migrations WHERE version = ? OR version = ?')
+        .run(normalized, String(parseInt(normalized, 10)));
 
       logger.debug(`✓ Migration ${version} rolled back successfully`, {
         dbType: this.dbType,
-        version,
+        version: normalized,
       });
     } catch (error) {
       logger.error(`✗ Rollback of migration ${version} failed`, error, {

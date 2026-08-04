@@ -2,12 +2,15 @@
  * Add asset_types to automation_rules (torrent | usenet | webdl per rule)
  */
 export const up = (db) => {
-  db.prepare(
+  const tableInfo = db.prepare('PRAGMA table_info(automation_rules)').all();
+  if (!tableInfo.some((col) => col.name === 'asset_types')) {
+    db.prepare(
+      `
+      ALTER TABLE automation_rules
+      ADD COLUMN asset_types TEXT NOT NULL DEFAULT '["torrent"]'
     `
-    ALTER TABLE automation_rules
-    ADD COLUMN asset_types TEXT NOT NULL DEFAULT '["torrent"]'
-  `
-  ).run();
+    ).run();
+  }
 
   db.prepare(
     `

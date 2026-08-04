@@ -45,13 +45,13 @@ describe('user DB migration ensure on getUserDatabase', () => {
     expect(body.addons).toEqual([]);
   });
 
-  test('pooled connection applies any pending migrations before serving routes', async () => {
-    // Simulate a long-lived pool entry opened before migrations 024/025 existed:
-    // markers and tables are gone, but the handle stays pooled.
+  test('pooled connection applies pending migrations when schemaVersion is behind', async () => {
+    // Simulate a long-lived pool entry opened before migrations 024/025 existed.
     const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
     userDb.db.prepare('DELETE FROM schema_migrations WHERE version IN (?, ?)').run('024', '025');
     userDb.db.prepare('DROP TABLE IF EXISTS stremio_addons').run();
     userDb.db.prepare('DROP TABLE IF EXISTS tmdb_credentials').run();
+    userDb.schemaVersion = 23;
     env.userDatabaseManager.releaseConnection(env.authId);
 
     expect(
@@ -59,22 +59,6 @@ describe('user DB migration ensure on getUserDatabase', () => {
         .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='stremio_addons'")
         .get()
     ).toBeFalsy();
-
-    const stremio = await get('/api/stremio/addons');
-    expect(stremio.status).toBe(200);
-    expect(stremio.body.success).toBe(true);
-    expect(Array.isArray(stremio.body.addons)).toBe(true);
-
-    const tmdb = await get('/api/tmdb/credentials');
-    expect(tmdb.status).toBe(200);
-    expect(tmdb.body).toEqual({ success: true, configured: false });
-  });
-
-  test('dropped tables with migration markers still applied self-heal on next request', async () => {
-    const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
-    userDb.db.prepare('DROP TABLE IF EXISTS stremio_addons').run();
-    userDb.db.prepare('DROP TABLE IF EXISTS tmdb_credentials').run();
-    env.userDatabaseManager.releaseConnection(env.authId);
 
     const stremio = await get('/api/stremio/addons');
     expect(stremio.status).toBe(200);
