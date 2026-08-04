@@ -1,4 +1,5 @@
 import logger from '../../utils/logger.js';
+import { isClosedDatabaseError } from '../../utils/dbErrors.js';
 
 /**
  * Helper class for database operations with retry logic
@@ -52,10 +53,19 @@ class DatabaseRetryHelper {
    * @returns {boolean} - True if error is transient
    */
   static isTransientError(error) {
+    const message = error.message || '';
+    // Capacity exhaustion is not transient in the backoff sense — retrying immediately
+    // amplifies log spam and contention while the pool is full of pinned handles.
+    if (message.includes('pool exhausted')) {
+      return false;
+    }
     return (
-      error.message?.includes('SQLITE_BUSY') ||
-      error.message?.includes('database is locked') ||
-      error.message?.includes('connection') ||
+      isClosedDatabaseError(error) ||
+      message.includes('SQLITE_BUSY') ||
+      message.includes('database is locked') ||
+      message.includes('ECONNRESET') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('database connection is not open') ||
       error.code === 'SQLITE_BUSY' ||
       error.code === 'SQLITE_LOCKED'
     );

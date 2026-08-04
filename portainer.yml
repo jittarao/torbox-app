@@ -26,6 +26,7 @@
 #   UPLOAD_RECOVERY_CONCURRENCY  — max concurrent user DBs during startup stuck-upload recovery (default 8)
 #   CREATE_UPLOAD_TIMEOUT_MS     — TorBox create request timeout ms (default 30000)
 #   AUTOMATION_INACTIVE_USER_DAYS — skip automation for users inactive N days (default 30; 0 disables)
+#   MAX_DB_CONNECTIONS           — user SQLite pool size (default 50; raise on large multi-user hosts)
 #   STREMIO_ALLOW_HTTP           — "true" to allow http:// Stremio manifests (default HTTPS-only)
 #   STREMIO_MAX_ADDONS           — max installed addons per user (default 25)
 #   STREMIO_FETCH_RATE_LIMIT_MAX — external addon fetch rate limit per user / 15 min (default 120)
@@ -79,6 +80,7 @@ services:
       UPLOAD_RECOVERY_CONCURRENCY: ${UPLOAD_RECOVERY_CONCURRENCY:-8}
       CREATE_UPLOAD_TIMEOUT_MS: ${CREATE_UPLOAD_TIMEOUT_MS:-30000}
       AUTOMATION_INACTIVE_USER_DAYS: ${AUTOMATION_INACTIVE_USER_DAYS:-30}
+      MAX_DB_CONNECTIONS: ${MAX_DB_CONNECTIONS:-50}
       AUTOMATION_RULES_MYLIST_FULL_PAGINATION: ${AUTOMATION_RULES_MYLIST_FULL_PAGINATION:-}
       STREMIO_ALLOW_HTTP: ${STREMIO_ALLOW_HTTP:-}
       STREMIO_MAX_ADDONS: ${STREMIO_MAX_ADDONS:-25}

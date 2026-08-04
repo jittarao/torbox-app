@@ -133,14 +133,22 @@ class AutomationEngine {
       await this.initializeNextPollAt(enabledRules);
 
       this.isInitialized = true;
-      logger.info('AutomationEngine initialized', {
+      logger.debug('AutomationEngine initialized', {
         authId: this.authId,
         enabledRules: enabledRules.length,
       });
     } catch (error) {
-      logger.error('AutomationEngine failed to initialize', error, {
-        authId: this.authId,
-      });
+      const isPoolExhausted = Boolean(error?.message?.includes('pool exhausted'));
+      if (isPoolExhausted) {
+        logger.warn('AutomationEngine failed to initialize', {
+          authId: this.authId,
+          errorMessage: error.message,
+        });
+      } else {
+        logger.error('AutomationEngine failed to initialize', error, {
+          authId: this.authId,
+        });
+      }
       throw error;
     }
   }
@@ -1318,7 +1326,7 @@ class AutomationEngine {
   }
 
   shutdown() {
-    logger.info('AutomationEngine shutting down', { authId: this.authId });
+    logger.debug('AutomationEngine shutting down', { authId: this.authId });
   }
 }
 

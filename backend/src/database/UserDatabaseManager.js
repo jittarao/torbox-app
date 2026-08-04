@@ -25,6 +25,8 @@ class DatabasePool {
       evictions: 0,
       lastEvictionAt: null,
       lastWarningAt: null,
+      lastExhaustionLogAt: null,
+      suppressedExhaustionLogs: 0,
       proactiveEvictions: 0,
     };
 
@@ -44,6 +46,31 @@ class DatabasePool {
       options.idleTimeoutMs ??
       parseInt(process.env.DB_POOL_IDLE_TIMEOUT_MS || String(defaultIdleTimeoutMs), 10);
     this.recentAccessWindowMs = 30 * 1000; // 30 seconds - don't evict connections accessed in this window
+  }
+
+  /**
+   * Log pool exhaustion at most once per minute; count suppressed repeats to cut log spam.
+   * @param {string} message
+   * @param {Object} meta
+   * @private
+   */
+  _logExhaustionThrottled(message, meta = {}) {
+    const EXHAUSTION_THROTTLE_MS = 60000;
+    const now = Date.now();
+    const lastAt = this.metrics.lastExhaustionLogAt
+      ? new Date(this.metrics.lastExhaustionLogAt).getTime()
+      : 0;
+    if (now - lastAt < EXHAUSTION_THROTTLE_MS) {
+      this.metrics.suppressedExhaustionLogs = (this.metrics.suppressedExhaustionLogs || 0) + 1;
+      return;
+    }
+    const suppressed = this.metrics.suppressedExhaustionLogs || 0;
+    this.metrics.lastExhaustionLogAt = new Date().toISOString();
+    this.metrics.suppressedExhaustionLogs = 0;
+    logger.error(message, {
+      ...meta,
+      ...(suppressed > 0 ? { suppressedSinceLastLog: suppressed } : {}),
+    });
   }
 
   /**
@@ -140,13 +167,16 @@ class DatabasePool {
       // The caller (UserDatabaseManager) uses a semaphore to prevent this,
       // but we guard here as a safety net.
       if (this.cache.size >= this.maxSize) {
-        logger.error('Database pool exhausted: all connections are active, cannot evict', {
-          poolSize: this.cache.size,
-          maxSize: this.maxSize,
-          activeOperations: Array.from(this.cache.entries()).filter(
-            ([_, e]) => e.activeOperations > 0
-          ).length,
-        });
+        this._logExhaustionThrottled(
+          'Database pool exhausted: all connections are active, cannot evict',
+          {
+            poolSize: this.cache.size,
+            maxSize: this.maxSize,
+            activeOperations: Array.from(this.cache.entries()).filter(
+              ([_, e]) => e.activeOperations > 0
+            ).length,
+          }
+        );
         throw new Error(`Database pool exhausted (${this.cache.size}/${this.maxSize})`);
       }
 
@@ -266,7 +296,7 @@ class DatabasePool {
         }
       }
       if (!lruKey) {
-        logger.error(
+        this._logExhaustionThrottled(
           'Database pool at capacity: no evictable connection (all entries have active operations)',
           {
             poolSize: this.cache.size,
@@ -484,6 +514,9 @@ class DatabasePool {
       evictions: 0,
       lastEvictionAt: null,
       lastWarningAt: null,
+      lastExhaustionLogAt: null,
+      suppressedExhaustionLogs: 0,
+      proactiveEvictions: 0,
     };
   }
 }
@@ -830,6 +863,11 @@ class UserDatabaseManager {
       const dbPath = user.db_path;
       return await this._openAndMigrateUserDb(authId, dbPath);
     } catch (error) {
+      // Pool exhaustion is capacity pressure, not a registry lookup failure — avoid
+      // mislabeled stack spam (often dozens of identical lines during a due-list surge).
+      if (error?.message?.includes('pool exhausted')) {
+        throw error;
+      }
       if (error.message && !error.message.includes('not found')) {
         logger.error('Failed to get user registry info', error, { authId });
       }
