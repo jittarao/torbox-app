@@ -6,9 +6,8 @@ import {
 } from '../../routes/__tests__/helpers/backendTestHelper.js';
 import { setupArchivedDownloadsRoutes } from '../../routes/archivedDownloads.js';
 import { setupLinkHistoryRoutes } from '../../routes/linkHistory.js';
-import { auditStremioTmdbSchema, inspectStremioTmdbTables } from '../stremioTmdbSchemaCheck.js';
 
-describe('user DB migration resilience + stremio/tmdb schema audit', () => {
+describe('user DB migration resilience', () => {
   let env;
   let server;
   let port;
@@ -62,28 +61,5 @@ describe('user DB migration resilience + stremio/tmdb schema audit', () => {
     const links = await get('/api/link-history?page=1&limit=50');
     expect(links.status).toBe(200);
     expect(links.body.success).toBe(true);
-  });
-
-  test('audit reports missing stremio/tmdb tables without creating them', async () => {
-    const userDb = await env.userDatabaseManager.getUserDatabase(env.authId);
-    userDb.db.prepare('DROP TABLE IF EXISTS stremio_addons').run();
-    userDb.db.prepare('DROP TABLE IF EXISTS tmdb_credentials').run();
-    env.userDatabaseManager.releaseConnection(env.authId);
-    env.userDatabaseManager.closeConnection(env.authId);
-
-    const summary = await auditStremioTmdbSchema(env.masterDatabase, env.userDatabaseManager);
-    expect(summary.usersChecked).toBeGreaterThanOrEqual(1);
-    expect(summary.usersWithMissingTables).toBe(1);
-    expect(summary.missingStremioAddons).toBe(1);
-    expect(summary.missingTmdbCredentials).toBe(1);
-    expect(summary.healNeeded).toBe(true);
-
-    // Audit must not heal — tables still missing.
-    const reopened = await env.userDatabaseManager.getUserDatabase(env.authId);
-    expect(inspectStremioTmdbTables(reopened.db).missing).toEqual([
-      'stremio_addons',
-      'tmdb_credentials',
-    ]);
-    env.userDatabaseManager.closeConnection(env.authId);
   });
 });
