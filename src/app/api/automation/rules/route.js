@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 import { backendHttpGet, backendProxyHeaders } from '@/utils/backendRequest';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { backendProxyErrorResponse, logRouteError } from '@/utils/routeLog';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
 /**
@@ -39,11 +40,10 @@ export async function GET(request) {
 
     if (response.ok) {
       return NextResponse.json(response.data);
-    } else {
-      throw new Error(`Backend responded with status: ${response.status}`);
     }
+    return backendProxyErrorResponse(response, 'Error fetching automation rules from backend');
   } catch (error) {
-    console.error('Error fetching automation rules from backend:', error);
+    logRouteError('Error fetching automation rules from backend', error);
     return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

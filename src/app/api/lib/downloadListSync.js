@@ -15,7 +15,9 @@ import {
   MYLIST_PAGE_LIMIT,
   sortByAddedDesc,
 } from '@/app/api/lib/fetchTorboxDownloadList';
+import { isTorboxServerFault } from '@/config/errors';
 import { downloadRowEqual } from '@/utils/downloadListMerge';
+import { extractPublicErrorCode } from '@/utils/sanitizeError';
 
 const CACHE_TTL_MS = Number(process.env.DOWNLOAD_SYNC_CACHE_TTL_MS) || 30 * 60 * 1000;
 const RECONCILE_INTERVAL_MS =
@@ -25,8 +27,15 @@ const SHALLOW_FRESHNESS_MS = Number(process.env.DOWNLOAD_SYNC_SHALLOW_FRESHNESS_
 const MUTATION_RECONCILE_DELAY_MS = 30 * 1000;
 const RECONCILE_FAILURE_BACKOFF_BASE_MS = 15 * 1000;
 const RECONCILE_FAILURE_BACKOFF_MAX_MS = RECONCILE_INTERVAL_MS;
+/** Client faults (e.g. PLAN_RESTRICTED) — avoid hammering TorBox on every poll. */
+const NON_RETRYABLE_RECONCILE_BACKOFF_MS =
+  Number(process.env.DOWNLOAD_SYNC_NON_RETRYABLE_BACKOFF_MS) || 15 * 60 * 1000;
 const SHALLOW_FAILURE_BACKOFF_BASE_MS = 5 * 1000;
 const SHALLOW_FAILURE_BACKOFF_MAX_MS = SHALLOW_FRESHNESS_MS;
+const RECONCILE_FAILURE_LOG_RATE_MS = 60 * 1000;
+
+/** @type {Map<string, number>} */
+const reconcileFailureLogAt = new Map();
 // Keep this small: each archived rev retains a gzip snapshot. Uncompressed
 // catalog copies must NOT be archived (see archiveRevSnapshot)
 const REV_HISTORY_LIMIT = Math.max(1, Number(process.env.DOWNLOAD_SYNC_REV_HISTORY_LIMIT) || 8);
@@ -158,6 +167,57 @@ function reconcileFailureBackoffMs(failureCount) {
     RECONCILE_FAILURE_BACKOFF_MAX_MS,
     RECONCILE_FAILURE_BACKOFF_BASE_MS * 2 ** (failureCount - 1)
   );
+}
+
+/**
+ * Longer hold for permanent client faults / noisy AUTH_ERROR so cold-miss
+ * polls do not re-hit TorBox every few seconds.
+ * @param {number} failureCount
+ * @param {string | null | undefined} reconcileError
+ */
+function effectiveReconcileFailureBackoffMs(failureCount, reconcileError) {
+  const base = reconcileFailureBackoffMs(failureCount);
+  const code = extractPublicErrorCode(reconcileError);
+  if (code && !isTorboxServerFault(code)) {
+    return Math.max(base, NON_RETRYABLE_RECONCILE_BACKOFF_MS);
+  }
+  // AUTH_ERROR is classified as a TorBox server fault but often sticks for
+  // a given key; after the first repeat, hold for a full reconcile interval.
+  if (code === 'AUTH_ERROR' && failureCount >= 2) {
+    return Math.max(base, RECONCILE_INTERVAL_MS);
+  }
+  return base;
+}
+
+/**
+ * Empty error placeholder written when the first reconcile fails (no prior catalog).
+ * Must not be served as a successful snapshot.
+ * @param {CacheEntry | null | undefined} entry
+ */
+function isFailedBootstrapEntry(entry) {
+  return Boolean(entry && entry.reconcileState === 'error' && entry.lastFullReconcileAt == null);
+}
+
+/**
+ * @param {string} type
+ * @param {string} reconcileError
+ * @param {number} failureCount
+ * @param {'full' | 'shallow'} [kind]
+ */
+function logReconcileFailure(type, reconcileError, failureCount, kind = 'full') {
+  const key = `${kind}:${type}:${reconcileError}`;
+  const now = Date.now();
+  const last = reconcileFailureLogAt.get(key) || 0;
+  if (failureCount > 1 && now - last < RECONCILE_FAILURE_LOG_RATE_MS) return;
+  reconcileFailureLogAt.set(key, now);
+  if (reconcileFailureLogAt.size > 200) {
+    const cutoff = now - RECONCILE_FAILURE_LOG_RATE_MS * 2;
+    for (const [k, ts] of reconcileFailureLogAt) {
+      if (ts < cutoff) reconcileFailureLogAt.delete(k);
+    }
+  }
+  const label = kind === 'shallow' ? 'shallow refresh' : 'full reconcile';
+  console.warn(`[downloadListSync] ${label} failed ${type}: ${reconcileError}`);
 }
 
 function shallowFailureBackoffMs(failureCount) {
@@ -438,7 +498,10 @@ if (typeof setInterval !== 'undefined') {
 function isBackgroundReconcileDue(authId, type, entry) {
   const jitter = reconcileJitterMs(authId, type);
   const dueAt = (entry.lastFullReconcileAt || 0) + RECONCILE_INTERVAL_MS + jitter;
-  const failureBackoff = reconcileFailureBackoffMs(entry.reconcileFailureCount || 0);
+  const failureBackoff = effectiveReconcileFailureBackoffMs(
+    entry.reconcileFailureCount || 0,
+    entry.reconcileError
+  );
   const attemptDueAt = (entry.lastReconcileAttemptAt || 0) + failureBackoff;
   return Date.now() >= Math.max(dueAt, attemptDueAt);
 }
@@ -522,15 +585,29 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
       return { success: result.success, data: result.data, rev };
     } catch (error) {
       const reconcileError = error?.message || 'reconcile failed';
-
+      const now = Date.now();
       const entry = cache.get(key);
+      const failureCount = (entry?.reconcileFailureCount || 0) + 1;
+
       if (entry) {
         entry.reconcileState = 'error';
         entry.reconcileError = reconcileError;
-        entry.reconcileFailureCount = (entry.reconcileFailureCount || 0) + 1;
+        entry.reconcileFailureCount = failureCount;
+        entry.lastReconcileAttemptAt = now;
+      } else {
+        // Negative cache so cold-miss polls honor backoff instead of re-hitting TorBox.
+        writeEntry(authId, type, [], {
+          reconcileState: 'error',
+          reconcileError,
+          reconcileFailureCount: failureCount,
+          lastReconcileAttemptAt: now,
+        });
       }
 
-      console.error(`[downloadListSync] full reconcile failed ${type}:`, reconcileError);
+      // Background reconciles log here; blocking callers rethrow and the route logs once.
+      if (!blocking) {
+        logReconcileFailure(type, reconcileError, failureCount);
+      }
       return { success: false, error, reconcileError };
     }
   })();
@@ -644,9 +721,11 @@ async function runShallowRefresh(apiKey, type, { blocking = true } = {}) {
       return { success: true };
     } catch (error) {
       state.shallowFailureCount = (state.shallowFailureCount || 0) + 1;
-      console.error(
-        `[downloadListSync] shallow refresh failed ${type}:`,
-        error?.message || 'shallow refresh failed'
+      logReconcileFailure(
+        type,
+        error?.message || 'shallow refresh failed',
+        state.shallowFailureCount,
+        'shallow'
       );
       return { success: false };
     }
@@ -734,7 +813,7 @@ async function runForegroundRefresh(apiKey, type) {
   const authId = hashApiKey(apiKey);
   let entry = getEntry(authId, type);
 
-  if (!entry) {
+  if (!entry || isFailedBootstrapEntry(entry)) {
     await runFullReconciliation(apiKey, type, { blocking: true });
     return 'full';
   }
@@ -855,11 +934,34 @@ export async function handleListSyncRequest({
 
   let entry = getEntry(authId, type);
 
+  // Failed bootstrap (never synced successfully): honor backoff, then retry.
+  // Must not fall through to shallow refresh (would also fail and spam TorBox).
+  if (isFailedBootstrapEntry(entry)) {
+    const backoff = effectiveReconcileFailureBackoffMs(
+      entry.reconcileFailureCount || 0,
+      entry.reconcileError
+    );
+    const attemptAt = entry.lastReconcileAttemptAt || 0;
+    if (Date.now() < attemptAt + backoff) {
+      throw new Error(entry.reconcileError || 'reconcile failed');
+    }
+
+    await runFullReconciliation(apiKey, type, { blocking: true });
+    entry = getEntry(authId, type);
+    if (!entry || isFailedBootstrapEntry(entry)) {
+      throw new Error(entry?.reconcileError || 'Cache miss after full reconcile');
+    }
+    return serveSnapshot(entry, { syncMode: 'full' });
+  }
+
   if (!entry) {
     await runFullReconciliation(apiKey, type, { blocking: true });
     entry = getEntry(authId, type);
     if (!entry) {
       throw new Error('Cache miss after full reconcile');
+    }
+    if (isFailedBootstrapEntry(entry)) {
+      throw new Error(entry.reconcileError || 'reconcile failed');
     }
     return serveSnapshot(entry, { syncMode: 'full' });
   }
@@ -869,6 +971,9 @@ export async function handleListSyncRequest({
   entry = getEntry(authId, type);
   if (!entry) {
     throw new Error('Cache miss after shallow refresh');
+  }
+  if (isFailedBootstrapEntry(entry)) {
+    throw new Error(entry.reconcileError || 'reconcile failed');
   }
 
   return serveForClientRev(authId, type, entry, clientRev, isValidRev);
@@ -925,8 +1030,10 @@ export function getDownloadListSyncCacheEntry(apiKey, type) {
     data: getEntryData(entry),
     rev: entry.rev,
     reconcileState: entry.reconcileState,
+    reconcileError: entry.reconcileError,
     lastFullReconcileAt: entry.lastFullReconcileAt,
     lastShallowPollAt: entry.lastShallowPollAt,
+    lastReconcileAttemptAt: entry.lastReconcileAttemptAt,
     isMultiPage: entry.isMultiPage,
     reconcileFailureCount: entry.reconcileFailureCount ?? 0,
   };
@@ -973,6 +1080,8 @@ export function clearDownloadListSyncCacheOnlyForTests() {
 /** @internal test helper — exported for unit tests */
 export {
   reconcileFailureBackoffMs,
+  effectiveReconcileFailureBackoffMs,
+  isFailedBootstrapEntry,
   shallowFailureBackoffMs,
   runShallowRefresh,
   ensureShallowRefreshIfStale,

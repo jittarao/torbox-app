@@ -49,6 +49,8 @@ describe('downloadListSync', () => {
   let flushMutationReconcileTimerForTests;
   let clearDownloadListSyncCacheOnlyForTests;
   let reconcileFailureBackoffMs;
+  let effectiveReconcileFailureBackoffMs;
+  let isFailedBootstrapEntry;
   let shallowFailureBackoffMs;
 
   beforeEach(async () => {
@@ -84,6 +86,8 @@ describe('downloadListSync', () => {
       flushMutationReconcileTimerForTests,
       clearDownloadListSyncCacheOnlyForTests,
       reconcileFailureBackoffMs,
+      effectiveReconcileFailureBackoffMs,
+      isFailedBootstrapEntry,
       shallowFailureBackoffMs,
     } = await import('../downloadListSync.js'));
 
@@ -157,6 +161,12 @@ describe('downloadListSync', () => {
       expect(reconcileFailureBackoffMs(10)).toBe(5 * 60 * 1000);
     });
 
+    test('effectiveReconcileFailureBackoffMs holds longer for plan restrictions', () => {
+      expect(effectiveReconcileFailureBackoffMs(1, 'PLAN_RESTRICTED_FEATURE')).toBe(15 * 60 * 1000);
+      expect(effectiveReconcileFailureBackoffMs(1, 'AUTH_ERROR')).toBe(15_000);
+      expect(effectiveReconcileFailureBackoffMs(2, 'AUTH_ERROR')).toBe(5 * 60 * 1000);
+    });
+
     test('shallowFailureBackoffMs grows exponentially with cap', () => {
       expect(shallowFailureBackoffMs(0)).toBe(0);
       expect(shallowFailureBackoffMs(1)).toBe(5_000);
@@ -166,6 +176,38 @@ describe('downloadListSync', () => {
   });
 
   describe('handleListSyncRequest', () => {
+    test('cold-miss TorBox failure negative-caches and skips TorBox during backoff', async () => {
+      fetchFullDownloadListMock.mockImplementation(async () => {
+        throw new Error('PLAN_RESTRICTED_FEATURE');
+      });
+
+      await expect(
+        handleListSyncRequest({
+          apiKey: API_KEY,
+          type: TYPE,
+          rev: null,
+          bypassCache: false,
+        })
+      ).rejects.toThrow('PLAN_RESTRICTED_FEATURE');
+
+      const entry = getDownloadListSyncCacheEntry(API_KEY, TYPE);
+      expect(entry).not.toBeNull();
+      expect(isFailedBootstrapEntry(entry)).toBe(true);
+      expect(entry.reconcileFailureCount).toBe(1);
+      expect(fetchFullDownloadListMock).toHaveBeenCalledTimes(1);
+
+      fetchFullDownloadListMock.mockClear();
+      await expect(
+        handleListSyncRequest({
+          apiKey: API_KEY,
+          type: TYPE,
+          rev: null,
+          bypassCache: false,
+        })
+      ).rejects.toThrow('PLAN_RESTRICTED_FEATURE');
+      expect(fetchFullDownloadListMock).not.toHaveBeenCalled();
+    });
+
     test('full initial sync caches more than 1000 items', async () => {
       const fullData = Array.from({ length: 1500 }, (_, index) =>
         item(index + 1, `2020-01-${String((index % 28) + 1).padStart(2, '0')}`)
@@ -783,9 +825,21 @@ describe('downloadListSync', () => {
           rev: null,
           bypassCache: false,
         })
-      ).rejects.toThrow();
+      ).rejects.toThrow('TorBox unavailable');
 
-      expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)).toBeNull();
+      const entry = getDownloadListSyncCacheEntry(API_KEY, TYPE);
+      expect(entry).not.toBeNull();
+      expect(isFailedBootstrapEntry(entry)).toBe(true);
+      expect(entry.data).toEqual([]);
+      // Negative cache must not be served as a successful list response.
+      await expect(
+        handleListSyncRequest({
+          apiKey: API_KEY,
+          type: TYPE,
+          rev: null,
+          bypassCache: false,
+        })
+      ).rejects.toThrow('TorBox unavailable');
     });
 
     test('full reconcile skips publish when trusted mutation occurs during reconcile', async () => {

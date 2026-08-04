@@ -61,7 +61,11 @@ export async function POST() {
   } catch (error) {
     // Beacon is best-effort — backend restarts must not spam 500s or stack traces.
     if (isBackendUnreachable(error)) {
-      console.warn('Activity beacon deferred: backend unreachable');
+      const now = Date.now();
+      if (!globalThis.__activityBeaconWarnAt || now - globalThis.__activityBeaconWarnAt > 60_000) {
+        globalThis.__activityBeaconWarnAt = now;
+        console.warn('Activity beacon deferred: backend unreachable');
+      }
       return NextResponse.json({ success: true, deferred: true });
     }
 
