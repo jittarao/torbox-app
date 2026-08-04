@@ -48,6 +48,8 @@ services:
       - CREATE_UPLOAD_TIMEOUT_MS=${CREATE_UPLOAD_TIMEOUT_MS:-30000}
       # Automation inactivity filter (skip polling for users inactive N days; 0 disables)
       - AUTOMATION_INACTIVE_USER_DAYS=${AUTOMATION_INACTIVE_USER_DAYS:-30}
+      # User SQLite connection pool (raise on large multi-user hosts if pool warnings appear)
+      - MAX_DB_CONNECTIONS=${MAX_DB_CONNECTIONS:-50}
       # Automation rules: set true to paginate all TorBox mylist pages (default: first page only)
       - AUTOMATION_RULES_MYLIST_FULL_PAGINATION=${AUTOMATION_RULES_MYLIST_FULL_PAGINATION:-}
       # Stremio stream addons (search page)

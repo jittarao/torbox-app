@@ -39,7 +39,7 @@ class CircuitBreaker {
   }
 
   recordSuccess() {
-    if (this.state === 'half-open' || this.failures > 0) {
+    if (this.state === 'half-open' || this.state === 'open') {
       logger.info('Circuit breaker closed', {
         name: this.name,
         previousFailures: this.failures,
@@ -363,11 +363,12 @@ class ApiClient {
       // Handle authentication errors
       if (this.isAuthError(error)) {
         const authError = this.createAuthError(error);
-        logger.error(`Authentication error ${operation || 'in API call'}`, authError, {
+        logger.warn(`Authentication error ${operation || 'in API call'}`, {
           endpoint,
           ...context,
           status: authError.status,
           errorCode: error.response?.data?.error,
+          message: authError.message,
         });
         throw authError;
       }
@@ -383,13 +384,22 @@ class ApiClient {
             ? `TorBox API connection error ${operation || 'in API call'} - handling gracefully`
             : `TorBox API connection error ${operation || 'in API call'}`;
 
-        logger.warn(logMessage, {
-          ...errorDetails,
-          message:
-            connectionErrorFallback !== null
-              ? 'TorBox API is down or not responding. Operation skipped.'
-              : 'TorBox API connection failed.',
-        });
+        // While the outage coordinator already paused automation, further per-call warns are noise.
+        if (torboxApiOutageCoordinator.isAutomationAllowed()) {
+          logger.warn(logMessage, {
+            ...errorDetails,
+            message:
+              connectionErrorFallback !== null
+                ? 'TorBox API is down or not responding. Operation skipped.'
+                : 'TorBox API connection failed.',
+          });
+        } else {
+          logger.debug(logMessage, {
+            endpoint,
+            ...context,
+            status: error.response?.status,
+          });
+        }
 
         // Return fallback value if provided (function or value)
         if (connectionErrorFallback !== null) {

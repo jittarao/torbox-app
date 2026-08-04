@@ -304,7 +304,7 @@ class UserPoller {
       consecutiveAuthFailures = this.masterDb.incrementConsecutiveAuthFailures(this.authId);
     }
 
-    logger.error('API authentication failed - API key may be invalid or expired', error, {
+    logger.warn('API authentication failed - API key may be invalid or expired', {
       authId: this.authId,
       errorMessage: error.message,
       status: error.status,

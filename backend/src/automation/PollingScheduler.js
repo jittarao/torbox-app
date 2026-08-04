@@ -32,6 +32,8 @@ const DEFAULT_MAX_CONCURRENT_POLLS = 12; // Number of users polled in parallel
 const DEFAULT_MAX_CONCURRENT_PROCESS = 8; // Stage 2: max users processed in parallel (state diff + rule eval)
 const DEFAULT_POLLER_CLEANUP_INTERVAL_HOURS = 24;
 const ERROR_RETRY_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes after error or first timeout
+/** Pool exhaustion is capacity pressure, not a bad API key — retry sooner so users are not deferred 30m. */
+const POOL_EXHAUSTION_RETRY_INTERVAL_MS = 2 * 60 * 1000;
 const TIMEOUT_BACKOFF_RETRY_MS = 60 * 60 * 1000; // 60 minutes after repeated timeouts (free concurrency slot)
 const SKIPPED_POLL_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours when user has no active rules
 const CLEANUP_CYCLE_MULTIPLIER = 10; // Run cleanup every 10 poll cycles
@@ -388,7 +390,7 @@ class PollingScheduler {
       throw new Error('encryptedKey is required for createPoller');
     }
 
-    logger.info('Creating poller for user', { authId });
+    logger.debug('Creating poller for user', { authId });
 
     try {
       const apiClient = this.getOrCreateApiClient(authId, encryptedKey);
@@ -405,7 +407,7 @@ class PollingScheduler {
       poller.lastPollAt = new Date();
       this.pollers.set(authId, poller);
 
-      logger.info('Poller created successfully', { authId });
+      logger.debug('Poller created successfully', { authId });
       return poller;
     } catch (error) {
       logger.error('Failed to create poller', error, {
@@ -513,7 +515,9 @@ class PollingScheduler {
     }
 
     try {
-      const nextPollAt = new Date(Date.now() + ERROR_RETRY_INTERVAL_MS);
+      const isPoolExhausted = Boolean(error?.message?.includes('pool exhausted'));
+      const retryMs = isPoolExhausted ? POOL_EXHAUSTION_RETRY_INTERVAL_MS : ERROR_RETRY_INTERVAL_MS;
+      const nextPollAt = new Date(Date.now() + retryMs);
       this.masterDb.updateNextPollAt(authId, nextPollAt, 0);
 
       this.metrics.failedPolls++;
@@ -521,7 +525,7 @@ class PollingScheduler {
       logger.info('Set next poll time after error', {
         authId,
         nextPollAt: nextPollAt.toISOString(),
-        retryIn: '30 minutes',
+        retryIn: isPoolExhausted ? '2 minutes (pool pressure)' : '30 minutes',
         duration: `${duration.toFixed(2)}s`,
         errorMessage: error?.message || 'Unknown error',
         errorName: error?.name,
@@ -1196,10 +1200,18 @@ class PollingScheduler {
         this.handlePollTimeout(auth_id, duration);
         counters.error++;
       } else {
-        logger.error('Error in processUserPoll', error, {
-          authId: auth_id,
-          errorMessage: error.message,
-        });
+        const isPoolExhausted = Boolean(error?.message?.includes('pool exhausted'));
+        if (isPoolExhausted) {
+          logger.warn('Error in processUserPoll', {
+            authId: auth_id,
+            errorMessage: error.message,
+          });
+        } else {
+          logger.error('Error in processUserPoll', error, {
+            authId: auth_id,
+            errorMessage: error.message,
+          });
+        }
         this.handlePollError(auth_id, error, duration);
         counters.error++;
       }
@@ -1220,10 +1232,16 @@ class PollingScheduler {
       if (auth_id) {
         const p = this.pollers.get(auth_id);
         if (p) p.automationEngine = null;
-        if (poller?.userDatabaseManager) {
-          poller.userDatabaseManager.closeConnection(auth_id);
+        // Must unpin before closeConnection — processFetchedTorrents / runPipeline pin via
+        // _ensureDbManager; skipping _releaseDbPin leaves activeOperations>0 forever and
+        // fills the pool until nothing is evictable (prod: "Database pool exhausted").
+        if (poller) {
+          poller._releaseDbPin?.();
+          if (poller.userDatabaseManager) {
+            poller.userDatabaseManager.closeConnection(auth_id);
+          }
+          poller.dbManager = null;
         }
-        if (poller) poller.dbManager = null;
         // Per-poll teardown: poller and engine are intentionally kept for reuse on next poll
       }
     }
