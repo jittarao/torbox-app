@@ -476,8 +476,6 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
       existingEntry.lastReconcileAttemptAt = now;
     }
 
-    const started = Date.now();
-
     try {
       const result = await fetchFullDownloadList(apiKey, type);
       const isMultiPage = isMultiPageFromFullReconcile(result.data, result.pageCount);
@@ -491,9 +489,6 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
         state.publishGeneration !== publishGenerationAtStart ||
         (revAtStart != null && currentEntry?.rev !== revAtStart)
       ) {
-        console.info(
-          `[downloadListSync] full reconcile ${type}: skipped publish (mutation during reconcile)`
-        );
         scheduleMutationReconcile(apiKey, type);
         return { success: true, skipped: true };
       }
@@ -507,9 +502,6 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
         currentEntry.reconcileError = null;
         currentEntry.reconcileFailureCount = 0;
         currentEntry.isMultiPage = isMultiPage;
-        console.info(
-          `[downloadListSync] full reconcile ${type}: unchanged (${result.data.length} items), rev ${currentEntry.rev}`
-        );
         return {
           success: result.success,
           data: result.data,
@@ -526,10 +518,6 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
         isMultiPage,
         reconcileFailureCount: 0,
       });
-
-      console.info(
-        `[downloadListSync] full reconcile ${type}: ${result.data.length} items, ${result.pageCount} pages, ${Date.now() - started}ms`
-      );
 
       return { success: result.success, data: result.data, rev };
     } catch (error) {

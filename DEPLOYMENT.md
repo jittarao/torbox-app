@@ -113,7 +113,7 @@ The downloads page syncs torrent, Usenet, and WebDL lists through Next.js (`src/
 
 **Multi-instance:** The sync cache is in-process memory on the Next.js server. Single-container / single-replica Compose is the supported layout. Multiple frontend replicas without a shared cache are not supported.
 
-**Debugging:** Responses include `x-list-rev`, `x-sync-item-count`, and `x-sync-mode` (`full`, `shallow`, `stale-full`, `delta`, `unchanged`). Bodies are gzip JSON `{ success, data, rev }` (or `{ delta: true, ... }` for deltas). Server logs tag full reconciles with `[downloadListSync]`.
+**Debugging:** Responses include `x-list-rev`, `x-sync-item-count`, and `x-sync-mode` (`full`, `shallow`, `stale-full`, `delta`, `unchanged`). Bodies are gzip JSON `{ success, data, rev }` (or `{ delta: true, ... }` for deltas). Failed reconciles/shallow refreshes log `[downloadListSync]` errors only.
 
 **Tuning:** Optional `DOWNLOAD_SYNC_*` variables (table above). Restart the **frontend** container/process after changes. `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` applies only to types with **≥1000 regular** `mylist` rows. `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS` controls TorBox shallow poll deduplication across tabs. Rev history stores **gzip only** (not uncompressed catalogs); keep `DOWNLOAD_SYNC_REV_HISTORY_LIMIT` small on ≤4GB hosts.
 
