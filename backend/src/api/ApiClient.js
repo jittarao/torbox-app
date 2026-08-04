@@ -118,10 +118,28 @@ function torboxErrorText(data) {
  * @param {*} data
  * @returns {boolean}
  */
-function isTorboxApplicationServerError(data) {
+export function isTorboxApplicationServerError(data) {
   const text = torboxErrorText(data);
   if (!text) return false;
   return APPLICATION_500_MESSAGE_PATTERNS.some((re) => re.test(text));
+}
+
+const ACTIVE_DOWNLOAD_LIMIT_RE = /active download limit/i;
+
+/**
+ * True when an error (thrown or response-shaped) is TorBox "active download limit".
+ * @param {Error|*} error
+ * @returns {boolean}
+ */
+export function isActiveDownloadLimitError(error) {
+  if (!error || typeof error !== 'object') return false;
+  if (error.isActiveDownloadLimit === true) return true;
+  const text =
+    (typeof error.message === 'string' && error.message) ||
+    torboxErrorText(error.response?.data) ||
+    torboxErrorText(error.responseData) ||
+    '';
+  return ACTIVE_DOWNLOAD_LIMIT_RE.test(text);
 }
 
 /** Normalize API active field to boolean (API may return true, 1, or 'true') */
@@ -411,10 +429,10 @@ class ApiClient {
       _globalCircuitBreaker.recordSuccess();
       return result;
     } catch (error) {
-      // Handle authentication errors
+      // Handle authentication errors (info — expected for revoked/bad keys; poller backs off)
       if (this.isAuthError(error)) {
         const authError = this.createAuthError(error);
-        logger.warn(`Authentication error ${operation || 'in API call'}`, {
+        logger.info(`Authentication error ${operation || 'in API call'}`, {
           endpoint,
           ...context,
           status: authError.status,
@@ -467,21 +485,26 @@ class ApiClient {
         throw error;
       }
 
-      // Application-level TorBox 500s (e.g. active download limit) — warn, do not trip CB.
+      // Application-level TorBox 500s (e.g. active download limit) — do not trip CB.
+      // Never use connectionErrorFallback: callers must see business errors (limit/quota),
+      // not a synthetic CONNECTION_ERROR that looks like success to action executors.
       if (error.response?.status >= 500 && isTorboxApplicationServerError(error.response?.data)) {
+        const appMessage = torboxErrorText(error.response.data);
         error.isTorboxApplicationError = true;
-        logger.warn(`TorBox API application error ${operation || 'in API call'}`, {
+        error.isActiveDownloadLimit = ACTIVE_DOWNLOAD_LIMIT_RE.test(appMessage);
+        // Plan/quota limits are expected and can fire once per queued item without abort —
+        // log at info; RuleExecutor aborts force_start batches on active download limit.
+        const logFn = error.isActiveDownloadLimit
+          ? logger.info.bind(logger)
+          : logger.warn.bind(logger);
+        logFn(`TorBox API application error ${operation || 'in API call'}`, {
           endpoint,
           ...context,
           status: error.response.status,
           errorCode: error.response?.data?.error,
-          message: torboxErrorText(error.response.data),
+          message: appMessage,
+          isActiveDownloadLimit: error.isActiveDownloadLimit || undefined,
         });
-        if (connectionErrorFallback !== null) {
-          return typeof connectionErrorFallback === 'function'
-            ? connectionErrorFallback(error)
-            : connectionErrorFallback;
-        }
         throw error;
       }
 

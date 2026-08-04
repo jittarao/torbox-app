@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import ApiClient from '../ApiClient.js';
+import ApiClient, {
+  isActiveDownloadLimitError,
+  isTorboxApplicationServerError,
+} from '../ApiClient.js';
 
 function axiosError({ status, data, code, message } = {}) {
   const error = new Error(message || 'Request failed');
@@ -54,5 +57,62 @@ describe('ApiClient.isConnectionError', () => {
       client.isConnectionError(axiosError({ status: 500, data: 'Internal Server Error' }))
     ).toBe(true);
     expect(client.isConnectionError(axiosError({ status: 500, data: {} }))).toBe(true);
+  });
+});
+
+describe('isActiveDownloadLimitError / isTorboxApplicationServerError', () => {
+  test('detects active download limit from thrown-shaped errors', () => {
+    const err = axiosError({
+      status: 500,
+      data: {
+        error: 'DATABASE_ERROR',
+        detail: 'You have reached your active download limit of 3. Please upgrade your plan.',
+      },
+      message: 'You have reached your active download limit of 3. Please upgrade your plan.',
+    });
+    err.isActiveDownloadLimit = true;
+    expect(isActiveDownloadLimitError(err)).toBe(true);
+    expect(
+      isTorboxApplicationServerError({
+        error: 'DATABASE_ERROR',
+        detail: 'You have reached your active download limit of 3.',
+      })
+    ).toBe(true);
+  });
+
+  test('returns false for unrelated errors', () => {
+    expect(isActiveDownloadLimitError(new Error('Network Error'))).toBe(false);
+    expect(isTorboxApplicationServerError({ detail: 'Internal Server Error' })).toBe(false);
+  });
+});
+
+describe('ApiClient application errors vs connectionErrorFallback', () => {
+  test('throws active download limit instead of returning connection fallback', async () => {
+    const client = new ApiClient('fake-api-key');
+    client.client = {
+      post: async () => {
+        throw axiosError({
+          status: 500,
+          data: {
+            error: 'DATABASE_ERROR',
+            detail:
+              'You have reached your active download limit of 3. Please upgrade your plan to add more torrents.',
+          },
+          message: 'Request failed with status code 500',
+        });
+      },
+    };
+
+    let thrown = null;
+    try {
+      await client.controlQueuedDownload(123, 'start', 'torrent');
+    } catch (e) {
+      thrown = e;
+    }
+
+    expect(thrown).toBeTruthy();
+    expect(thrown.isTorboxApplicationError).toBe(true);
+    expect(thrown.isActiveDownloadLimit).toBe(true);
+    expect(thrown.isConnectionError).toBeFalsy();
   });
 });

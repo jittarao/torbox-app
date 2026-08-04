@@ -1250,7 +1250,11 @@ class AutomationEngine {
           ruleName: rule.name,
           errors: validation.errors,
         });
-        throw new Error(errorMessage);
+        throw Object.assign(new Error(errorMessage), {
+          name: 'RuleValidationError',
+          statusCode: 400,
+          isValidationError: true,
+        });
       }
     }
 

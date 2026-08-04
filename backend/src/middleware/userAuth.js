@@ -71,6 +71,8 @@ function attachRegisteredUser(masterDb, authId, res) {
   if (!keyRow) {
     const reason = masterDb.getApiKeyUnavailableReason(authId);
     const status = reason === 'inactive' ? 403 : 404;
+    // Expected client noise (frontend probes before API-key registration) — keep access logs quiet.
+    (res.locals ??= {}).expectedClientError = true;
     res.status(status).json({
       success: false,
       error: reason === 'inactive' ? 'API key inactive' : 'User not registered',
@@ -83,6 +85,7 @@ function attachRegisteredUser(masterDb, authId, res) {
     [authId]
   );
   if (!registry) {
+    (res.locals ??= {}).expectedClientError = true;
     res.status(403).json({
       success: false,
       error: 'User account inactive',
