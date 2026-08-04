@@ -329,7 +329,6 @@ class TorBoxBackend {
       // the upload processor so batch closeConnection cannot race active drains.
       logger.info('Syncing upload counters for all users...');
       await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
-      logger.info('Upload counter sync completed');
 
       logger.info(
         'Backfilling upload quota counters for all users (accounting only, no eviction)...'

@@ -2687,6 +2687,10 @@ class UploadProcessor {
     // Note: Recovery is called separately before start() in initializeServices()
     // (after counter sync / quota backfill) so the first processUploads() does not
     // race batch closeConnection sweeps.
+    // Startup already ran syncUploadCountersForAllUsers — skip the redundant
+    // fire-and-forget full-user sync on the first cleanup tick.
+    this.lastCleanupAt = Date.now();
+    this.lastRecoveryAt = Date.now();
 
     // Process immediately on start (to process any recovered uploads)
     this.processUploads();

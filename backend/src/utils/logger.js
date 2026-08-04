@@ -202,15 +202,23 @@ class Logger {
       logData.duration = `${duration}ms`;
     }
 
-    const authId = req.query?.authId || req.headers['x-auth-id'];
+    const authId = req.query?.authId || req.headers?.['x-auth-id'];
     if (authId && typeof authId === 'string') {
       logData.authIdPrefix = authId.slice(0, 8);
     }
 
-    const message = `${req.method} ${req.originalUrl || req.url} ${res.statusCode}`;
-    if (res.statusCode >= 500) {
+    const message = `${req.method} ${safeUrl} ${res.statusCode}`;
+    // Stremio addon proxy returns 502 when upstream addons reject (401/403) —
+    // expected user/config noise, not a backend outage.
+    const isExpectedUpstreamProxyFailure =
+      res.statusCode >= 502 &&
+      res.statusCode <= 504 &&
+      typeof safeUrl === 'string' &&
+      safeUrl.startsWith('/api/stremio/');
+
+    if (res.statusCode >= 500 && !isExpectedUpstreamProxyFailure) {
       this.logger.error(message, logData);
-    } else if (res.statusCode >= 400) {
+    } else if (res.statusCode >= 400 || isExpectedUpstreamProxyFailure) {
       this.logger.warn(message, logData);
     } else if (this.isDebugEnabled()) {
       this.logger.info(message, logData);
