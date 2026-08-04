@@ -62,12 +62,19 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        if (
-          data.error === 'AUTH_ERROR' ||
-          data.error === 'NO_AUTH' ||
-          data.error?.includes('auth')
-        ) {
+        // Permanent credential failures (TorBox client faults).
+        if (data.error === 'NO_AUTH' || data.error === 'BAD_TOKEN') {
           throw new Error(`AUTH_ERROR: ${data.detail || 'Authentication required'}`);
+        }
+
+        // TorBox: codes ending in ERROR are server faults — treat as unavailable, not bad key.
+        if (typeof data.error === 'string' && data.error.endsWith('ERROR')) {
+          const serviceError = new Error(
+            data.detail || data.error || `TorBox API unavailable (HTTP ${response.status})`
+          );
+          serviceError.isServiceUnavailable = true;
+          serviceError.torboxError = data.error;
+          throw serviceError;
         }
 
         if (response.status === 422) {
@@ -101,6 +108,20 @@ class ApiClient {
         }
 
         throw new Error(data.detail || data.error || `HTTP ${response.status}`);
+      }
+
+      // TorBox contract: prefer `success` over HTTP status alone.
+      if (data && data.success === false) {
+        if (data.error === 'NO_AUTH' || data.error === 'BAD_TOKEN') {
+          throw new Error(`AUTH_ERROR: ${data.detail || 'Authentication required'}`);
+        }
+        if (typeof data.error === 'string' && data.error.endsWith('ERROR')) {
+          const serviceError = new Error(data.detail || data.error);
+          serviceError.isServiceUnavailable = true;
+          serviceError.torboxError = data.error;
+          throw serviceError;
+        }
+        throw new Error(data.detail || data.error || 'Request failed');
       }
 
       return data;
@@ -195,6 +216,8 @@ class ApiClient {
         error: error.message,
         isRateLimited: error.isRateLimited,
         retryAfterMs: error.retryAfterMs,
+        isServiceUnavailable: error.isServiceUnavailable,
+        torboxError: error.torboxError,
       };
     }
   }

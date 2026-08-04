@@ -9,7 +9,7 @@ import {
   patchCacheRemoveIds,
 } from '@/app/api/lib/downloadListSync';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
-import { sanitizeError } from '@/utils/sanitizeError';
+import { publicApiErrorResponse, sanitizeError } from '@/utils/sanitizeError';
 import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 
 const CACHE_TYPE = 'usenet';
@@ -45,43 +45,48 @@ export async function GET(request) {
   } catch (error) {
     console.error('Error fetching usenet data:', error);
 
-    let errorMessage = 'Failed to fetch usenet data';
-    let statusCode = 500;
-
-    if (error.message.includes('502')) {
-      errorMessage =
-        'TorBox servers are temporarily unavailable. Please try again in a few minutes.';
-      statusCode = 502;
-    } else if (error.message.includes('503')) {
-      errorMessage =
-        'TorBox servers are temporarily overloaded. Please try again in a few minutes.';
-      statusCode = 503;
-    } else if (error.message.includes('504')) {
-      errorMessage =
-        'TorBox servers are taking too long to respond. Please try again in a few minutes.';
-      statusCode = 504;
-    } else if (
-      error.message.includes('NetworkError') ||
-      error.message.includes('Failed to fetch')
-    ) {
-      errorMessage =
-        'Unable to connect to TorBox servers. Please check your internet connection and try again.';
-      statusCode = 503;
-    } else if (error.message.includes('401')) {
-      errorMessage = 'Authentication failed. Please check your API key.';
-      statusCode = 401;
-    } else if (error.message.includes('403')) {
-      errorMessage = 'Access denied. Please check your API key and account status.';
-      statusCode = 403;
+    const message = error?.message || '';
+    if (message.includes('502')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'TorBox servers are temporarily unavailable. Please try again in a few minutes.',
+        },
+        { status: 502 }
+      );
+    }
+    if (message.includes('503')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'TorBox servers are temporarily overloaded. Please try again in a few minutes.',
+        },
+        { status: 503 }
+      );
+    }
+    if (message.includes('504')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'TorBox servers are taking too long to respond. Please try again in a few minutes.',
+        },
+        { status: 504 }
+      );
+    }
+    if (message.includes('NetworkError') || message.includes('Failed to fetch')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Unable to connect to TorBox servers. Please check your internet connection and try again.',
+        },
+        { status: 503 }
+      );
     }
 
-    return NextResponse.json(
-      {
-        error: errorMessage,
-        originalError: sanitizeError(error),
-      },
-      { status: statusCode }
-    );
+    const { body, status } = publicApiErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }
 

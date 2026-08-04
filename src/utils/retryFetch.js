@@ -2,6 +2,7 @@
 'use client';
 
 import { FETCH_TIMEOUT_MS } from '@/config/apiConstants';
+import { isTorboxServerFault } from '@/config/errors';
 import { readJsonFromResponse } from '@/utils/fetchResponse';
 
 const DEFAULT_MAX_RETRIES = 3;
@@ -117,21 +118,20 @@ export async function retryFetch(url, options = {}) {
         };
       }
 
-      // Special handling for DATABASE_ERROR - allow retries since it might be temporary
-      if (!data.success && data.error === 'DATABASE_ERROR') {
+      // TorBox server faults (*_ERROR) are temporary — retry with backoff.
+      if (!data.success && isTorboxServerFault(data.error)) {
         retries++;
         if (retries < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           continue;
-        } else {
-          return {
-            success: false,
-            error: data.error,
-            detail: data.detail,
-            userMessage:
-              'TorBox database is temporarily unavailable. Please try again in a few minutes.',
-          };
         }
+        return {
+          success: false,
+          error: data.error,
+          detail: data.detail,
+          userMessage:
+            data.detail || 'TorBox is temporarily unavailable. Please try again in a few minutes.',
+        };
       }
 
       if (data.success) {

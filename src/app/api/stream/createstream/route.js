@@ -2,7 +2,8 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
-import { sanitizeError } from '@/utils/sanitizeError';
+import { publicApiErrorResponse } from '@/utils/sanitizeError';
+
 export async function GET(request) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
@@ -44,15 +45,23 @@ export async function GET(request) {
       },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API responded with status: ${response.status}`);
+    const data = await response.json().catch(() => ({}));
+
+    // TorBox contract: trust `success`, not only HTTP status.
+    if (response.ok && data.success !== false) {
+      return NextResponse.json(data);
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    const errorCode = data.error || `API responded with status: ${response.status}`;
+    console.error('Error creating stream:', errorCode, data.detail || '');
+    const { body, status } = publicApiErrorResponse(
+      { error: errorCode, detail: data.detail },
+      { fallbackStatus: response.ok ? 502 : response.status || 500 }
+    );
+    return NextResponse.json(body, { status });
   } catch (error) {
     console.error('Error creating stream:', error);
-    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
+    const { body, status } = publicApiErrorResponse(error);
+    return NextResponse.json(body, { status });
   }
 }

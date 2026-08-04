@@ -7,7 +7,7 @@ import {
 } from '@/app/api/lib/downloadListSync';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { queueTorrentUpload } from '@/app/api/lib/queueTorrentUpload';
-import { sanitizeError } from '@/utils/sanitizeError';
+import { publicApiErrorResponse, sanitizeError } from '@/utils/sanitizeError';
 import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 
@@ -48,7 +48,8 @@ export async function GET(request) {
       return Response.json({ success: false, error: sanitizeError(error) }, { status: 408 });
     }
 
-    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
+    const { body, status } = publicApiErrorResponse(error);
+    return Response.json(body, { status });
   }
 }
 

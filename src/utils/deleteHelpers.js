@@ -26,9 +26,8 @@ export const deleteItemHelper = async (id, apiKey, assetType = 'torrents', fetch
       },
       body: { id },
       timeout: FETCH_TIMEOUT_MS,
-      permanent: [
-        (data) => isNonRetryableResponse(data) && data.error !== 'DATABASE_ERROR', // Allow retries for DATABASE_ERROR
-      ],
+      // Client/request faults only — TorBox *_ERROR codes (server faults) are retryable.
+      permanent: [(data) => isNonRetryableResponse(data)],
       ...fetchOptions,
     });
 
