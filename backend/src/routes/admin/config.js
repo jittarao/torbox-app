@@ -9,6 +9,7 @@ import {
   UPLOAD_MAX_WORK_PER_DRAIN,
   UPLOAD_CONNECTION_SOFT_DEFER_MS,
   UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
+  UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE,
   UPLOAD_CONNECTION_DEFER_MS,
   UPLOAD_RECOVERY_CONCURRENCY,
 } from '../../config/uploadProcessorConfig.js';
@@ -57,6 +58,7 @@ export function setupConfigRoutes(router, backend) {
           external_rate_limit_retry_ms: UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS,
           connection_soft_defer_ms: UPLOAD_CONNECTION_SOFT_DEFER_MS,
           connection_strikes_before_pause: UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
+          global_connection_strikes_before_pause: UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE,
           connection_defer_ms: UPLOAD_CONNECTION_DEFER_MS,
           recovery_concurrency: UPLOAD_RECOVERY_CONCURRENCY,
           rate_limit_source: 'torbox_headers',

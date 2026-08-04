@@ -192,7 +192,7 @@ Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uplo
 | `CREATE_UPLOAD_TIMEOUT_MS`            | TorBox create API request timeout (ms)                                        | `30000`          |
 | `UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS` | TorBox rate-limit fallback (ms) when response headers omit reset/retry timing | `300000` (5 min) |
 
-Related (unchanged): `UPLOAD_PROCESSOR_INTERVAL_MS` (scheduler tick, default 5s), `UPLOAD_PROCESS_CONCURRENCY` (cross-user worker slots, default 6), `UPLOAD_CONNECTION_SOFT_DEFER_MS` (per-upload cool-down after a single create timeout, default 30s), `UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE` (consecutive failures before type-wide pause, default 3), `UPLOAD_CONNECTION_DEFER_MS` (type-wide defer after sustained unreachability, default 15 min). Hourly create limits come from TorBox `x-ratelimit-*` response headers (cached in-memory per user/type).
+Related (unchanged): `UPLOAD_PROCESSOR_INTERVAL_MS` (scheduler tick, default 5s), `UPLOAD_PROCESS_CONCURRENCY` (cross-user worker slots, default 6), `UPLOAD_CONNECTION_SOFT_DEFER_MS` (per-upload cool-down after a single create timeout, default 30s), `UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE` (consecutive failures before type-wide pause, default 3), `UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE` (cross-user failures before process-wide type pause, default 5), `UPLOAD_CONNECTION_DEFER_MS` (type-wide defer after sustained unreachability, default 15 min). Hourly create limits come from TorBox `x-ratelimit-*` response headers (cached in-memory per user/type).
 
 ## User activity tracking
 

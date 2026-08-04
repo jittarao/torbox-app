@@ -19,6 +19,7 @@
 #   UPLOAD_CONNECTION_DEFER_MS   — type-wide defer ms after sustained TorBox unreachability (default 900000)
 #   UPLOAD_CONNECTION_SOFT_DEFER_MS — per-upload cool-down after a single create timeout (default 30000)
 #   UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE — consecutive create connection failures before type-wide pause (default 3)
+#   UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE — cross-user create failures before process-wide type pause (default 5)
 #   UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS — TorBox rate-limit fallback when headers omit timing (default 300000)
 #   UPLOAD_BATCH_FETCH_SIZE      — SQL fetch size per queue buffer (default 50)
 #   UPLOAD_MAX_WORK_PER_DRAIN    — max uploads per drain invocation (default 25)
@@ -71,6 +72,7 @@ services:
       UPLOAD_CONNECTION_DEFER_MS: ${UPLOAD_CONNECTION_DEFER_MS:-900000}
       UPLOAD_CONNECTION_SOFT_DEFER_MS: ${UPLOAD_CONNECTION_SOFT_DEFER_MS:-30000}
       UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE: ${UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE:-3}
+      UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE: ${UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE:-5}
       UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS: ${UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS:-300000}
       UPLOAD_BATCH_FETCH_SIZE: ${UPLOAD_BATCH_FETCH_SIZE:-50}
       UPLOAD_MAX_WORK_PER_DRAIN: ${UPLOAD_MAX_WORK_PER_DRAIN:-25}

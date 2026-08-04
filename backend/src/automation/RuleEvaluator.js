@@ -265,7 +265,7 @@ class RuleEvaluator {
       ? this.evaluateGroupStructure(rule, torrents, telemetryMap, tagsByDownloadId, speedHistoryMap)
       : this.evaluateFlatStructure(rule, torrents, telemetryMap, tagsByDownloadId, speedHistoryMap);
 
-    logger.info('Rule evaluation completed', {
+    logger.debug('Rule evaluation completed', {
       ruleId: rule.id,
       ruleName: rule.name,
       torrentCount: torrents.length,

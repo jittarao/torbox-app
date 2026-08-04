@@ -38,6 +38,15 @@ export const UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE = parsePositiveInt(
   3
 );
 
+/**
+ * Consecutive create connection failures across any users (per upload type) before a
+ * process-wide outage pause. Stops a TorBox 5xx storm from soft-deferring every user.
+ */
+export const UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE = parsePositiveInt(
+  process.env.UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE,
+  5
+);
+
 /** Type-wide pause after sustained TorBox unreachability (ms). */
 export const UPLOAD_CONNECTION_DEFER_MS = parsePositiveInt(
   process.env.UPLOAD_CONNECTION_DEFER_MS,
