@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import { isOnboardingAuxActive, isSearchPageDisabled } from '@/utils/featureFlags';
 import ActivityBeacon from '@/components/shared/ActivityBeacon';
+import ApiKeyRouteGate from '@/components/shared/ApiKeyRouteGate';
 import { Suspense } from 'react';
 
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
@@ -100,7 +101,7 @@ export default async function LocaleLayout({ children, params }) {
                     <div className="animate-spin rounded-full size-8 border-b-2 border-accent" />
                   }
                 >
-                  {children}
+                  <ApiKeyRouteGate>{children}</ApiKeyRouteGate>
                 </Suspense>
               </LocaleContentBoundary>
             </PostHogProvider>
