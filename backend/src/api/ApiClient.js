@@ -83,6 +83,47 @@ const RECOVERY_PROBE_TIMEOUT_MS = Math.max(
 );
 const CONNECTION_ERROR_MESSAGES = ['Network Error', 'timeout'];
 
+/**
+ * TorBox sometimes returns HTTP 500 for application/business errors (quota,
+ * plan limits, etc.). Those must not trip the global circuit breaker or be
+ * logged as "API is down".
+ */
+const APPLICATION_500_MESSAGE_PATTERNS = [
+  /active download limit/i,
+  /upgrade your plan/i,
+  /monthly limit/i,
+  /too many/i,
+  /already exists/i,
+  /duplicate/i,
+];
+
+/**
+ * Extract a human-readable TorBox error string from a response body.
+ * @param {*} data
+ * @returns {string}
+ */
+function torboxErrorText(data) {
+  if (data == null) return '';
+  if (typeof data === 'string') return data;
+  if (typeof data !== 'object') return String(data);
+  const parts = [data.detail, data.data, data.error, data.message]
+    .filter((v) => typeof v === 'string' && v.trim())
+    .map((v) => v.trim());
+  return parts.join(' ');
+}
+
+/**
+ * True when a 5xx response body looks like a TorBox application error rather
+ * than an infrastructure outage.
+ * @param {*} data
+ * @returns {boolean}
+ */
+function isTorboxApplicationServerError(data) {
+  const text = torboxErrorText(data);
+  if (!text) return false;
+  return APPLICATION_500_MESSAGE_PATTERNS.some((re) => re.test(text));
+}
+
 /** Normalize API active field to boolean (API may return true, 1, or 'true') */
 function normalizeActive(value) {
   return value === true || value === 1 || value === 'true';
@@ -226,12 +267,22 @@ class ApiClient {
       );
     }
 
-    // Check for server errors (5xx) — all 5xx are considered connection/server errors
-    if (error.response.status >= 500) {
+    const status = error.response.status;
+    if (status < 500) {
+      return false;
+    }
+
+    // Gateway / unavailable — treat as outage regardless of body.
+    if (status === 502 || status === 503 || status === 504) {
       return true;
     }
 
-    return false;
+    // TorBox application 500s (quota/plan/etc.) are not connection failures.
+    if (isTorboxApplicationServerError(error.response.data)) {
+      return false;
+    }
+
+    return true;
   }
 
   // ============================================================================
@@ -379,6 +430,7 @@ class ApiClient {
           _globalCircuitBreaker.recordFailure();
         }
         const errorDetails = this.buildErrorDetails(error, { endpoint, ...context });
+        const serverText = torboxErrorText(error.response?.data);
         const logMessage =
           connectionErrorFallback !== null
             ? `TorBox API connection error ${operation || 'in API call'} - handling gracefully`
@@ -389,9 +441,10 @@ class ApiClient {
           logger.warn(logMessage, {
             ...errorDetails,
             message:
-              connectionErrorFallback !== null
+              serverText ||
+              (connectionErrorFallback !== null
                 ? 'TorBox API is down or not responding. Operation skipped.'
-                : 'TorBox API connection failed.',
+                : 'TorBox API connection failed.'),
           });
         } else {
           logger.debug(logMessage, {
@@ -411,6 +464,24 @@ class ApiClient {
         // Tag the error so callers (e.g. UserPoller.fetchTorrents) can detect it and skip
         // shadow-state processing rather than treating a connection failure as "0 torrents".
         error.isConnectionError = true;
+        throw error;
+      }
+
+      // Application-level TorBox 500s (e.g. active download limit) — warn, do not trip CB.
+      if (error.response?.status >= 500 && isTorboxApplicationServerError(error.response?.data)) {
+        error.isTorboxApplicationError = true;
+        logger.warn(`TorBox API application error ${operation || 'in API call'}`, {
+          endpoint,
+          ...context,
+          status: error.response.status,
+          errorCode: error.response?.data?.error,
+          message: torboxErrorText(error.response.data),
+        });
+        if (connectionErrorFallback !== null) {
+          return typeof connectionErrorFallback === 'function'
+            ? connectionErrorFallback(error)
+            : connectionErrorFallback;
+        }
         throw error;
       }
 

@@ -1228,11 +1228,20 @@ class Database {
       const results = await Promise.allSettled(
         activeUsers.map(async (user) => {
           await syncSemaphore.acquire();
+          let pinned = false;
           try {
-            const userDb = await userDatabaseManager.getUserDatabase(user.auth_id);
+            // Pin so concurrent upload/poll closeConnection cannot close mid-query
+            // (startup + daily sync race the processor's finally closeConnection).
+            const userDb = await userDatabaseManager.getUserDatabase(user.auth_id, {
+              pin: true,
+            });
+            pinned = true;
             await this.updateUploadCounters(user.auth_id, userDb);
             return { ok: true };
           } finally {
+            if (pinned) {
+              userDatabaseManager.markInactive(user.auth_id);
+            }
             userDatabaseManager.closeConnection(user.auth_id);
             syncSemaphore.release();
           }

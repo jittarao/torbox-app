@@ -746,7 +746,7 @@ export function setupStremioAddonsRoutes(app, backend) {
           response = await safeExternalFetch(streamUrl);
         } catch (error) {
           const code = error.code || 'NETWORK_ERROR';
-          logger.info('Stremio stream fetch failed', {
+          logger.debug('Stremio stream fetch failed', {
             addonId: addonMeta.addon_id,
             type,
             code,
@@ -767,7 +767,11 @@ export function setupStremioAddonsRoutes(app, backend) {
         }
 
         if (!response.ok) {
-          logger.info('Stremio stream HTTP error', {
+          // Upstream auth/config failures are common (misconfigured addon keys);
+          // keep them at debug to avoid drowning prod logs on search-page probes.
+          const logFn =
+            response.status >= 500 ? logger.warn.bind(logger) : logger.debug.bind(logger);
+          logFn('Stremio stream HTTP error', {
             addonId: addonMeta.addon_id,
             type,
             httpStatus: response.status,
