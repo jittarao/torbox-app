@@ -597,7 +597,7 @@ class PollingScheduler {
       this.masterDb.updateNextPollAt(authId, nextPollAt, result.nonTerminalCount ?? 0);
     }
 
-    logger.info('Poll completed successfully', {
+    const pollMeta = {
       authId,
       duration: `${duration.toFixed(2)}s`,
       rulesEvaluated: result.ruleResults?.evaluated || 0,
@@ -611,7 +611,17 @@ class PollingScheduler {
             removed: result.changes.removed?.length || 0,
           }
         : null,
-    });
+    };
+    const changeCount =
+      (pollMeta.changes?.new || 0) +
+      (pollMeta.changes?.updated || 0) +
+      (pollMeta.changes?.removed || 0);
+    // Quiet idle polls; keep info when state changed or rules queued/executed actions.
+    if (changeCount > 0 || pollMeta.rulesExecuted > 0) {
+      logger.info('Poll completed successfully', pollMeta);
+    } else {
+      logger.debug('Poll completed successfully', pollMeta);
+    }
   }
 
   /**
@@ -1011,8 +1021,10 @@ class PollingScheduler {
 
     const userInfo = this.masterDb.getUserRegistryInfo(authId);
     if (!userInfo?.encrypted_key) {
+      const err = new Error('runActionBatch: no encrypted_key for user');
+      err.code = 'NO_ENCRYPTED_KEY';
       logger.warn('runActionBatch: no encrypted_key for user', { authId });
-      throw new Error('runActionBatch: no encrypted_key for user');
+      throw err;
     }
 
     const mutex = this.getActionBatchMutex(authId);

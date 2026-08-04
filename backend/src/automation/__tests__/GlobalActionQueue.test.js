@@ -207,6 +207,40 @@ describe('GlobalActionQueue', () => {
     expect(queue.pending).toHaveLength(0);
   });
 
+  it('drops action batch without retry when encrypted_key is missing', async () => {
+    const authId = 'h'.repeat(64);
+    let batchAttempts = 0;
+    let insertCalled = false;
+
+    scheduler.masterDb.insertPendingAction = () => {
+      insertCalled = true;
+      return 99;
+    };
+    scheduler.masterDb.deletePendingAction = () => {};
+    scheduler.runActionBatch = async () => {
+      batchAttempts += 1;
+      const err = new Error('runActionBatch: no encrypted_key for user');
+      err.code = 'NO_ENCRYPTED_KEY';
+      throw err;
+    };
+
+    queue.pending = [
+      {
+        authId,
+        rule: { id: 9, name: 'delete-incomplete' },
+        torrentsToProcess: [{ id: 't9' }],
+        pendingId: 20,
+      },
+    ];
+
+    await queue.drain();
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(batchAttempts).toBe(1);
+    expect(insertCalled).toBe(false);
+    expect(queue.pending).toHaveLength(0);
+  });
+
   it('removePendingForRule drops in-memory queued batches', () => {
     const authId = 'g'.repeat(64);
     queue.pending = [

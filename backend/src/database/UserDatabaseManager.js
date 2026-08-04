@@ -722,6 +722,8 @@ class UserDatabaseManager {
 
   /**
    * Resolve user registry entry from cache or master DB.
+   * Never writes path-only rows into userRegistryCache — that poisons
+   * getUserRegistryInfo (missing encrypted_key) and breaks runActionBatch.
    * @param {string} authId - User authentication ID
    * @returns {Object|null} - User row with db_path or null
    * @private
@@ -731,11 +733,15 @@ class UserDatabaseManager {
     if (cached && cached.db_path) {
       return cached;
     }
+    const cachedPath = cache.getUserDbPath(authId);
+    if (cachedPath) {
+      return { db_path: cachedPath };
+    }
     const user = this.masterDbIsInstance
       ? this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId])
       : this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
-    if (user) {
-      cache.setUserRegistry(authId, user);
+    if (user?.db_path) {
+      cache.setUserDbPath(authId, user.db_path);
     }
     return user || null;
   }
@@ -792,7 +798,7 @@ class UserDatabaseManager {
         ? this.masterDb.getQuery('SELECT db_path FROM user_registry WHERE auth_id = ?', [authId])
         : this.masterDb.prepare('SELECT db_path FROM user_registry WHERE auth_id = ?').get(authId);
       if (user) {
-        cache.setUserRegistry(authId, user);
+        cache.setUserDbPath(authId, user.db_path);
         cache.invalidateActiveUsers();
         logger.info('Successfully created missing user registry entry', { authId, dbPath });
         return user;

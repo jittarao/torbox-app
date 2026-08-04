@@ -1326,10 +1326,13 @@ class Database {
    * @returns {Object|null} - User registry info or null if not found
    */
   getUserRegistryInfo(authId) {
-    // Check cache first
+    // Check cache first. Path-only rows (from older code / mistaken writers) lack the
+    // encrypted_key property even when the JOIN would return null — treat as miss.
     const cached = cache.getUserRegistry(authId);
     if (cached !== undefined) {
-      return cached;
+      if (cached === null || Object.prototype.hasOwnProperty.call(cached, 'encrypted_key')) {
+        return cached;
+      }
     }
 
     // Query database if not cached (only active key so encrypted_key is set only when key is usable)
@@ -1343,7 +1346,7 @@ class Database {
       [authId]
     );
 
-    // Cache the result (even if null)
+    // Cache the result (even if null); setUserRegistry also warms the db_path cache
     cache.setUserRegistry(authId, userInfo);
     return userInfo;
   }

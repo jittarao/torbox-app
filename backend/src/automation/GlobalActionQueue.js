@@ -288,6 +288,21 @@ class GlobalActionQueue {
             await this.scheduler.runActionBatch(merged);
           } catch (err) {
             const retryCount = (merged.retryCount ?? 0) + 1;
+            const isMissingKey =
+              err?.code === 'NO_ENCRYPTED_KEY' ||
+              err?.message === 'runActionBatch: no encrypted_key for user';
+
+            // Permanent: no usable API key (or cache bug already fixed). Do not retry-spam.
+            if (isMissingKey) {
+              logger.warn('GlobalActionQueue dropping action batch — no usable API key', {
+                authId: merged.authId,
+                ruleId,
+                ruleName: merged.rule?.name,
+                torrentCount: merged.torrentsToProcess.length,
+              });
+              continue;
+            }
+
             if (retryCount > MAX_ACTION_BATCH_RETRIES) {
               logger.error(
                 'GlobalActionQueue action batch failed after max retries, dropping',
