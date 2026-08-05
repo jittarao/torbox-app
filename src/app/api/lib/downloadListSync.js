@@ -1,13 +1,14 @@
 /**
  * Server-only authoritative download list sync cache.
- * Rev-tagged full snapshots: reads serve cached gzip bodies (304 when current);
- * stale reads block on a coalesced TorBox shallow refresh before responding.
+ * Rev-tagged full snapshots live on disk (immutable `*.rev.N.gz` bodies +
+ * atomic JSON meta + hot-path `*.gz` mirror). Reads serve cached gzip bodies
+ * (304 when current); stale reads block on a coalesced TorBox shallow refresh
+ * before responding.
  *
- * Live entries keep gzip only (no durable uncompressed catalog). Idle keys spill
- * to disk after DOWNLOAD_SYNC_DISK_SPILL_MS and rehydrate on the next request.
- *
- * In-memory per process — single Next.js instance assumed (Docker Compose default).
- * Multi-replica deploys need a shared cache (out of scope).
+ * No durable in-memory catalog — only lightweight per-key coordination
+ * (coalesced promises) stays in process RAM. Shallow failure backoff is also
+ * persisted in disk meta so restarts honor TorBox fault holds.
+ * Single Next.js instance assumed (Docker Compose default).
  */
 
 import fs from 'fs';
@@ -24,7 +25,7 @@ import { isTorboxServerFault } from '@/config/errors';
 import { downloadRowEqual } from '@/utils/downloadListMerge';
 import { extractPublicErrorCode } from '@/utils/sanitizeError';
 
-const CACHE_TTL_MS = Number(process.env.DOWNLOAD_SYNC_CACHE_TTL_MS) || 30 * 60 * 1000;
+const CACHE_TTL_MS = Number(process.env.DOWNLOAD_SYNC_CACHE_TTL_MS) || 24 * 60 * 60 * 1000;
 const RECONCILE_INTERVAL_MS =
   Number(process.env.DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS) || 5 * 60 * 1000;
 const RECONCILE_JITTER_MS = Number(process.env.DOWNLOAD_SYNC_RECONCILE_JITTER_MS) || 60 * 1000;
@@ -38,31 +39,30 @@ const NON_RETRYABLE_RECONCILE_BACKOFF_MS =
 const SHALLOW_FAILURE_BACKOFF_BASE_MS = 5 * 1000;
 const SHALLOW_FAILURE_BACKOFF_MAX_MS = SHALLOW_FRESHNESS_MS;
 const RECONCILE_FAILURE_LOG_RATE_MS = 60 * 1000;
-const DISK_SPILL_INTERVAL_MS = 15 * 1000;
+const EVICT_INTERVAL_MS = 5 * 60 * 1000;
+/** Debounce lastAccess meta writes — TTL is hours, not seconds. */
+const LAST_ACCESS_TOUCH_INTERVAL_MS =
+  Number(process.env.DOWNLOAD_SYNC_LAST_ACCESS_TOUCH_MS) || 5 * 60 * 1000;
 const DEFAULT_DISK_CACHE_DIR = '.download-list-cache';
 
 /** @type {Map<string, number>} */
 const reconcileFailureLogAt = new Map();
-// Keep this small: each archived rev retains a gzip snapshot. Uncompressed
-// catalog copies must NOT be archived (see archiveRevSnapshot)
-const REV_HISTORY_LIMIT = Math.max(1, Number(process.env.DOWNLOAD_SYNC_REV_HISTORY_LIMIT) || 3);
+// Disk-backed; higher default is fine (deltas avoid full snapshot downloads).
+const REV_HISTORY_LIMIT = Math.max(1, Number(process.env.DOWNLOAD_SYNC_REV_HISTORY_LIMIT) || 10);
 const GZIP_LEVEL = 6;
 
 /** @type {string | null} */
 let diskCacheDirOverride = null;
-/** @type {number | null} */
-let diskSpillMsOverride = null;
+/** @type {string | null} */
+let diskDirEnsured = null;
 /** @type {number} */
-let diskSpillFailureLogAt = 0;
-
-/** @type {Map<string, CacheEntry>} */
-const cache = new Map();
+let diskFailureLogAt = 0;
 
 /** @type {Map<string, ReturnType<typeof setTimeout>>} */
 const mutationReconcileTimers = new Map();
 
 /**
- * Per-key sync coordination — survives entry replacement via writeEntry.
+ * Per-key sync coordination only (no catalog bodies).
  * @type {Map<string, SyncKeyState>}
  */
 const syncStateByKey = new Map();
@@ -74,7 +74,7 @@ const syncStateByKey = new Map();
  * @property {number} publishGeneration
  * @property {number | null} lastShallowAttemptAt
  * @property {number} shallowFailureCount
- * @property {Map<number, RevSnapshot>} revHistory
+ * @property {string | null} lastShallowError
  */
 
 /**
@@ -97,15 +97,10 @@ const syncStateByKey = new Map();
  * @property {boolean} isMultiPage
  * @property {number | null} lastReconcileAttemptAt
  * @property {number} reconcileFailureCount
+ * @property {number | null} [lastShallowAttemptAt]
+ * @property {number} [shallowFailureCount]
+ * @property {string | null} [lastShallowError]
  */
-
-function getDiskSpillMs() {
-  if (diskSpillMsOverride != null) return diskSpillMsOverride;
-  const raw = process.env.DOWNLOAD_SYNC_DISK_SPILL_MS;
-  if (raw === undefined || raw === '') return 60 * 1000;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : 60 * 1000;
-}
 
 function getDiskCacheDir() {
   if (diskCacheDirOverride) return diskCacheDirOverride;
@@ -113,6 +108,44 @@ function getDiskCacheDir() {
     return process.env.DOWNLOAD_SYNC_DISK_CACHE_DIR;
   }
   return path.join(process.cwd(), DEFAULT_DISK_CACHE_DIR);
+}
+
+/**
+ * @returns {string}
+ */
+function ensureDiskDir() {
+  const dir = getDiskCacheDir();
+  if (diskDirEnsured !== dir) {
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    try {
+      fs.chmodSync(dir, 0o700);
+    } catch {
+      /* best-effort on platforms that ignore mode */
+    }
+    diskDirEnsured = dir;
+  }
+  return dir;
+}
+
+/**
+ * Write then rename so readers never observe a partial file (same-filesystem POSIX).
+ * @param {string} filePath
+ * @param {string | Buffer} data
+ * @param {number} [mode]
+ */
+function atomicWriteFile(filePath, data, mode = 0o600) {
+  const dir = path.dirname(filePath);
+  const tmp = path.join(
+    dir,
+    `.${path.basename(filePath)}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`
+  );
+  fs.writeFileSync(tmp, data, { mode });
+  try {
+    fs.chmodSync(tmp, mode);
+  } catch {
+    /* best-effort */
+  }
+  fs.renameSync(tmp, filePath);
 }
 
 /**
@@ -127,20 +160,48 @@ function safeDiskFilename(key) {
  */
 function diskPathsForKey(key) {
   const base = path.join(getDiskCacheDir(), safeDiskFilename(key));
-  return { metaPath: `${base}.json`, bodyPath: `${base}.gz` };
+  return {
+    metaPath: `${base}.json`,
+    bodyPath: `${base}.gz`,
+    revPath: (rev) => `${base}.rev.${rev}.gz`,
+    stem: safeDiskFilename(key),
+  };
 }
 
-function logDiskSpillFailure(message) {
+function logDiskFailure(message) {
   const now = Date.now();
-  if (now - diskSpillFailureLogAt < RECONCILE_FAILURE_LOG_RATE_MS) return;
-  diskSpillFailureLogAt = now;
+  if (now - diskFailureLogAt < RECONCILE_FAILURE_LOG_RATE_MS) return;
+  diskFailureLogAt = now;
   console.warn(`[downloadListSync] disk cache: ${message}`);
 }
 
 /**
  * @param {string} key
  */
-function deleteDiskSpill(key) {
+function deleteDiskRevHistory(key) {
+  const dir = getDiskCacheDir();
+  const { stem } = diskPathsForKey(key);
+  const prefix = `${stem}.rev.`;
+  let names;
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    if (!name.startsWith(prefix) || !name.endsWith('.gz')) continue;
+    try {
+      fs.unlinkSync(path.join(dir, name));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * @param {string} key
+ */
+function deleteDiskEntry(key) {
   const { metaPath, bodyPath } = diskPathsForKey(key);
   try {
     fs.unlinkSync(metaPath);
@@ -152,6 +213,73 @@ function deleteDiskSpill(key) {
   } catch {
     /* missing is fine */
   }
+  deleteDiskRevHistory(key);
+}
+
+/**
+ * @param {string} key
+ * @returns {boolean}
+ */
+function diskEntryExists(key) {
+  const { metaPath, bodyPath } = diskPathsForKey(key);
+  try {
+    return fs.existsSync(metaPath) && fs.existsSync(bodyPath);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {object} meta
+ * @returns {Omit<CacheEntry, 'compressedBody'> & { compressedBody: null }}
+ */
+function metaToEntryShell(meta) {
+  return {
+    data: null,
+    compressedBody: null,
+    rev: meta.rev ?? 0,
+    itemCount: meta.itemCount ?? 0,
+    lastAccess: meta.lastAccess ?? Date.now(),
+    lastShallowPollAt: meta.lastShallowPollAt ?? null,
+    lastFullReconcileAt: meta.lastFullReconcileAt ?? null,
+    reconcileState: meta.reconcileState ?? 'fresh',
+    reconcileError: meta.reconcileError ?? null,
+    isMultiPage: Boolean(meta.isMultiPage),
+    lastReconcileAttemptAt: meta.lastReconcileAttemptAt ?? null,
+    reconcileFailureCount: meta.reconcileFailureCount ?? 0,
+    lastShallowAttemptAt: meta.lastShallowAttemptAt ?? null,
+    shallowFailureCount: meta.shallowFailureCount ?? 0,
+    lastShallowError: meta.lastShallowError ?? null,
+  };
+}
+
+/**
+ * @param {string} key
+ * @returns {ReturnType<typeof metaToEntryShell> | null}
+ */
+function readDiskMetaOnly(key) {
+  const { metaPath } = diskPathsForKey(key);
+  try {
+    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+    return metaToEntryShell(meta);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} key
+ * @returns {Buffer | null}
+ */
+function readDiskBodyOnly(key) {
+  const { bodyPath } = diskPathsForKey(key);
+  try {
+    const compressedBody = fs.readFileSync(bodyPath);
+    if (!Buffer.isBuffer(compressedBody) || compressedBody.length === 0) return null;
+    return compressedBody;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -159,12 +287,10 @@ function deleteDiskSpill(key) {
  * @param {CacheEntry} entry
  * @returns {boolean}
  */
-function writeDiskSpill(key, entry) {
-  if (!entry?.compressedBody) return false;
+function writeDiskMeta(key, entry) {
   try {
-    const dir = getDiskCacheDir();
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    const { metaPath, bodyPath } = diskPathsForKey(key);
+    ensureDiskDir();
+    const { metaPath } = diskPathsForKey(key);
     const meta = {
       rev: entry.rev,
       itemCount: entry.itemCount,
@@ -176,13 +302,60 @@ function writeDiskSpill(key, entry) {
       isMultiPage: entry.isMultiPage,
       lastReconcileAttemptAt: entry.lastReconcileAttemptAt,
       reconcileFailureCount: entry.reconcileFailureCount,
+      lastShallowAttemptAt: entry.lastShallowAttemptAt ?? null,
+      shallowFailureCount: entry.shallowFailureCount ?? 0,
+      lastShallowError: entry.lastShallowError ?? null,
     };
-    fs.writeFileSync(metaPath, JSON.stringify(meta), { mode: 0o600 });
-    fs.writeFileSync(bodyPath, entry.compressedBody, { mode: 0o600 });
+    atomicWriteFile(metaPath, JSON.stringify(meta), 0o600);
     return true;
   } catch (error) {
-    logDiskSpillFailure(error?.message || 'write failed');
+    logDiskFailure(error?.message || 'meta write failed');
     return false;
+  }
+}
+
+/**
+ * Publish an immutable rev body first, then current-body mirror, then meta.
+ * Meta is written last so it never points at a missing/partial body.
+ * @param {string} key
+ * @param {CacheEntry} entry
+ * @returns {boolean}
+ */
+function writeDiskEntry(key, entry) {
+  if (!entry?.compressedBody) return false;
+  try {
+    ensureDiskDir();
+    const { bodyPath, revPath } = diskPathsForKey(key);
+    // Immutable revision snapshot — source of truth for deltas / crash recovery.
+    atomicWriteFile(revPath(entry.rev), entry.compressedBody, 0o600);
+    // Hot-path mirror for current head reads.
+    atomicWriteFile(bodyPath, entry.compressedBody, 0o600);
+    if (!writeDiskMeta(key, entry)) return false;
+    pruneRevHistoryOnDisk(key, entry.rev);
+    return true;
+  } catch (error) {
+    logDiskFailure(error?.message || 'write failed');
+    return false;
+  }
+}
+
+/**
+ * @param {string} key
+ * @param {CacheEntry} entry
+ */
+function persistEntry(key, entry) {
+  if (!writeDiskEntry(key, entry)) {
+    throw new Error('download list disk cache write failed');
+  }
+}
+
+/**
+ * @param {string} key
+ * @param {CacheEntry} entry
+ */
+function persistEntryMeta(key, entry) {
+  if (!writeDiskMeta(key, entry)) {
+    throw new Error('download list disk cache meta write failed');
   }
 }
 
@@ -190,45 +363,61 @@ function writeDiskSpill(key, entry) {
  * @param {string} key
  * @returns {CacheEntry | null}
  */
-function readDiskSpill(key) {
-  const { metaPath, bodyPath } = diskPathsForKey(key);
-  try {
-    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-    const compressedBody = fs.readFileSync(bodyPath);
-    if (!Buffer.isBuffer(compressedBody) || compressedBody.length === 0) {
-      deleteDiskSpill(key);
-      return null;
-    }
-    if (Date.now() - (meta.lastAccess || 0) > CACHE_TTL_MS) {
-      deleteDiskSpill(key);
-      return null;
-    }
-    return {
-      data: null,
-      compressedBody,
-      rev: meta.rev ?? 0,
-      itemCount: meta.itemCount ?? 0,
-      lastAccess: meta.lastAccess ?? Date.now(),
-      lastShallowPollAt: meta.lastShallowPollAt ?? null,
-      lastFullReconcileAt: meta.lastFullReconcileAt ?? null,
-      reconcileState: meta.reconcileState ?? 'fresh',
-      reconcileError: meta.reconcileError ?? null,
-      isMultiPage: Boolean(meta.isMultiPage),
-      lastReconcileAttemptAt: meta.lastReconcileAttemptAt ?? null,
-      reconcileFailureCount: meta.reconcileFailureCount ?? 0,
-    };
-  } catch {
+function readDiskEntry(key) {
+  const shell = readDiskMetaOnly(key);
+  if (!shell) return null;
+  const compressedBody = readDiskBodyOnly(key);
+  if (!compressedBody) {
+    deleteDiskEntry(key);
     return null;
   }
+  try {
+    const parsed = decompressBody(compressedBody);
+    if (parsed?.rev != null && parsed.rev !== shell.rev) {
+      deleteDiskEntry(key);
+      return null;
+    }
+  } catch {
+    deleteDiskEntry(key);
+    return null;
+  }
+  shell.compressedBody = compressedBody;
+  return shell;
 }
 
 /**
- * Drop in-memory coordination for a key (cache, sync state, mutation timer).
+ * Ensure gzip body is loaded (304 / freshness checks skip this).
+ * @param {CacheEntry} entry
+ * @param {string} key
+ * @returns {boolean}
+ */
+function ensureEntryBody(entry, key) {
+  if (entry?.compressedBody) return true;
+  const compressedBody = readDiskBodyOnly(key);
+  if (!compressedBody) {
+    deleteDiskEntry(key);
+    return false;
+  }
+  try {
+    const parsed = decompressBody(compressedBody);
+    if (parsed?.rev != null && parsed.rev !== entry.rev) {
+      deleteDiskEntry(key);
+      return false;
+    }
+  } catch {
+    deleteDiskEntry(key);
+    return false;
+  }
+  entry.compressedBody = compressedBody;
+  return true;
+}
+
+/**
+ * Drop in-memory coordination for a key; optionally wipe disk snapshots.
  * @param {string} key
  * @param {{ deleteDisk?: boolean }} [options]
  */
 function forgetKey(key, { deleteDisk = false } = {}) {
-  cache.delete(key);
   syncStateByKey.delete(key);
   const timer = mutationReconcileTimers.get(key);
   if (timer) {
@@ -236,31 +425,25 @@ function forgetKey(key, { deleteDisk = false } = {}) {
     mutationReconcileTimers.delete(key);
   }
   if (deleteDisk) {
-    deleteDiskSpill(key);
+    deleteDiskEntry(key);
   }
 }
 
 /**
- * Spill idle in-memory entries to disk and free RAM (including rev history).
+ * Rethrow a known list-sync failure without re-logging on every client poll.
+ * @param {string} message
+ * @returns {Error}
  */
-function spillIdleEntries() {
-  const spillMs = getDiskSpillMs();
-  if (spillMs <= 0) return;
-
-  const now = Date.now();
-  for (const [key, entry] of cache.entries()) {
-    if (now - entry.lastAccess < spillMs) continue;
-    const state = syncStateByKey.get(key);
-    if (state?.fullReconcilePromise || state?.shallowRefreshPromise) continue;
-    if (!writeDiskSpill(key, entry)) continue;
-    forgetKey(key, { deleteDisk: false });
-  }
+export function cachedListSyncError(message) {
+  const error = new Error(message || 'reconcile failed');
+  error.listSyncCached = true;
+  return error;
 }
 
 /**
- * Remove disk spills whose lastAccess exceeds CACHE_TTL_MS.
+ * Remove disk entries whose lastAccess exceeds CACHE_TTL_MS.
  */
-function evictExpiredDiskSpills() {
+function evictExpiredDiskEntries() {
   let dir;
   try {
     dir = getDiskCacheDir();
@@ -282,16 +465,37 @@ function evictExpiredDiskSpills() {
     const metaPath = path.join(dir, name);
     try {
       const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-      if (now - (meta.lastAccess || 0) > CACHE_TTL_MS) {
-        const keyFromName = name.slice(0, -'.json'.length);
-        // safeDiskFilename is lossy; delete by paths derived from filename stem
-        try {
-          fs.unlinkSync(metaPath);
-        } catch {
-          /* ignore */
+      if (now - (meta.lastAccess || 0) <= CACHE_TTL_MS) continue;
+
+      const stem = name.slice(0, -'.json'.length);
+      let skipDelete = false;
+      for (const key of [...syncStateByKey.keys()]) {
+        if (safeDiskFilename(key) !== stem) continue;
+        const state = syncStateByKey.get(key);
+        if (state?.fullReconcilePromise || state?.shallowRefreshPromise) {
+          // Keep disk while a refresh is in flight; retry next sweep.
+          skipDelete = true;
+          break;
         }
+        forgetKey(key, { deleteDisk: false });
+      }
+      if (skipDelete) continue;
+
+      try {
+        fs.unlinkSync(metaPath);
+      } catch {
+        /* ignore */
+      }
+      try {
+        fs.unlinkSync(path.join(dir, `${stem}.gz`));
+      } catch {
+        /* ignore */
+      }
+      const prefix = `${stem}.rev.`;
+      for (const revName of names) {
+        if (!revName.startsWith(prefix) || !revName.endsWith('.gz')) continue;
         try {
-          fs.unlinkSync(path.join(dir, `${keyFromName}.gz`));
+          fs.unlinkSync(path.join(dir, revName));
         } catch {
           /* ignore */
         }
@@ -343,23 +547,20 @@ function getSnapshotData(snapshot) {
 function getSyncState(key) {
   let state = syncStateByKey.get(key);
   if (!state) {
+    const meta = readDiskMetaOnly(key);
     state = {
       fullReconcilePromise: null,
       shallowRefreshPromise: null,
       publishGeneration: 0,
-      lastShallowAttemptAt: null,
-      shallowFailureCount: 0,
-      revHistory: new Map(),
+      lastShallowAttemptAt: meta?.lastShallowAttemptAt ?? null,
+      shallowFailureCount: meta?.shallowFailureCount ?? 0,
+      lastShallowError: meta?.lastShallowError ?? null,
     };
     syncStateByKey.set(key, state);
   }
   return state;
 }
 
-/**
- * @param {string} authId
- * @param {string} type
- */
 export function getCacheKey(authId, type) {
   return `${authId}:${type}`;
 }
@@ -425,16 +626,46 @@ function logReconcileFailure(type, reconcileError, failureCount, kind = 'full') 
   const key = `${kind}:${type}:${reconcileError}`;
   const now = Date.now();
   const last = reconcileFailureLogAt.get(key) || 0;
-  if (failureCount > 1 && now - last < RECONCILE_FAILURE_LOG_RATE_MS) return;
+  const code = extractPublicErrorCode(reconcileError);
+  const expected =
+    (code && !isTorboxServerFault(code)) ||
+    code === 'AUTH_ERROR' ||
+    isTimeoutLikeMessage(reconcileError);
+  const rateMs = expected ? NON_RETRYABLE_RECONCILE_BACKOFF_MS : RECONCILE_FAILURE_LOG_RATE_MS;
+  // First failure always logs; repeats honor the longer sticky-fault window.
+  if (failureCount > 1 && now - last < rateMs) return;
   reconcileFailureLogAt.set(key, now);
   if (reconcileFailureLogAt.size > 200) {
-    const cutoff = now - RECONCILE_FAILURE_LOG_RATE_MS * 2;
+    const cutoff = now - rateMs * 2;
     for (const [k, ts] of reconcileFailureLogAt) {
       if (ts < cutoff) reconcileFailureLogAt.delete(k);
     }
   }
   const label = kind === 'shallow' ? 'shallow refresh' : 'full reconcile';
   console.warn(`[downloadListSync] ${label} failed ${type}: ${reconcileError}`);
+}
+
+/**
+ * @param {string | null | undefined} message
+ */
+function isTimeoutLikeMessage(message) {
+  if (!message) return false;
+  return (
+    message.includes('Request timeout') ||
+    message.includes('aborted due to timeout') ||
+    message.includes('fetch failed')
+  );
+}
+
+/**
+ * Shallow failure backoff — permanent TorBox faults use the same hold as full reconcile.
+ * @param {number} failureCount
+ * @param {string | null | undefined} lastError
+ */
+function effectiveShallowFailureBackoffMs(failureCount, lastError) {
+  const base = shallowFailureBackoffMs(failureCount);
+  if (!lastError) return base;
+  return Math.max(base, effectiveReconcileFailureBackoffMs(failureCount, lastError));
 }
 
 function shallowFailureBackoffMs(failureCount) {
@@ -501,11 +732,7 @@ function listsEqual(prevList, nextList) {
   for (const item of prevList || []) {
     const other = nextById.get(item.id);
     if (!other) return false;
-    if (item.updated_at != null && other.updated_at != null) {
-      if (item.updated_at !== other.updated_at) return false;
-    } else if (!downloadRowEqual(item, other)) {
-      return false;
-    }
+    if (!downloadRowEqual(item, other)) return false;
   }
   return true;
 }
@@ -538,65 +765,96 @@ export function computeDelta(prevList, currList) {
 }
 
 /**
- * @param {Map<number, RevSnapshot>} revHistory
+ * @param {string} key
  * @param {number} currentRev
  */
-function pruneRevHistory(revHistory, currentRev) {
-  for (const rev of revHistory.keys()) {
-    if (rev < currentRev - REV_HISTORY_LIMIT) {
-      revHistory.delete(rev);
+function pruneRevHistoryOnDisk(key, currentRev) {
+  const dir = getDiskCacheDir();
+  const { stem } = diskPathsForKey(key);
+  const prefix = `${stem}.rev.`;
+  let names;
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    if (!name.startsWith(prefix) || !name.endsWith('.gz')) continue;
+    const rev = Number(name.slice(prefix.length, -'.gz'.length));
+    if (!Number.isInteger(rev) || rev >= currentRev - REV_HISTORY_LIMIT) continue;
+    try {
+      fs.unlinkSync(path.join(dir, name));
+    } catch {
+      /* ignore */
     }
   }
 }
 
 /**
- * @param {SyncKeyState} state
+ * @param {string} key
  * @param {CacheEntry} existing
  * @param {number} nextRev
  */
-function archiveRevSnapshot(state, existing, nextRev) {
-  if (!existing?.compressedBody) return;
+function archiveRevSnapshot(key, existing, nextRev) {
+  if (!existing) return;
+  if (!ensureEntryBody(existing, key)) return;
   // Gzip only — never retain the live uncompressed `data` array here. Deltas
   // decompress via getSnapshotData when a client polls with a stale rev.
-  state.revHistory.set(existing.rev, {
-    rev: existing.rev,
-    compressedBody: existing.compressedBody,
-  });
-  pruneRevHistory(state.revHistory, nextRev);
+  try {
+    ensureDiskDir();
+    const { revPath } = diskPathsForKey(key);
+    atomicWriteFile(revPath(existing.rev), existing.compressedBody, 0o600);
+  } catch (error) {
+    logDiskFailure(error?.message || 'rev archive write failed');
+  }
+  pruneRevHistoryOnDisk(key, nextRev);
 }
 
 /**
- * @param {SyncKeyState} state
+ * @param {string} key
  * @param {number} clientRev
+ * @returns {RevSnapshot | null}
  */
-function getClientBaseSnapshot(state, clientRev) {
-  return state.revHistory.get(clientRev) ?? null;
+function getClientBaseSnapshot(key, clientRev) {
+  const { revPath } = diskPathsForKey(key);
+  try {
+    const compressedBody = fs.readFileSync(revPath(clientRev));
+    if (!Buffer.isBuffer(compressedBody) || compressedBody.length === 0) return null;
+    return { rev: clientRev, compressedBody };
+  } catch {
+    return null;
+  }
 }
 
 /**
  * @param {string} authId
  * @param {string} type
+ * @param {{ touch?: boolean, body?: boolean }} [options]
  * @returns {CacheEntry | null}
  */
-function getEntry(authId, type) {
+function getEntry(authId, type, { touch = true, body = true } = {}) {
   const key = getCacheKey(authId, type);
-  let entry = cache.get(key);
+  // Hot path (304 / freshness): meta JSON only — skip multi-MB gzip reads.
+  const entry = body ? readDiskEntry(key) : readDiskMetaOnly(key);
+  if (!entry) return null;
 
-  if (entry && Date.now() - entry.lastAccess > CACHE_TTL_MS) {
+  if (Date.now() - entry.lastAccess > CACHE_TTL_MS) {
+    const state = syncStateByKey.get(key);
+    if (state?.fullReconcilePromise || state?.shallowRefreshPromise) {
+      // Refresh in flight — keep disk; eviction sweep retries after it finishes.
+      return entry;
+    }
     forgetKey(key, { deleteDisk: true });
-    entry = null;
+    return null;
   }
 
-  if (!entry) {
-    const hydrated = readDiskSpill(key);
-    if (!hydrated) return null;
-    // Rev history was dropped on spill; clients with stale rev get stale-full/full.
-    cache.set(key, hydrated);
-    deleteDiskSpill(key);
-    entry = hydrated;
+  if (touch) {
+    const now = Date.now();
+    if (now - entry.lastAccess >= LAST_ACCESS_TOUCH_INTERVAL_MS) {
+      entry.lastAccess = now;
+      writeDiskMeta(key, entry);
+    }
   }
-
-  entry.lastAccess = Date.now();
   return entry;
 }
 
@@ -605,7 +863,7 @@ function getEntry(authId, type) {
  */
 function getEntryData(entry) {
   if (!entry) return [];
-  // Live entries are gzip-only; decompress on demand for mutate/delta paths.
+  // Disk entries are gzip-only; decompress on demand for mutate/delta paths.
   if (!entry.compressedBody) return [];
   const parsed = decompressBody(entry.compressedBody);
   return Array.isArray(parsed.data) ? parsed.data : [];
@@ -620,12 +878,16 @@ function getEntryData(entry) {
 function writeEntry(authId, type, data, meta = {}) {
   const key = getCacheKey(authId, type);
   const now = Date.now();
-  const existing = cache.get(key);
+  // Prefer meta-only read; load body only when archiving the previous rev.
+  let existing = readDiskMetaOnly(key);
+  if (existing && (meta.rev == null || meta.rev !== existing.rev)) {
+    ensureEntryBody(existing, key);
+  }
   const list = Array.isArray(data) ? data : [];
   const rev = meta.rev ?? (existing?.rev ?? 0) + 1;
 
   if (existing && existing.rev !== rev) {
-    archiveRevSnapshot(getSyncState(key), existing, rev);
+    archiveRevSnapshot(key, existing, rev);
   }
 
   const entry = {
@@ -647,11 +909,51 @@ function writeEntry(authId, type, data, meta = {}) {
       meta.reconcileFailureCount !== undefined
         ? meta.reconcileFailureCount
         : (existing?.reconcileFailureCount ?? 0),
+    lastShallowAttemptAt:
+      meta.lastShallowAttemptAt !== undefined
+        ? meta.lastShallowAttemptAt
+        : (existing?.lastShallowAttemptAt ?? null),
+    shallowFailureCount:
+      meta.shallowFailureCount !== undefined
+        ? meta.shallowFailureCount
+        : (existing?.shallowFailureCount ?? 0),
+    lastShallowError:
+      meta.lastShallowError !== undefined
+        ? meta.lastShallowError
+        : (existing?.lastShallowError ?? null),
   };
 
-  cache.set(key, entry);
-  deleteDiskSpill(key);
+  persistEntry(key, entry);
   return { entry, rev };
+}
+
+/**
+ * Persist shallow failure backoff to disk meta so restarts honor it.
+ * @param {string} key
+ * @param {SyncKeyState} state
+ */
+function persistShallowFailureState(key, state) {
+  const entry = readDiskMetaOnly(key);
+  if (!entry) return;
+  entry.lastShallowAttemptAt = state.lastShallowAttemptAt;
+  entry.shallowFailureCount = state.shallowFailureCount || 0;
+  entry.lastShallowError = state.lastShallowError;
+  writeDiskMeta(key, entry);
+}
+
+/**
+ * Persist field updates without rewriting the gzip catalog body.
+ * @param {string} authId
+ * @param {string} type
+ * @param {CacheEntry} entry
+ * @param {Partial<CacheEntry>} fields
+ */
+function patchEntry(authId, type, entry, fields) {
+  const key = getCacheKey(authId, type);
+  Object.assign(entry, fields);
+  entry.lastAccess = Date.now();
+  persistEntryMeta(key, entry);
+  return entry;
 }
 
 /**
@@ -693,30 +995,12 @@ function serveDelta({ data, removed, rev, itemCount }) {
   };
 }
 
-function evictExpired() {
-  const now = Date.now();
-  for (const [key, entry] of cache.entries()) {
-    if (now - entry.lastAccess > CACHE_TTL_MS) {
-      const state = syncStateByKey.get(key);
-      if (state?.fullReconcilePromise || state?.shallowRefreshPromise) continue;
-      forgetKey(key, { deleteDisk: true });
-    }
-  }
-  evictExpiredDiskSpills();
-}
-
 if (typeof setInterval !== 'undefined') {
   const EVICT_INTERVAL_KEY = '__downloadListSyncEvictInterval';
   if (global[EVICT_INTERVAL_KEY]) {
     clearInterval(global[EVICT_INTERVAL_KEY]);
   }
-  global[EVICT_INTERVAL_KEY] = setInterval(evictExpired, 5 * 60 * 1000);
-
-  const SPILL_INTERVAL_KEY = '__downloadListSyncSpillInterval';
-  if (global[SPILL_INTERVAL_KEY]) {
-    clearInterval(global[SPILL_INTERVAL_KEY]);
-  }
-  global[SPILL_INTERVAL_KEY] = setInterval(spillIdleEntries, DISK_SPILL_INTERVAL_MS);
+  global[EVICT_INTERVAL_KEY] = setInterval(evictExpiredDiskEntries, EVICT_INTERVAL_MS);
 }
 
 /**
@@ -758,25 +1042,27 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
 
   const reconcileTask = (async () => {
     const now = Date.now();
-    const existingEntry = getEntry(authId, type);
+    const existingEntry = getEntry(authId, type, { touch: false, body: false });
     const publishGenerationAtStart = state.publishGeneration;
     const revAtStart = existingEntry?.rev ?? null;
 
     if (existingEntry) {
-      existingEntry.reconcileState = 'reconciling';
-      existingEntry.reconcileError = null;
-      existingEntry.lastReconcileAttemptAt = now;
+      patchEntry(authId, type, existingEntry, {
+        reconcileState: 'reconciling',
+        reconcileError: null,
+        lastReconcileAttemptAt: now,
+      });
     }
 
     try {
       const result = await fetchFullDownloadList(apiKey, type);
       const isMultiPage = isMultiPageFromFullReconcile(result.data, result.pageCount);
 
-      if (revAtStart != null && !cache.has(key)) {
+      if (revAtStart != null && !diskEntryExists(key)) {
         return { success: false, error: new Error('cache evicted during reconcile') };
       }
 
-      const currentEntry = cache.get(key);
+      const currentEntry = getEntry(authId, type, { touch: false });
       if (
         state.publishGeneration !== publishGenerationAtStart ||
         (revAtStart != null && currentEntry?.rev !== revAtStart)
@@ -787,13 +1073,15 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
 
       const previousData = currentEntry ? getEntryData(currentEntry) : [];
       if (currentEntry && listsEqual(previousData, result.data)) {
-        const now = Date.now();
-        currentEntry.lastFullReconcileAt = now;
-        currentEntry.lastShallowPollAt = now;
-        currentEntry.reconcileState = 'fresh';
-        currentEntry.reconcileError = null;
-        currentEntry.reconcileFailureCount = 0;
-        currentEntry.isMultiPage = isMultiPage;
+        const touchedAt = Date.now();
+        patchEntry(authId, type, currentEntry, {
+          lastFullReconcileAt: touchedAt,
+          lastShallowPollAt: touchedAt,
+          reconcileState: 'fresh',
+          reconcileError: null,
+          reconcileFailureCount: 0,
+          isMultiPage,
+        });
         return {
           success: result.success,
           data: result.data,
@@ -815,14 +1103,16 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
     } catch (error) {
       const reconcileError = error?.message || 'reconcile failed';
       const now = Date.now();
-      const entry = cache.get(key);
+      const entry = getEntry(authId, type, { touch: false, body: false });
       const failureCount = (entry?.reconcileFailureCount || 0) + 1;
 
       if (entry) {
-        entry.reconcileState = 'error';
-        entry.reconcileError = reconcileError;
-        entry.reconcileFailureCount = failureCount;
-        entry.lastReconcileAttemptAt = now;
+        patchEntry(authId, type, entry, {
+          reconcileState: 'error',
+          reconcileError,
+          reconcileFailureCount: failureCount,
+          lastReconcileAttemptAt: now,
+        });
       } else {
         // Negative cache so cold-miss polls honor backoff instead of re-hitting TorBox.
         writeEntry(authId, type, [], {
@@ -904,13 +1194,15 @@ async function runShallowRefresh(apiKey, type, { blocking = true } = {}) {
         await state.fullReconcilePromise.catch(() => {});
       }
 
-      const currentEntry = getEntry(authId, type);
-      if (!currentEntry || !cache.has(key)) {
+      const currentEntry = getEntry(authId, type, { touch: false, body: false });
+      if (!currentEntry || !diskEntryExists(key)) {
         return { success: false };
       }
 
       if (currentEntry.rev !== revBefore) {
         state.shallowFailureCount = 0;
+        state.lastShallowError = null;
+        persistShallowFailureState(key, state);
         return { success: true };
       }
 
@@ -928,6 +1220,9 @@ async function runShallowRefresh(apiKey, type, { blocking = true } = {}) {
         writeEntry(authId, type, nextList, {
           lastShallowPollAt: now,
           isMultiPage: effectiveMultiPage,
+          lastShallowAttemptAt: state.lastShallowAttemptAt,
+          shallowFailureCount: 0,
+          lastShallowError: null,
         });
 
         if (effectiveMultiPage) {
@@ -937,25 +1232,33 @@ async function runShallowRefresh(apiKey, type, { blocking = true } = {}) {
           scheduleMutationReconcile(apiKey, type);
         }
       } else if (hasChanges) {
-        currentEntry.lastShallowPollAt = now;
-        currentEntry.isMultiPage = effectiveMultiPage;
+        patchEntry(authId, type, currentEntry, {
+          lastShallowPollAt: now,
+          isMultiPage: effectiveMultiPage,
+          lastShallowAttemptAt: state.lastShallowAttemptAt,
+          shallowFailureCount: 0,
+          lastShallowError: null,
+        });
         if (boundaryCrossed) {
           scheduleMutationReconcile(apiKey, type);
         }
       } else {
-        currentEntry.lastShallowPollAt = now;
+        patchEntry(authId, type, currentEntry, {
+          lastShallowPollAt: now,
+          lastShallowAttemptAt: state.lastShallowAttemptAt,
+          shallowFailureCount: 0,
+          lastShallowError: null,
+        });
       }
 
       state.shallowFailureCount = 0;
+      state.lastShallowError = null;
       return { success: true };
     } catch (error) {
       state.shallowFailureCount = (state.shallowFailureCount || 0) + 1;
-      logReconcileFailure(
-        type,
-        error?.message || 'shallow refresh failed',
-        state.shallowFailureCount,
-        'shallow'
-      );
+      state.lastShallowError = error?.message || 'shallow refresh failed';
+      persistShallowFailureState(key, state);
+      logReconcileFailure(type, state.lastShallowError, state.shallowFailureCount, 'shallow');
       return { success: false };
     }
   })();
@@ -983,14 +1286,17 @@ async function runShallowRefresh(apiKey, type, { blocking = true } = {}) {
 async function ensureShallowRefreshIfStale(apiKey, type, { force = false } = {}) {
   const authId = hashApiKey(apiKey);
   const key = getCacheKey(authId, type);
-  const entry = getEntry(authId, type);
+  const entry = getEntry(authId, type, { body: false });
   if (!entry) return false;
 
   const state = getSyncState(key);
   const lastPoll = entry.lastShallowPollAt || 0;
   if (!force && Date.now() - lastPoll < SHALLOW_FRESHNESS_MS) return false;
 
-  const shallowBackoff = shallowFailureBackoffMs(state.shallowFailureCount || 0);
+  const shallowBackoff = effectiveShallowFailureBackoffMs(
+    state.shallowFailureCount || 0,
+    state.lastShallowError
+  );
   const lastAttempt = state.lastShallowAttemptAt || 0;
   if (state.shallowFailureCount > 0 && Date.now() - lastAttempt < shallowBackoff) return false;
 
@@ -1010,9 +1316,13 @@ function serveForClientRev(authId, type, entry, clientRev, isValidRev) {
     return serveSnapshot(entry, { status: 304 });
   }
 
+  const key = getCacheKey(authId, type);
+  if (!ensureEntryBody(entry, key)) {
+    throw new Error('Cache miss after body load');
+  }
+
   if (isValidRev && clientRev < entry.rev) {
-    const state = getSyncState(getCacheKey(authId, type));
-    const baseSnapshot = getClientBaseSnapshot(state, clientRev);
+    const baseSnapshot = getClientBaseSnapshot(key, clientRev);
     if (baseSnapshot) {
       const { data, removed } = computeDelta(getSnapshotData(baseSnapshot), getEntryData(entry));
       if (data.length === 0 && removed.length === 0) {
@@ -1070,7 +1380,7 @@ async function runForegroundRefresh(apiKey, type) {
 export function scheduleBackgroundReconcileIfDue(apiKey, type) {
   const authId = hashApiKey(apiKey);
   const key = getCacheKey(authId, type);
-  const entry = getEntry(authId, type);
+  const entry = getEntry(authId, type, { body: false, touch: false });
   if (!entry) return;
 
   if (!entry.isMultiPage) return;
@@ -1097,7 +1407,7 @@ export function scheduleMutationReconcile(apiKey, type) {
     key,
     setTimeout(() => {
       mutationReconcileTimers.delete(key);
-      if (!getEntry(authId, type)) return;
+      if (!getEntry(authId, type, { body: false, touch: false })) return;
       runFullReconciliation(apiKey, type, { blocking: false }).catch(() => {});
     }, MUTATION_RECONCILE_DELAY_MS)
   );
@@ -1147,13 +1457,13 @@ export async function handleListSyncRequest({
   if (bypassCache) {
     try {
       await runForegroundRefresh(apiKey, type);
-      const entry = getEntry(authId, type);
+      const entry = getEntry(authId, type, { body: false });
       if (!entry) {
         throw new Error('Cache miss after foreground refresh');
       }
       return serveForClientRev(authId, type, entry, clientRev, isValidRev);
     } catch (error) {
-      const entry = getEntry(authId, type);
+      const entry = getEntry(authId, type, { body: false });
       if (entry) {
         return serveForClientRev(authId, type, entry, clientRev, isValidRev);
       }
@@ -1161,7 +1471,7 @@ export async function handleListSyncRequest({
     }
   }
 
-  let entry = getEntry(authId, type);
+  let entry = getEntry(authId, type, { body: false });
 
   // Failed bootstrap (never synced successfully): honor backoff, then retry.
   // Must not fall through to shallow refresh (would also fail and spam TorBox).
@@ -1172,13 +1482,13 @@ export async function handleListSyncRequest({
     );
     const attemptAt = entry.lastReconcileAttemptAt || 0;
     if (Date.now() < attemptAt + backoff) {
-      throw new Error(entry.reconcileError || 'reconcile failed');
+      throw cachedListSyncError(entry.reconcileError || 'reconcile failed');
     }
 
     await runFullReconciliation(apiKey, type, { blocking: true });
     entry = getEntry(authId, type);
     if (!entry || isFailedBootstrapEntry(entry)) {
-      throw new Error(entry?.reconcileError || 'Cache miss after full reconcile');
+      throw cachedListSyncError(entry?.reconcileError || 'Cache miss after full reconcile');
     }
     return serveSnapshot(entry, { syncMode: 'full' });
   }
@@ -1190,19 +1500,19 @@ export async function handleListSyncRequest({
       throw new Error('Cache miss after full reconcile');
     }
     if (isFailedBootstrapEntry(entry)) {
-      throw new Error(entry.reconcileError || 'reconcile failed');
+      throw cachedListSyncError(entry.reconcileError || 'reconcile failed');
     }
     return serveSnapshot(entry, { syncMode: 'full' });
   }
 
   await ensureShallowRefreshIfStale(apiKey, type, { force: forceListSync });
 
-  entry = getEntry(authId, type);
+  entry = getEntry(authId, type, { body: false });
   if (!entry) {
     throw new Error('Cache miss after shallow refresh');
   }
   if (isFailedBootstrapEntry(entry)) {
-    throw new Error(entry.reconcileError || 'reconcile failed');
+    throw cachedListSyncError(entry.reconcileError || 'reconcile failed');
   }
 
   return serveForClientRev(authId, type, entry, clientRev, isValidRev);
@@ -1246,32 +1556,35 @@ export async function resetDownloadListSyncForTests() {
   ];
   await Promise.allSettled(pending);
 
-  // Wipe any spilled files under the test override dir before clearing overrides.
-  if (diskCacheDirOverride) {
-    try {
-      const names = fs.readdirSync(diskCacheDirOverride);
-      for (const name of names) {
-        try {
-          fs.unlinkSync(path.join(diskCacheDirOverride, name));
-        } catch {
-          /* ignore */
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
-  cache.clear();
+  wipeDiskCacheDir(getDiskCacheDir());
   syncStateByKey.clear();
   diskCacheDirOverride = null;
-  diskSpillMsOverride = null;
+  diskDirEnsured = null;
+}
+
+/**
+ * @param {string} dir
+ */
+function wipeDiskCacheDir(dir) {
+  try {
+    if (!fs.existsSync(dir)) return;
+    const names = fs.readdirSync(dir);
+    for (const name of names) {
+      try {
+        fs.unlinkSync(path.join(dir, name));
+      } catch {
+        /* ignore */
+      }
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 /** @internal test helper */
 export function getDownloadListSyncCacheEntry(apiKey, type) {
   const authId = hashApiKey(apiKey);
-  const entry = getEntry(authId, type);
+  const entry = getEntry(authId, type, { touch: false });
   if (!entry) return null;
   return {
     data: getEntryData(entry),
@@ -1286,64 +1599,82 @@ export function getDownloadListSyncCacheEntry(apiKey, type) {
   };
 }
 
-/** @internal test helper — gzip-only live + rev archives (no uncompressed data copies). */
+/** @internal test helper — disk-only catalog storage (no in-memory gzip). */
 export function getDownloadListSyncLiveStorageForTests(apiKey, type) {
   const authId = hashApiKey(apiKey);
   const key = getCacheKey(authId, type);
-  const entry = cache.get(key);
-  if (!entry) {
-    const { metaPath } = diskPathsForKey(key);
-    return {
-      inMemory: false,
-      onDisk: fs.existsSync(metaPath),
-      hasCompressedBody: false,
-      hasUncompressedData: false,
-    };
+  const { metaPath, bodyPath } = diskPathsForKey(key);
+  const onDisk = fs.existsSync(metaPath) && fs.existsSync(bodyPath);
+  let hasCompressedBody = false;
+  if (onDisk) {
+    try {
+      const body = fs.readFileSync(bodyPath);
+      hasCompressedBody = Buffer.isBuffer(body) && body.length > 0;
+    } catch {
+      hasCompressedBody = false;
+    }
   }
   return {
-    inMemory: true,
-    onDisk: false,
-    hasCompressedBody: Buffer.isBuffer(entry.compressedBody),
-    hasUncompressedData: Array.isArray(entry.data),
+    inMemory: false,
+    onDisk,
+    hasCompressedBody,
+    hasUncompressedData: false,
   };
 }
 
-/** @internal test helper — whether syncState (incl. revHistory) exists for a key. */
+/** @internal test helper — whether sync coordination state exists for a key. */
 export function hasDownloadListSyncStateForTests(apiKey, type) {
   const authId = hashApiKey(apiKey);
   return syncStateByKey.has(getCacheKey(authId, type));
 }
 
-/** @internal test helper — gzip-only rev archives (no uncompressed data copies). */
+/** @internal test helper — gzip-only rev archives on disk (no uncompressed data). */
 export function getDownloadListSyncRevHistoryForTests(apiKey, type) {
   const authId = hashApiKey(apiKey);
-  const state = syncStateByKey.get(getCacheKey(authId, type));
-  if (!state) return [];
-  return [...state.revHistory.values()].map((snap) => ({
-    rev: snap.rev,
-    hasCompressedBody: Buffer.isBuffer(snap.compressedBody),
-    hasUncompressedData: Array.isArray(snap.data),
-  }));
+  const key = getCacheKey(authId, type);
+  const dir = getDiskCacheDir();
+  const { stem } = diskPathsForKey(key);
+  const prefix = `${stem}.rev.`;
+  let names;
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return [];
+  }
+  const out = [];
+  for (const name of names) {
+    if (!name.startsWith(prefix) || !name.endsWith('.gz')) continue;
+    const rev = Number(name.slice(prefix.length, -'.gz'.length));
+    if (!Number.isInteger(rev)) continue;
+    let hasCompressedBody = false;
+    try {
+      const body = fs.readFileSync(path.join(dir, name));
+      hasCompressedBody = Buffer.isBuffer(body) && body.length > 0;
+    } catch {
+      hasCompressedBody = false;
+    }
+    out.push({ rev, hasCompressedBody, hasUncompressedData: false });
+  }
+  return out.sort((a, b) => a.rev - b.rev);
 }
 
 /** @internal test helper */
 export function setDownloadListSyncCacheMetaForTests(apiKey, type, meta) {
   const authId = hashApiKey(apiKey);
   const key = getCacheKey(authId, type);
-  const entry = cache.get(key);
+  const entry = readDiskEntry(key);
   if (!entry) return;
   Object.assign(entry, meta);
+  // Preserve gzip body; meta-only fields may include lastAccess for TTL tests.
+  if (!writeDiskEntry(key, entry)) {
+    throw new Error('test meta write failed');
+  }
 }
 
 /** @internal test helper */
-export function setDownloadListSyncDiskOptionsForTests({ dir = null, spillMs = null } = {}) {
+export function setDownloadListSyncDiskOptionsForTests({ dir = null } = {}) {
   diskCacheDirOverride = dir;
-  diskSpillMsOverride = spillMs;
-}
-
-/** @internal test helper — run idle disk spill once. */
-export function spillIdleDownloadListSyncForTests() {
-  spillIdleEntries();
+  diskDirEnsured = null;
 }
 
 /** @internal test helper */
@@ -1354,23 +1685,41 @@ export async function flushMutationReconcileTimerForTests(apiKey, type) {
   if (!timer) return;
   clearTimeout(timer);
   mutationReconcileTimers.delete(key);
-  if (!getEntry(authId, type)) return;
+  if (!getEntry(authId, type, { touch: false })) return;
   await runFullReconciliation(apiKey, type, { blocking: false });
 }
 
-/** @internal test helper */
+/** @internal test helper — wipe disk catalogs without clearing disk-dir override. */
 export function clearDownloadListSyncCacheOnlyForTests() {
-  cache.clear();
+  wipeDiskCacheDir(getDiskCacheDir());
+  syncStateByKey.clear();
+}
+
+/** @internal test helper — drop process coordination while leaving disk snapshots. */
+export function clearDownloadListSyncCoordinationForTests() {
+  for (const timer of mutationReconcileTimers.values()) {
+    clearTimeout(timer);
+  }
+  mutationReconcileTimers.clear();
+  syncStateByKey.clear();
+}
+
+/** @internal test helper */
+export function evictExpiredDiskEntriesForTests() {
+  evictExpiredDiskEntries();
 }
 
 /** @internal test helper — exported for unit tests */
 export {
   reconcileFailureBackoffMs,
   effectiveReconcileFailureBackoffMs,
+  effectiveShallowFailureBackoffMs,
   isFailedBootstrapEntry,
   shallowFailureBackoffMs,
   runShallowRefresh,
   ensureShallowRefreshIfStale,
+  CACHE_TTL_MS,
+  REV_HISTORY_LIMIT,
 };
 
 /** @internal test helper */

@@ -1,3 +1,4 @@
+import { connection } from 'next/server';
 import { headers } from 'next/headers';
 import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import Script from 'next/script';
@@ -59,6 +60,9 @@ export function RootDocumentShell({ locale, children }) {
 }
 
 export async function RootDocumentAsync({ children }) {
+  // Explicit dynamic boundary for cacheComponents — avoids DYNAMIC_SERVER_USAGE
+  // + "Invalid revalidate configuration provided: 0 < 1" when headers() runs.
+  await connection();
   const h = await headers();
   const locale = h.get('x-tbm-locale') ?? defaultLocale;
   return <RootDocumentShell locale={locale}>{children}</RootDocumentShell>;

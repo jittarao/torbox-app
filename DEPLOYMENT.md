@@ -65,22 +65,22 @@ Chapter extraction for the audio player uses **ffprobe** (from FFmpeg). It runs 
 
 ### Environment Variables
 
-| Variable                              | Description                                                                                                                    | Default                 | Required |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | -------- |
-| `BACKEND_URL`                         | URL of the backend API server                                                                                                  | `http://localhost:3001` | No       |
-| `BACKEND_DISABLED`                    | Disable backend usage (set to `true`/`false`)                                                                                  | `false`                 | No       |
-| `SEARCH_PAGE_DISABLED`                | Hide the search page and top-nav link (`true`/`1`/`yes`). Search uses user-configured Stremio stream addons (backend required) | `false`                 | No       |
-| `FFPROBE_PATH`                        | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used.                                 | —                       | No       |
-| `FFPROBE_AUTO_DIR`                    | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set).                                 | `<project>/.ffprobe`    | No       |
-| `DOWNLOAD_SYNC_CACHE_TTL_MS`          | Download list cache eviction when a user/type has no requests for this long (ms). Applies to memory and disk spill.            | `1800000` (30 min)      | No       |
-| `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` | Minimum interval between background full reconciles for multi-page catalogs (ms).                                              | `300000` (5 min)        | No       |
-| `DOWNLOAD_SYNC_RECONCILE_JITTER_MS`   | Per-user/type jitter added to reconcile interval (ms).                                                                         | `60000` (1 min)         | No       |
-| `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`  | Min interval between TorBox shallow refreshes per user/type (ms); stale reads block until refresh completes.                   | `10000` (10 s)          | No       |
-| `DOWNLOAD_SYNC_REV_HISTORY_LIMIT`     | Max gzip list snapshots retained per user/type for client deltas. Older revs fall back to a full snapshot (`stale-full`).      | `3`                     | No       |
-| `DOWNLOAD_SYNC_DISK_SPILL_MS`         | After this idle time (ms), spill the live gzip snapshot to disk and free RAM (`0` disables). Active polling never spills.      | `60000` (1 min)         | No       |
-| `DOWNLOAD_SYNC_DISK_CACHE_DIR`        | Directory for spilled download-list gzip snapshots (frontend process). Optional named volume if you want persistence.          | `.download-list-cache`  | No       |
-| `NODE_OPTIONS`                        | Frontend V8 flags. Compose defaults to `--max-old-space-size=896` so heap cannot consume a whole small VPS.                    | see Compose             | No       |
-| `BACKEND_SERVICE_SECRET`              | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout))                  | unset                   | No       |
+| Variable                              | Description                                                                                                                          | Default                 | Required |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | -------- |
+| `BACKEND_URL`                         | URL of the backend API server                                                                                                        | `http://localhost:3001` | No       |
+| `BACKEND_DISABLED`                    | Disable backend usage (set to `true`/`false`)                                                                                        | `false`                 | No       |
+| `SEARCH_PAGE_DISABLED`                | Hide the search page and top-nav link (`true`/`1`/`yes`). Search uses user-configured Stremio stream addons (backend required)       | `false`                 | No       |
+| `FFPROBE_PATH`                        | Path to ffprobe binary (frontend only). When set and valid, used as-is; cache dir is not used.                                       | —                       | No       |
+| `FFPROBE_AUTO_DIR`                    | Directory for auto-downloaded ffprobe (frontend only, used only if `FFPROBE_PATH` is not set).                                       | `<project>/.ffprobe`    | No       |
+| `DOWNLOAD_SYNC_CACHE_TTL_MS`          | Download list cache eviction when a user/type has no requests for this long (ms). Applies to disk snapshots.                         | `86400000` (24 h)       | No       |
+| `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` | Minimum interval between background full reconciles for multi-page catalogs (ms).                                                    | `300000` (5 min)        | No       |
+| `DOWNLOAD_SYNC_RECONCILE_JITTER_MS`   | Per-user/type jitter added to reconcile interval (ms).                                                                               | `60000` (1 min)         | No       |
+| `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`  | Min interval between TorBox shallow refreshes per user/type (ms); stale reads block until refresh completes.                         | `10000` (10 s)          | No       |
+| `DOWNLOAD_SYNC_REV_HISTORY_LIMIT`     | Max gzip list snapshots retained per user/type for client deltas. Older revs fall back to a full snapshot (`stale-full`).            | `10`                    | No       |
+| `DOWNLOAD_SYNC_LAST_ACCESS_TOUCH_MS`  | Min interval between lastAccess meta writes (debounce). Frequent polls need not rewrite JSON every request.                          | `300000` (5 min)        | No       |
+| `DOWNLOAD_SYNC_DISK_CACHE_DIR`        | Directory for download-list gzip snapshots + rev history (frontend process). Optional named volume for persistence across recreates. | `.download-list-cache`  | No       |
+| `NODE_OPTIONS`                        | Frontend V8 flags. Compose defaults to `--max-old-space-size=896` so heap cannot consume a whole small VPS.                          | see Compose             | No       |
+| `BACKEND_SERVICE_SECRET`              | Optional; must match backend when set (see [Backend authentication](#backend-authentication--network-layout))                        | unset                   | No       |
 
 ### Stream search (Stremio addons)
 
@@ -109,27 +109,26 @@ The downloads page syncs torrent, Usenet, and WebDL lists through Next.js (`src/
 | Active polling, &lt;1000 regular items                | Shallow replaces catalog from page 0 + queued; no periodic full reconcile                      |
 | Active polling, ≥1000 regular items                   | Shallow patch only; full reconcile ~every 5 min (on interval due or cache miss)                |
 | Successful DELETE via app                             | Known IDs removed from cache and rev bumped; multi-page types schedule reconcile ~30s later    |
-| Idle ≥ `DOWNLOAD_SYNC_DISK_SPILL_MS` (default 1 min)  | Live gzip spilled to disk; RAM (incl. rev history) freed; next request rehydrates from disk    |
-| Cache unused longer than `DOWNLOAD_SYNC_CACHE_TTL_MS` | Memory + disk spill evicted; next request is a full reconcile                                  |
+| Cache unused longer than `DOWNLOAD_SYNC_CACHE_TTL_MS` | Disk snapshot + rev history evicted; next request is a full reconcile                          |
 
-**Idle vs active:** Stale reads block on a coalesced TorBox shallow refresh when `lastShallowPollAt` is older than `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`. Multiple tabs share one refresh per user/type per window. Re-engage after idle uses normal polling (not `bypass-cache`); the first stale poll may block briefly on shallow refresh. An open downloads page keeps polling, so keys stay in memory; disk spill applies when polling stops (tab closed / backgrounded).
+**Idle vs active:** Stale reads block on a coalesced TorBox shallow refresh when `lastShallowPollAt` is older than `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`. Multiple tabs share one refresh per user/type per window. Re-engage after idle uses normal polling (not `bypass-cache`); the first stale poll may block briefly on shallow refresh.
 
-**Memory model:** Live cache entries store **gzip only** (no durable uncompressed catalog). Mutate/delta paths decompress on demand. Rev history is also gzip-only and is dropped when a key spills to disk (stale client revs then get `stale-full` / full, same as a history miss).
+**Memory model:** Catalogs are **disk-only** (gzip body + JSON meta under `DOWNLOAD_SYNC_DISK_CACHE_DIR`). Process RAM holds only lightweight per-key coordination (coalesced promises, failure backoff). Mutate/delta paths decompress on demand and discard. Rev history is also gzip-on-disk (default last 10 revs). Hot polls read meta JSON only for 304s; gzip bodies load lazily. SSD-backed hosts are the expected deployment.
 
-**Multi-instance:** The sync cache is in-process memory on the Next.js server (plus optional local disk spill). Single-container / single-replica Compose is the supported layout. Multiple frontend replicas without a shared cache are not supported.
+**Multi-instance:** Catalogs live on local disk of the Next.js process. Single-container / single-replica Compose is the supported layout. Multiple frontend replicas without a shared volume/cache are not supported.
 
 **Debugging:** Responses include `x-list-rev`, `x-sync-item-count`, and `x-sync-mode` (`full`, `shallow`, `stale-full`, `delta`, `unchanged`). Bodies are gzip JSON `{ success, data, rev }` (or `{ delta: true, ... }` for deltas). Failed reconciles/shallow refreshes log `[downloadListSync]` errors only.
 
-**Tuning:** Optional `DOWNLOAD_SYNC_*` variables (table above). Restart the **frontend** container/process after changes. `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` applies only to types with **≥1000 regular** `mylist` rows. `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS` controls TorBox shallow poll deduplication across tabs. Keep `DOWNLOAD_SYNC_REV_HISTORY_LIMIT` small on ≤4GB hosts. Disk spill defaults to the container writable layer under `.download-list-cache` (lost on recreate unless you mount a volume).
+**Tuning:** Optional `DOWNLOAD_SYNC_*` variables (table above). Restart the **frontend** container/process after changes. `DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS` applies only to types with **≥1000 regular** `mylist` rows. `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS` controls TorBox shallow poll deduplication across tabs. Disk cache defaults to the container writable layer under `.download-list-cache` (lost on recreate unless you mount a volume).
 
 ### Memory / small VPS (≤4GB RAM)
 
 Compose defaults target a single-user 4GB host:
 
-| Service          | Memory limit | Notes                                                                                               |
-| ---------------- | ------------ | --------------------------------------------------------------------------------------------------- |
-| `torbox-backend` | 768M         | Automation + SQLite                                                                                 |
-| `torbox-app`     | 1280M        | Next.js + gzip-only download list sync (+ idle disk spill); `NODE_OPTIONS=--max-old-space-size=896` |
+| Service          | Memory limit | Notes                                                                           |
+| ---------------- | ------------ | ------------------------------------------------------------------------------- |
+| `torbox-backend` | 768M         | Automation + SQLite                                                             |
+| `torbox-app`     | 1280M        | Next.js + disk-only download list sync; `NODE_OPTIONS=--max-old-space-size=896` |
 
 If the host OOM-kills `next-server`:
 
@@ -370,12 +369,12 @@ ENCRYPTION_KEY=your_secure_encryption_key_here_minimum_32_characters
 # FFPROBE_PATH=/usr/bin/ffprobe
 
 # Optional: download list sync tuning (frontend — see DEPLOYMENT.md#download-list-sync)
-# DOWNLOAD_SYNC_CACHE_TTL_MS=1800000
+# DOWNLOAD_SYNC_CACHE_TTL_MS=86400000
 # DOWNLOAD_SYNC_RECONCILE_INTERVAL_MS=300000
 # DOWNLOAD_SYNC_RECONCILE_JITTER_MS=60000
 # DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS=10000
-# DOWNLOAD_SYNC_REV_HISTORY_LIMIT=3
-# DOWNLOAD_SYNC_DISK_SPILL_MS=60000
+# DOWNLOAD_SYNC_REV_HISTORY_LIMIT=10
+# DOWNLOAD_SYNC_LAST_ACCESS_TOUCH_MS=300000
 # DOWNLOAD_SYNC_DISK_CACHE_DIR=.download-list-cache
 # NODE_OPTIONS=--max-old-space-size=896
 
