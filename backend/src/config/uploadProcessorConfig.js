@@ -54,11 +54,29 @@ export const UPLOAD_CONNECTION_DEFER_MS = parsePositiveInt(
 );
 
 /**
+ * Min interval between per-type connection-defer warn logs (soft or hard).
+ * Aligns with outage pause windows so sustained TorBox 500s do not spam every 10s.
+ */
+export const UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS = parsePositiveInt(
+  process.env.UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS,
+  5 * 60 * 1000
+);
+
+/**
  * Max concurrent user DB opens during startup stuck-upload recovery.
  * Keeps recovery from flooding the LRU pool on large installs.
  */
 export const UPLOAD_RECOVERY_CONCURRENCY = parsePositiveInt(
   process.env.UPLOAD_RECOVERY_CONCURRENCY,
+  8
+);
+
+/**
+ * Max concurrent user DB opens during startup upload-counter sync.
+ * Defaults match recovery concurrency (was previously hardcoded at 5).
+ */
+export const UPLOAD_COUNTER_SYNC_CONCURRENCY = parsePositiveInt(
+  process.env.UPLOAD_COUNTER_SYNC_CONCURRENCY,
   8
 );
 

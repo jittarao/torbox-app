@@ -1,8 +1,12 @@
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import torboxApiOutageCoordinator from '../TorboxApiOutageCoordinator.js';
 
 describe('TorboxApiOutageCoordinator', () => {
   beforeEach(() => {
+    torboxApiOutageCoordinator.resetForTests();
+  });
+
+  afterEach(() => {
     torboxApiOutageCoordinator.resetForTests();
   });
 
@@ -82,7 +86,7 @@ describe('TorboxApiOutageCoordinator', () => {
     let resetCalled = false;
     let recoveryFired = false;
 
-    mock.module('../ApiClient.js', () => ({
+    torboxApiOutageCoordinator._apiClientModuleLoader = async () => ({
       default: class MockApiClient {
         constructor() {}
         async probeUserMe() {
@@ -92,7 +96,7 @@ describe('TorboxApiOutageCoordinator', () => {
       resetTorboxCircuitBreaker: () => {
         resetCalled = true;
       },
-    }));
+    });
 
     torboxApiOutageCoordinator.setDependencies(
       {
@@ -116,7 +120,5 @@ describe('TorboxApiOutageCoordinator', () => {
     expect(torboxApiOutageCoordinator.isAutomationAllowed()).toBe(true);
     expect(resetCalled).toBe(true);
     expect(recoveryFired).toBe(true);
-
-    mock.restore();
   });
 });

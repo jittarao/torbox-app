@@ -377,7 +377,11 @@ export default class UploadQuotaService {
       return;
     }
 
-    const users = this.masterDatabase.getAllRegisteredAuthIds();
+    // LIMITED tier only — UNLIMITED users bypass quotas and need no retained-usage accounting.
+    const users =
+      typeof this.masterDatabase.getLimitedTierAuthIds === 'function'
+        ? this.masterDatabase.getLimitedTierAuthIds()
+        : this.masterDatabase.getAllRegisteredAuthIds();
     let processed = 0;
     let errors = 0;
     let totalBytes = 0;
@@ -388,8 +392,16 @@ export default class UploadQuotaService {
         try {
           const userDb = await userDatabaseManager.getUserDatabase(authId);
           const { storageBytes } = await this.recalculateUsage(authId, userDb);
+          const nextProcessed = ++processed;
+          if (nextProcessed % 500 === 0) {
+            logger.info('Upload quota backfill progress', {
+              processed: nextProcessed,
+              total: users.length,
+            });
+          }
           return { authId, storageBytes, error: null };
         } catch (error) {
+          errors++;
           logger.error('Upload quota backfill failed for user', error, { authId });
           return { authId, storageBytes: 0, error };
         } finally {
@@ -401,14 +413,9 @@ export default class UploadQuotaService {
 
     for (const result of backfillResults) {
       if (result.error) {
-        errors++;
         continue;
       }
       totalBytes += result.storageBytes;
-      processed++;
-      if (processed % 500 === 0) {
-        logger.info('Upload quota backfill progress', { processed, total: users.length });
-      }
     }
 
     logger.info('Upload quota backfill completed', {
@@ -418,7 +425,12 @@ export default class UploadQuotaService {
       totalRetainedStorageMb: (totalBytes / (1024 * 1024)).toFixed(2),
     });
 
-    return { total: users.length, processed, errors, totalRetainedStorageBytes: totalBytes };
+    return {
+      total: users.length,
+      processed,
+      errors,
+      totalRetainedStorageBytes: totalBytes,
+    };
   }
 
   /**

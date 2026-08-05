@@ -216,13 +216,16 @@ bun run dev
 | `UPLOAD_BATCH_FETCH_SIZE`                       | SQL rows fetched per in-memory queue buffer (not the per-drain work cap)                                                               | `50`                     | No       |
 | `UPLOAD_MAX_WORK_PER_DRAIN`                     | Max uploads processed per drain invocation before yielding worker                                                                      | `25`                     | No       |
 | `UPLOAD_RECOVERY_CONCURRENCY`                   | Max concurrent user DBs during startup stuck-upload recovery                                                                           | `8`                      | No       |
+| `UPLOAD_COUNTER_SYNC_CONCURRENCY`               | Max concurrent user DBs during startup upload-counter sync                                                                             | `8`                      | No       |
 | `CREATE_UPLOAD_TIMEOUT_MS`                      | TorBox create API request timeout (ms)                                                                                                 | `30000`                  | No       |
 | `UPLOAD_CONNECTION_SOFT_DEFER_MS`               | Per-upload cool-down (ms) after a single create timeout/connection blip (siblings keep processing)                                     | `30000`                  | No       |
 | `UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE`        | Consecutive create connection failures before type-wide outage pause                                                                   | `3`                      | No       |
 | `UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE` | Cross-user create connection failures (per type) before process-wide outage pause                                                      | `5`                      | No       |
 | `UPLOAD_CONNECTION_DEFER_MS`                    | Type-wide defer (ms) after sustained TorBox unreachability                                                                             | `900000` (15 min)        | No       |
+| `UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS`      | Min interval between per-type upload connection-defer warn logs                                                                        | `300000` (5 min)         | No       |
 | `UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS`           | TorBox 429 cool-down (ms) when response headers omit reset/retry timing                                                                | `300000` (5 min)         | No       |
 | `AUTOMATION_INACTIVE_USER_DAYS`                 | Skip automation for users inactive longer than N days (`last_seen_at`; `0` disables)                                                   | `30`                     | No       |
+| `AUTH_FAILURE_DEACTIVATE_AFTER`                 | Consecutive TorBox auth failures before marking user inactive                                                                          | `3`                      | No       |
 
 Set the same `BACKEND_SERVICE_SECRET` on the **frontend** (`.env.local` / compose `torbox-app` service) when you use it on the backend.
 

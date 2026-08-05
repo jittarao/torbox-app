@@ -184,13 +184,16 @@ Implementation: `src/services/UploadQuotaService.js`, config in `src/config/uplo
 
 `UploadProcessor` drains queued uploads per user via buffered round-robin (see `src/automation/UploadProcessor.js`, config in `src/config/uploadProcessorConfig.js`). **Fetch size and work cap are independent** — tune them separately.
 
-| Variable                              | Description                                                                   | Default          |
-| ------------------------------------- | ----------------------------------------------------------------------------- | ---------------- |
-| `UPLOAD_BATCH_FETCH_SIZE`             | SQL rows fetched per in-memory per-type queue buffer                          | `50`             |
-| `UPLOAD_MAX_WORK_PER_DRAIN`           | Max uploads processed per drain invocation before yielding the worker         | `25`             |
-| `UPLOAD_RECOVERY_CONCURRENCY`         | Max concurrent user DBs during startup stuck-upload recovery                  | `8`              |
-| `CREATE_UPLOAD_TIMEOUT_MS`            | TorBox create API request timeout (ms)                                        | `30000`          |
-| `UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS` | TorBox rate-limit fallback (ms) when response headers omit reset/retry timing | `300000` (5 min) |
+| Variable                                   | Description                                                                   | Default          |
+| ------------------------------------------ | ----------------------------------------------------------------------------- | ---------------- |
+| `UPLOAD_BATCH_FETCH_SIZE`                  | SQL rows fetched per in-memory per-type queue buffer                          | `50`             |
+| `UPLOAD_MAX_WORK_PER_DRAIN`                | Max uploads processed per drain invocation before yielding the worker         | `25`             |
+| `UPLOAD_RECOVERY_CONCURRENCY`              | Max concurrent user DBs during startup stuck-upload recovery                  | `8`              |
+| `UPLOAD_COUNTER_SYNC_CONCURRENCY`          | Max concurrent user DBs during startup counter sync                           | `8`              |
+| `UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS` | Min interval between per-type connection-defer warns                          | `300000` (5 min) |
+| `AUTH_FAILURE_DEACTIVATE_AFTER`            | Consecutive TorBox auth failures before marking user inactive                 | `3`              |
+| `CREATE_UPLOAD_TIMEOUT_MS`                 | TorBox create API request timeout (ms)                                        | `30000`          |
+| `UPLOAD_EXTERNAL_RATE_LIMIT_RETRY_MS`      | TorBox rate-limit fallback (ms) when response headers omit reset/retry timing | `300000` (5 min) |
 
 Related (unchanged): `UPLOAD_PROCESSOR_INTERVAL_MS` (scheduler tick, default 5s), `UPLOAD_PROCESS_CONCURRENCY` (cross-user worker slots, default 6), `UPLOAD_CONNECTION_SOFT_DEFER_MS` (per-upload cool-down after a single create timeout, default 30s), `UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE` (consecutive failures before type-wide pause, default 3), `UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE` (cross-user failures before process-wide type pause, default 5), `UPLOAD_CONNECTION_DEFER_MS` (type-wide defer after sustained unreachability, default 15 min). Hourly create limits come from TorBox `x-ratelimit-*` response headers (cached in-memory per user/type).
 

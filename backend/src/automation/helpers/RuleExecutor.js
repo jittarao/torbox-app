@@ -55,9 +55,14 @@ class RuleExecutor {
     }
 
     // Cap concurrent outbound action calls per rule.
-    // low while cutting worst-case wall-clock time from N×30s (serial) to ceil(N/3)×30s.
-    // Configurable via RULE_ACTION_CONCURRENCY env var.
-    const concurrency = Math.max(1, parseInt(process.env.RULE_ACTION_CONCURRENCY || '3', 10));
+    // force_start aborts the whole batch on active-download-limit — run serially so we
+    // don't fire multiple TorBox POSTs before abortRemaining settles.
+    // Other actions use RULE_ACTION_CONCURRENCY (default 3).
+    const defaultConcurrency = Math.max(
+      1,
+      parseInt(process.env.RULE_ACTION_CONCURRENCY || '3', 10)
+    );
+    const concurrency = actionType === 'force_start' ? 1 : defaultConcurrency;
 
     // Worker-pool: each worker drains the shared queue until empty.
     // Node.js is single-threaded so queue.shift() and counter mutations are safe across workers.
@@ -80,6 +85,12 @@ class RuleExecutor {
         const torrent = queue.shift();
         if (!torrent) continue;
 
+        // Re-check after dequeue — another worker may have aborted while we waited.
+        if (abortRemaining) {
+          abortedCount++;
+          continue;
+        }
+
         try {
           const action = rule.action;
           const currentActionType = action?.type;
@@ -92,6 +103,12 @@ class RuleExecutor {
             action: currentActionType,
             torrentStatus: ruleEvaluator.getTorrentStatus(torrent),
           });
+
+          // Final abort check immediately before the outbound TorBox call.
+          if (abortRemaining) {
+            abortedCount++;
+            continue;
+          }
 
           const result = await ruleEvaluator.executeAction(action, torrent, {
             skipValidation: tagActionValidated,

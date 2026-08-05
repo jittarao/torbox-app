@@ -18,14 +18,20 @@ export function setupHealthRoutes(app, backend) {
       mode: 'selfhosted',
       version: process.env.npm_package_version || '0.1.0',
       uptime: process.uptime(),
+      startupPhase: backend.startupPhase || 'ready',
+      warming: backend.startupPhase === 'warming' || backend.startupPhase === 'accepting',
       pollingScheduler: schedulerStatus,
       connectionPool: backend.userDatabaseManager?.getPoolStats() ?? null,
     });
   });
 
-  // Health check for Docker
+  // Health check for Docker — healthy as soon as HTTP accepts (warmup may still run).
   app.get('/health', (req, res) => {
-    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    res.json({
+      status: 'healthy',
+      startupPhase: backend.startupPhase || 'ready',
+      timestamp: new Date().toISOString(),
+    });
   });
 
   // Detailed health check endpoint

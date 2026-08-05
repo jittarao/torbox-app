@@ -46,6 +46,8 @@ class DatabasePool {
       options.idleTimeoutMs ??
       parseInt(process.env.DB_POOL_IDLE_TIMEOUT_MS || String(defaultIdleTimeoutMs), 10);
     this.recentAccessWindowMs = 30 * 1000; // 30 seconds - don't evict connections accessed in this window
+    // When true, 80%/90% capacity warns are suppressed (bulk startup sweeps churn the pool).
+    this.suppressCapacityWarnings = false;
   }
 
   /**
@@ -355,6 +357,9 @@ class DatabasePool {
    * @private
    */
   _checkCapacityWarnings(previousSize) {
+    if (this.suppressCapacityWarnings) {
+      return;
+    }
     const currentSize = this.cache.size;
     const usagePercent = currentSize / this.maxSize;
     const previousPercent = previousSize / this.maxSize;
@@ -1224,6 +1229,14 @@ class UserDatabaseManager {
    */
   getPoolStats() {
     return this.pool.getStats();
+  }
+
+  /**
+   * Suppress (or restore) pool capacity warnings during known bulk DB churn (startup sweeps).
+   * @param {boolean} suppressed
+   */
+  setCapacityWarningsSuppressed(suppressed) {
+    this.pool.suppressCapacityWarnings = Boolean(suppressed);
   }
 
   /**

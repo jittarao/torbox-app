@@ -221,7 +221,7 @@ class Logger {
     if (res.statusCode >= 500 && !isExpectedUpstreamProxyFailure) {
       this.logger.error(message, logData);
     } else if (isExpectedClientError || isExpectedUpstreamProxyFailure) {
-      this.logger.info(message, logData);
+      this.logger.debug(message, logData);
     } else if (res.statusCode >= 400) {
       this.logger.warn(message, logData);
     } else if (this.isDebugEnabled()) {

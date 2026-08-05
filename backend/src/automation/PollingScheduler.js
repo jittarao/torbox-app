@@ -522,14 +522,21 @@ class PollingScheduler {
 
       this.metrics.failedPolls++;
 
-      logger.info('Set next poll time after error', {
+      const isAuthError = Boolean(error?.isAuthError || error?.name === 'AuthenticationError');
+      const logPayload = {
         authId,
         nextPollAt: nextPollAt.toISOString(),
         retryIn: isPoolExhausted ? '2 minutes (pool pressure)' : '30 minutes',
         duration: `${duration.toFixed(2)}s`,
         errorMessage: error?.message || 'Unknown error',
         errorName: error?.name,
-      });
+      };
+      // Auth failures are expected for revoked keys; scheduler records/deactivates separately.
+      if (isAuthError) {
+        logger.debug('Set next poll time after error', logPayload);
+      } else {
+        logger.info('Set next poll time after error', logPayload);
+      }
     } catch (dbError) {
       logger.error('Failed to handle poll error', dbError, {
         authId,
@@ -1346,14 +1353,16 @@ class PollingScheduler {
           this.masterDb.updateNextPollAtBatch(authIdsToReserve, reserveUntil);
         }
 
-        logger.info('Polling users (unified fetch-then-process per user)', {
+        const pollStartPayload = {
           dueCount: usersToFetch.length,
           maxConcurrentPolls: this.maxConcurrentPolls,
           perUserTimeoutSeconds: this.pollKickoutMs / 1000,
-        });
-
+        };
         if (usersToFetch.length >= 20) {
+          logger.info('Polling users (unified fetch-then-process per user)', pollStartPayload);
           logger.warn('PollDueUsers: large due list', { dueCount: usersToFetch.length });
+        } else {
+          logger.debug('Polling users (unified fetch-then-process per user)', pollStartPayload);
         }
 
         logger.debug('Found users due for polling', {
@@ -1367,6 +1376,7 @@ class PollingScheduler {
           error: 0,
           attempted: 0,
           connectionErrors: 0,
+          authErrors: 0,
           fetchSuccesses: 0,
         };
         const pollSem = this.pollSemaphore;
@@ -1401,6 +1411,18 @@ class PollingScheduler {
                   result.error.isAuthError ||
                   result.error.name === 'AuthenticationError'
                 ) {
+                  counters.authErrors++;
+                  // Record consecutive failures / deactivate after threshold.
+                  // Unified fetch uses fetchDownloadsForActiveRules (not fetchTorrents),
+                  // so handleAuthenticationError must be invoked here explicitly.
+                  const poller = result.poller;
+                  if (poller?.handleAuthenticationError) {
+                    try {
+                      await poller.handleAuthenticationError(result.error);
+                    } catch {
+                      // handleAuthenticationError always rethrows; recording side effects already applied
+                    }
+                  }
                   this.handlePollError(resultAuthId, result.error, 0);
                 } else {
                   this.handlePollError(resultAuthId, result.error, 0);
@@ -1444,13 +1466,21 @@ class PollingScheduler {
 
         this.metrics.totalPolls += usersToFetch.length;
         const totalDuration = ((Date.now() - checkStartTime) / 1000).toFixed(2);
-        logger.info('Poll cycle completed', {
+        const cyclePayload = {
           totalUsers: usersToFetch.length,
           successCount: counters.success,
           skippedCount: counters.skipped,
           errorCount: counters.error,
+          authErrorCount: counters.authErrors,
+          connectionErrorCount: counters.connectionErrors,
           totalDuration: `${totalDuration}s`,
-        });
+        };
+        // Idle/success-only cycles are routine; elevate when there are errors or a large batch.
+        if (counters.error > 0 || usersToFetch.length >= 20) {
+          logger.info('Poll cycle completed', cyclePayload);
+        } else {
+          logger.debug('Poll cycle completed', cyclePayload);
+        }
 
         torboxApiOutageCoordinator.recordPollCycleResult({
           attempted: counters.attempted,

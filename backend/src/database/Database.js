@@ -12,6 +12,7 @@ import {
   INACTIVITY_ELIGIBILITY_SQL,
   INACTIVITY_INELIGIBILITY_SQL,
 } from '../config/automationInactivity.js';
+import { UPLOAD_COUNTER_SYNC_CONCURRENCY } from '../config/uploadProcessorConfig.js';
 
 /**
  * Simple LRU cache with max size. Evicts least-recently-used entry on set() when full.
@@ -1220,7 +1221,10 @@ class Database {
 
     try {
       const activeUsers = this.getActiveUsers();
-      const maxConcurrent = Math.min(5, Math.max(1, activeUsers.length));
+      const maxConcurrent = Math.min(
+        UPLOAD_COUNTER_SYNC_CONCURRENCY,
+        Math.max(1, activeUsers.length)
+      );
       const syncSemaphore = new Semaphore(maxConcurrent);
       let synced = 0;
       let errors = 0;
@@ -1260,6 +1264,7 @@ class Database {
         total: activeUsers.length,
         synced,
         errors,
+        concurrency: maxConcurrent,
       });
     } catch (error) {
       logger.error('Failed to sync upload counters', error);
@@ -1444,6 +1449,21 @@ class Database {
    */
   getAllRegisteredAuthIds() {
     return this.allQuery('SELECT auth_id FROM user_registry ORDER BY auth_id');
+  }
+
+  /**
+   * Auth IDs for LIMITED-tier users (quota accounting). UNLIMITED users are skipped.
+   * @returns {Array<{ auth_id: string }>}
+   */
+  getLimitedTierAuthIds() {
+    return this.allQuery(
+      `
+      SELECT auth_id
+      FROM user_registry
+      WHERE COALESCE(upload_tier, 'limited') = 'limited'
+      ORDER BY auth_id
+    `
+    );
   }
 }
 

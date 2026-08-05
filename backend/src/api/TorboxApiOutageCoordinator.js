@@ -157,6 +157,18 @@ class TorboxApiOutageCoordinator {
     this._onRecoveryCallback = null;
     this._masterDb = null;
     this._decrypt = null;
+    this._apiClientModuleLoader = null;
+  }
+
+  /**
+   * Load ApiClient module (overridable in tests to avoid mock.module pollution).
+   * @returns {Promise<{ default: typeof import('./ApiClient.js').default, resetTorboxCircuitBreaker: Function }>}
+   */
+  _loadApiClientModule() {
+    if (typeof this._apiClientModuleLoader === 'function') {
+      return this._apiClientModuleLoader();
+    }
+    return import('./ApiClient.js');
   }
 
   _clearRecoveryTimer() {
@@ -236,7 +248,7 @@ class TorboxApiOutageCoordinator {
     this.lastProbeAt = Date.now();
 
     try {
-      const { default: ApiClient, resetTorboxCircuitBreaker } = await import('./ApiClient.js');
+      const { default: ApiClient, resetTorboxCircuitBreaker } = await this._loadApiClientModule();
       const authIds = this._pickProbeAuthIds();
       const toTry = authIds.slice(0, MAX_KEY_ATTEMPTS);
 
