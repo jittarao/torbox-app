@@ -418,6 +418,8 @@ class TorBoxBackend {
                     maxSize: poolStats.maxSize,
                     usagePercent: poolStats.usagePercent,
                     status: poolStats.status,
+                    pinnedUsers: poolStats.pinnedUsers ?? 0,
+                    totalPins: poolStats.totalPins ?? 0,
                   }
                 : null,
             });

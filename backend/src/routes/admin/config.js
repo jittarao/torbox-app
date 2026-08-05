@@ -2,6 +2,7 @@ import { sendSuccess, sendError } from './helpers.js';
 import { getMasterDbPath, getUserDbDir } from '../../utils/dataPaths.js';
 import { getUploadQuotaLimits } from '../../config/uploadQuota.js';
 import { getAutomationInactivityDays } from '../../config/automationInactivity.js';
+import { isAutomationRulesMylistFullPaginationEnabled } from '../../api/mylistPagination.js';
 import {
   CREATE_UPLOAD_TIMEOUT_MS,
   UPLOAD_BATCH_FETCH_SIZE,
@@ -24,6 +25,8 @@ export function setupConfigRoutes(router, backend) {
       const config = {
         polling: {
           max_concurrent_polls: parseInt(process.env.MAX_CONCURRENT_POLLS || '12', 10),
+          max_concurrent_process: parseInt(process.env.MAX_CONCURRENT_PROCESS || '8', 10),
+          max_users_due_for_polling: parseInt(process.env.MAX_USERS_DUE_FOR_POLLING || '100', 10),
           min_poll_interval_ms: 5 * 60 * 1000,
           poll_kickout_ms: parseInt(process.env.POLL_KICKOUT_MS || '180000', 10),
           poller_cleanup_interval_hours: parseInt(
@@ -31,6 +34,7 @@ export function setupConfigRoutes(router, backend) {
             10
           ),
           inactive_user_days: getAutomationInactivityDays(),
+          automation_rules_mylist_full_pagination: isAutomationRulesMylistFullPaginationEnabled(),
         },
         rate_limiting: {
           ip_rate_limit_max: parseInt(process.env.IP_RATE_LIMIT_MAX || '1000', 10),
@@ -40,6 +44,11 @@ export function setupConfigRoutes(router, backend) {
         },
         database: {
           max_db_connections: parseInt(process.env.MAX_DB_CONNECTIONS || '50', 10),
+          sqlite_cache_size_kb: parseInt(process.env.SQLITE_CACHE_SIZE_KB || '-1000', 10),
+          db_pool_idle_timeout_ms: parseInt(
+            process.env.DB_POOL_IDLE_TIMEOUT_MS || String(7 * 60 * 1000),
+            10
+          ),
           master_db_path: getMasterDbPath(),
           user_db_dir: getUserDbDir(),
         },
@@ -61,6 +70,7 @@ export function setupConfigRoutes(router, backend) {
           global_connection_strikes_before_pause: UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE,
           connection_defer_ms: UPLOAD_CONNECTION_DEFER_MS,
           recovery_concurrency: UPLOAD_RECOVERY_CONCURRENCY,
+          process_concurrency: parseInt(process.env.UPLOAD_PROCESS_CONCURRENCY || '6', 10),
           rate_limit_source: 'torbox_headers',
         },
         frontend_url: process.env.FRONTEND_URL || 'http://localhost:3000',

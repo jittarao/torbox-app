@@ -286,6 +286,8 @@ class GlobalActionQueue {
 
           try {
             await this.scheduler.runActionBatch(merged);
+            // Drop large download arrays promptly after success so backlog GC is not delayed.
+            merged.torrentsToProcess = null;
           } catch (err) {
             const retryCount = (merged.retryCount ?? 0) + 1;
             const isMissingKey =

@@ -102,6 +102,13 @@ export default function SystemHealth({ metrics, onRefresh }) {
                   value={`${pool.size ?? pool.currentSize} / ${pool.maxSize}`}
                   hint="Open SQLite connections to per-user databases"
                 />
+                {pool.pinnedUsers != null ? (
+                  <AdminStatRow
+                    label="Pinned pool users"
+                    value={`${pool.pinnedUsers} (${pool.totalPins ?? 0} pins)`}
+                    hint="Durable pins block close/evict; non-zero when idle suggests a pin leak"
+                  />
+                ) : null}
                 {pool.usagePercent != null ? (
                   <AdminStatRow label="Pool usage" value={`${pool.usagePercent}%`} />
                 ) : null}

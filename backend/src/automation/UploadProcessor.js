@@ -246,6 +246,38 @@ class UploadProcessor {
   }
 
   /**
+   * Drop idle per-user rate-limit rows so the Map cannot grow without bound across uptime.
+   * Keeps entries that are still blocked or recently observed.
+   * @param {number} [maxIdleMs]
+   * @returns {number} Entries removed
+   */
+  _pruneStaleRateLimitEntries(maxIdleMs = 2 * 60 * 60 * 1000) {
+    const now = Date.now();
+    let removed = 0;
+    for (const [authId, byType] of this._rateLimitByUser) {
+      const states = Object.values(byType || {});
+      if (states.length === 0) {
+        this._rateLimitByUser.delete(authId);
+        removed += 1;
+        continue;
+      }
+      const keep = states.some((state) => {
+        const normalized = normalizeExpiredRateLimitState(state, now);
+        if (getRateLimitAvailability(normalized) === 'blocked') {
+          return true;
+        }
+        const observedAt = normalized.observedAtMs || 0;
+        return now - observedAt < maxIdleMs;
+      });
+      if (!keep) {
+        this._rateLimitByUser.delete(authId);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  /**
    * Effective quota state: in-memory headers plus queue rehydration after restart.
    * @param {string} authId
    * @param {string} type
@@ -2571,6 +2603,8 @@ class UploadProcessor {
       });
     } finally {
       this.userDatabaseManager.markInactive(auth_id);
+      // Drop the pooled handle after drain so upload cycles do not keep DBs warm for idleTimeout.
+      this.userDatabaseManager.closeConnection(auth_id);
     }
   }
 
@@ -2591,6 +2625,7 @@ class UploadProcessor {
     this._processingInProgress = true;
 
     try {
+      this._pruneStaleRateLimitEntries();
       const usersWithUploads = this.masterDatabase.getUsersWithQueuedUploads();
 
       // Cleanup old attempts periodically (once per day for all active users)
@@ -2737,8 +2772,11 @@ class UploadProcessor {
       this.intervalId = null;
     }
 
-    // Clear API clients cache
+    // Clear API clients cache and per-user rate-limit / strike Maps
     this.apiClients.clear();
+    this._rateLimitByUser.clear();
+    this._connectionStrikesByUserType.clear();
+    this._userDrainMutex.clear();
 
     logger.info('Upload processor stopped');
   }

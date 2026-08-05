@@ -813,4 +813,41 @@ describe('UploadProcessor uncached create quota pause', () => {
       expect(row.next_attempt_at).not.toBeNull();
     });
   });
+
+  test('_pruneStaleRateLimitEntries drops idle unknown users and keeps blocked state', () => {
+    const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
+    const oldMs = Date.now() - 3 * 60 * 60 * 1000;
+
+    processor._rateLimitByUser.set('idle-user', {
+      torrent: { limit: null, remaining: null, resetAtMs: null, observedAtMs: oldMs },
+      usenet: { limit: null, remaining: null, resetAtMs: null, observedAtMs: oldMs },
+      webdl: { limit: null, remaining: null, resetAtMs: null, observedAtMs: oldMs },
+    });
+    processor._rateLimitByUser.set('blocked-user', {
+      torrent: {
+        limit: 60,
+        remaining: 0,
+        resetAtMs: Date.now() + 60_000,
+        observedAtMs: oldMs,
+      },
+      usenet: { limit: null, remaining: null, resetAtMs: null, observedAtMs: oldMs },
+      webdl: { limit: null, remaining: null, resetAtMs: null, observedAtMs: oldMs },
+    });
+    processor._rateLimitByUser.set('fresh-user', {
+      torrent: {
+        limit: 60,
+        remaining: 10,
+        resetAtMs: null,
+        observedAtMs: Date.now(),
+      },
+      usenet: { limit: null, remaining: null, resetAtMs: null, observedAtMs: Date.now() },
+      webdl: { limit: null, remaining: null, resetAtMs: null, observedAtMs: Date.now() },
+    });
+
+    const removed = processor._pruneStaleRateLimitEntries(2 * 60 * 60 * 1000);
+    expect(removed).toBe(1);
+    expect(processor._rateLimitByUser.has('idle-user')).toBe(false);
+    expect(processor._rateLimitByUser.has('blocked-user')).toBe(true);
+    expect(processor._rateLimitByUser.has('fresh-user')).toBe(true);
+  });
 });

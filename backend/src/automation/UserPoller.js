@@ -719,6 +719,10 @@ class UserPoller {
         };
       }
       throw error;
+    } finally {
+      // Defense in depth: scheduled path pins via runPipeline/_ensureDbManager but does not
+      // go through poll()'s finally. Scheduler also unpins; _releaseDbPin is idempotent.
+      this._releaseDbPin();
     }
   }
 
