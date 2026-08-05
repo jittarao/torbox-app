@@ -17,6 +17,9 @@ next-env.d.ts
 # Audiobook chapter cache (written at runtime, must not be watched by HMR)
 .audiobook-cache/
 
+# Download list sync idle spill (gzip snapshots; written at runtime)
+.download-list-cache/
+
 # Production
 /build
 
