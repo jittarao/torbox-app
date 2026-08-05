@@ -745,7 +745,7 @@ class AutomationEngine {
     });
 
     if (torrentsToProcess.length === 0) {
-      logger.info('No torrents to process after filtering', {
+      logger.debug('No torrents to process after filtering', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
@@ -1045,7 +1045,7 @@ class AutomationEngine {
             'All matching torrents were filtered out (action already applied or not applicable)',
           executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
         };
-        logger.info('No torrents to process after filtering', {
+        logger.debug('No torrents to process after filtering', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,

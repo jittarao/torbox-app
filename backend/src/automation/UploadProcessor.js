@@ -38,6 +38,7 @@ import {
   UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE,
   UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE,
   UPLOAD_CONNECTION_DEFER_MS,
+  UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS,
   UPLOAD_RECOVERY_CONCURRENCY,
 } from '../config/uploadProcessorConfig.js';
 import { runWithConcurrency } from '../routes/admin/concurrency.js';
@@ -112,7 +113,7 @@ const CONNECTION_SOFT_DEFER_MS = UPLOAD_CONNECTION_SOFT_DEFER_MS;
 const CONNECTION_STRIKES_BEFORE_PAUSE = UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE;
 const GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE = UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE;
 /** Min interval between per-type connection-defer warn logs (soft or hard). */
-const CONNECTION_DEFER_WARN_THROTTLE_MS = 10_000;
+const CONNECTION_DEFER_WARN_THROTTLE_MS = UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS;
 const CLEANUP_RETENTION_DAYS = 7;
 const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes - if processing longer, consider stuck
 const API_CLIENT_CACHE_MAX = parseInt(process.env.UPLOAD_API_CLIENT_CACHE_MAX || '300', 10);
@@ -795,19 +796,23 @@ class UploadProcessor {
     if (!quiet) {
       logger.warn('TorBox API unavailable, deferring upload', {
         uploadId: upload.id,
+        authId: upload.authId,
         type,
         waitTimeMs: CONNECTION_DEFER_MS,
         nextAttemptAt,
         error: error?.message,
+        globalPaused: this.isGlobalConnectionPaused(type),
         ...(suppressedCount > 0 ? { suppressedSimilarWarns: suppressedCount } : {}),
       });
     } else {
       logger.debug('TorBox API unavailable, deferring upload (quiet)', {
         uploadId: upload.id,
+        authId: upload.authId,
         type,
         waitTimeMs: CONNECTION_DEFER_MS,
         nextAttemptAt,
         error: error?.message,
+        globalPaused: this.isGlobalConnectionPaused(type),
       });
     }
 
@@ -1342,6 +1347,11 @@ class UploadProcessor {
     const errorData = error.response?.data;
     const errorCode = errorData?.error;
 
+    // Capacity blips — defer via connection path, never permanent-fail.
+    if (errorCode === 'NO_SERVERS_AVAILABLE_ERROR') {
+      return false;
+    }
+
     if (NON_RETRYABLE_ERRORS.includes(errorCode)) {
       return true;
     }
@@ -1356,6 +1366,17 @@ class UploadProcessor {
       errorDetail.includes('You must provide either a file or magnet link.') ||
       errorDetail.includes('Private torrent downloading is currently disabled')
     );
+  }
+
+  /**
+   * TorBox returned a transient capacity / no-servers response (HTTP 400).
+   * Treat like a connection deferral so uploads retry after the outage window.
+   * @param {Error} error
+   * @returns {boolean}
+   */
+  isTransientCapacityError(error) {
+    const errorCode = error?.response?.data?.error;
+    return errorCode === 'NO_SERVERS_AVAILABLE_ERROR';
   }
 
   /**
@@ -1457,8 +1478,9 @@ class UploadProcessor {
 
     const isRateLimit = this.isRateLimitError(error);
     const isConnection = isConnectionError(error);
+    const isCapacity = this.isTransientCapacityError(error);
 
-    if (isConnection) {
+    if (isConnection || isCapacity) {
       return this.deferForConnectionError(upload, userDb, type, error);
     }
 
@@ -1611,10 +1633,9 @@ class UploadProcessor {
       }
 
       if (this.isGlobalConnectionPaused(type)) {
-        const warnSlot = this._consumeConnectionDeferWarnSlot(type);
+        // Pause already logged at open; per-upload defers during the window are debug-only.
         await this.handleConnectionDeferral(upload, userDb, type, null, {
-          quiet: !warnSlot.shouldWarn,
-          suppressedCount: warnSlot.suppressedCount,
+          quiet: true,
         });
         return uploadProcessResult(false, true);
       }

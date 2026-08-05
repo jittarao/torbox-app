@@ -119,7 +119,7 @@ class RuleFilter {
 
     const skippedCount = matchingTorrents.length - filtered.length;
     if (skippedCount > 0) {
-      logger.info('Filtered torrents that already have all tags', {
+      logger.debug('Filtered torrents that already have all tags', {
         authId: this.authId,
         originalCount: matchingTorrents.length,
         filteredCount: filtered.length,
@@ -166,7 +166,7 @@ class RuleFilter {
 
     const skippedCount = matchingTorrents.length - filtered.length;
     if (skippedCount > 0) {
-      logger.info('Filtered torrents that do not have tags to remove', {
+      logger.debug('Filtered torrents that do not have tags to remove', {
         authId: this.authId,
         originalCount: matchingTorrents.length,
         filteredCount: filtered.length,
@@ -201,7 +201,7 @@ class RuleFilter {
 
     const skippedCount = matchingTorrents.length - filtered.length;
     if (skippedCount > 0) {
-      logger.info('Filtered downloads that are already airlocked', {
+      logger.debug('Filtered downloads that are already airlocked', {
         authId: this.authId,
         originalCount: matchingTorrents.length,
         filteredCount: filtered.length,
@@ -232,7 +232,7 @@ class RuleFilter {
 
     const skippedCount = matchingTorrents.length - filtered.length;
     if (skippedCount > 0) {
-      logger.info('Filtered downloads that are not airlocked', {
+      logger.debug('Filtered downloads that are not airlocked', {
         authId: this.authId,
         originalCount: matchingTorrents.length,
         filteredCount: filtered.length,
@@ -273,7 +273,7 @@ class RuleFilter {
 
     const skippedCount = matchingTorrents.length - filtered.length;
     if (skippedCount > 0) {
-      logger.info('Filtered torrents that are not seeding', {
+      logger.debug('Filtered torrents that are not seeding', {
         authId: this.authId,
         originalCount: matchingTorrents.length,
         filteredCount: filtered.length,
@@ -314,7 +314,7 @@ class RuleFilter {
 
     const skippedCount = matchingTorrents.length - filtered.length;
     if (skippedCount > 0) {
-      logger.info('Filtered torrents for force_start (only queued allowed)', {
+      logger.debug('Filtered torrents for force_start (only queued allowed)', {
         authId: this.authId,
         originalCount: matchingTorrents.length,
         filteredCount: filtered.length,

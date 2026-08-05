@@ -304,7 +304,7 @@ class UserPoller {
       consecutiveAuthFailures = this.masterDb.incrementConsecutiveAuthFailures(this.authId);
     }
 
-    logger.warn('API authentication failed - API key may be invalid or expired', {
+    const logPayload = {
       authId: this.authId,
       errorMessage: error.message,
       status: error.status,
@@ -312,7 +312,13 @@ class UserPoller {
       detail: error.responseData?.detail,
       consecutiveAuthFailures,
       deactivateThreshold: threshold,
-    });
+    };
+    // First failure (and deactivation) stay visible; repeats are expected until deactivate.
+    if (consecutiveAuthFailures <= 1 || consecutiveAuthFailures >= threshold) {
+      logger.warn('API authentication failed - API key may be invalid or expired', logPayload);
+    } else {
+      logger.debug('API authentication failed - API key may be invalid or expired', logPayload);
+    }
 
     if (consecutiveAuthFailures >= threshold && this.masterDb && this.masterDb.updateUserStatus) {
       try {

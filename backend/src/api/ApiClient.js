@@ -429,10 +429,12 @@ class ApiClient {
       _globalCircuitBreaker.recordSuccess();
       return result;
     } catch (error) {
-      // Handle authentication errors (info — expected for revoked/bad keys; poller backs off)
+      // Handle authentication errors (debug — expected for revoked/bad keys;
+      // UserPoller.handleAuthenticationError emits the actionable warn + deactivation)
       if (this.isAuthError(error)) {
         const authError = this.createAuthError(error);
-        logger.info(`Authentication error ${operation || 'in API call'}`, {
+        logger.debug(`Authentication error ${operation || 'in API call'}`, {
+          authId: this.authId,
           endpoint,
           ...context,
           status: authError.status,
@@ -493,15 +495,18 @@ class ApiClient {
         error.isTorboxApplicationError = true;
         error.isActiveDownloadLimit = ACTIVE_DOWNLOAD_LIMIT_RE.test(appMessage);
         // Plan/quota limits are expected and can fire once per queued item without abort —
-        // log at info; RuleExecutor aborts force_start batches on active download limit.
+        // log at debug; RuleExecutor aborts force_start batches and warns once.
         const logFn = error.isActiveDownloadLimit
-          ? logger.info.bind(logger)
+          ? logger.debug.bind(logger)
           : logger.warn.bind(logger);
         logFn(`TorBox API application error ${operation || 'in API call'}`, {
+          authId: this.authId,
           endpoint,
           ...context,
           status: error.response.status,
           errorCode: error.response?.data?.error,
+          torboxErrorCode: error.response?.data?.error,
+          errorKind: error.isActiveDownloadLimit ? 'active_download_limit' : 'application_500',
           message: appMessage,
           isActiveDownloadLimit: error.isActiveDownloadLimit || undefined,
         });

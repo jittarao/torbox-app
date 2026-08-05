@@ -1,8 +1,10 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test, beforeEach } from 'bun:test';
 import ApiClient, {
   isActiveDownloadLimitError,
   isTorboxApplicationServerError,
+  resetTorboxCircuitBreaker,
 } from '../ApiClient.js';
+import torboxApiOutageCoordinator from '../TorboxApiOutageCoordinator.js';
 
 function axiosError({ status, data, code, message } = {}) {
   const error = new Error(message || 'Request failed');
@@ -14,7 +16,13 @@ function axiosError({ status, data, code, message } = {}) {
 }
 
 describe('ApiClient.isConnectionError', () => {
-  const client = new ApiClient('fake-api-key');
+  let client;
+
+  beforeEach(() => {
+    torboxApiOutageCoordinator.resetForTests();
+    resetTorboxCircuitBreaker();
+    client = new ApiClient('fake-api-key');
+  });
 
   test('treats network failures as connection errors', () => {
     expect(client.isConnectionError(axiosError({ code: 'ECONNREFUSED' }))).toBe(true);
@@ -88,6 +96,8 @@ describe('isActiveDownloadLimitError / isTorboxApplicationServerError', () => {
 
 describe('ApiClient application errors vs connectionErrorFallback', () => {
   test('throws active download limit instead of returning connection fallback', async () => {
+    torboxApiOutageCoordinator.resetForTests();
+    resetTorboxCircuitBreaker();
     const client = new ApiClient('fake-api-key');
     client.client = {
       post: async () => {

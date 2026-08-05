@@ -3,6 +3,8 @@
  * Initializes Sentry for error tracking and performance monitoring
  */
 
+import logger from './logger.js';
+
 let Sentry = null;
 
 /**
@@ -24,13 +26,15 @@ export async function initSentry() {
 
     const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
     if (!dsn) {
-      console.warn('Sentry is enabled but SENTRY_DSN is not set. Sentry will not be initialized.');
+      logger.warn('Sentry is enabled but SENTRY_DSN is not set. Sentry will not be initialized.');
       return null;
     }
 
     // Verify essential exports are available
     if (typeof Sentry.init !== 'function') {
-      console.error('Sentry.init is not available. Module structure:', Object.keys(sentryModule));
+      logger.error('Sentry.init is not available', {
+        moduleKeys: Object.keys(sentryModule),
+      });
       return null;
     }
 
@@ -96,14 +100,13 @@ export async function initSentry() {
     const hasExpressErrorHandler = typeof Sentry.expressErrorHandler === 'function';
     const hasSetupExpressErrorHandler = typeof Sentry.setupExpressErrorHandler === 'function';
 
-    console.log('Sentry initialized successfully');
-    if (hasExpressIntegration && hasExpressErrorHandler) {
-      console.log('Sentry Express integration available (expressIntegration, expressErrorHandler)');
-      if (hasSetupExpressErrorHandler) {
-        console.log('Sentry setupExpressErrorHandler also available');
-      }
-    } else {
-      console.warn('Some Sentry Express handlers are not available:', {
+    logger.debug('Sentry initialized successfully', {
+      expressIntegration: hasExpressIntegration,
+      expressErrorHandler: hasExpressErrorHandler,
+      setupExpressErrorHandler: hasSetupExpressErrorHandler,
+    });
+    if (!hasExpressIntegration || !hasExpressErrorHandler) {
+      logger.warn('Some Sentry Express handlers are not available', {
         expressIntegration: hasExpressIntegration,
         expressErrorHandler: hasExpressErrorHandler,
         setupExpressErrorHandler: hasSetupExpressErrorHandler,
@@ -111,7 +114,7 @@ export async function initSentry() {
     }
     return Sentry;
   } catch (error) {
-    console.error('Failed to initialize Sentry:', error);
+    logger.error('Failed to initialize Sentry', error);
     return null;
   }
 }

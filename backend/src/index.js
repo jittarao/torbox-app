@@ -53,6 +53,8 @@ class TorBoxBackend {
     this.memoryLogIntervalId = null;
     this._server = null;
     this._inflightRequests = new Set();
+    /** @type {'starting'|'accepting'|'warming'|'ready'} */
+    this.startupPhase = 'starting';
     this.requireRegisteredUser = createRequireRegisteredUser(() => this.masterDatabase);
 
     this.setupMiddleware();
@@ -311,46 +313,62 @@ class TorBoxBackend {
       this.activityTracker.start();
       logger.info('Activity tracker started');
 
-      // Initialize upload processor
+      // Construct upload processor (started after warmup sweeps so closeConnection cannot race drains)
       this.uploadProcessor = new UploadProcessor(this.userDatabaseManager, this.masterDatabase);
 
-      // Recover stuck 'processing' uploads on startup (before syncing counters)
-      // This ensures uploads stuck from a previous crash/restart are reset to 'queued'
+      this.startupPhase = 'accepting';
+    } catch (error) {
+      logger.error('Failed to initialize services', error);
+      process.exit(1);
+    }
+  }
+
+  /**
+   * Heavy startup sweeps + scheduler start. Runs after HTTP listen so deploys accept traffic quickly.
+   */
+  async warmupBackgroundServices() {
+    const phaseTimings = {};
+    this.startupPhase = 'warming';
+    this.userDatabaseManager?.setCapacityWarningsSuppressed(true);
+
+    try {
+      const recoveryStarted = Date.now();
       logger.info('Recovering stuck processing uploads on startup...');
       const recoveredCount = await this.uploadProcessor.recoverStuckUploadsForAllUsers();
+      phaseTimings.stuckRecoveryMs = Date.now() - recoveryStarted;
       if (recoveredCount > 0) {
-        logger.info('Startup recovery completed', { recoveredCount });
+        logger.info('Startup recovery completed', { recoveredCount, ...phaseTimings });
       } else {
-        logger.info('No stuck uploads found on startup');
+        logger.info('No stuck uploads found on startup', phaseTimings);
       }
 
-      // Sync upload counters on startup (safety net to fix any drift)
-      // Runs after recovery so recovered uploads are counted, and *before* starting
-      // the upload processor so batch closeConnection cannot race active drains.
+      const syncStarted = Date.now();
       logger.info('Syncing upload counters for all users...');
       await this.masterDatabase.syncUploadCountersForAllUsers(this.userDatabaseManager);
+      phaseTimings.counterSyncMs = Date.now() - syncStarted;
 
+      const quotaStarted = Date.now();
       logger.info(
-        'Backfilling upload quota counters for all users (accounting only, no eviction)...'
+        'Backfilling upload quota counters for LIMITED users (accounting only, no eviction)...'
       );
       await this.uploadQuotaService.backfillAllUsers(this.userDatabaseManager);
-      logger.info('Upload quota backfill completed');
+      phaseTimings.quotaBackfillMs = Date.now() - quotaStarted;
 
-      // Start the upload processor after startup DB sweeps finish
       this.uploadProcessor.start();
       logger.info('Upload processor started');
 
+      const rulesStarted = Date.now();
       // Sync has_active_rules before the scheduler starts so spreadOverdueUsersOnStartup() and
-      // the first poll tick see corrected flags (admin: POST /api/admin/automation/sync-rules-flags).
+      // the first poll tick see corrected flags.
       const syncResult = await this.syncHasActiveRulesFromUserDbs();
       const syncStats = {
         synced: syncResult.synced,
         errors: syncResult.errors,
         skipped: syncResult.skipped,
       };
+      phaseTimings.hasActiveRulesSyncMs = Date.now() - rulesStarted;
       logger.info('has_active_rules sync completed before scheduler start', { ...syncStats });
 
-      // Initialize polling scheduler (pass automation engines map for sharing)
       this.pollingScheduler = new PollingScheduler(
         this.userDatabaseManager,
         this.masterDatabase,
@@ -374,14 +392,15 @@ class TorBoxBackend {
         (user) => user.has_active_rules === 1
       );
 
+      this.startupPhase = 'ready';
       logger.info('TorBox Backend started successfully', {
         activeUsers: refreshedActiveUsers.length,
         usersWithActiveRules: usersWithActiveRules.length,
         flagsSyncedOnStartup: syncStats.synced,
         syncErrors: syncStats.errors,
+        phaseTimings,
       });
 
-      // Optional: periodic log of memory and pool/engine stats (e.g. hourly) for monitoring
       const memoryLogIntervalMs = parseInt(
         process.env.MEMORY_LOG_INTERVAL_MS || String(60 * 60 * 1000),
         10
@@ -408,15 +427,16 @@ class TorBoxBackend {
         }, memoryLogIntervalMs);
       }
 
-      // WAL checkpoint every 15 minutes for all open user databases
       const WAL_CHECKPOINT_INTERVAL_MS = 15 * 60 * 1000;
       setInterval(() => {
         this.userDatabaseManager?.checkpointAllDatabases();
         this.masterDatabase?.checkpointWal();
       }, WAL_CHECKPOINT_INTERVAL_MS);
     } catch (error) {
-      logger.error('Failed to initialize services', error);
+      logger.error('Failed during startup warmup', error);
       process.exit(1);
+    } finally {
+      this.userDatabaseManager?.setCapacityWarningsSuppressed(false);
     }
   }
 
@@ -424,6 +444,7 @@ class TorBoxBackend {
     this._server = this.app.listen(this.port, '0.0.0.0', () => {
       logger.info('TorBox Backend server started', {
         port: this.port,
+        startupPhase: this.startupPhase,
         healthCheck: `http://localhost:${this.port}/health`,
         statusEndpoint: `http://localhost:${this.port}/api/backend/status`,
       });
@@ -630,11 +651,10 @@ let backend;
     // Create the backend instance
     backend = new TorBoxBackend();
 
-    // Initialize services before starting the server
+    // Core services (master DB + pool) then listen; heavy sweeps run after accept.
     await backend.initializeServices();
-
-    // Start the server only after initialization completes
     backend.start();
+    await backend.warmupBackgroundServices();
   } catch (error) {
     logger.error('Failed to start TorBox Backend', error);
 

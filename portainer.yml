@@ -17,6 +17,7 @@
 #   UPLOAD_PROCESSOR_INTERVAL_MS — upload queue poll interval ms (default 5000)
 #   UPLOAD_PROCESS_CONCURRENCY   — max users processed in parallel per cycle (default 6)
 #   UPLOAD_CONNECTION_DEFER_MS   — type-wide defer ms after sustained TorBox unreachability (default 900000)
+#   UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS — min interval between per-type defer warns (default 300000)
 #   UPLOAD_CONNECTION_SOFT_DEFER_MS — per-upload cool-down after a single create timeout (default 30000)
 #   UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE — consecutive create connection failures before type-wide pause (default 3)
 #   UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE — cross-user create failures before process-wide type pause (default 5)
@@ -24,8 +25,10 @@
 #   UPLOAD_BATCH_FETCH_SIZE      — SQL fetch size per queue buffer (default 50)
 #   UPLOAD_MAX_WORK_PER_DRAIN    — max uploads per drain invocation (default 25)
 #   UPLOAD_RECOVERY_CONCURRENCY  — max concurrent user DBs during startup stuck-upload recovery (default 8)
+#   UPLOAD_COUNTER_SYNC_CONCURRENCY — max concurrent user DBs during startup counter sync (default 8)
 #   CREATE_UPLOAD_TIMEOUT_MS     — TorBox create request timeout ms (default 30000)
 #   AUTOMATION_INACTIVE_USER_DAYS — skip automation for users inactive N days (default 30; 0 disables)
+#   AUTH_FAILURE_DEACTIVATE_AFTER — consecutive TorBox auth failures before inactive (default 3)
 #   MAX_DB_CONNECTIONS           — user SQLite pool size (default 50; raise on large multi-user hosts)
 #   STREMIO_ALLOW_HTTP           — "true" to allow http:// Stremio manifests (default HTTPS-only)
 #   STREMIO_MAX_ADDONS           — max installed addons per user (default 25)
@@ -73,6 +76,7 @@ services:
       UPLOAD_PROCESSOR_INTERVAL_MS: ${UPLOAD_PROCESSOR_INTERVAL_MS:-5000}
       UPLOAD_PROCESS_CONCURRENCY: ${UPLOAD_PROCESS_CONCURRENCY:-6}
       UPLOAD_CONNECTION_DEFER_MS: ${UPLOAD_CONNECTION_DEFER_MS:-900000}
+      UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS: ${UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS:-300000}
       UPLOAD_CONNECTION_SOFT_DEFER_MS: ${UPLOAD_CONNECTION_SOFT_DEFER_MS:-30000}
       UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE: ${UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE:-3}
       UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE: ${UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE:-5}
@@ -80,8 +84,10 @@ services:
       UPLOAD_BATCH_FETCH_SIZE: ${UPLOAD_BATCH_FETCH_SIZE:-50}
       UPLOAD_MAX_WORK_PER_DRAIN: ${UPLOAD_MAX_WORK_PER_DRAIN:-25}
       UPLOAD_RECOVERY_CONCURRENCY: ${UPLOAD_RECOVERY_CONCURRENCY:-8}
+      UPLOAD_COUNTER_SYNC_CONCURRENCY: ${UPLOAD_COUNTER_SYNC_CONCURRENCY:-8}
       CREATE_UPLOAD_TIMEOUT_MS: ${CREATE_UPLOAD_TIMEOUT_MS:-30000}
       AUTOMATION_INACTIVE_USER_DAYS: ${AUTOMATION_INACTIVE_USER_DAYS:-30}
+      AUTH_FAILURE_DEACTIVATE_AFTER: ${AUTH_FAILURE_DEACTIVATE_AFTER:-3}
       MAX_DB_CONNECTIONS: ${MAX_DB_CONNECTIONS:-50}
       AUTOMATION_RULES_MYLIST_FULL_PAGINATION: ${AUTOMATION_RULES_MYLIST_FULL_PAGINATION:-}
       STREMIO_ALLOW_HTTP: ${STREMIO_ALLOW_HTTP:-}
