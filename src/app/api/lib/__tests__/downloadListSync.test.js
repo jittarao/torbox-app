@@ -1,4 +1,7 @@
 import { describe, expect, test, beforeEach, afterEach, mock } from 'bun:test';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import zlib from 'zlib';
 
 const fetchFullDownloadListMock = mock(async () => ({
@@ -35,6 +38,8 @@ describe('downloadListSync', () => {
   let computeDelta;
   let getDownloadListSyncCacheEntry;
   let getDownloadListSyncRevHistoryForTests;
+  let getDownloadListSyncLiveStorageForTests;
+  let hasDownloadListSyncStateForTests;
   let handleListSyncRequest;
   let isSinglePageCatalog;
   let isMultiPageFromFullReconcile;
@@ -46,6 +51,8 @@ describe('downloadListSync', () => {
   let scheduleBackgroundReconcileIfDue;
   let setDownloadListSyncCacheForTests;
   let setDownloadListSyncCacheMetaForTests;
+  let setDownloadListSyncDiskOptionsForTests;
+  let spillIdleDownloadListSyncForTests;
   let flushMutationReconcileTimerForTests;
   let clearDownloadListSyncCacheOnlyForTests;
   let reconcileFailureBackoffMs;
@@ -72,6 +79,8 @@ describe('downloadListSync', () => {
       computeDelta,
       getDownloadListSyncCacheEntry,
       getDownloadListSyncRevHistoryForTests,
+      getDownloadListSyncLiveStorageForTests,
+      hasDownloadListSyncStateForTests,
       handleListSyncRequest,
       isSinglePageCatalog,
       isMultiPageFromFullReconcile,
@@ -83,6 +92,8 @@ describe('downloadListSync', () => {
       scheduleBackgroundReconcileIfDue,
       setDownloadListSyncCacheForTests,
       setDownloadListSyncCacheMetaForTests,
+      setDownloadListSyncDiskOptionsForTests,
+      spillIdleDownloadListSyncForTests,
       flushMutationReconcileTimerForTests,
       clearDownloadListSyncCacheOnlyForTests,
       reconcileFailureBackoffMs,
@@ -359,6 +370,68 @@ describe('downloadListSync', () => {
       expect(result.headers['x-sync-mode']).toBe('delta');
       const body = parseCompressedBody(result.compressedBody);
       expect(body.data.map((row) => row.id)).toEqual([2]);
+    });
+
+    test('live cache entry keeps gzip only (no durable uncompressed data)', () => {
+      setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      const storage = getDownloadListSyncLiveStorageForTests(API_KEY, TYPE);
+      expect(storage.inMemory).toBe(true);
+      expect(storage.hasCompressedBody).toBe(true);
+      expect(storage.hasUncompressedData).toBe(false);
+      expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)?.data.map((row) => row.id)).toEqual([1]);
+    });
+
+    test('getEntry TTL clears syncState so rev history is not orphaned', async () => {
+      const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      fetchShallowDownloadListMock.mockResolvedValueOnce(
+        shallowResult([item(2, '2020-01-03'), item(1, '2020-01-02')])
+      );
+      await runShallowRefresh(API_KEY, TYPE, { blocking: true });
+      expect(getDownloadListSyncRevHistoryForTests(API_KEY, TYPE).length).toBeGreaterThan(0);
+      expect(hasDownloadListSyncStateForTests(API_KEY, TYPE)).toBe(true);
+
+      // Force TTL expiry without going through the 5-minute sweep.
+      setDownloadListSyncCacheMetaForTests(API_KEY, TYPE, {
+        lastAccess: Date.now() - 31 * 60 * 1000,
+      });
+      expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)).toBeNull();
+      expect(hasDownloadListSyncStateForTests(API_KEY, TYPE)).toBe(false);
+      expect(getDownloadListSyncRevHistoryForTests(API_KEY, TYPE)).toEqual([]);
+      expect(rev).toBeGreaterThanOrEqual(1);
+    });
+
+    test('idle disk spill frees memory and next request hydrates without full reconcile', async () => {
+      const spillDir = fs.mkdtempSync(path.join(os.tmpdir(), 'download-list-sync-'));
+      setDownloadListSyncDiskOptionsForTests({ dir: spillDir, spillMs: 1 });
+
+      const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      setDownloadListSyncCacheMetaForTests(API_KEY, TYPE, {
+        lastAccess: Date.now() - 1000,
+        lastShallowPollAt: Date.now(),
+      });
+
+      spillIdleDownloadListSyncForTests();
+
+      const spilled = getDownloadListSyncLiveStorageForTests(API_KEY, TYPE);
+      expect(spilled.inMemory).toBe(false);
+      expect(spilled.onDisk).toBe(true);
+      expect(hasDownloadListSyncStateForTests(API_KEY, TYPE)).toBe(false);
+
+      fetchShallowDownloadListMock.mockClear();
+      fetchFullDownloadListMock.mockClear();
+
+      const result = await handleListSyncRequest({
+        apiKey: API_KEY,
+        type: TYPE,
+        rev,
+        bypassCache: false,
+      });
+
+      expect(result.status).toBe(304);
+      expect(result.headers['x-list-rev']).toBe(String(rev));
+      expect(fetchFullDownloadListMock).not.toHaveBeenCalled();
+      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).inMemory).toBe(true);
+      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).onDisk).toBe(false);
     });
 
     test('stale rev multiple behind returns accumulated delta', async () => {

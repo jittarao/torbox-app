@@ -3,10 +3,15 @@
  * Rev-tagged full snapshots: reads serve cached gzip bodies (304 when current);
  * stale reads block on a coalesced TorBox shallow refresh before responding.
  *
+ * Live entries keep gzip only (no durable uncompressed catalog). Idle keys spill
+ * to disk after DOWNLOAD_SYNC_DISK_SPILL_MS and rehydrate on the next request.
+ *
  * In-memory per process — single Next.js instance assumed (Docker Compose default).
  * Multi-replica deploys need a shared cache (out of scope).
  */
 
+import fs from 'fs';
+import path from 'path';
 import zlib from 'zlib';
 import { hashApiKey } from '@/app/api/lib/hashApiKey';
 import {
@@ -33,13 +38,22 @@ const NON_RETRYABLE_RECONCILE_BACKOFF_MS =
 const SHALLOW_FAILURE_BACKOFF_BASE_MS = 5 * 1000;
 const SHALLOW_FAILURE_BACKOFF_MAX_MS = SHALLOW_FRESHNESS_MS;
 const RECONCILE_FAILURE_LOG_RATE_MS = 60 * 1000;
+const DISK_SPILL_INTERVAL_MS = 15 * 1000;
+const DEFAULT_DISK_CACHE_DIR = '.download-list-cache';
 
 /** @type {Map<string, number>} */
 const reconcileFailureLogAt = new Map();
 // Keep this small: each archived rev retains a gzip snapshot. Uncompressed
 // catalog copies must NOT be archived (see archiveRevSnapshot)
-const REV_HISTORY_LIMIT = Math.max(1, Number(process.env.DOWNLOAD_SYNC_REV_HISTORY_LIMIT) || 8);
+const REV_HISTORY_LIMIT = Math.max(1, Number(process.env.DOWNLOAD_SYNC_REV_HISTORY_LIMIT) || 3);
 const GZIP_LEVEL = 6;
+
+/** @type {string | null} */
+let diskCacheDirOverride = null;
+/** @type {number | null} */
+let diskSpillMsOverride = null;
+/** @type {number} */
+let diskSpillFailureLogAt = 0;
 
 /** @type {Map<string, CacheEntry>} */
 const cache = new Map();
@@ -71,7 +85,7 @@ const syncStateByKey = new Map();
 
 /**
  * @typedef {object} CacheEntry
- * @property {object[]} data
+ * @property {null} [data] — intentionally omitted; catalog lives in compressedBody only
  * @property {Buffer} compressedBody
  * @property {number} rev
  * @property {number} itemCount
@@ -84,6 +98,209 @@ const syncStateByKey = new Map();
  * @property {number | null} lastReconcileAttemptAt
  * @property {number} reconcileFailureCount
  */
+
+function getDiskSpillMs() {
+  if (diskSpillMsOverride != null) return diskSpillMsOverride;
+  const raw = process.env.DOWNLOAD_SYNC_DISK_SPILL_MS;
+  if (raw === undefined || raw === '') return 60 * 1000;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 60 * 1000;
+}
+
+function getDiskCacheDir() {
+  if (diskCacheDirOverride) return diskCacheDirOverride;
+  if (process.env.DOWNLOAD_SYNC_DISK_CACHE_DIR) {
+    return process.env.DOWNLOAD_SYNC_DISK_CACHE_DIR;
+  }
+  return path.join(process.cwd(), DEFAULT_DISK_CACHE_DIR);
+}
+
+/**
+ * @param {string} key
+ */
+function safeDiskFilename(key) {
+  return key.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+/**
+ * @param {string} key
+ */
+function diskPathsForKey(key) {
+  const base = path.join(getDiskCacheDir(), safeDiskFilename(key));
+  return { metaPath: `${base}.json`, bodyPath: `${base}.gz` };
+}
+
+function logDiskSpillFailure(message) {
+  const now = Date.now();
+  if (now - diskSpillFailureLogAt < RECONCILE_FAILURE_LOG_RATE_MS) return;
+  diskSpillFailureLogAt = now;
+  console.warn(`[downloadListSync] disk cache: ${message}`);
+}
+
+/**
+ * @param {string} key
+ */
+function deleteDiskSpill(key) {
+  const { metaPath, bodyPath } = diskPathsForKey(key);
+  try {
+    fs.unlinkSync(metaPath);
+  } catch {
+    /* missing is fine */
+  }
+  try {
+    fs.unlinkSync(bodyPath);
+  } catch {
+    /* missing is fine */
+  }
+}
+
+/**
+ * @param {string} key
+ * @param {CacheEntry} entry
+ * @returns {boolean}
+ */
+function writeDiskSpill(key, entry) {
+  if (!entry?.compressedBody) return false;
+  try {
+    const dir = getDiskCacheDir();
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const { metaPath, bodyPath } = diskPathsForKey(key);
+    const meta = {
+      rev: entry.rev,
+      itemCount: entry.itemCount,
+      lastAccess: entry.lastAccess,
+      lastShallowPollAt: entry.lastShallowPollAt,
+      lastFullReconcileAt: entry.lastFullReconcileAt,
+      reconcileState: entry.reconcileState,
+      reconcileError: entry.reconcileError,
+      isMultiPage: entry.isMultiPage,
+      lastReconcileAttemptAt: entry.lastReconcileAttemptAt,
+      reconcileFailureCount: entry.reconcileFailureCount,
+    };
+    fs.writeFileSync(metaPath, JSON.stringify(meta), { mode: 0o600 });
+    fs.writeFileSync(bodyPath, entry.compressedBody, { mode: 0o600 });
+    return true;
+  } catch (error) {
+    logDiskSpillFailure(error?.message || 'write failed');
+    return false;
+  }
+}
+
+/**
+ * @param {string} key
+ * @returns {CacheEntry | null}
+ */
+function readDiskSpill(key) {
+  const { metaPath, bodyPath } = diskPathsForKey(key);
+  try {
+    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+    const compressedBody = fs.readFileSync(bodyPath);
+    if (!Buffer.isBuffer(compressedBody) || compressedBody.length === 0) {
+      deleteDiskSpill(key);
+      return null;
+    }
+    if (Date.now() - (meta.lastAccess || 0) > CACHE_TTL_MS) {
+      deleteDiskSpill(key);
+      return null;
+    }
+    return {
+      data: null,
+      compressedBody,
+      rev: meta.rev ?? 0,
+      itemCount: meta.itemCount ?? 0,
+      lastAccess: meta.lastAccess ?? Date.now(),
+      lastShallowPollAt: meta.lastShallowPollAt ?? null,
+      lastFullReconcileAt: meta.lastFullReconcileAt ?? null,
+      reconcileState: meta.reconcileState ?? 'fresh',
+      reconcileError: meta.reconcileError ?? null,
+      isMultiPage: Boolean(meta.isMultiPage),
+      lastReconcileAttemptAt: meta.lastReconcileAttemptAt ?? null,
+      reconcileFailureCount: meta.reconcileFailureCount ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Drop in-memory coordination for a key (cache, sync state, mutation timer).
+ * @param {string} key
+ * @param {{ deleteDisk?: boolean }} [options]
+ */
+function forgetKey(key, { deleteDisk = false } = {}) {
+  cache.delete(key);
+  syncStateByKey.delete(key);
+  const timer = mutationReconcileTimers.get(key);
+  if (timer) {
+    clearTimeout(timer);
+    mutationReconcileTimers.delete(key);
+  }
+  if (deleteDisk) {
+    deleteDiskSpill(key);
+  }
+}
+
+/**
+ * Spill idle in-memory entries to disk and free RAM (including rev history).
+ */
+function spillIdleEntries() {
+  const spillMs = getDiskSpillMs();
+  if (spillMs <= 0) return;
+
+  const now = Date.now();
+  for (const [key, entry] of cache.entries()) {
+    if (now - entry.lastAccess < spillMs) continue;
+    const state = syncStateByKey.get(key);
+    if (state?.fullReconcilePromise || state?.shallowRefreshPromise) continue;
+    if (!writeDiskSpill(key, entry)) continue;
+    forgetKey(key, { deleteDisk: false });
+  }
+}
+
+/**
+ * Remove disk spills whose lastAccess exceeds CACHE_TTL_MS.
+ */
+function evictExpiredDiskSpills() {
+  let dir;
+  try {
+    dir = getDiskCacheDir();
+    if (!fs.existsSync(dir)) return;
+  } catch {
+    return;
+  }
+
+  let names;
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return;
+  }
+
+  const now = Date.now();
+  for (const name of names) {
+    if (!name.endsWith('.json')) continue;
+    const metaPath = path.join(dir, name);
+    try {
+      const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+      if (now - (meta.lastAccess || 0) > CACHE_TTL_MS) {
+        const keyFromName = name.slice(0, -'.json'.length);
+        // safeDiskFilename is lossy; delete by paths derived from filename stem
+        try {
+          fs.unlinkSync(metaPath);
+        } catch {
+          /* ignore */
+        }
+        try {
+          fs.unlinkSync(path.join(dir, `${keyFromName}.gz`));
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch {
+      /* ignore corrupt */
+    }
+  }
+}
 
 /**
  * @param {object[]} data
@@ -363,12 +580,22 @@ function getClientBaseSnapshot(state, clientRev) {
  */
 function getEntry(authId, type) {
   const key = getCacheKey(authId, type);
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.lastAccess > CACHE_TTL_MS) {
-    cache.delete(key);
-    return null;
+  let entry = cache.get(key);
+
+  if (entry && Date.now() - entry.lastAccess > CACHE_TTL_MS) {
+    forgetKey(key, { deleteDisk: true });
+    entry = null;
   }
+
+  if (!entry) {
+    const hydrated = readDiskSpill(key);
+    if (!hydrated) return null;
+    // Rev history was dropped on spill; clients with stale rev get stale-full/full.
+    cache.set(key, hydrated);
+    deleteDiskSpill(key);
+    entry = hydrated;
+  }
+
   entry.lastAccess = Date.now();
   return entry;
 }
@@ -378,7 +605,7 @@ function getEntry(authId, type) {
  */
 function getEntryData(entry) {
   if (!entry) return [];
-  if (Array.isArray(entry.data)) return entry.data;
+  // Live entries are gzip-only; decompress on demand for mutate/delta paths.
   if (!entry.compressedBody) return [];
   const parsed = decompressBody(entry.compressedBody);
   return Array.isArray(parsed.data) ? parsed.data : [];
@@ -402,7 +629,7 @@ function writeEntry(authId, type, data, meta = {}) {
   }
 
   const entry = {
-    data: list,
+    data: null,
     compressedBody: buildCompressedBody(list, rev),
     rev,
     itemCount: list.length,
@@ -423,6 +650,7 @@ function writeEntry(authId, type, data, meta = {}) {
   };
 
   cache.set(key, entry);
+  deleteDiskSpill(key);
   return { entry, rev };
 }
 
@@ -471,23 +699,24 @@ function evictExpired() {
     if (now - entry.lastAccess > CACHE_TTL_MS) {
       const state = syncStateByKey.get(key);
       if (state?.fullReconcilePromise || state?.shallowRefreshPromise) continue;
-      cache.delete(key);
-      syncStateByKey.delete(key);
-      const timer = mutationReconcileTimers.get(key);
-      if (timer) {
-        clearTimeout(timer);
-        mutationReconcileTimers.delete(key);
-      }
+      forgetKey(key, { deleteDisk: true });
     }
   }
+  evictExpiredDiskSpills();
 }
 
 if (typeof setInterval !== 'undefined') {
-  const INTERVAL_KEY = '__downloadListSyncEvictInterval';
-  if (global[INTERVAL_KEY]) {
-    clearInterval(global[INTERVAL_KEY]);
+  const EVICT_INTERVAL_KEY = '__downloadListSyncEvictInterval';
+  if (global[EVICT_INTERVAL_KEY]) {
+    clearInterval(global[EVICT_INTERVAL_KEY]);
   }
-  global[INTERVAL_KEY] = setInterval(evictExpired, 5 * 60 * 1000);
+  global[EVICT_INTERVAL_KEY] = setInterval(evictExpired, 5 * 60 * 1000);
+
+  const SPILL_INTERVAL_KEY = '__downloadListSyncSpillInterval';
+  if (global[SPILL_INTERVAL_KEY]) {
+    clearInterval(global[SPILL_INTERVAL_KEY]);
+  }
+  global[SPILL_INTERVAL_KEY] = setInterval(spillIdleEntries, DISK_SPILL_INTERVAL_MS);
 }
 
 /**
@@ -1017,8 +1246,26 @@ export async function resetDownloadListSyncForTests() {
   ];
   await Promise.allSettled(pending);
 
+  // Wipe any spilled files under the test override dir before clearing overrides.
+  if (diskCacheDirOverride) {
+    try {
+      const names = fs.readdirSync(diskCacheDirOverride);
+      for (const name of names) {
+        try {
+          fs.unlinkSync(path.join(diskCacheDirOverride, name));
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   cache.clear();
   syncStateByKey.clear();
+  diskCacheDirOverride = null;
+  diskSpillMsOverride = null;
 }
 
 /** @internal test helper */
@@ -1037,6 +1284,34 @@ export function getDownloadListSyncCacheEntry(apiKey, type) {
     isMultiPage: entry.isMultiPage,
     reconcileFailureCount: entry.reconcileFailureCount ?? 0,
   };
+}
+
+/** @internal test helper — gzip-only live + rev archives (no uncompressed data copies). */
+export function getDownloadListSyncLiveStorageForTests(apiKey, type) {
+  const authId = hashApiKey(apiKey);
+  const key = getCacheKey(authId, type);
+  const entry = cache.get(key);
+  if (!entry) {
+    const { metaPath } = diskPathsForKey(key);
+    return {
+      inMemory: false,
+      onDisk: fs.existsSync(metaPath),
+      hasCompressedBody: false,
+      hasUncompressedData: false,
+    };
+  }
+  return {
+    inMemory: true,
+    onDisk: false,
+    hasCompressedBody: Buffer.isBuffer(entry.compressedBody),
+    hasUncompressedData: Array.isArray(entry.data),
+  };
+}
+
+/** @internal test helper — whether syncState (incl. revHistory) exists for a key. */
+export function hasDownloadListSyncStateForTests(apiKey, type) {
+  const authId = hashApiKey(apiKey);
+  return syncStateByKey.has(getCacheKey(authId, type));
 }
 
 /** @internal test helper — gzip-only rev archives (no uncompressed data copies). */
@@ -1058,6 +1333,17 @@ export function setDownloadListSyncCacheMetaForTests(apiKey, type, meta) {
   const entry = cache.get(key);
   if (!entry) return;
   Object.assign(entry, meta);
+}
+
+/** @internal test helper */
+export function setDownloadListSyncDiskOptionsForTests({ dir = null, spillMs = null } = {}) {
+  diskCacheDirOverride = dir;
+  diskSpillMsOverride = spillMs;
+}
+
+/** @internal test helper — run idle disk spill once. */
+export function spillIdleDownloadListSyncForTests() {
+  spillIdleEntries();
 }
 
 /** @internal test helper */
