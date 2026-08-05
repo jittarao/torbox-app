@@ -1224,11 +1224,33 @@ class UserDatabaseManager {
   }
 
   /**
+   * Durable pin summary for memory / pool diagnostics (correlates RSS with stuck pins).
+   * @returns {{ pinnedUsers: number, totalPins: number }}
+   */
+  getPinStats() {
+    let pinnedUsers = 0;
+    let totalPins = 0;
+    for (const n of this.pinCounts.values()) {
+      if (n > 0) {
+        pinnedUsers += 1;
+        totalPins += n;
+      }
+    }
+    return { pinnedUsers, totalPins };
+  }
+
+  /**
    * Get pool statistics with detailed metrics
    * @returns {Object} - Detailed pool statistics
    */
   getPoolStats() {
-    return this.pool.getStats();
+    const stats = this.pool.getStats();
+    const pins = this.getPinStats();
+    return {
+      ...stats,
+      pinnedUsers: pins.pinnedUsers,
+      totalPins: pins.totalPins,
+    };
   }
 
   /**

@@ -119,6 +119,43 @@ describe('PollingScheduler processUserPoll pin release', () => {
     expect(deltaMs).toBeGreaterThan(60_000);
     expect(deltaMs).toBeLessThan(3 * 60_000);
   });
+
+  it('releases durable DB pin in manual triggerPoll finally', async () => {
+    const authId = 'manual-pin-user';
+    const releaseDbPin = mock(() => {});
+    const poller = {
+      authId,
+      userDatabaseManager: scheduler.userDatabaseManager,
+      automationEngine: null,
+      dbManager: { db: {} },
+      _dbPinned: true,
+      _releaseDbPin: releaseDbPin,
+      poll: async () => ({
+        success: true,
+        skipped: false,
+        ruleResults: { evaluated: 0, executed: 0 },
+      }),
+    };
+
+    scheduler.pollers.set(authId, poller);
+    scheduler.getOrCreatePoller = async () => poller;
+    scheduler.createEngineForPoll = async () => ({
+      isInitialized: true,
+      hasActiveRules: async () => true,
+      shutdown: () => {},
+    });
+    scheduler.masterDb.getUserRegistryInfo = () => ({
+      encrypted_key: 'enc',
+      has_active_rules: 1,
+      last_seen_at: null,
+    });
+
+    await scheduler.triggerPoll(authId);
+
+    expect(releaseDbPin).toHaveBeenCalled();
+    expect(closeConnection).toHaveBeenCalledWith(authId);
+    expect(poller.dbManager).toBeNull();
+  });
 });
 
 describe('DatabaseRetryHelper.isTransientError', () => {

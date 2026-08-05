@@ -708,9 +708,13 @@ describe('UploadProcessor closed-DB / pool race guards', () => {
     env.userDatabaseManager.closeConnection(env.authId);
   });
 
-  test('_processUserUploads pins via getUserDatabase and unpins so closeConnection works after drain', async () => {
+  test('_processUserUploads pins via getUserDatabase and closes connection after drain', async () => {
     const processor = new UploadProcessor(env.userDatabaseManager, env.masterDatabase);
     processor._drainUserQueues = async () => ({ userDb: null, totalProcessed: 1 });
+
+    // Pre-open so we can assert the handle is removed after drain (not left for idleTimeout).
+    await env.userDatabaseManager.getUserDatabase(env.authId);
+    expect(env.userDatabaseManager.pool.cache.has(env.authId)).toBe(true);
 
     await processor._processUserUploads(
       { auth_id: env.authId, queued_uploads_count: 1 },
@@ -718,8 +722,6 @@ describe('UploadProcessor closed-DB / pool race guards', () => {
     );
 
     expect(env.userDatabaseManager.pinCounts.get(env.authId) ?? 0).toBe(0);
-    const entry = env.userDatabaseManager.pool.cache.get(env.authId);
-    expect(entry?.activeOperations ?? 0).toBe(0);
-    expect(env.userDatabaseManager.closeConnection(env.authId)).toBe(true);
+    expect(env.userDatabaseManager.pool.cache.has(env.authId)).toBe(false);
   });
 });

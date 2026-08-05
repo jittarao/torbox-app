@@ -41,30 +41,34 @@ export function tagDownloadsWithAssetType(items, assetType, options = {}) {
  */
 export async function fetchDownloadsForAssetTypes(apiClient, assetTypes, bypassCache = false) {
   const types = new Set(assetTypes?.length ? assetTypes : ['torrent']);
-  const fetches = [];
+  // Sequential per asset type to avoid holding 2–3 full mylist JSON arrays at once
+  // (multi-asset rules × MAX_CONCURRENT_POLLS was a peak-RAM multiplier).
+  const parts = [];
 
   if (types.has('torrent')) {
-    fetches.push(
-      apiClient
-        .getTorrents(bypassCache, { forAutomationRules: true })
-        .then((list) => tagDownloadsWithAssetType(list, 'torrent'))
+    parts.push(
+      tagDownloadsWithAssetType(
+        await apiClient.getTorrents(bypassCache, { forAutomationRules: true }),
+        'torrent'
+      )
     );
   }
   if (types.has('usenet')) {
-    fetches.push(
-      apiClient
-        .getUsenetDownloads(bypassCache, { forAutomationRules: true })
-        .then((list) => tagDownloadsWithAssetType(list, 'usenet'))
+    parts.push(
+      tagDownloadsWithAssetType(
+        await apiClient.getUsenetDownloads(bypassCache, { forAutomationRules: true }),
+        'usenet'
+      )
     );
   }
   if (types.has('webdl')) {
-    fetches.push(
-      apiClient
-        .getWebDownloads(bypassCache, { forAutomationRules: true })
-        .then((list) => tagDownloadsWithAssetType(list, 'webdl'))
+    parts.push(
+      tagDownloadsWithAssetType(
+        await apiClient.getWebDownloads(bypassCache, { forAutomationRules: true }),
+        'webdl'
+      )
     );
   }
 
-  const parts = await Promise.all(fetches);
   return parts.flat();
 }

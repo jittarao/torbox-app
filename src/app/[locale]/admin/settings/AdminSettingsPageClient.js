@@ -48,10 +48,27 @@ export default function AdminSettingsPageClient() {
                   label="Max concurrent polls"
                   value={config.polling?.max_concurrent_polls}
                 />
-                <AdminStatRow label="Poll timeout (ms)" value={config.polling?.poll_timeout_ms} />
+                <AdminStatRow
+                  label="Max concurrent process"
+                  value={config.polling?.max_concurrent_process}
+                />
+                <AdminStatRow
+                  label="Max users due per tick"
+                  value={config.polling?.max_users_due_for_polling}
+                />
+                <AdminStatRow
+                  label="Poll kickout (ms)"
+                  value={config.polling?.poll_kickout_ms ?? config.polling?.poll_timeout_ms}
+                />
                 <AdminStatRow
                   label="Cleanup interval (hours)"
                   value={config.polling?.poller_cleanup_interval_hours}
+                />
+                <AdminStatRow
+                  label="Mylist full pagination"
+                  value={
+                    config.polling?.automation_rules_mylist_full_pagination ? 'enabled' : 'disabled'
+                  }
                 />
               </div>
             </AdminCard>
@@ -98,6 +115,10 @@ export default function AdminSettingsPageClient() {
                   value={config.upload_processor?.external_rate_limit_retry_ms}
                 />
                 <AdminStatRow
+                  label="Process concurrency"
+                  value={config.upload_processor?.process_concurrency}
+                />
+                <AdminStatRow
                   label="Rate limit source"
                   value={config.upload_processor?.rate_limit_source}
                 />
@@ -107,6 +128,14 @@ export default function AdminSettingsPageClient() {
             <AdminCard title="Database">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <AdminStatRow label="Max connections" value={config.database?.max_db_connections} />
+                <AdminStatRow
+                  label="SQLite cache size (KB pragma)"
+                  value={config.database?.sqlite_cache_size_kb}
+                />
+                <AdminStatRow
+                  label="Pool idle timeout (ms)"
+                  value={config.database?.db_pool_idle_timeout_ms}
+                />
                 <div className="text-sm">
                   <span className="text-muted dark:text-muted-dark">Master DB path</span>
                   <p className="mt-1 break-all font-mono text-xs text-text dark:text-text-dark">

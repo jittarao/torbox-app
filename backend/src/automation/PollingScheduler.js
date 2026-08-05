@@ -1610,6 +1610,12 @@ class PollingScheduler {
         maxConcurrentProcess: this.maxConcurrentProcess,
         pollerCleanupIntervalHours: this.pollerCleanupIntervalHours,
       },
+      memoryCaches: {
+        pollers: this.pollers.size,
+        cachedApiClients: this.cachedApiClients.size,
+        cachedEngines: this.cachedEngines.size,
+        pendingActionBatches: this.globalActionQueue?.pending?.length ?? 0,
+      },
       inactivityFilter: {
         enabled: isAutomationInactivityFilterEnabled(),
         inactiveUserDays: getAutomationInactivityDays(),
@@ -1713,6 +1719,8 @@ class PollingScheduler {
         this.pipelineMutexes.delete(authId);
       }
       poller.automationEngine = null;
+      // Mirror processUserPoll: unpin before close so timeout races cannot leave durable pins.
+      poller._releaseDbPin?.();
       if (poller.userDatabaseManager) {
         poller.userDatabaseManager.closeConnection(authId);
       }
