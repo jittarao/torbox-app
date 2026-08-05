@@ -142,8 +142,3 @@ export function backendProxyErrorResponse(response, context) {
 export function resetRouteLogForTests() {
   lastLoggedAt.clear();
 }
-
-/** @internal */
-export function resetRouteLogForTests() {
-  lastLoggedAt.clear();
-}
