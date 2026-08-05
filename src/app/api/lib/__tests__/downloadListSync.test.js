@@ -52,13 +52,19 @@ describe('downloadListSync', () => {
   let setDownloadListSyncCacheForTests;
   let setDownloadListSyncCacheMetaForTests;
   let setDownloadListSyncDiskOptionsForTests;
-  let spillIdleDownloadListSyncForTests;
   let flushMutationReconcileTimerForTests;
   let clearDownloadListSyncCacheOnlyForTests;
+  let clearDownloadListSyncCoordinationForTests;
+  let evictExpiredDiskEntriesForTests;
   let reconcileFailureBackoffMs;
   let effectiveReconcileFailureBackoffMs;
+  let effectiveShallowFailureBackoffMs;
   let isFailedBootstrapEntry;
   let shallowFailureBackoffMs;
+  let CACHE_TTL_MS;
+  let REV_HISTORY_LIMIT;
+  /** @type {string | null} */
+  let testDiskDir = null;
 
   beforeEach(async () => {
     mock.module('@/app/api/lib/fetchTorboxDownloadList', () => ({
@@ -93,22 +99,39 @@ describe('downloadListSync', () => {
       setDownloadListSyncCacheForTests,
       setDownloadListSyncCacheMetaForTests,
       setDownloadListSyncDiskOptionsForTests,
-      spillIdleDownloadListSyncForTests,
       flushMutationReconcileTimerForTests,
       clearDownloadListSyncCacheOnlyForTests,
+      clearDownloadListSyncCoordinationForTests,
+      evictExpiredDiskEntriesForTests,
       reconcileFailureBackoffMs,
       effectiveReconcileFailureBackoffMs,
+      effectiveShallowFailureBackoffMs,
       isFailedBootstrapEntry,
       shallowFailureBackoffMs,
+      CACHE_TTL_MS,
+      REV_HISTORY_LIMIT,
     } = await import('../downloadListSync.js'));
 
     fetchFullDownloadListMock.mockReset();
     fetchShallowDownloadListMock.mockReset();
     await resetDownloadListSyncForTests();
+    testDiskDir = fs.mkdtempSync(path.join(os.tmpdir(), 'download-list-sync-'));
+    setDownloadListSyncDiskOptionsForTests({ dir: testDiskDir });
   });
 
   afterEach(() => {
     mock.restore();
+    if (testDiskDir) {
+      try {
+        for (const name of fs.readdirSync(testDiskDir)) {
+          fs.unlinkSync(path.join(testDiskDir, name));
+        }
+        fs.rmdirSync(testDiskDir);
+      } catch {
+        /* ignore */
+      }
+      testDiskDir = null;
+    }
   });
 
   describe('helpers', () => {
@@ -178,6 +201,17 @@ describe('downloadListSync', () => {
       expect(effectiveReconcileFailureBackoffMs(2, 'AUTH_ERROR')).toBe(5 * 60 * 1000);
     });
 
+    test('effectiveShallowFailureBackoffMs uses non-retryable hold for plan restrictions', () => {
+      expect(effectiveShallowFailureBackoffMs(1, null)).toBe(5_000);
+      expect(effectiveShallowFailureBackoffMs(1, 'PLAN_RESTRICTED_FEATURE')).toBe(15 * 60 * 1000);
+      expect(effectiveShallowFailureBackoffMs(2, 'AUTH_ERROR')).toBe(5 * 60 * 1000);
+    });
+
+    test('disk-oriented defaults keep longer TTL and rev history', () => {
+      expect(CACHE_TTL_MS).toBe(24 * 60 * 60 * 1000);
+      expect(REV_HISTORY_LIMIT).toBe(10);
+    });
+
     test('shallowFailureBackoffMs grows exponentially with cap', () => {
       expect(shallowFailureBackoffMs(0)).toBe(0);
       expect(shallowFailureBackoffMs(1)).toBe(5_000);
@@ -215,7 +249,10 @@ describe('downloadListSync', () => {
           rev: null,
           bypassCache: false,
         })
-      ).rejects.toThrow('PLAN_RESTRICTED_FEATURE');
+      ).rejects.toMatchObject({
+        message: 'PLAN_RESTRICTED_FEATURE',
+        listSyncCached: true,
+      });
       expect(fetchFullDownloadListMock).not.toHaveBeenCalled();
     });
 
@@ -354,11 +391,13 @@ describe('downloadListSync', () => {
       );
       await runShallowRefresh(API_KEY, TYPE, { blocking: true });
 
+      const bumped = getDownloadListSyncCacheEntry(API_KEY, TYPE);
       const history = getDownloadListSyncRevHistoryForTests(API_KEY, TYPE);
-      expect(history).toHaveLength(1);
-      expect(history[0].rev).toBe(rev);
-      expect(history[0].hasCompressedBody).toBe(true);
-      expect(history[0].hasUncompressedData).toBe(false);
+      // Immutable design keeps both previous and current head rev bodies on disk.
+      expect(history.map((snap) => snap.rev).sort((a, b) => a - b)).toEqual([rev, bumped.rev]);
+      expect(history.every((snap) => snap.hasCompressedBody && !snap.hasUncompressedData)).toBe(
+        true
+      );
 
       // Delta path still works via decompress
       const result = await handleListSyncRequest({
@@ -372,16 +411,17 @@ describe('downloadListSync', () => {
       expect(body.data.map((row) => row.id)).toEqual([2]);
     });
 
-    test('live cache entry keeps gzip only (no durable uncompressed data)', () => {
+    test('disk cache entry keeps gzip only (no durable uncompressed data)', () => {
       setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
       const storage = getDownloadListSyncLiveStorageForTests(API_KEY, TYPE);
-      expect(storage.inMemory).toBe(true);
+      expect(storage.inMemory).toBe(false);
+      expect(storage.onDisk).toBe(true);
       expect(storage.hasCompressedBody).toBe(true);
       expect(storage.hasUncompressedData).toBe(false);
       expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)?.data.map((row) => row.id)).toEqual([1]);
     });
 
-    test('getEntry TTL clears syncState so rev history is not orphaned', async () => {
+    test('getEntry TTL clears syncState and disk rev history', async () => {
       const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
       fetchShallowDownloadListMock.mockResolvedValueOnce(
         shallowResult([item(2, '2020-01-03'), item(1, '2020-01-02')])
@@ -390,32 +430,29 @@ describe('downloadListSync', () => {
       expect(getDownloadListSyncRevHistoryForTests(API_KEY, TYPE).length).toBeGreaterThan(0);
       expect(hasDownloadListSyncStateForTests(API_KEY, TYPE)).toBe(true);
 
-      // Force TTL expiry without going through the 5-minute sweep.
+      // Force TTL expiry without going through the eviction sweep.
       setDownloadListSyncCacheMetaForTests(API_KEY, TYPE, {
-        lastAccess: Date.now() - 31 * 60 * 1000,
+        lastAccess: Date.now() - (CACHE_TTL_MS + 60_000),
       });
       expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)).toBeNull();
       expect(hasDownloadListSyncStateForTests(API_KEY, TYPE)).toBe(false);
       expect(getDownloadListSyncRevHistoryForTests(API_KEY, TYPE)).toEqual([]);
+      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).onDisk).toBe(false);
       expect(rev).toBeGreaterThanOrEqual(1);
     });
 
-    test('idle disk spill frees memory and next request hydrates without full reconcile', async () => {
-      const spillDir = fs.mkdtempSync(path.join(os.tmpdir(), 'download-list-sync-'));
-      setDownloadListSyncDiskOptionsForTests({ dir: spillDir, spillMs: 1 });
-
+    test('disk snapshot survives process coordination reset and serves 304', async () => {
       const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
       setDownloadListSyncCacheMetaForTests(API_KEY, TYPE, {
-        lastAccess: Date.now() - 1000,
         lastShallowPollAt: Date.now(),
       });
 
-      spillIdleDownloadListSyncForTests();
+      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).onDisk).toBe(true);
 
-      const spilled = getDownloadListSyncLiveStorageForTests(API_KEY, TYPE);
-      expect(spilled.inMemory).toBe(false);
-      expect(spilled.onDisk).toBe(true);
+      // Drop in-memory coordination only — catalog remains on disk.
+      clearDownloadListSyncCoordinationForTests();
       expect(hasDownloadListSyncStateForTests(API_KEY, TYPE)).toBe(false);
+      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).onDisk).toBe(true);
 
       fetchShallowDownloadListMock.mockClear();
       fetchFullDownloadListMock.mockClear();
@@ -430,8 +467,27 @@ describe('downloadListSync', () => {
       expect(result.status).toBe(304);
       expect(result.headers['x-list-rev']).toBe(String(rev));
       expect(fetchFullDownloadListMock).not.toHaveBeenCalled();
-      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).inMemory).toBe(true);
-      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).onDisk).toBe(false);
+      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).onDisk).toBe(true);
+      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).inMemory).toBe(false);
+    });
+
+    test('matching rev 304 does not require rewriting catalog gzip', async () => {
+      const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      const keyHash = require('crypto').createHash('sha256').update(API_KEY).digest('hex');
+      // Body path uses safeDiskFilename(authId:type)
+      const bodyPath = path.join(testDiskDir, `${keyHash}_torrents.gz`);
+      const before = fs.readFileSync(bodyPath);
+
+      const result = await handleListSyncRequest({
+        apiKey: API_KEY,
+        type: TYPE,
+        rev,
+        bypassCache: false,
+      });
+
+      expect(result.status).toBe(304);
+      const after = fs.readFileSync(bodyPath);
+      expect(Buffer.compare(before, after)).toBe(0);
     });
 
     test('stale rev multiple behind returns accumulated delta', async () => {
@@ -975,6 +1031,122 @@ describe('downloadListSync', () => {
 
       expect(ranAgain).toBe(false);
       expect(fetchShallowDownloadListMock).not.toHaveBeenCalled();
+    });
+
+    test('eviction skips deletion while a shallow refresh is in flight', async () => {
+      setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+
+      let resolveFetch;
+      fetchShallowDownloadListMock.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFetch = resolve;
+          })
+      );
+
+      // Start refresh while the entry is still within TTL so getEntry does not wipe it.
+      const refreshPromise = runShallowRefresh(API_KEY, TYPE, { blocking: true });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      setDownloadListSyncCacheMetaForTests(API_KEY, TYPE, {
+        lastAccess: Date.now() - (CACHE_TTL_MS + 60_000),
+      });
+
+      evictExpiredDiskEntriesForTests();
+
+      expect(getDownloadListSyncLiveStorageForTests(API_KEY, TYPE).onDisk).toBe(true);
+
+      resolveFetch(shallowResult([item(1, '2020-01-02', { progress: 0.4 })]));
+      await refreshPromise;
+
+      expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)?.data[0].progress).toBe(0.4);
+    });
+
+    test('corrupt gzip body is treated as a cache miss', async () => {
+      const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      const keyHash = require('crypto').createHash('sha256').update(API_KEY).digest('hex');
+      const bodyPath = path.join(testDiskDir, `${keyHash}_torrents.gz`);
+      fs.writeFileSync(bodyPath, Buffer.from('not-gzip'));
+
+      expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)).toBeNull();
+
+      fetchFullDownloadListMock.mockResolvedValueOnce({
+        success: true,
+        data: [item(1, '2020-01-02')],
+        pageCount: 1,
+      });
+
+      const result = await handleListSyncRequest({
+        apiKey: API_KEY,
+        type: TYPE,
+        rev,
+        bypassCache: false,
+      });
+
+      expect(result.status).toBe(200);
+      expect(result.headers['x-sync-mode']).toBe('full');
+      expect(fetchFullDownloadListMock).toHaveBeenCalledTimes(1);
+    });
+
+    test('meta/body rev mismatch is treated as a cache miss', async () => {
+      const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      const keyHash = require('crypto').createHash('sha256').update(API_KEY).digest('hex');
+      const metaPath = path.join(testDiskDir, `${keyHash}_torrents.json`);
+      const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+      meta.rev = rev + 5;
+      fs.writeFileSync(metaPath, JSON.stringify(meta));
+
+      expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)).toBeNull();
+    });
+
+    test('progress change with stable updated_at still bumps rev', async () => {
+      const updatedAt = '2020-01-02T00:00:00Z';
+      const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [
+        item(1, '2020-01-02', { updated_at: updatedAt, progress: 0.1 }),
+      ]);
+
+      fetchShallowDownloadListMock.mockResolvedValueOnce(
+        shallowResult([item(1, '2020-01-02', { updated_at: updatedAt, progress: 0.9 })])
+      );
+
+      await runShallowRefresh(API_KEY, TYPE, { blocking: true });
+
+      const cached = getDownloadListSyncCacheEntry(API_KEY, TYPE);
+      expect(cached.rev).toBeGreaterThan(rev);
+      expect(cached.data[0].progress).toBe(0.9);
+    });
+
+    test('shallow failure backoff survives coordination reset', async () => {
+      setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      setDownloadListSyncCacheMetaForTests(API_KEY, TYPE, { lastShallowPollAt: 0 });
+
+      fetchShallowDownloadListMock.mockRejectedValueOnce(new Error('PLAN_RESTRICTED_FEATURE'));
+
+      await expect(ensureShallowRefreshIfStale(API_KEY, TYPE)).resolves.toBe(true);
+
+      clearDownloadListSyncCoordinationForTests();
+      expect(hasDownloadListSyncStateForTests(API_KEY, TYPE)).toBe(false);
+
+      fetchShallowDownloadListMock.mockClear();
+      setDownloadListSyncCacheMetaForTests(API_KEY, TYPE, { lastShallowPollAt: 0 });
+      const ranAgain = await ensureShallowRefreshIfStale(API_KEY, TYPE);
+
+      expect(ranAgain).toBe(false);
+      expect(fetchShallowDownloadListMock).not.toHaveBeenCalled();
+    });
+
+    test('published snapshot keeps immutable rev body aligned with meta', async () => {
+      const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      const keyHash = require('crypto').createHash('sha256').update(API_KEY).digest('hex');
+      const bodyPath = path.join(testDiskDir, `${keyHash}_torrents.gz`);
+      const revPath = path.join(testDiskDir, `${keyHash}_torrents.rev.${rev}.gz`);
+      const meta = JSON.parse(
+        fs.readFileSync(path.join(testDiskDir, `${keyHash}_torrents.json`), 'utf8')
+      );
+
+      expect(meta.rev).toBe(rev);
+      expect(fs.existsSync(revPath)).toBe(true);
+      expect(Buffer.compare(fs.readFileSync(bodyPath), fs.readFileSync(revPath))).toBe(0);
     });
   });
 });

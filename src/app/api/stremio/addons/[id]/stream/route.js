@@ -4,7 +4,8 @@ import crypto from 'crypto';
 import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCheck';
 import { isSearchPageDisabled, getSearchPageDisabledResponse } from '@/utils/featureFlags';
 import { backendProxyHeaders } from '@/utils/backendRequest';
-import { sanitizeError } from '@/utils/sanitizeError';
+import { publicApiErrorResponse } from '@/utils/sanitizeError';
+import { logRouteError } from '@/utils/routeLog';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -52,7 +53,8 @@ export async function GET(request, { params }) {
     const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Error proxying stremio stream:', error);
-    return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
+    logRouteError('Error proxying stremio stream', error);
+    const { body, status } = publicApiErrorResponse(error, { fallbackStatus: 504 });
+    return NextResponse.json(body, { status });
   }
 }

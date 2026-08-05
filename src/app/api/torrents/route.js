@@ -133,13 +133,12 @@ export async function DELETE(request) {
     const data = await safeJsonParse(response);
 
     if (!response.ok) {
-      console.error('[torrents DELETE] Upstream error:', {
-        endpoint,
-        id,
-        isQueued,
-        status: response.status,
-        error: data.error,
+      logRouteError('[torrents DELETE] Upstream error', {
+        error: data.error || `API responded with status: ${response.status}`,
         detail: data.detail,
+        message: data.detail
+          ? `${data.error || response.status}: ${data.detail}`
+          : data.error || `API responded with status: ${response.status}`,
       });
       return Response.json(
         {
@@ -155,7 +154,7 @@ export async function DELETE(request) {
 
     return Response.json(data);
   } catch (error) {
-    console.error('[torrents DELETE] Error:', error);
+    logRouteError('[torrents DELETE] Error', error);
     return Response.json(
       {
         success: false,

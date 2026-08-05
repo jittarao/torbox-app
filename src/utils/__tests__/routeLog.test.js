@@ -38,6 +38,48 @@ describe('routeLog', () => {
     }
   });
 
+  test('logRouteError skips negative-cache list-sync rethrows entirely', () => {
+    const warn = mock(() => {});
+    const error = mock(() => {});
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    console.warn = warn;
+    console.error = error;
+
+    try {
+      const cached = new Error('PLAN_RESTRICTED_FEATURE');
+      cached.listSyncCached = true;
+      logRouteError('Error fetching torrents', cached);
+      expect(warn).not.toHaveBeenCalled();
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      console.warn = originalWarn;
+      console.error = originalError;
+    }
+  });
+
+  test('TimeoutError is expected and logged without a second-arg dump', () => {
+    const warn = mock(() => {});
+    const error = mock(() => {});
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    console.warn = warn;
+    console.error = error;
+
+    try {
+      const timeout = new Error('The operation was aborted due to timeout');
+      timeout.name = 'TimeoutError';
+      expect(isExpectedApiError(timeout)).toBe(true);
+      logRouteError('Error proxying stremio stream', timeout);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toContain('aborted due to timeout');
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      console.warn = originalWarn;
+      console.error = originalError;
+    }
+  });
+
   test('backendProxyErrorResponse preserves 404 for unregistered users', async () => {
     const warn = mock(() => {});
     const originalWarn = console.warn;
