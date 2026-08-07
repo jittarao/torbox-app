@@ -15,7 +15,7 @@ export function getStatusColor(status) {
 
 export default function DiagnosticsSummaryCard({ summary, timestamp }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
+    <div className="rounded-xl border border-border/60 bg-white shadow-xs dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
           Summary

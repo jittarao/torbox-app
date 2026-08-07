@@ -241,7 +241,7 @@ function ItemCard({
         </div>
 
         {!isMobile && (
-          <div className="flex flex-col items-end justify-between gap-1.5 md:gap-2 flex-shrink-0">
+          <div className="flex flex-col items-end justify-between gap-1.5 md:gap-2 shrink-0">
             <div className={tableActionsCellInner}>
               <ItemActions
                 item={item}

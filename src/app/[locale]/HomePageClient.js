@@ -93,7 +93,7 @@ export default function HomePageClient() {
       <div
         ref={mainRef}
         tabIndex={-1}
-        className="container-downloads mx-auto px-2 sm:px-4 pt-2 pb-4 outline-none"
+        className="container-downloads mx-auto px-2 sm:px-4 pt-2 pb-4 outline-hidden"
       >
         <Suspense
           fallback={

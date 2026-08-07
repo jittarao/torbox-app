@@ -47,7 +47,7 @@ export default function LoadingOverlay() {
           }
         }
       `}</style>
-      <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-20">
+      <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-xs z-20">
         <div className="text-center">
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-accent/20 dark:bg-accent-dark/20 rounded-full blur-2xl animate-pulse" />

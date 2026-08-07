@@ -72,7 +72,7 @@ export default function InlineTagMultiSelect({
             disabled={disabled || loading}
             className="w-full rounded-xl border border-border/60 bg-surface py-2 pl-9 pr-3 text-sm
               text-primary-text placeholder:text-primary-text/40
-              focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/10
+              focus:border-accent/40 focus:outline-hidden focus:ring-2 focus:ring-accent/10
               disabled:opacity-60
               dark:border-border-dark/60 dark:bg-surface-dark dark:text-primary-text-dark
               dark:focus:border-accent-dark/40 dark:focus:ring-accent-dark/10"
@@ -118,7 +118,7 @@ export default function InlineTagMultiSelect({
                   className={`
                     inline-flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium
                     transition-[color,background,box-shadow,opacity]
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30
+                    focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/30
                     disabled:cursor-not-allowed disabled:opacity-45
                     ${
                       isSelected

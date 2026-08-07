@@ -1,6 +1,6 @@
 export default function DiagnosticsActiveUsersSection({ activeUsersBreakdown }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
+    <div className="rounded-xl border border-border/60 bg-white shadow-xs dark:border-border-dark/60 dark:bg-surface-alt-dark p-5 sm:p-6">
       <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark mb-4">
         Active Users Breakdown
       </h3>

@@ -210,7 +210,7 @@ function FileRowInner({
           }}
         >
           <div
-            className={`text-xs md:text-[11px] lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] md:max-w-md lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
+            className={`text-xs tablet:text-[11px] lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70 truncate max-w-[250px] tablet:max-w-md lg:max-w-xl ${isBlurred ? 'blur-[6px] select-none' : ''}`}
           >
             <Tooltip content={isBlurred ? '' : file.short_name || file.name}>
               {file.short_name || file.name}

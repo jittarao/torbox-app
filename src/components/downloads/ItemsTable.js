@@ -101,7 +101,7 @@ export default function ItemsTable() {
     <>
       <div ref={tableContainerRef} id="items-table" className={tableContainerClass}>
         <table
-          className="w-full table-fixed border-separate border-spacing-0 relative md:text-xs lg:text-sm"
+          className="w-full table-fixed border-separate border-spacing-0 relative text-sm tablet:text-xs"
           style={
             columnLayout.tableMinWidth ? { minWidth: `${columnLayout.tableMinWidth}px` } : undefined
           }

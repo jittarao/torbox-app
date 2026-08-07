@@ -99,7 +99,7 @@ export default function FilterEditorModalBody(props) {
           <ModalSheetHandle />
           <div className="relative shrink-0 border-b border-border/50 px-4 pb-2.5 sm:overflow-hidden sm:px-5 sm:pb-4 sm:pt-5 dark:border-border-dark/50">
             <div
-              className="pointer-events-none absolute inset-0 hidden bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
+              className="pointer-events-none absolute inset-0 hidden bg-linear-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
               aria-hidden
             />
             <div className="relative flex items-center gap-2 sm:items-start sm:gap-3">
@@ -151,7 +151,7 @@ export default function FilterEditorModalBody(props) {
                   value={saveViewName}
                   onChange={(e) => setSaveViewName(e.target.value)}
                   placeholder={customViewsT('viewNamePlaceholder')}
-                  className="w-full rounded-xl border border-border/80 bg-surface-alt/50 px-3 py-2.5 text-sm text-primary-text placeholder:text-primary-text/40 focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-alt-dark/40 dark:text-primary-text-dark dark:focus:border-accent-dark/50 dark:focus:bg-surface-dark dark:focus:ring-accent-dark/15"
+                  className="w-full rounded-xl border border-border/80 bg-surface-alt/50 px-3 py-2.5 text-sm text-primary-text placeholder:text-primary-text/40 focus:border-accent/50 focus:bg-surface focus:outline-hidden focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-alt-dark/40 dark:text-primary-text-dark dark:focus:border-accent-dark/50 dark:focus:bg-surface-dark dark:focus:ring-accent-dark/15"
                 />
               </div>
 

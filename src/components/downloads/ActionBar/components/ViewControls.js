@@ -17,7 +17,7 @@ import { getItemFileCount } from '@/utils/downloadEntityFiles';
 import { setItem } from '@/utils/storage';
 
 const toolbarBtnBase =
-  'px-3 py-1.5 text-sm border rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
+  'px-3 py-1.5 text-sm border rounded-md transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
 
 function toolbarBtnClass(active, { segment, otherActive } = {}) {
   const inactive =

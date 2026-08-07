@@ -16,7 +16,7 @@ function PlayerHeader({ fileName, isVisible, onClose, onFullscreen, isFullscreen
     >
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-24
-          bg-gradient-to-b from-black/70 via-black/30 to-transparent"
+          bg-linear-to-b from-black/70 via-black/30 to-transparent"
         aria-hidden="true"
       />
       <div
@@ -29,7 +29,7 @@ function PlayerHeader({ fileName, isVisible, onClose, onFullscreen, isFullscreen
           data-player-control
           onClick={onClose}
           className="flex size-11 shrink-0 items-center justify-center rounded-full
-            bg-black/50 text-white backdrop-blur-sm
+            bg-black/50 text-white backdrop-blur-xs
             active:bg-black/70 touch-manipulation"
           aria-label={t('close')}
         >
@@ -48,7 +48,7 @@ function PlayerHeader({ fileName, isVisible, onClose, onFullscreen, isFullscreen
             data-player-control
             onClick={onFullscreen}
             className="flex size-11 shrink-0 items-center justify-center rounded-full
-              bg-black/50 text-white backdrop-blur-sm
+              bg-black/50 text-white backdrop-blur-xs
               active:bg-black/70 touch-manipulation"
             aria-label={isFullscreen ? tView('exitFullscreen') : tView('enterFullscreen')}
           >

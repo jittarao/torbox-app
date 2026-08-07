@@ -26,7 +26,7 @@ export default function MultiSelectDropdown({
       }}
     >
       {searchable && (
-        <div className="p-2 border-b border-border dark:border-border-dark flex-shrink-0">
+        <div className="p-2 border-b border-border dark:border-border-dark shrink-0">
           <input
             ref={searchInputRef}
             type="search"
@@ -43,7 +43,7 @@ export default function MultiSelectDropdown({
                   bg-surface dark:bg-surface-dark
                   text-primary-text dark:text-primary-text-dark
                   placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50
-                  focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
+                  focus:outline-hidden focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
@@ -78,11 +78,11 @@ export default function MultiSelectDropdown({
                         ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
                         : 'text-primary-text dark:text-primary-text-dark hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark'
                     }
-                    focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
+                    focus:outline-hidden focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
                     touch-manipulation`}
               >
                 <span
-                  className={`size-4 border rounded flex items-center justify-center flex-shrink-0
+                  className={`size-4 border rounded flex items-center justify-center shrink-0
                     ${
                       isSelected
                         ? 'border-accent dark:border-accent-dark bg-accent dark:bg-accent-dark'

@@ -35,7 +35,7 @@ export default function ReferralUpgradeCard({ apiKey, onToast, onApplied }) {
 
   return (
     <>
-      <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-6 shadow-sm">
+      <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-6 shadow-xs">
         <div className="flex items-start gap-3 mb-3">
           <Gift className="size-6 text-amber-600 dark:text-amber-400 shrink-0" />
           <div>

@@ -109,7 +109,7 @@ export default function TmdbKeyManager() {
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
               placeholder={configured ? t('placeholderReplace') : t('placeholder')}
-              className="min-w-0 flex-1 rounded-md border border-border/80 bg-surface px-3 py-2 text-sm text-primary-text placeholder:text-primary-text/35 focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/30 dark:border-border-dark/80 dark:bg-surface-dark dark:text-primary-text-dark dark:placeholder:text-primary-text-dark/35 dark:focus:border-accent-dark/50 dark:focus:ring-accent-dark/30"
+              className="min-w-0 flex-1 rounded-md border border-border/80 bg-surface px-3 py-2 text-sm text-primary-text placeholder:text-primary-text/35 focus:border-accent/50 focus:outline-hidden focus:ring-1 focus:ring-accent/30 dark:border-border-dark/80 dark:bg-surface-dark dark:text-primary-text-dark dark:placeholder:text-primary-text-dark/35 dark:focus:border-accent-dark/50 dark:focus:ring-accent-dark/30"
               disabled={mutating}
               autoComplete="off"
               spellCheck={false}

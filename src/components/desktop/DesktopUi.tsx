@@ -3,24 +3,24 @@
 import type { ReactNode } from 'react';
 
 export const desktopCardClass =
-  'rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark';
+  'rounded-xl border border-border/60 bg-white shadow-xs dark:border-border-dark/60 dark:bg-surface-alt-dark';
 
 export const desktopCardPadding = 'p-5 sm:p-6';
 
 export const desktopInputClass =
-  'w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-text placeholder:text-muted shadow-sm transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 dark:border-border-dark dark:bg-surface-dark dark:text-text-dark dark:placeholder:text-muted-dark dark:focus:border-accent-dark dark:focus:ring-accent-dark/25';
+  'w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-text placeholder:text-muted shadow-xs transition-colors focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/25 dark:border-border-dark dark:bg-surface-dark dark:text-text-dark dark:placeholder:text-muted-dark dark:focus:border-accent-dark dark:focus:ring-accent-dark/25';
 
 export const desktopBtnPrimary =
-  'inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:pointer-events-none disabled:opacity-50 dark:bg-accent-dark dark:hover:bg-accent-dark/90 dark:focus:ring-accent-dark/40';
+  'inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors hover:bg-accent/90 focus:outline-hidden focus:ring-2 focus:ring-accent/40 disabled:pointer-events-none disabled:opacity-50 dark:bg-accent-dark dark:hover:bg-accent-dark/90 dark:focus:ring-accent-dark/40';
 
 export const desktopBtnSecondary =
-  'inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-text shadow-sm transition-colors hover:bg-surface-alt focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:pointer-events-none disabled:opacity-50 dark:border-border-dark dark:bg-surface-dark dark:text-text-dark dark:hover:bg-surface-alt-hover-dark dark:focus:ring-accent-dark/20';
+  'inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-text shadow-xs transition-colors hover:bg-surface-alt focus:outline-hidden focus:ring-2 focus:ring-accent/20 disabled:pointer-events-none disabled:opacity-50 dark:border-border-dark dark:bg-surface-dark dark:text-text-dark dark:hover:bg-surface-alt-hover-dark dark:focus:ring-accent-dark/20';
 
 export const desktopOptionBase =
   'flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 transition-colors';
 
 export const desktopOptionSelected =
-  'border-accent/40 bg-surface-alt-selected text-text shadow-sm dark:border-accent-dark/45 dark:bg-surface-alt-selected-dark dark:text-text-dark';
+  'border-accent/40 bg-surface-alt-selected text-text shadow-xs dark:border-accent-dark/45 dark:bg-surface-alt-selected-dark dark:text-text-dark';
 
 export const desktopOptionDefault =
   'border-border/50 bg-white text-text hover:border-border hover:bg-surface-alt dark:border-border-dark/50 dark:bg-surface-dark dark:text-text-dark dark:hover:border-border-dark dark:hover:bg-surface-alt-hover-dark';
@@ -32,7 +32,7 @@ export const desktopTabDefault =
   'text-muted hover:bg-surface-alt/80 hover:text-text dark:text-muted-dark dark:hover:bg-surface-dark/80 dark:hover:text-text-dark';
 
 export const desktopBtnDanger =
-  'inline-flex items-center justify-center gap-2 rounded-lg border border-label-danger-text/25 bg-white px-4 py-2 text-sm font-medium text-label-danger-text shadow-sm transition-colors hover:bg-label-danger-bg focus:outline-none focus:ring-2 focus:ring-label-danger-text/20 disabled:pointer-events-none disabled:opacity-50 dark:border-label-danger-text-dark/30 dark:bg-surface-dark dark:text-label-danger-text-dark dark:hover:bg-label-danger-bg-dark dark:focus:ring-label-danger-text-dark/20';
+  'inline-flex items-center justify-center gap-2 rounded-lg border border-label-danger-text/25 bg-white px-4 py-2 text-sm font-medium text-label-danger-text shadow-xs transition-colors hover:bg-label-danger-bg focus:outline-hidden focus:ring-2 focus:ring-label-danger-text/20 disabled:pointer-events-none disabled:opacity-50 dark:border-label-danger-text-dark/30 dark:bg-surface-dark dark:text-label-danger-text-dark dark:hover:bg-label-danger-bg-dark dark:focus:ring-label-danger-text-dark/20';
 
 type DesktopStatus = 'success' | 'warning' | 'danger' | 'neutral' | 'active';
 
@@ -140,7 +140,7 @@ export function DesktopToggle({
               target: { checked: !checked },
             } as React.ChangeEvent<HTMLInputElement>);
           }}
-          className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:opacity-50 dark:focus:ring-accent-dark/30 ${
+          className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border transition-colors focus:outline-hidden focus:ring-2 focus:ring-accent/30 disabled:opacity-50 dark:focus:ring-accent-dark/30 ${
             checked
               ? 'border-accent bg-accent dark:border-accent-dark dark:bg-accent-dark'
               : 'border-border bg-surface-alt dark:border-border-dark dark:bg-surface-dark'
@@ -148,7 +148,7 @@ export function DesktopToggle({
         >
           <span
             aria-hidden
-            className={`pointer-events-none inline-block size-5 translate-y-0.5 rounded-full bg-white shadow-sm transition-transform ${
+            className={`pointer-events-none inline-block size-5 translate-y-0.5 rounded-full bg-white shadow-xs transition-transform ${
               checked ? 'translate-x-5' : 'translate-x-0.5'
             }`}
           />

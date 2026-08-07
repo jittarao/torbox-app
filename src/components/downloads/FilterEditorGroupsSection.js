@@ -71,7 +71,7 @@ export default function FilterEditorGroupsSection({
             <div key={group._key || groupIndex} className="relative">
               {groupIndex > 0 && (
                 <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-                  <span className="inline-flex rounded-full border border-border/60 bg-surface px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-text/55 shadow-sm dark:border-border-dark/60 dark:bg-surface-dark dark:text-primary-text-dark/55">
+                  <span className="inline-flex rounded-full border border-border/60 bg-surface px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-text/55 shadow-xs dark:border-border-dark/60 dark:bg-surface-dark dark:text-primary-text-dark/55">
                     {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
                       ? automationRulesT('logicOperators.and')
                       : automationRulesT('logicOperators.or')}
