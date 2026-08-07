@@ -147,7 +147,7 @@ export default function Downloads({ apiKey, onApiKeyChange }) {
             <button
               type="button"
               onClick={() => filterData.setMobileFiltersOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-border dark:border-border-dark rounded-md hover:bg-surface-alt dark:hover:bg-surface-alt-dark md:hidden"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-text dark:text-primary-text-dark border border-border dark:border-border-dark rounded-md hover:bg-surface-alt dark:hover:bg-surface-alt-dark md:hidden"
               aria-label={downloadsFiltersT('sidebarLabel')}
             >
               <svg

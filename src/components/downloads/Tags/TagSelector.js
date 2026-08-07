@@ -94,7 +94,7 @@ export default function TagSelector({
               disabled={disabled || loading || isCreating}
               className="w-full rounded-xl border border-border/80 bg-surface-alt/50 py-2.5 pl-9 pr-3 text-sm
                 text-primary-text placeholder:text-primary-text/40
-                focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/15
+                focus:border-accent/50 focus:bg-surface focus:outline-hidden focus:ring-2 focus:ring-accent/15
                 disabled:opacity-60
                 dark:border-border-dark/80 dark:bg-surface-alt-dark/40 dark:text-primary-text-dark
                 dark:focus:border-accent-dark/50 dark:focus:bg-surface-dark dark:focus:ring-accent-dark/15"

@@ -72,7 +72,7 @@ export default function ChaptersPanel({
           placeholder="Search chapters…"
           value={chapterSearchQuery}
           onChange={(e) => setChapterSearchQuery(e.target.value)}
-          className="mb-3 w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/30"
+          className="mb-3 w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-200 placeholder-gray-500 focus:outline-hidden focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/30"
           aria-label="Search chapters by number or name"
         />
       )}
@@ -118,7 +118,7 @@ export default function ChaptersPanel({
                 >
                   <span
                     className={`
-                      flex-shrink-0 size-6 rounded-full flex items-center justify-center text-[10px] font-semibold tabular-nums
+                      shrink-0 size-6 rounded-full flex items-center justify-center text-[10px] font-semibold tabular-nums
                       transition-colors duration-300 ease-out
                       ${isCurrent ? 'bg-amber-500/25 text-amber-300' : 'bg-white/5 text-gray-400'}
                     `}
@@ -130,7 +130,7 @@ export default function ChaptersPanel({
                   </span>
                   <span
                     className={`
-                      flex-shrink-0 text-xs tabular-nums transition-colors duration-300 ease-out
+                      shrink-0 text-xs tabular-nums transition-colors duration-300 ease-out
                       ${isCurrent ? 'text-amber-400/80' : 'text-gray-400'}
                     `}
                   >
@@ -138,7 +138,7 @@ export default function ChaptersPanel({
                   </span>
                   <span
                     className={`
-                      flex-shrink-0 size-4 flex items-center justify-center text-amber-400
+                      shrink-0 size-4 flex items-center justify-center text-amber-400
                       transition-opacity duration-300 ease-out
                       ${isCurrent ? 'opacity-100' : 'opacity-0'}
                     `}

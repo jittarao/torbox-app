@@ -227,7 +227,7 @@ function PanelHeader({
         <button
           type="button"
           onClick={onDismiss}
-          className="inline-flex size-8 items-center justify-center rounded-lg text-primary-text/50 transition-colors hover:bg-surface-alt hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:text-primary-text-dark/50 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
+          className="inline-flex size-8 items-center justify-center rounded-lg text-primary-text/50 transition-colors hover:bg-surface-alt hover:text-primary-text focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/40 dark:text-primary-text-dark/50 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
           aria-label={t('aria.dismiss')}
           title={t('actions.done')}
         >

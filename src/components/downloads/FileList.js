@@ -188,7 +188,7 @@ function FileListFile({
                 onFileSelect(selectionId, fileIndex, file, e.target.checked, e.shiftKey);
               }}
               onClick={(e) => e.stopPropagation()}
-              className="accent-accent dark:accent-accent-dark mt-0.5 shrink-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0"
+              className="accent-accent dark:accent-accent-dark mt-0.5 shrink-0 outline-hidden focus:outline-hidden focus-visible:outline-hidden focus:ring-0"
             />
             <div className="grid min-w-0 flex-1 grid-cols-1 gap-1">
               <div
@@ -254,11 +254,11 @@ function FileListFile({
                 onFileSelect(selectionId, fileIndex, file, e.target.checked, e.shiftKey);
               }}
               onClick={(e) => e.stopPropagation()}
-              className="accent-accent dark:accent-accent-dark mt-0.5 shrink-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0"
+              className="accent-accent dark:accent-accent-dark mt-0.5 shrink-0 outline-hidden focus:outline-hidden focus-visible:outline-hidden focus:ring-0"
             />
             <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
               <div
-                className={`text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70 min-w-0 w-0 flex-1 truncate ${isBlurred ? 'blur-[6px] select-none' : ''}`}
+                className={`text-sm tablet:text-xs text-primary-text/70 dark:text-primary-text-dark/70 min-w-0 w-0 flex-1 truncate ${isBlurred ? 'blur-[6px] select-none' : ''}`}
                 title={isBlurred ? '' : file.short_name || file.name}
               >
                 {file.short_name || file.name}

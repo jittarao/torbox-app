@@ -142,7 +142,7 @@ export default function RuleForm({
                 <div key={group._key || groupIndex} className="relative">
                   {groupIndex > 0 && (
                     <div className="absolute left-0 right-0 -top-4 flex items-center justify-center z-10">
-                      <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-sm">
+                      <div className="px-3 py-1 text-xs font-medium text-primary-text/70 dark:text-primary-text-dark/70 bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded-full shadow-xs">
                         {groupLogicOperator}
                       </div>
                     </div>

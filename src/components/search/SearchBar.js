@@ -407,7 +407,7 @@ export default function SearchBar() {
                   if (e.key === 'Enter') handleSearch();
                 }}
                 placeholder={t('placeholderSearch')}
-                className="w-full rounded-md border border-border/80 bg-surface-alt/50 py-2.5 pl-10 pr-9 text-sm text-primary-text placeholder:text-primary-text/35 focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/30 dark:border-border-dark/80 dark:bg-surface-alt-dark/50 dark:text-primary-text-dark dark:placeholder:text-primary-text-dark/35 dark:focus:border-accent-dark/50 dark:focus:ring-accent-dark/30"
+                className="w-full rounded-md border border-border/80 bg-surface-alt/50 py-2.5 pl-10 pr-9 text-sm text-primary-text placeholder:text-primary-text/35 focus:border-accent/50 focus:outline-hidden focus:ring-1 focus:ring-accent/30 dark:border-border-dark/80 dark:bg-surface-alt-dark/50 dark:text-primary-text-dark dark:placeholder:text-primary-text-dark/35 dark:focus:border-accent-dark/50 dark:focus:ring-accent-dark/30"
                 spellCheck={false}
                 autoCapitalize="off"
                 autoCorrect="off"

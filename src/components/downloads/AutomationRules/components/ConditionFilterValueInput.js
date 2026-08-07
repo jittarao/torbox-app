@@ -122,7 +122,7 @@ export default function ConditionFilterValueInput({ condition, onFieldChange, ta
           }
         />
         {getConditionUnit(condition.type) && (
-          <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap flex-shrink-0">
+          <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap shrink-0">
             {getConditionUnit(condition.type)}
           </span>
         )}

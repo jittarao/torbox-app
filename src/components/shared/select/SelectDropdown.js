@@ -38,7 +38,7 @@ export default function SelectDropdown({
         }}
       >
         {searchable && (
-          <div className="flex-shrink-0 border-b border-border p-2 dark:border-border-dark">
+          <div className="shrink-0 border-b border-border p-2 dark:border-border-dark">
             <input
               ref={searchInputRef}
               type="search"
@@ -55,7 +55,7 @@ export default function SelectDropdown({
                 }
               }}
               placeholder={searchPlaceholder}
-              className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-primary-text dark:border-border-dark dark:bg-surface-dark dark:text-primary-text-dark placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50 focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
+              className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-primary-text dark:border-border-dark dark:bg-surface-dark dark:text-primary-text-dark placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50 focus:outline-hidden focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark"
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"

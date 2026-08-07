@@ -5,7 +5,7 @@ import Dropdown from '@/components/shared/Dropdown';
 import { ToggleSwitch } from '@/components/downloads/apiKeyManagerHelpers';
 
 const segmentBtnBase =
-  'px-2.5 py-1 text-xs border rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
+  'px-2.5 py-1 text-xs border rounded-md transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-accent/30 dark:focus-visible:ring-accent-dark/30';
 
 function densityBtnClass(active, { segment, otherActive } = {}) {
   const inactive =
@@ -54,7 +54,7 @@ export default function SearchResultsToolbar({
   ];
 
   return (
-    <div className="sticky top-0 z-10 -mx-1 mb-3 flex flex-col gap-2.5 rounded-md border border-border/60 bg-surface/95 px-3 py-2.5 backdrop-blur-sm dark:border-border-dark/60 dark:bg-surface-dark/95 sm:flex-row sm:items-center sm:justify-between">
+    <div className="sticky top-0 z-10 -mx-1 mb-3 flex flex-col gap-2.5 rounded-md border border-border/60 bg-surface/95 px-3 py-2.5 backdrop-blur-xs dark:border-border-dark/60 dark:bg-surface-dark/95 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         <h2 className="text-sm font-semibold text-primary-text dark:text-primary-text-dark sm:text-base">
           {t('results', { count: resultCount })}

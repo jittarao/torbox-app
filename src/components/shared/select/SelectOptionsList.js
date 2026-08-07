@@ -27,7 +27,7 @@ export default function SelectOptionsList({
               ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
               : 'text-primary-text dark:text-primary-text-dark hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark'
           }
-          focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
+          focus:outline-hidden focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
           touch-manipulation`}
       >
         {opt.label}
@@ -63,7 +63,7 @@ export default function SelectOptionsList({
                 ? 'text-accent dark:text-accent-dark bg-accent/10 dark:bg-accent-dark/10 font-medium'
                 : 'text-primary-text dark:text-primary-text-dark hover:bg-accent/5 dark:hover:bg-surface-alt-hover-dark'
             }
-            focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
+            focus:outline-hidden focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
             touch-manipulation`}
         >
           {opt.label}

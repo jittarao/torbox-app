@@ -36,7 +36,7 @@ export default function AirlockUsage({ usedBytes, limitBytes, loading, error, on
   const emptyDotColorClass = 'bg-border dark:bg-border-dark';
 
   return (
-    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
+    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-xs">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <Lock className="size-5 text-accent dark:text-accent-dark shrink-0" />

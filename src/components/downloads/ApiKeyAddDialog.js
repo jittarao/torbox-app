@@ -65,7 +65,7 @@ export default function ApiKeyAddDialog({
                 placeholder={t('keyLabelPlaceholder')}
                 className="w-full rounded-lg border border-border/80 bg-surface-alt/50 px-2.5 py-2 text-sm
                   text-primary-text placeholder:text-primary-text/40
-                  focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/25
+                  focus:border-accent focus:outline-hidden focus:ring-1 focus:ring-accent/25
                   dark:border-border-dark/80 dark:bg-surface-alt-dark/50 dark:text-primary-text-dark
                   dark:placeholder:text-primary-text-dark/40 dark:focus:border-accent-dark dark:focus:ring-accent-dark/25"
                 autoComplete="off"
@@ -87,7 +87,7 @@ export default function ApiKeyAddDialog({
                   placeholder={t('apiKeyPlaceholder')}
                   className="w-full rounded-lg border border-border/80 bg-surface-alt/50 px-2.5 py-2 pr-9 text-sm font-mono
                     text-primary-text placeholder:text-primary-text/40
-                    focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/25
+                    focus:border-accent focus:outline-hidden focus:ring-1 focus:ring-accent/25
                     dark:border-border-dark/80 dark:bg-surface-alt-dark/50 dark:text-primary-text-dark
                     dark:placeholder:text-primary-text-dark/40 dark:focus:border-accent-dark dark:focus:ring-accent-dark/25"
                   autoComplete="off"

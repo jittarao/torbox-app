@@ -89,7 +89,7 @@ export default function FetchStatusBanner({
       : staleMessage || (agoLabel ? t('lastUpdated', { ago: agoLabel }) : null);
 
   return (
-    <output className="rounded-lg border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark px-3 py-1.5 text-xs text-secondary-text dark:text-secondary-text-dark flex flex-wrap items-center justify-between gap-2">
+    <output className="rounded-lg border border-border dark:border-border-dark bg-surface-alt dark:bg-surface-alt-dark px-3 py-1.5 text-xs text-primary-text/70 dark:text-primary-text-dark/70 flex flex-wrap items-center justify-between gap-2">
       <span>{statusText}</span>
       {onRetry && (
         <button

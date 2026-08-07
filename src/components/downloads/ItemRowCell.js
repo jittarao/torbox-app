@@ -23,7 +23,7 @@ function ItemRowCell({ item, columnId, style, isBlurred, isMobile, commonT }) {
       return (
         <td className={`${tableDataCellPad} relative overflow-hidden`} style={style}>
           <div
-            className={`text-sm md:text-xs lg:text-sm text-primary-text dark:text-primary-text-dark min-w-0 cursor-pointer ${isBlurred ? 'blur-[6px] select-none' : ''}`}
+            className={`text-sm tablet:text-xs text-primary-text dark:text-primary-text-dark min-w-0 cursor-pointer ${isBlurred ? 'blur-[6px] select-none' : ''}`}
           >
             <div
               className={`flex gap-2 min-w-0 ${isMobile ? 'items-start flex-wrap' : 'items-center'}`}
@@ -233,7 +233,7 @@ function ItemRowCell({ item, columnId, style, isBlurred, isMobile, commonT }) {
       const error = item.error?.trim() || null;
       return (
         <td
-          className={`${tableDataCellPad} overflow-hidden text-sm md:text-xs lg:text-sm text-red-500`}
+          className={`${tableDataCellPad} overflow-hidden text-sm tablet:text-xs text-red-500`}
           style={style}
         >
           {error ? (
@@ -247,7 +247,7 @@ function ItemRowCell({ item, columnId, style, isBlurred, isMobile, commonT }) {
     case 'tags':
       return (
         <td
-          className={`${tableDataCellPad} overflow-hidden text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
+          className={`${tableDataCellPad} overflow-hidden text-sm tablet:text-xs text-primary-text/70 dark:text-primary-text-dark/70`}
           style={style}
         >
           {item.tags && item.tags.length > 0 ? (
@@ -262,7 +262,7 @@ function ItemRowCell({ item, columnId, style, isBlurred, isMobile, commonT }) {
       const display = value == null || value === '' ? null : String(value);
       return (
         <td
-          className={`${tableDataCellPad} overflow-hidden text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`}
+          className={`${tableDataCellPad} overflow-hidden text-sm tablet:text-xs text-primary-text/70 dark:text-primary-text-dark/70`}
           style={style}
         >
           {display ? (

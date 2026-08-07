@@ -112,7 +112,7 @@ export default function FilterGroup({
                   {filterIndex > 0 && (
                     <div className="relative h-4" aria-hidden>
                       <div className="absolute inset-y-0 left-0 z-10 flex -translate-x-1/2 items-center">
-                        <span className="inline-flex h-5 items-center whitespace-nowrap rounded-full border border-border/60 bg-surface-alt px-2 text-[10px] font-semibold uppercase leading-none tracking-wide text-primary-text/55 shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark dark:text-primary-text-dark/55">
+                        <span className="inline-flex h-5 items-center whitespace-nowrap rounded-full border border-border/60 bg-surface-alt px-2 text-[10px] font-semibold uppercase leading-none tracking-wide text-primary-text/55 shadow-xs dark:border-border-dark/60 dark:bg-surface-alt-dark dark:text-primary-text-dark/55">
                           {(group.logicOperator || LOGIC_OPERATORS.AND) === LOGIC_OPERATORS.AND
                             ? automationRulesT('logicOperators.and')
                             : automationRulesT('logicOperators.or')}

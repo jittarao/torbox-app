@@ -33,7 +33,7 @@ export default function RssItemsFilters({
           id={feedSelectId}
           value={selectedFeed || ''}
           onChange={(e) => onFeedSelect(e.target.value)}
-          className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+          className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
         >
           <option value="">{t('selectFeedPlaceholder')}</option>
           {feeds.map((feed) => (
@@ -60,7 +60,7 @@ export default function RssItemsFilters({
                 value={searchTerm}
                 onChange={(e) => onSearchTermChange(e.target.value)}
                 placeholder={t('searchPlaceholder')}
-                className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
               />
             </div>
             <div>
@@ -74,7 +74,7 @@ export default function RssItemsFilters({
                 id={filterTypeId}
                 value={filterType}
                 onChange={(e) => onFilterTypeChange(e.target.value)}
-                className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
               >
                 <option value="all">{t('allTypes')}</option>
                 <option value="torrent">{t('torrent')}</option>
@@ -93,7 +93,7 @@ export default function RssItemsFilters({
                 id={sortById}
                 value={sortBy}
                 onChange={(e) => onSortByChange(e.target.value)}
-                className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
               >
                 <option value="date">{t('date')}</option>
                 <option value="title">{t('title')}</option>
@@ -111,7 +111,7 @@ export default function RssItemsFilters({
                 id={sortOrderId}
                 value={sortOrder}
                 onChange={(e) => onSortOrderChange(e.target.value)}
-                className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+                className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
               >
                 <option value="desc">{t('newestFirst')}</option>
                 <option value="asc">{t('oldestFirst')}</option>

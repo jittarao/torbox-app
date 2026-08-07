@@ -1,6 +1,125 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@source '../../src/components';
+@source '../../src/app';
+
+/* Class-based dark mode (ThemeContext + blocking script in RootDocument) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Desktop breakpoint — must match DESKTOP_MD_MEDIA_QUERY in
+ * src/utils/responsiveBreakpoints.js (shared with useIsMobile / matchMedia).
+ */
+@theme {
+  --breakpoint-md: initial;
+}
+@custom-variant md (@media (min-width: 768px) and ((min-height: 501px) or (orientation: portrait)));
+/*
+ * Tablet-only range (md through below lg). Custom `md:` is emitted after standard
+ * breakpoints in v4, so never pair `md:*` with `lg:*` overrides — use `tablet:*`.
+ */
+@custom-variant tablet (@media (min-width: 48rem) and (max-width: 63.999rem) and ((min-height: 501px) or (orientation: portrait)));
+
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+
+  --color-primary: #18181b;
+  --color-primary-border: #e4e4e7;
+  --color-primary-hover: #27272a;
+  --color-primary-text: #18181b;
+  --color-primary-text-dark: #e4e4e7;
+
+  --color-accent: #f2761e;
+  --color-accent-dark: #f59e0b;
+
+  --color-surface: #fafafa;
+  --color-surface-dark: #0f0f10;
+  --color-surface-alt: #f4f4f5;
+  --color-surface-alt-dark: #161618;
+  --color-surface-alt-hover: #e4e4e7;
+  --color-surface-alt-hover-dark: #1c1c1f;
+  --color-surface-alt-selected: #fef3eb;
+  --color-surface-alt-selected-dark: #252019;
+  --color-surface-alt-selected-hover: #fde6d4;
+  --color-surface-alt-selected-hover-dark: #2e2822;
+  --color-surface-hover: #f2761e12;
+  --color-surface-hover-dark: #1a1a1d;
+
+  --color-progress-track: #e4e4e7;
+  --color-progress-track-dark: #2a2a2e;
+
+  --color-border: #cecece;
+  --color-border-dark: #3c3c3c;
+
+  --color-muted: #6b7280;
+  --color-muted-dark: #9ca3af;
+
+  --color-text: #18181b;
+  --color-text-dark: #e5e7eb;
+
+  --color-label-success-text: #387d20;
+  --color-label-success-text-dark: #34d399;
+  --color-label-success-bg: #e2f1de;
+  --color-label-success-bg-dark: #064e3b;
+
+  --color-label-danger-text: #c1444c;
+  --color-label-danger-text-dark: #f87171;
+  --color-label-danger-bg: #f7dfe2;
+  --color-label-danger-bg-dark: #7f1d1d;
+
+  --color-label-warning-text: #d9a31b;
+  --color-label-warning-text-dark: #f59e0b;
+  --color-label-warning-bg: #f7f0df;
+  --color-label-warning-bg-dark: #78350f;
+
+  --color-label-active-text: #3871e3;
+  --color-label-active-text-dark: #5a94f3;
+  --color-label-active-bg: #dee5f9;
+  --color-label-active-bg-dark: #1e3a8a;
+
+  --color-label-default-text: #828282;
+  --color-label-default-text-dark: #95979d;
+  --color-label-default-bg: #e7e7e7;
+  --color-label-default-bg-dark: #374151;
+
+  --color-downloaded: #f1f3f6;
+  --color-downloaded-dark: #171a1e;
+  --color-downloaded-hover: #e8ebf0;
+  --color-downloaded-hover-dark: #1c2026;
+
+  --color-link-failed: #faf0f0;
+  --color-link-failed-dark: #221518;
+  --color-link-failed-hover: #f5e6e6;
+  --color-link-failed-hover-dark: #2a1a1e;
+}
+
+/* v3 border default compat — bare `border` without a color token */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border, currentColor);
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  dialog {
+    margin: auto;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-muted);
+  }
+}
+
+/* Touch devices: preserve tap-to-hover affordances used across downloads UI */
+@custom-variant hover (&:hover);
 
 :root {
   --background: #fafafa;
@@ -39,7 +158,7 @@ html {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
   width: 100%;
   max-width: 100vw;
@@ -108,13 +227,19 @@ select option {
       border-0 bg-transparent text-zinc-600
       transition-colors duration-200
       hover:bg-zinc-200 hover:text-amber-700
-      active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2
+      active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2
       focus-visible:ring-amber-500/40
       dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-amber-200;
   }
 
   .ui-icon-btn {
-    @apply ui-header-icon-btn;
+    @apply inline-flex items-center justify-center h-9 w-9 min-w-9 shrink-0 rounded-lg
+      border-0 bg-transparent text-zinc-600
+      transition-colors duration-200
+      hover:bg-zinc-200 hover:text-amber-700
+      active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2
+      focus-visible:ring-amber-500/40
+      dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-amber-200;
   }
 
   .ui-header-nav {
@@ -126,7 +251,9 @@ select option {
   }
 
   .ui-header-nav-active {
-    @apply ui-header-nav text-amber-700 bg-amber-500/15 lg:border lg:border-amber-500/30
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium
+      text-amber-700 bg-amber-500/15 transition-colors duration-200
+      lg:gap-2 lg:rounded-xl lg:px-3 lg:border lg:border-amber-500/30
       dark:text-amber-400 dark:bg-amber-500/10 dark:lg:border-amber-500/25;
   }
 
@@ -134,13 +261,17 @@ select option {
     @apply flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium
       text-zinc-600 transition-[color,background,transform] duration-150
       hover:bg-zinc-100/80 hover:text-zinc-900
-      active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2
+      active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2
       focus-visible:ring-amber-500/40
       dark:text-zinc-400 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100;
   }
 
   .ui-sidebar-nav-active {
-    @apply ui-sidebar-nav text-amber-700 bg-amber-500/15 border border-amber-500/20
+    @apply flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium
+      text-amber-700 bg-amber-500/15 border border-amber-500/20
+      transition-[color,background,transform] duration-150
+      active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2
+      focus-visible:ring-amber-500/40
       dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/25;
   }
 
@@ -152,7 +283,10 @@ select option {
   }
 
   .ui-mobile-tab-active {
-    @apply ui-mobile-tab text-amber-700 dark:text-amber-400;
+    @apply flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5
+      text-[10px] font-medium leading-tight text-amber-700 transition-colors duration-150
+      active:scale-[0.97]
+      dark:text-amber-400;
   }
 
   .ui-mobile-more-link {
@@ -163,8 +297,10 @@ select option {
   }
 
   .ui-mobile-more-link-active {
-    @apply ui-mobile-more-link text-amber-700 bg-amber-500/15
-      dark:text-amber-400 dark:bg-amber-500/10;
+    @apply flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium
+      text-amber-700 bg-amber-500/15 transition-colors duration-150
+      active:bg-zinc-100
+      dark:text-amber-400 dark:bg-amber-500/10 dark:active:bg-white/[0.08];
   }
 
   /* Native confirm dialogs (showModal) */
@@ -183,7 +319,7 @@ select option {
 
   /* Shared portaled overlay — single stacking context for backdrop + panel */
   .ui-modal-overlay {
-    @apply fixed inset-0 z-overlay-dialog;
+    @apply fixed inset-0 z-[var(--z-overlay-dialog)];
     isolation: isolate;
   }
 
@@ -191,15 +327,15 @@ select option {
     @apply absolute inset-0 cursor-default bg-black/70;
   }
 
-  @screen sm {
+  @media (width >= 40rem) {
     .ui-modal-overlay__backdrop {
-      @apply bg-black/60 backdrop-blur-sm;
+      @apply bg-black/60 backdrop-blur-xs;
     }
   }
 
   /* Modals: bottom sheet on mobile, centered dialog on sm+ */
   .ui-modal-sheet {
-    @apply ui-bottom-sheet fixed inset-x-0 bottom-0 z-[1] flex flex-col overflow-hidden rounded-t-2xl border border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark;
+    @apply m-0 box-border w-full max-w-[100vw] p-0 fixed inset-x-0 bottom-0 z-[1] flex flex-col overflow-hidden rounded-t-2xl border border-border/60 bg-surface shadow-2xl dark:border-border-dark/60 dark:bg-surface-dark;
     max-height: min(
       92dvh,
       calc(100dvh - var(--mobile-bottom-nav-height) - env(safe-area-inset-bottom, 0px))
@@ -207,7 +343,7 @@ select option {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  @screen sm {
+  @media (width >= 40rem) {
     .ui-modal-sheet {
       @apply inset-x-auto bottom-auto left-1/2 top-1/2 w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl pb-0;
       max-height: min(85dvh, 36rem);
@@ -245,7 +381,7 @@ select option {
     @apply flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium
       text-zinc-600 transition-[color,background] duration-150
       hover:bg-zinc-100/80 hover:text-zinc-900
-      active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2
+      active:scale-[0.99] focus-visible:outline-hidden focus-visible:ring-2
       focus-visible:ring-amber-500/40
       dark:text-zinc-400 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100;
   }
@@ -258,7 +394,7 @@ select option {
     @apply flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium
       text-zinc-700 transition-[color,background,transform] duration-150
       hover:bg-zinc-100 hover:text-zinc-950
-      active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2
+      active:scale-[0.99] focus-visible:outline-hidden focus-visible:ring-2
       focus-visible:ring-amber-500/40 disabled:cursor-wait disabled:opacity-70
       dark:text-zinc-300 dark:hover:bg-white/[0.06] dark:hover:text-zinc-50;
   }
@@ -309,7 +445,7 @@ select option {
     @apply flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium
       text-zinc-500 transition-colors duration-150
       hover:bg-zinc-100/80 hover:text-zinc-800
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40
+      focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500/40
       dark:text-zinc-500 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200;
   }
 
@@ -321,14 +457,14 @@ select option {
   .ui-sidebar-control-btn {
     @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500
       transition-colors duration-150 hover:bg-white hover:text-zinc-800
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40
+      focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500/40
       dark:text-zinc-400 dark:hover:bg-white/[0.07] dark:hover:text-zinc-100;
   }
 
   .ui-sidebar-language-control {
     @apply flex h-8 w-full items-center justify-center gap-2 rounded-md text-zinc-600
       transition-colors duration-150 hover:bg-white hover:text-zinc-900
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40
+      focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500/40
       dark:text-zinc-400 dark:hover:bg-white/[0.07] dark:hover:text-zinc-100;
   }
 
@@ -354,18 +490,18 @@ select option {
       border-0 bg-zinc-100 text-zinc-700
       transition-colors duration-200
       hover:bg-zinc-200 hover:text-amber-700
-      active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2
+      active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2
       focus-visible:ring-amber-500/40
       dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:bg-zinc-700/80 dark:hover:text-amber-200;
   }
 
   .ui-btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
-      text-zinc-950 bg-gradient-to-b from-amber-400 to-amber-500
+      text-zinc-950 bg-linear-to-b from-amber-400 to-amber-500
       border border-amber-400/50 shadow-[0_0_28px_-6px_rgba(251,191,36,0.5)]
       transition-all duration-200
       hover:from-amber-300 hover:to-amber-400 hover:shadow-[0_0_32px_-4px_rgba(251,191,36,0.55)]
-      active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2
+      active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2
       focus-visible:ring-amber-400/50;
   }
 
@@ -375,16 +511,16 @@ select option {
       border-0 bg-accent text-white shadow-none
       transition-colors duration-200
       hover:bg-accent/90
-      active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40
+      active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/40
       disabled:cursor-not-allowed disabled:opacity-50
       dark:bg-accent-dark dark:hover:bg-accent-dark/90 dark:focus-visible:ring-accent-dark/40;
   }
 
   .ui-input-landing {
     @apply w-full rounded-xl border border-zinc-700/80 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-100
-      placeholder:text-zinc-600 backdrop-blur-sm
+      placeholder:text-zinc-600 backdrop-blur-xs
       transition-all duration-200
-      focus:border-amber-500/50 focus:bg-zinc-950/80 focus:outline-none
+      focus:border-amber-500/50 focus:bg-zinc-950/80 focus:outline-hidden
       focus:ring-2 focus:ring-amber-500/20;
   }
 
@@ -393,13 +529,13 @@ select option {
       border border-zinc-200 bg-zinc-100 p-1
       transition-colors duration-200
       hover:bg-zinc-200
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40
+      focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500/40
       dark:border-0 dark:bg-zinc-800/50 dark:hover:bg-zinc-700/80;
   }
 
   .ui-theme-toggle-knob {
     @apply inline-flex h-6 w-6 items-center justify-center rounded-md
-      bg-white text-amber-600 shadow-sm transition-transform duration-200
+      bg-white text-amber-600 shadow-xs transition-transform duration-200
       translate-x-0
       dark:translate-x-[1.15rem] dark:bg-zinc-950 dark:text-amber-300;
   }
@@ -440,8 +576,11 @@ select option {
   }
 
   .ui-dropdown-item-active {
-    @apply ui-dropdown-item bg-amber-100 font-medium text-amber-900
-      dark:bg-amber-500/25 dark:text-amber-100;
+    @apply mx-1.5 flex w-[calc(100%-0.75rem)] items-center gap-3 rounded-lg px-3 py-2.5 text-sm
+      bg-amber-100 font-medium text-amber-900 transition-colors duration-150
+      dark:bg-amber-500/25 dark:text-amber-100
+      hover:bg-zinc-200 hover:text-zinc-900
+      dark:hover:bg-zinc-700 dark:hover:text-zinc-50;
   }
 
   .ui-dropdown-header {
@@ -454,11 +593,22 @@ select option {
   }
 
   .ui-dropdown-panel-compact {
-    @apply ui-dropdown-panel w-64 !py-0;
+    @apply absolute right-0 z-[250] mt-2 origin-top-right isolate overflow-hidden rounded-xl
+      border border-zinc-300 bg-white py-0!
+      shadow-[0_20px_50px_-16px_rgba(0,0,0,0.55)]
+      pointer-events-auto w-64
+      dark:border-zinc-600 dark:bg-[#1a1a1d]
+      dark:shadow-[0_24px_56px_-12px_rgba(0,0,0,0.95)];
   }
 
   .ui-dropdown-icon-btn {
-    @apply ui-header-icon-btn;
+    @apply inline-flex items-center justify-center h-9 w-9 min-w-9 shrink-0 rounded-lg
+      border-0 bg-transparent text-zinc-600
+      transition-colors duration-200
+      hover:bg-zinc-200 hover:text-amber-700
+      active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2
+      focus-visible:ring-amber-500/40
+      dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-amber-200;
   }
 
   .ui-tooltip {
@@ -485,7 +635,7 @@ select option {
 
   .ui-tooltip-arrow-stroke {
     fill: none;
-    stroke: theme('colors.zinc.200');
+    stroke: var(--color-zinc-200);
     stroke-width: 1;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
@@ -496,7 +646,7 @@ select option {
   }
 
   .dark .ui-tooltip-arrow-stroke {
-    stroke: theme('colors.zinc.600');
+    stroke: var(--color-zinc-600);
   }
 
   .ui-notification-item {
@@ -505,11 +655,15 @@ select option {
   }
 
   .ui-notification-item-unread {
-    @apply ui-notification-item bg-zinc-100 dark:bg-[#2e2e32];
+    @apply border-l-2 px-3 py-2.5 transition-colors duration-150
+      bg-zinc-100 dark:bg-[#2e2e32]
+      hover:bg-zinc-200 dark:hover:bg-zinc-700;
   }
 
   .ui-notification-item-read {
-    @apply ui-notification-item bg-white dark:bg-[#242428] opacity-75;
+    @apply border-l-2 px-3 py-2.5 transition-colors duration-150
+      bg-white dark:bg-[#242428] opacity-75
+      hover:bg-zinc-200 dark:hover:bg-zinc-700;
   }
 
   .status-uptime-bar {
@@ -559,101 +713,99 @@ select option {
   }
 }
 
-@layer utilities {
-  .z-mobile-header {
-    z-index: var(--z-mobile-header);
-  }
+@utility z-mobile-header {
+  z-index: var(--z-mobile-header);
+}
 
-  .z-mobile-bottom-nav {
-    z-index: var(--z-mobile-bottom-nav);
-  }
+@utility z-mobile-bottom-nav {
+  z-index: var(--z-mobile-bottom-nav);
+}
 
-  .pb-mobile-nav {
-    padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
-  }
+@utility pb-mobile-nav {
+  padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+}
 
-  .z-mobile-drawer-backdrop {
-    z-index: var(--z-mobile-drawer-backdrop);
-  }
+@utility z-mobile-drawer-backdrop {
+  z-index: var(--z-mobile-drawer-backdrop);
+}
 
-  .z-mobile-drawer {
-    z-index: var(--z-mobile-drawer);
-  }
+@utility z-mobile-drawer {
+  z-index: var(--z-mobile-drawer);
+}
 
-  .z-overlay-backdrop {
-    z-index: var(--z-overlay-backdrop);
-  }
+@utility z-overlay-backdrop {
+  z-index: var(--z-overlay-backdrop);
+}
 
-  .z-overlay-panel {
-    z-index: var(--z-overlay-panel);
-  }
+@utility z-overlay-panel {
+  z-index: var(--z-overlay-panel);
+}
 
-  .z-overlay-dialog {
-    z-index: var(--z-overlay-dialog);
-  }
+@utility z-overlay-dialog {
+  z-index: var(--z-overlay-dialog);
+}
 
-  .z-overlay-popover {
-    z-index: var(--z-overlay-popover);
-  }
+@utility z-overlay-popover {
+  z-index: var(--z-overlay-popover);
+}
 
-  .z-overlay-popover-backdrop {
-    z-index: calc(var(--z-overlay-popover) - 1);
-  }
+@utility z-overlay-popover-backdrop {
+  z-index: calc(var(--z-overlay-popover) - 1);
+}
 
-  .player-safe-chrome {
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
+@utility player-safe-chrome {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
-  /* Mobile Safari: size to visible viewport so browser chrome does not eat video area */
-  .player-visual-viewport {
-    position: fixed;
-    top: var(--player-vv-offset-top, 0px);
-    left: var(--player-vv-offset-left, 0px);
-    width: var(--player-vv-width, 100vw);
-    height: var(--player-vv-height, 100dvh);
-    max-height: -webkit-fill-available;
-  }
+/* Mobile Safari: size to visible viewport so browser chrome does not eat video area */
+.player-visual-viewport {
+  position: fixed;
+  top: var(--player-vv-offset-top, 0px);
+  left: var(--player-vv-offset-left, 0px);
+  width: var(--player-vv-width, 100vw);
+  height: var(--player-vv-height, 100dvh);
+  max-height: -webkit-fill-available;
+}
 
-  /* Subtle scrollbars for narrow panels (filters sidebar, modals, etc.) */
-  .ui-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(161 161 170 / 0.55) transparent;
-  }
+/* Subtle scrollbars for narrow panels (filters sidebar, modals, etc.) */
+.ui-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(161 161 170 / 0.55) transparent;
+}
 
-  .ui-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
+.ui-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-  .ui-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
+.ui-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-  .ui-scrollbar::-webkit-scrollbar-thumb {
-    border-radius: 9999px;
-    border: 1.5px solid transparent;
-    background-clip: content-box;
-    background-color: rgb(161 161 170 / 0.45);
-  }
+.ui-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  border: 1.5px solid transparent;
+  background-clip: content-box;
+  background-color: rgb(161 161 170 / 0.45);
+}
 
-  .ui-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(113 113 122 / 0.65);
-  }
+.ui-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(113 113 122 / 0.65);
+}
 
-  .dark .ui-scrollbar {
-    scrollbar-color: rgb(113 113 122 / 0.55) transparent;
-  }
+.dark .ui-scrollbar {
+  scrollbar-color: rgb(113 113 122 / 0.55) transparent;
+}
 
-  .dark .ui-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgb(113 113 122 / 0.5);
-  }
+.dark .ui-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgb(113 113 122 / 0.5);
+}
 
-  .dark .ui-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(161 161 170 / 0.65);
-  }
+.dark .ui-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(161 161 170 / 0.65);
 }
 
 @keyframes ui-dropdown-in {

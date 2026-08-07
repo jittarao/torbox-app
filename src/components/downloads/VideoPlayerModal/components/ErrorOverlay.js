@@ -7,7 +7,7 @@ export default function ErrorOverlay({ error, onRetry, onClose }) {
   const t = useTranslations('VideoPlayer');
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm z-20 px-4 pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-xs z-20 px-4 pb-[env(safe-area-inset-bottom,0px)]">
       {onClose && (
         <button
           type="button"
@@ -17,13 +17,13 @@ export default function ErrorOverlay({ error, onRetry, onClose }) {
             size-11 flex items-center justify-center
             rounded-full
             bg-black/40 hover:bg-black/70
-            backdrop-blur-sm
+            backdrop-blur-xs
             text-white/90 hover:text-white
             transition-all duration-300 ease-out
             hover:scale-110 active:scale-95
             border border-white/10 hover:border-white/30
             shadow-lg
-            focus:outline-none focus:ring-2 focus:ring-white/50
+            focus:outline-hidden focus:ring-2 focus:ring-white/50
             touch-manipulation"
           aria-label={t('close')}
         >

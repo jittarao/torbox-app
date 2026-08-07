@@ -11,7 +11,7 @@ export default function UserProfileBasicInfo({
   formatDate,
 }) {
   return (
-    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
+    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-xs">
       <div className="flex items-center gap-2 mb-6">
         <User className="size-5 text-accent dark:text-accent-dark" />
         <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
@@ -47,7 +47,7 @@ export default function UserProfileBasicInfo({
                 <button
                   type="button"
                   onClick={onCopyReferralLink}
-                  className="p-2 text-accent dark:text-accent-dark hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded transition-colors flex-shrink-0"
+                  className="p-2 text-accent dark:text-accent-dark hover:bg-accent/10 dark:hover:bg-accent-dark/10 rounded transition-colors shrink-0"
                   title={t('copyLink')}
                   aria-label={t('copyLink')}
                 >

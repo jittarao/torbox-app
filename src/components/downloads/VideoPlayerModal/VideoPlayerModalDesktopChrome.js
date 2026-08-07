@@ -53,13 +53,13 @@ export default function VideoPlayerModalDesktopChrome({
                 size-10 flex items-center justify-center
                 rounded-full
                 bg-black/40 hover:bg-black/70
-                backdrop-blur-sm hover:backdrop-blur-md
+                backdrop-blur-xs hover:backdrop-blur-md
                 text-white/90 hover:text-white
                 transition-all duration-300 ease-out
                 hover:scale-110 active:scale-95
                 border border-white/10 hover:border-white/30
                 shadow-lg hover:shadow-xl
-                focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
+                focus:outline-hidden focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent
                 ${controlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         aria-label={t('close')}
         tabIndex={controlsVisible ? 0 : -1}

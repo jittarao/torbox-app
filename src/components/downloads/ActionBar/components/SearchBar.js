@@ -109,7 +109,7 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
             onKeyDown={handleKeyDown}
             className="w-full min-w-0 bg-transparent py-1.5 pl-9 pr-8 text-sm text-primary-text dark:text-primary-text-dark
             placeholder:text-primary-text/50 dark:placeholder:text-primary-text-dark/50
-            focus:outline-none"
+            focus:outline-hidden"
           />
           {hasQuery && (
             <button
@@ -117,7 +117,7 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
               onClick={handleClear}
               className="absolute right-1.5 flex size-6 shrink-0 items-center justify-center rounded
               text-primary-text/40 hover:text-primary-text dark:text-primary-text-dark/40 dark:hover:text-primary-text-dark
-              focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
+              focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
               transition-colors"
               aria-label={t('clearSearch')}
             >
@@ -133,7 +133,7 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
           className="flex size-7 shrink-0 items-center justify-center rounded-md
             text-primary-text/40 hover:bg-surface-alt hover:text-primary-text
             dark:text-primary-text-dark/40 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark
-            focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
+            focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
             transition-colors"
           aria-label={t('searchDownloadsHelpAria')}
         >
