@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { X } from '@/components/icons';
 
@@ -21,12 +21,12 @@ function MoreIcon({ className = 'size-5' }) {
   );
 }
 
-function TabButton({ active, label, Icon, onClick, href, ariaCurrent }) {
+function TabButton({ active, label, Icon, onClick, href, ariaCurrent, prefetch }) {
   const className = active ? 'ui-mobile-tab-active' : 'ui-mobile-tab';
 
   if (href) {
     return (
-      <Link href={href} className={className} aria-current={ariaCurrent}>
+      <Link href={href} prefetch={prefetch} className={className} aria-current={ariaCurrent}>
         <Icon className="size-5 shrink-0" aria-hidden />
         <span className="truncate">{label}</span>
       </Link>
@@ -66,6 +66,7 @@ export default function MobileBottomNav({
               label={getLabel(item.labelKey)}
               Icon={item.Icon}
               active={active}
+              prefetch={item.href === '/' ? true : undefined}
               ariaCurrent={active ? 'page' : undefined}
             />
           );

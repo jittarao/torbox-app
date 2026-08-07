@@ -1,7 +1,6 @@
 'use client';
 
 import AutomationRules from '@/components/downloads/AutomationRules';
-import AppShell from '@/components/navigation/AppShell';
 import { useEffect } from 'react';
 import { useSession } from '@/components/shared/hooks/useSession';
 
@@ -23,10 +22,8 @@ export default function AutomationPageClient() {
   }
 
   return (
-    <AppShell apiKey={apiKey} className="min-h-dvh bg-surface dark:bg-surface-dark font-sans">
-      <div className="container mx-auto p-4">
-        <AutomationRules apiKey={apiKey} />
-      </div>
-    </AppShell>
+    <div className="container mx-auto p-4">
+      <AutomationRules apiKey={apiKey} />
+    </div>
   );
 }

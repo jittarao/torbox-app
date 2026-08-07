@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useSidebar } from './SidebarContext';
 
-export default function SidebarNavItem({ href, label, Icon, active, onNavigate }) {
+export default function SidebarNavItem({ href, label, Icon, active, onNavigate, prefetch }) {
   const { collapsed } = useSidebar();
 
   return (
@@ -11,6 +11,7 @@ export default function SidebarNavItem({ href, label, Icon, active, onNavigate }
       <Link
         href={href}
         onClick={onNavigate}
+        prefetch={prefetch}
         title={collapsed ? label : undefined}
         aria-current={active ? 'page' : undefined}
         className={`${active ? 'ui-sidebar-nav-active' : 'ui-sidebar-nav'} ${

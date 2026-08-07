@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { getVersion } from '@/utils/version';
@@ -13,6 +13,7 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
+      prefetch
       title={collapsed ? t('title') : undefined}
       className={`flex min-w-0 items-center rounded-lg py-1 transition-colors duration-150 hover:bg-zinc-100/80 dark:hover:bg-white/[0.04] ${
         collapsed ? 'justify-center' : 'gap-2.5'

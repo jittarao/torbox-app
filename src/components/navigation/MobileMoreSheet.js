@@ -1,18 +1,19 @@
 'use client';
 
 import { useMemo } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import ModalOverlay from '@/components/shared/ModalOverlay';
 import SidebarUtilitiesFooter from './SidebarUtilitiesFooter';
 import { SidebarContext } from './SidebarContext';
 
-function MoreNavLink({ href, label, Icon, active, onNavigate }) {
+function MoreNavLink({ href, label, Icon, active, onNavigate, prefetch }) {
   return (
     <li>
       <Link
         href={href}
         onClick={onNavigate}
+        prefetch={prefetch}
         aria-current={active ? 'page' : undefined}
         className={active ? 'ui-mobile-more-link-active' : 'ui-mobile-more-link'}
       >
@@ -91,6 +92,7 @@ export default function MobileMoreSheet({
                 label={getLabel(item.labelKey)}
                 Icon={item.Icon}
                 active={isActive(item.href)}
+                prefetch={item.href === '/' ? true : undefined}
                 onNavigate={onClose}
               />
             ))}

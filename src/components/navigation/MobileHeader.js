@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { USER_NAV_ITEM } from './navConfig';
 

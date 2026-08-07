@@ -30,6 +30,7 @@ export default function SidebarNavSection({
             label={getLabel(item.labelKey)}
             Icon={item.Icon}
             active={isActive(item.href)}
+            prefetch={item.href === '/' ? true : undefined}
             onNavigate={onNavigate}
           />
         ))}

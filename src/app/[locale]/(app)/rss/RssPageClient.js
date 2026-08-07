@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import AppShell from '@/components/navigation/AppShell';
 import RssFeedManager from '@/components/rss/RssFeedManager';
 import RssItemsManager from '@/components/rss/RssItemsManager';
 
@@ -16,7 +15,7 @@ const PRO_PLAN_ID = 2;
 
 export default function RssPageClient() {
   const [toast, setToast] = useState(null);
-  const { apiKey, hydrated, setApiKey } = useSession();
+  const { apiKey, hydrated } = useSession();
   const [activeTab, setActiveTab] = useState('feeds');
   const [userPlan, setUserPlan] = useState(null);
   const [checkingPlan, setCheckingPlan] = useState(false);
@@ -60,7 +59,6 @@ export default function RssPageClient() {
     }
   }, []);
 
-  // Fetch user plan on mount
   useEffect(() => {
     if (!apiKey) return;
     const abortController = new AbortController();
@@ -68,19 +66,6 @@ export default function RssPageClient() {
     return () => abortController.abort();
   }, [apiKey, fetchUserPlan]);
 
-  const handleKeyChange = (newKey) => {
-    setApiKey(newKey);
-    if (newKey) {
-      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(newKey).catch((error) => {
-          console.error('Error ensuring user database:', error);
-        });
-      });
-      fetchUserPlan(newKey);
-    }
-  };
-
-  // Tab configuration
   const tabs = [
     {
       id: 'feeds',
@@ -96,10 +81,9 @@ export default function RssPageClient() {
     },
   ];
 
-  // Don't render anything until client-side hydration is complete
   if (!hydrated) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-surface dark:bg-surface-dark font-sans">
+      <div className="flex items-center justify-center p-8">
         <Spinner size="lg" className="text-primary-text dark:text-primary-text-dark" />
       </div>
     );
@@ -110,7 +94,7 @@ export default function RssPageClient() {
   }
 
   return (
-    <AppShell apiKey={apiKey} className={`min-h-dvh bg-surface dark:bg-surface-dark font-sans`}>
+    <>
       <div className="container mx-auto p-4">
         <div className="mx-auto max-w-6xl">
           {checkingPlan ? (
@@ -191,6 +175,6 @@ export default function RssPageClient() {
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </AppShell>
+    </>
   );
 }
