@@ -19,10 +19,6 @@ const DEV_WATCH_IGNORED = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Applies in `next dev` (Turbopack). Prevents SQLite, caches, and logs from spurious HMR.
-  watchOptions: {
-    ignored: DEV_WATCH_IGNORED,
-  },
   env: {
     NEXT_PUBLIC_TORBOX_MANAGER_VERSION: appPackageVersion,
   },
