@@ -19,7 +19,7 @@ export default function ErrorOverlay({ error, onRetry, onClose }) {
             bg-black/40 hover:bg-black/70
             backdrop-blur-xs
             text-white/90 hover:text-white
-            transition-all duration-300 ease-out
+            transition-[color,background-color,border-color,transform] duration-300 ease-out
             hover:scale-110 active:scale-95
             border border-white/10 hover:border-white/30
             shadow-lg
