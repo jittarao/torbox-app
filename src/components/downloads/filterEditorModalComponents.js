@@ -52,7 +52,7 @@ export function SaveAsNewForm({
         value={saveViewName}
         onChange={(e) => setSaveViewName(e.target.value)}
         placeholder={customViewsT('viewNamePlaceholder')}
-        className="min-w-0 flex-1 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-dark dark:focus:ring-accent-dark/15"
+        className="min-w-0 flex-1 rounded-xl border border-border/80 bg-surface px-3 py-2 text-sm focus:border-accent/50 focus:outline-hidden focus:ring-2 focus:ring-accent/15 dark:border-border-dark/80 dark:bg-surface-dark dark:focus:ring-accent-dark/15"
         onKeyDown={(e) => {
           if (e.key === 'Escape') {
             onCancel();

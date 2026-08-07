@@ -72,7 +72,7 @@ function MobilePlayerChrome({
       >
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-40
-            bg-gradient-to-t from-black/85 via-black/45 to-transparent"
+            bg-linear-to-t from-black/85 via-black/45 to-transparent"
           aria-hidden="true"
         />
         <div

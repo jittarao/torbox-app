@@ -5,7 +5,7 @@ export default function ItemUploaderNzbTips({ nzbTipsHidden, onHide, onShow, t }
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-2 flex-1">
             <svg
-              className="size-5 text-accent dark:text-accent-dark mt-0.5 flex-shrink-0"
+              className="size-5 text-accent dark:text-accent-dark mt-0.5 shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
             >

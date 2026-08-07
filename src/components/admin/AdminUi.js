@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp } from '@/components/icons';
 /** Shared admin portal styling aligned with tailwind theme + globals ui-* classes */
 
 export const adminCardClass =
-  'rounded-xl border border-border/60 bg-white shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark';
+  'rounded-xl border border-border/60 bg-white shadow-xs dark:border-border-dark/60 dark:bg-surface-alt-dark';
 
 export const adminCardPadding = 'p-5 sm:p-6';
 
@@ -24,7 +24,7 @@ export const adminRowHoverClass =
   'transition-colors hover:bg-surface-alt-hover dark:hover:bg-surface-alt-dark-hover';
 
 export const adminInputClass =
-  'w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text placeholder:text-muted shadow-sm transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 dark:border-border-dark dark:bg-surface-dark dark:text-text-dark dark:placeholder:text-muted-dark dark:focus:border-accent-dark dark:focus:ring-accent-dark/25';
+  'w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text placeholder:text-muted shadow-xs transition-colors focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/25 dark:border-border-dark dark:bg-surface-dark dark:text-text-dark dark:placeholder:text-muted-dark dark:focus:border-accent-dark dark:focus:ring-accent-dark/25';
 
 const STATUS_STYLES = {
   healthy:
@@ -204,7 +204,7 @@ export function AdminSortableTh({
         type="button"
         onClick={() => onSort(sortKey)}
         title={(title || label) + sortHint}
-        className={`group -mx-1 flex w-full items-center gap-1 rounded-md px-1 py-0.5 text-inherit transition-colors hover:bg-surface-hover hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:hover:bg-surface-hover-dark dark:hover:text-text-dark dark:focus-visible:ring-accent-dark/40 ${alignClass} ${isActive ? 'text-text dark:text-text-dark' : ''}`}
+        className={`group -mx-1 flex w-full items-center gap-1 rounded-md px-1 py-0.5 text-inherit transition-colors hover:bg-surface-hover hover:text-text focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/40 dark:hover:bg-surface-hover-dark dark:hover:text-text-dark dark:focus-visible:ring-accent-dark/40 ${alignClass} ${isActive ? 'text-text dark:text-text-dark' : ''}`}
       >
         <span className="truncate">{label}</span>
         <span

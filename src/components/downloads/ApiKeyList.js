@@ -50,7 +50,7 @@ export default function ApiKeyList({
                 type="button"
                 onClick={() => onSelectKey(keyItem)}
                 className="flex flex-1 items-center gap-1.5 min-w-0 text-left touch-manipulation rounded
-                  focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40"
+                  focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40"
               >
                 <span
                   className={`flex shrink-0 items-center justify-center size-6 rounded font-semibold text-[9px] uppercase

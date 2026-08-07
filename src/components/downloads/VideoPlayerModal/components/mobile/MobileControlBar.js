@@ -14,7 +14,7 @@ function ControlButton({ label, onClick, children, className = '' }) {
         onClick();
       }}
       className={`flex size-11 shrink-0 items-center justify-center rounded-full
-        bg-white/10 text-white backdrop-blur-sm
+        bg-white/10 text-white backdrop-blur-xs
         active:bg-white/25 touch-manipulation motion-reduce:active:scale-100
         active:scale-95 transition-transform ${className}`}
       aria-label={label}

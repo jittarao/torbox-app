@@ -248,7 +248,7 @@ export default function VolumeControl({
             aria-valuenow={percent}
             aria-valuetext={`${percent}%`}
             className={`group/track relative flex h-28 w-8 items-center justify-center touch-manipulation
-              outline-none focus-visible:ring-2 focus-visible:ring-accent/60
+              outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60
               focus-visible:ring-offset-1 focus-visible:ring-offset-black/80
               ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
             onPointerDown={handleTrackPointerDown}
@@ -296,7 +296,7 @@ export default function VolumeControl({
           e.stopPropagation();
           onMuteToggle();
         }}
-        className="rounded-full bg-white/10 p-2 text-white backdrop-blur-sm
+        className="rounded-full bg-white/10 p-2 text-white backdrop-blur-xs
           transition-[colors,transform] duration-150
           hover:scale-110 hover:bg-white/20 active:scale-95"
         aria-label={isMuted ? 'Unmute' : `Volume ${percent}%`}

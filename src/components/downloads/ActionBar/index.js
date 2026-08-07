@@ -148,7 +148,7 @@ export default function ActionBar() {
         <div
           className={`flex flex-col gap-y-2 transition-all duration-200 xl:flex-row xl:flex-wrap xl:items-center xl:gap-x-3 xl:gap-y-2
             ${isFullscreen ? 'px-2 sm:px-4' : isSticky ? (stickyBounds ? 'px-0' : 'container-downloads mx-auto px-2 sm:px-4') : ''}
-            ${isSticky ? 'py-2' : 'pb-4'}`}
+            ${isSticky ? 'py-2' : 'py-2'}`}
         >
           <div className="flex min-w-0 w-full flex-col gap-2 sm:gap-2 xl:w-auto xl:flex-1 xl:flex-row xl:flex-wrap xl:items-center xl:gap-3">
             <ActionBarStatus itemTypeName={itemTypeName} itemTypePlural={itemTypePlural} />

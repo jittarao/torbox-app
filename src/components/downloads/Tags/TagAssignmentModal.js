@@ -108,7 +108,7 @@ function TagAssignmentModalBody({ downloadIds = EMPTY_ARRAY, apiKey, onClose, on
       {/* Header */}
       <div className="relative shrink-0 border-b border-border/50 px-4 pb-3 sm:px-5 sm:pb-4 sm:pt-5 dark:border-border-dark/50">
         <div
-          className="pointer-events-none absolute inset-0 hidden bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
+          className="pointer-events-none absolute inset-0 hidden bg-linear-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
           aria-hidden
         />
         <div className="relative flex items-start gap-3">
@@ -165,7 +165,7 @@ function TagAssignmentModalBody({ downloadIds = EMPTY_ARRAY, apiKey, onClose, on
             }}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
               mode === 'add'
-                ? 'bg-surface text-primary-text shadow-sm dark:bg-surface-dark dark:text-primary-text-dark'
+                ? 'bg-surface text-primary-text shadow-xs dark:bg-surface-dark dark:text-primary-text-dark'
                 : 'text-primary-text/65 hover:text-primary-text dark:text-primary-text-dark/65 dark:hover:text-primary-text-dark'
             }`}
           >
@@ -182,7 +182,7 @@ function TagAssignmentModalBody({ downloadIds = EMPTY_ARRAY, apiKey, onClose, on
             }}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
               mode === 'remove'
-                ? 'bg-surface text-primary-text shadow-sm dark:bg-surface-dark dark:text-primary-text-dark'
+                ? 'bg-surface text-primary-text shadow-xs dark:bg-surface-dark dark:text-primary-text-dark'
                 : 'text-primary-text/65 hover:text-primary-text dark:text-primary-text-dark/65 dark:hover:text-primary-text-dark'
             }`}
           >
@@ -241,7 +241,7 @@ function TagAssignmentModalBody({ downloadIds = EMPTY_ARRAY, apiKey, onClose, on
                 ? `inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
                         text-white bg-red-600 hover:bg-red-500
                         transition-colors active:scale-[0.98]
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40
+                        focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500/40
                         disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto`
                 : 'ui-btn-accent w-full justify-center sm:w-auto'
             }

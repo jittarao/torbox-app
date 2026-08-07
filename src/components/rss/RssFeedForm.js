@@ -40,7 +40,7 @@ export default function RssFeedForm({
               value={formData.name}
               onChange={(e) => onFormDataChange({ ...formData, name: e.target.value })}
               placeholder={t('feedNamePlaceholder')}
-              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
               required
             />
           </div>
@@ -57,7 +57,7 @@ export default function RssFeedForm({
               value={formData.url}
               onChange={(e) => onFormDataChange({ ...formData, url: e.target.value })}
               placeholder={t('feedUrlPlaceholder')}
-              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
               required
             />
           </div>
@@ -75,7 +75,7 @@ export default function RssFeedForm({
               id={downloadTypeId}
               value={formData.rss_type}
               onChange={(e) => onFormDataChange({ ...formData, rss_type: e.target.value })}
-              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
             >
               <option value="torrent">{t('options.torrent')}</option>
               <option value="usenet">{t('options.usenet')}</option>
@@ -95,7 +95,7 @@ export default function RssFeedForm({
               onChange={(e) =>
                 onFormDataChange({ ...formData, torrent_seeding: parseInt(e.target.value) })
               }
-              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
             >
               <option value={1}>{t('options.auto')}</option>
               <option value={2}>{t('options.seed')}</option>
@@ -118,7 +118,7 @@ export default function RssFeedForm({
               value={formData.do_regex}
               onChange={(e) => onFormDataChange({ ...formData, do_regex: e.target.value })}
               placeholder={t('doRegexPlaceholder')}
-              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
             />
           </div>
           <div>
@@ -134,7 +134,7 @@ export default function RssFeedForm({
               value={formData.dont_regex}
               onChange={(e) => onFormDataChange({ ...formData, dont_regex: e.target.value })}
               placeholder={t('dontRegexPlaceholder')}
-              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
             />
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function RssFeedForm({
                 onFormDataChange({ ...formData, scan_interval: parseInt(e.target.value) || 60 })
               }
               placeholder={t('scanIntervalPlaceholder')}
-              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
             />
           </div>
           <div>
@@ -175,7 +175,7 @@ export default function RssFeedForm({
                 onFormDataChange({ ...formData, dont_older_than: parseInt(e.target.value) || 0 })
               }
               placeholder={t('dontOlderThanPlaceholder')}
-              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full px-3 py-2 border border-border dark:border-border-dark rounded-lg bg-surface dark:bg-surface-dark text-primary-text dark:text-primary-text-dark focus:outline-hidden focus:ring-2 focus:ring-accent"
             />
           </div>
         </div>

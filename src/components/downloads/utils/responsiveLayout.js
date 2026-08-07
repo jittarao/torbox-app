@@ -1,6 +1,9 @@
 /**
  * Shared layout classes for downloads table/card views.
  * Tablet range (md, below lg): tighter padding and type for iPad-sized viewports.
+ *
+ * Tailwind v4 custom `md:` is emitted after standard `lg:` in CSS, so never pair
+ * `md:*` with `lg:*` overrides — use `tablet:*` for iPad-sized tweaks only.
  */
 
 /**
@@ -12,7 +15,7 @@ export const tableRowSeparator =
 
 /** Rows with tabIndex — suppress focus ring (shift+range select counts as focus-visible in some UAs) */
 export const tableRowFocusClasses =
-  'outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 shadow-none focus:shadow-none focus-visible:shadow-none';
+  'outline-hidden focus:outline-hidden focus-visible:outline-hidden focus:ring-0 focus-visible:ring-0 shadow-none focus:shadow-none focus-visible:shadow-none';
 
 /**
  * Sticky actions cell shadows (one rule — arbitrary box-shadows override each other).
@@ -22,20 +25,20 @@ export const tableRowFocusClasses =
 export const tableActionsCellShadows =
   '[box-shadow:inset_0_-1px_0_0_#cecece,inset_12px_0_10px_-12px_rgba(15,23,42,0.05)] dark:[box-shadow:inset_0_-1px_0_0_#3c3c3c,inset_12px_0_10px_-12px_rgba(0,0,0,0.2)]';
 
-export const tableDataCellPad = `px-4 py-4 md:px-2.5 md:py-2 lg:px-3.5 lg:py-2.5 ${tableRowSeparator}`;
+export const tableDataCellPad = `px-4 py-4 tablet:px-2.5 tablet:py-2 lg:px-3.5 lg:py-2.5 ${tableRowSeparator}`;
 
-export const tableDataCellText = `${tableDataCellPad} overflow-hidden whitespace-nowrap text-sm md:text-xs lg:text-sm text-primary-text/70 dark:text-primary-text-dark/70`;
+export const tableDataCellText = `${tableDataCellPad} overflow-hidden whitespace-nowrap text-sm tablet:text-xs text-primary-text/70 dark:text-primary-text-dark/70`;
 
 /** ~6 icon buttons (stop seeding, files, download, delete, menu) — export lives in More dropdown */
 const actionsColumnWidthClass =
-  'w-[132px] min-w-[132px] max-w-[132px] md:w-[188px] md:min-w-[188px] md:max-w-[188px] lg:w-[200px] lg:min-w-[200px] lg:max-w-[200px]';
+  'w-[132px] min-w-[132px] max-w-[132px] tablet:w-[188px] tablet:min-w-[188px] tablet:max-w-[188px] lg:w-[200px] lg:min-w-[200px] lg:max-w-[200px]';
 
 /** Shared sticky shell for the right-pinned actions column */
 const tableActionsStickyShell = `sticky right-0 ${actionsColumnWidthClass} ${tableActionsCellShadows}`;
 
-export const tableCheckboxCell = `px-2 md:px-2.5 lg:px-4 py-4 md:py-2 lg:py-2.5 text-center whitespace-nowrap ${tableRowSeparator}`;
+export const tableCheckboxCell = `px-2 tablet:px-2.5 lg:px-4 py-4 tablet:py-2 lg:py-2.5 text-center whitespace-nowrap ${tableRowSeparator}`;
 
-export const tableActionsCell = `px-2 md:px-2.5 lg:px-3 py-2 md:py-1.5 lg:py-2 whitespace-nowrap text-right text-sm md:text-xs lg:text-sm font-medium z-[1] overflow-hidden ${tableActionsStickyShell}`;
+export const tableActionsCell = `px-2 tablet:px-2.5 lg:px-3 py-2 tablet:py-1.5 lg:py-2 whitespace-nowrap text-right text-sm tablet:text-xs font-medium z-[1] overflow-hidden ${tableActionsStickyShell}`;
 
 /** Inner wrapper — clips icon hover rings inside the sticky column */
 export const tableActionsCellInner =
@@ -100,17 +103,17 @@ export function getCheckboxColumnWidthPx() {
   return 60;
 }
 
-export const tableHeaderCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-left text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide ${tableRowSeparator}`;
+export const tableHeaderCell = `px-2 tablet:px-2.5 lg:px-4 py-3 tablet:py-2 lg:py-2.5 text-left text-xs tablet:text-[11px] font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide ${tableRowSeparator}`;
 
-export const tableHeaderCheckboxCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-center text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-[48px] min-w-[48px] max-w-[48px] md:w-[52px] md:min-w-[52px] md:max-w-[52px] lg:w-[60px] lg:min-w-[60px] lg:max-w-[60px] ${tableRowSeparator}`;
+export const tableHeaderCheckboxCell = `px-2 tablet:px-2.5 lg:px-4 py-3 tablet:py-2 lg:py-2.5 text-center text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase w-[48px] min-w-[48px] max-w-[48px] tablet:w-[52px] tablet:min-w-[52px] tablet:max-w-[52px] lg:w-[60px] lg:min-w-[60px] lg:max-w-[60px] ${tableRowSeparator}`;
 
-export const tableHeaderActionsCell = `px-2 md:px-2.5 lg:px-4 py-3 md:py-2 lg:py-2.5 text-right text-xs md:text-[11px] lg:text-xs font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide z-[2] bg-surface-alt dark:bg-surface-alt-dark ${tableActionsStickyShell}`;
+export const tableHeaderActionsCell = `px-2 tablet:px-2.5 lg:px-4 py-3 tablet:py-2 lg:py-2.5 text-right text-xs tablet:text-[11px] font-medium text-primary-text dark:text-primary-text-dark uppercase tracking-wide z-[2] bg-surface-alt dark:bg-surface-alt-dark ${tableActionsStickyShell}`;
 
 export const tableContainerClass =
-  'ui-scrollbar overflow-x-auto rounded-lg md:rounded-xl border border-border dark:border-border-dark md:shadow-sm md:shadow-black/[0.03] dark:md:shadow-black/20';
+  'ui-scrollbar overflow-x-auto rounded-lg md:rounded-xl border border-border dark:border-border-dark md:shadow-xs md:shadow-black/[0.03] dark:md:shadow-black/20';
 
 export const cardContainerPad =
-  'px-3 py-3 md:px-3.5 md:py-3 lg:p-4 rounded-lg md:rounded-xl border border-border/80 dark:border-border-dark/80 md:border-border/50 dark:md:border-border-dark/50 md:shadow-sm md:shadow-black/[0.04] dark:md:shadow-black/25';
+  'px-3 py-3 md:px-3.5 md:py-3 lg:p-4 rounded-lg md:rounded-xl border border-border/80 dark:border-border-dark/80 md:border-border/50 dark:md:border-border-dark/50 md:shadow-xs md:shadow-black/[0.04] dark:md:shadow-black/25';
 
 const cardListItemGap = 'mb-1.5 md:mb-1 lg:mb-1.5';
 

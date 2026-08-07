@@ -55,7 +55,7 @@ export default function VideoInfoHero({ searchMetadata, fileName, videoInfo }) {
   if (!title && chips.length === 0) return null;
 
   return (
-    <div className="mb-5 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02]">
+    <div className="mb-5 overflow-hidden rounded-xl border border-white/10 bg-linear-to-br from-white/[0.07] to-white/[0.02]">
       <div className="p-4">
         {title ? (
           <div className="flex items-start gap-3">

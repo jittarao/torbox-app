@@ -20,11 +20,11 @@ export function ToggleSwitch({ checked, onChange, ariaLabel }) {
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors touch-manipulation
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
+        focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40
         ${checked ? 'bg-accent dark:bg-accent-dark' : 'bg-border/80 dark:bg-border-dark/80'}`}
     >
       <span
-        className={`inline-block size-4 rounded-full bg-white shadow-sm transition-transform
+        className={`inline-block size-4 rounded-full bg-white shadow-xs transition-transform
           ${checked ? 'translate-x-4' : 'translate-x-0.5'}`}
       />
     </button>

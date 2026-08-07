@@ -84,7 +84,7 @@ export default function LanguageSwitcher({ iconOnly = false, variant = 'default'
           alt=""
           width={flagSize.width}
           height={flagSize.height}
-          className={`shrink-0 rounded-sm object-cover ring-1 ring-black/10 dark:ring-white/10 ${
+          className={`shrink-0 rounded-xs object-cover ring-1 ring-black/10 dark:ring-white/10 ${
             iconOnly ? 'h-[14px] w-5' : ''
           }`}
           aria-hidden
@@ -120,7 +120,7 @@ export default function LanguageSwitcher({ iconOnly = false, variant = 'default'
             className={headerDropdownItemClass(locale === code)}
             role="menuitem"
           >
-            <Image src={flag} alt={name} width={24} height={16} className="rounded-sm shrink-0" />
+            <Image src={flag} alt={name} width={24} height={16} className="rounded-xs shrink-0" />
             <span>{name}</span>
           </button>
         ))}

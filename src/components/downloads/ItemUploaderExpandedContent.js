@@ -58,7 +58,7 @@ export default function ItemUploaderExpandedContent({
             className="w-full min-h-[120px] lg:min-h-40 h-40 p-2 lg:p-3 border border-border dark:border-border-dark rounded-lg 
               bg-transparent text-sm lg:text-base text-primary-text dark:text-primary-text-dark 
               placeholder-primary-text/50 dark:placeholder-primary-text-dark/50
-              focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
+              focus:outline-hidden focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 
               focus:border-accent dark:focus:border-accent-dark
               disabled:bg-surface-alt dark:disabled:bg-surface-alt-dark 
               disabled:text-primary-text/50 dark:disabled:text-primary-text-dark/50
@@ -85,7 +85,7 @@ export default function ItemUploaderExpandedContent({
             value={webdlPassword}
             onChange={(e) => setWebdlPassword(e.target.value)}
             placeholder={t('placeholder.webdlPassword')}
-            className="w-full p-2 border border-border dark:border-border-dark rounded-lg bg-transparent text-sm lg:text-base text-primary-text dark:text-primary-text-dark placeholder-primary-text/50 dark:placeholder-primary-text-dark/50 focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors duration-200"
+            className="w-full p-2 border border-border dark:border-border-dark rounded-lg bg-transparent text-sm lg:text-base text-primary-text dark:text-primary-text-dark placeholder-primary-text/50 dark:placeholder-primary-text-dark/50 focus:outline-hidden focus:ring-2 focus:ring-accent/20 dark:focus:ring-accent-dark/20 focus:border-accent dark:focus:border-accent-dark transition-colors duration-200"
           />
         </div>
       )}
@@ -129,7 +129,7 @@ export default function ItemUploaderExpandedContent({
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-2 flex-1">
               <svg
-                className="size-5 text-red-500 mt-0.5 flex-shrink-0"
+                className="size-5 text-red-500 mt-0.5 shrink-0"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >

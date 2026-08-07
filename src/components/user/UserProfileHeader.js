@@ -4,7 +4,7 @@ import { User } from '@/components/icons';
 
 export default function UserProfileHeader({ userData, statusInfo, StatusIcon, userIdLabel }) {
   return (
-    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
+    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="size-16 rounded-full bg-accent/10 dark:bg-accent-dark/10 flex items-center justify-center">

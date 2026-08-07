@@ -228,7 +228,7 @@ export default function SearchResults({ apiKey }) {
             const activeStyle = STATUS_ACTIVE[status.status] || STATUS_ACTIVE.pending;
             const className = `inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
               isActive ? activeStyle : STATUS_INACTIVE
-            } ${canToggle ? 'cursor-pointer hover:opacity-90 focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40' : ''}`;
+            } ${canToggle ? 'cursor-pointer hover:opacity-90 focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40' : ''}`;
 
             const content = (
               <>

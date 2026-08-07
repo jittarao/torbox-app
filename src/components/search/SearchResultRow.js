@@ -195,7 +195,7 @@ function FullStreamCard({ item, isUploading, isAdded, onCopyLink, onUpload, t })
 
   return (
     <article
-      className="group overflow-hidden rounded-lg border border-border/70 bg-surface transition-shadow hover:border-border hover:shadow-sm dark:border-border-dark/70 dark:bg-surface-dark dark:hover:border-border-dark"
+      className="group overflow-hidden rounded-lg border border-border/70 bg-surface transition-shadow hover:border-border hover:shadow-xs dark:border-border-dark/70 dark:bg-surface-dark dark:hover:border-border-dark"
       style={{ contentVisibility: 'auto', containIntrinsicSize: '0 120px' }}
     >
       <div className="p-3 sm:p-3.5">
