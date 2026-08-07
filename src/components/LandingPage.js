@@ -129,7 +129,7 @@ export default function LandingPage({ onKeyChange }) {
           {LANDING_FEATURES.map(({ key, icon }, i) => (
             <div
               key={key}
-              className="group relative p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-white/[0.02] backdrop-blur-sm transition-colors transition-shadow duration-300 hover:border-amber-500/30 hover:bg-white/[0.04] hover:shadow-[0_0_40px_-12px_rgba(251,191,36,0.15)]"
+              className="group relative p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-white/[0.02] backdrop-blur-xs transition-colors transition-shadow duration-300 hover:border-amber-500/30 hover:bg-white/[0.04] hover:shadow-[0_0_40px_-12px_rgba(251,191,36,0.15)]"
               style={{
                 animation: `landing-fade-in-up 0.6s ease-out ${0.32 + i * 0.08}s forwards`,
                 opacity: 0,
@@ -159,8 +159,8 @@ export default function LandingPage({ onKeyChange }) {
             opacity: 0,
           }}
         >
-          <div className="relative p-8 sm:p-10 rounded-2xl border border-zinc-800 bg-white/[0.03] backdrop-blur-sm shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+          <div className="relative p-8 sm:p-10 rounded-2xl border border-zinc-800 bg-white/[0.03] backdrop-blur-xs shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-linear-to-r from-transparent via-amber-500/50 to-transparent" />
             <h2
               className="text-xl font-semibold text-white mb-6 text-center"
               style={{ fontFamily: 'var(--font-syne), system-ui' }}

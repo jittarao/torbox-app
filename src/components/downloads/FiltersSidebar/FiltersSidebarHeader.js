@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 
 const collapseToggleClassName =
-  'flex size-7 items-center justify-center rounded-lg border border-border/50 bg-white/60 text-primary-text/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)] backdrop-blur-sm transition-colors transition-shadow transition-transform duration-200 group-hover:border-accent/35 group-hover:bg-accent/[0.07] group-hover:text-accent group-hover:shadow-[0_1px_3px_rgba(217,119,6,0.12)] group-active:scale-95 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-primary-text-dark/55 dark:group-hover:border-accent-dark/40 dark:group-hover:bg-accent-dark/10 dark:group-hover:text-accent-dark';
+  'flex size-7 items-center justify-center rounded-lg border border-border/50 bg-white/60 text-primary-text/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)] backdrop-blur-xs transition-colors transition-shadow transition-transform duration-200 group-hover:border-accent/35 group-hover:bg-accent/[0.07] group-hover:text-accent group-hover:shadow-[0_1px_3px_rgba(217,119,6,0.12)] group-active:scale-95 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-primary-text-dark/55 dark:group-hover:border-accent-dark/40 dark:group-hover:bg-accent-dark/10 dark:group-hover:text-accent-dark';
 
 export function FiltersSidebarHeader({ collapsed, onToggle, compact = false }) {
   const t = useTranslations('DownloadsFilters');
@@ -84,7 +84,7 @@ export function FiltersSidebarHeader({ collapsed, onToggle, compact = false }) {
         onClick={onToggle}
         aria-label={toggleLabel}
         title={toggleLabel}
-        className="group shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40"
+        className="group shrink-0 rounded-lg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/40 dark:focus-visible:ring-accent-dark/40"
       >
         <span className={collapseToggleClassName} aria-hidden>
           {collapseChevron}

@@ -31,7 +31,7 @@ function SeekFeedback({ side, seconds, onDone }) {
       aria-live="polite"
       role="status"
     >
-      <div className="flex size-20 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm">
+      <div className="flex size-20 items-center justify-center rounded-full bg-black/50 backdrop-blur-xs">
         <div className="text-center text-white">
           <svg
             className={`mx-auto size-8 ${isLeft ? 'rotate-180' : ''}`}

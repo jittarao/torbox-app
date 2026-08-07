@@ -309,7 +309,7 @@ export default function FilterInput({
                 step={filter.column === 'ratio' ? '0.1' : '1'}
               />
               {getColumnUnit(filter.column) && (
-                <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap flex-shrink-0">
+                <span className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 whitespace-nowrap shrink-0">
                   {getColumnUnit(filter.column)}
                 </span>
               )}

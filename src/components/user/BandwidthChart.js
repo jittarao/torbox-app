@@ -205,7 +205,7 @@ export default function BandwidthChart({
   }
 
   return (
-    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
+    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
           <BarChart3 className="size-5 text-accent dark:text-accent-dark" />
@@ -223,7 +223,7 @@ export default function BandwidthChart({
             value={grouping}
             onChange={(e) => onGroupingChange(e.target.value)}
             disabled={loading}
-            className="text-sm bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded px-2 py-1 text-primary-text dark:text-primary-text-dark focus:outline-none disabled:opacity-50"
+            className="text-sm bg-surface dark:bg-surface-dark border border-border dark:border-border-dark rounded px-2 py-1 text-primary-text dark:text-primary-text-dark focus:outline-hidden disabled:opacity-50"
           >
             {GROUPING_OPTIONS.map((option) => (
               <option key={option} value={option}>

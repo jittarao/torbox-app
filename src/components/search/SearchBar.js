@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useReducer, useEffect, useRef, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '@/store/searchStore';
 import { useStremioAddonsStore } from '@/store/stremioAddonsStore';
@@ -63,16 +63,109 @@ function getApiKey() {
   return useSessionStore.getState().apiKey || getItem('torboxApiKey');
 }
 
+const INITIAL_SEARCH_BAR_STATE = {
+  localQuery: '',
+  showHistory: false,
+  showSuggestions: false,
+  titleResults: [],
+  titleLoading: false,
+  titleHint: null,
+  episodePick: null,
+};
+
+function searchBarReducer(state, action) {
+  switch (action.type) {
+    case 'INPUT_CHANGE':
+      return {
+        ...state,
+        localQuery: action.query,
+        episodePick: null,
+        showHistory: true,
+        showSuggestions: true,
+      };
+    case 'FOCUS_INPUT':
+      return { ...state, showHistory: true, showSuggestions: true };
+    case 'DISMISS_OVERLAYS':
+      return {
+        ...state,
+        showHistory: false,
+        showSuggestions: false,
+        episodePick: null,
+      };
+    case 'HIDE_OVERLAYS':
+      return { ...state, showHistory: false, showSuggestions: false };
+    case 'SUBMIT_MEDIA_ID':
+      return {
+        ...state,
+        showHistory: false,
+        showSuggestions: false,
+        episodePick: null,
+      };
+    case 'SHOW_OVERLAYS':
+      return { ...state, showHistory: true, showSuggestions: true };
+    case 'PATCH_TITLE_STATE': {
+      const next = { ...state };
+      if (action.results !== undefined) next.titleResults = action.results;
+      if (action.loading !== undefined) next.titleLoading = action.loading;
+      if (action.hint !== undefined) next.titleHint = action.hint;
+      return next;
+    }
+    case 'SET_EPISODE_PICK':
+      return {
+        ...state,
+        episodePick: action.episodePick,
+        localQuery: action.localQuery ?? state.localQuery,
+        showHistory: false,
+        showSuggestions: false,
+      };
+    case 'CLEAR_EPISODE_PICK':
+      return { ...state, episodePick: null };
+    case 'CLEAR_SEARCH':
+      return {
+        ...state,
+        localQuery: '',
+        episodePick: null,
+        titleResults: [],
+        titleHint: null,
+      };
+    case 'PREPARE_MEDIA_SEARCH':
+      return {
+        ...state,
+        localQuery: action.query,
+        showHistory: false,
+        showSuggestions: false,
+        episodePick: null,
+        titleResults: [],
+        titleHint: null,
+      };
+    case 'PREPARE_TV_PICK':
+      return {
+        ...state,
+        localQuery: action.localQuery,
+        episodePick: action.item,
+        showHistory: false,
+        showSuggestions: false,
+      };
+    default:
+      return state;
+  }
+}
+
 export default function SearchBar() {
   const t = useTranslations('SearchBar');
   const tTmdb = useTranslations('TmdbSearch');
-  const [localQuery, setLocalQuery] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [titleResults, setTitleResults] = useState([]);
-  const [titleLoading, setTitleLoading] = useState(false);
-  const [titleHint, setTitleHint] = useState(null);
-  const [episodePick, setEpisodePick] = useState(null);
+  const [
+    {
+      localQuery,
+      showHistory,
+      showSuggestions,
+      titleResults,
+      titleLoading,
+      titleHint,
+      episodePick,
+    },
+    dispatch,
+  ] = useReducer(searchBarReducer, INITIAL_SEARCH_BAR_STATE);
   const searchRef = useRef(null);
   const titleAbortRef = useRef(null);
 
@@ -146,18 +239,17 @@ export default function SearchBar() {
 
   useEffect(() => {
     if (!pendingEpisodePick) return;
-    setEpisodePick(pendingEpisodePick);
-    setLocalQuery(pendingEpisodePick.title || pendingEpisodePick.streamId || '');
-    setShowHistory(false);
-    setShowSuggestions(false);
+    dispatch({
+      type: 'SET_EPISODE_PICK',
+      episodePick: pendingEpisodePick,
+      localQuery: pendingEpisodePick.title || pendingEpisodePick.streamId || '',
+    });
     clearPendingEpisodePick();
   }, [pendingEpisodePick, clearPendingEpisodePick]);
 
   useEffect(() => {
     const dismissOverlays = () => {
-      setShowHistory(false);
-      setShowSuggestions(false);
-      setEpisodePick(null);
+      dispatch({ type: 'DISMISS_OVERLAYS' });
     };
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -186,39 +278,50 @@ export default function SearchBar() {
     const freeText = kind === 'free_text' && q.length >= MIN_FREE_TEXT_LEN;
 
     if (!freeText && !fullImdb) {
-      setTitleResults([]);
-      setTitleLoading(false);
-      setTitleHint(null);
+      dispatch({
+        type: 'PATCH_TITLE_STATE',
+        results: [],
+        loading: false,
+        hint: null,
+      });
       return;
     }
 
     if (tmdbHasLoaded && !tmdbConfigured) {
-      setTitleResults([]);
-      setTitleLoading(false);
-      // Free text prompts to configure; IMDb id has no suggestion path without a key
-      setTitleHint(freeText ? tTmdb('configureKeyHint') : null);
+      dispatch({
+        type: 'PATCH_TITLE_STATE',
+        results: [],
+        loading: false,
+        hint: freeText ? tTmdb('configureKeyHint') : null,
+      });
       return;
     }
 
     if (!tmdbConfigured) {
-      setTitleResults([]);
-      setTitleLoading(false);
-      setTitleHint(null);
+      dispatch({
+        type: 'PATCH_TITLE_STATE',
+        results: [],
+        loading: false,
+        hint: null,
+      });
       return;
     }
 
-    setTitleHint(null);
+    dispatch({ type: 'PATCH_TITLE_STATE', hint: null });
     const timer = setTimeout(async () => {
       const apiKey = getApiKey();
       if (!apiKey) {
-        setTitleLoading(false);
-        setTitleHint(tTmdb('configureKeyHint'));
+        dispatch({
+          type: 'PATCH_TITLE_STATE',
+          loading: false,
+          hint: tTmdb('configureKeyHint'),
+        });
         return;
       }
 
       const controller = new AbortController();
       titleAbortRef.current = controller;
-      setTitleLoading(true);
+      dispatch({ type: 'PATCH_TITLE_STATE', loading: true });
 
       const allowTmdbFallback = enabledAddonsSupportTmdbPrefix(addons);
 
@@ -235,26 +338,35 @@ export default function SearchBar() {
           if (controller.signal.aborted) return;
 
           if (data.code === 'TMDB_NOT_CONFIGURED' || data.code === 'TMDB_INVALID_KEY') {
-            setTitleResults([]);
-            setTitleHint(
-              data.code === 'TMDB_INVALID_KEY' ? tTmdb('invalidKeyHint') : tTmdb('configureKeyHint')
-            );
-            setTitleLoading(false);
+            dispatch({
+              type: 'PATCH_TITLE_STATE',
+              results: [],
+              hint:
+                data.code === 'TMDB_INVALID_KEY'
+                  ? tTmdb('invalidKeyHint')
+                  : tTmdb('configureKeyHint'),
+              loading: false,
+            });
             return;
           }
 
           if (!ok || data.success === false || !data.result) {
-            setTitleResults([]);
-            // 404 / empty result: no hint; other failures mirror free-text searchFailed
             const isMiss = res.status === 404 || (ok && data.success && !data.result);
-            setTitleHint(isMiss ? null : data.error || tTmdb('searchFailed'));
-            setTitleLoading(false);
+            dispatch({
+              type: 'PATCH_TITLE_STATE',
+              results: [],
+              hint: isMiss ? null : data.error || tTmdb('searchFailed'),
+              loading: false,
+            });
             return;
           }
 
-          setTitleResults([data.result]);
-          setTitleHint(null);
-          setTitleLoading(false);
+          dispatch({
+            type: 'PATCH_TITLE_STATE',
+            results: [data.result],
+            hint: null,
+            loading: false,
+          });
           return;
         }
 
@@ -269,29 +381,42 @@ export default function SearchBar() {
         if (controller.signal.aborted) return;
 
         if (data.code === 'TMDB_NOT_CONFIGURED' || data.code === 'TMDB_INVALID_KEY') {
-          setTitleResults([]);
-          setTitleHint(
-            data.code === 'TMDB_INVALID_KEY' ? tTmdb('invalidKeyHint') : tTmdb('configureKeyHint')
-          );
-          setTitleLoading(false);
+          dispatch({
+            type: 'PATCH_TITLE_STATE',
+            results: [],
+            hint:
+              data.code === 'TMDB_INVALID_KEY'
+                ? tTmdb('invalidKeyHint')
+                : tTmdb('configureKeyHint'),
+            loading: false,
+          });
           return;
         }
 
         if (!ok || data.success === false) {
-          setTitleResults([]);
-          setTitleHint(data.error || tTmdb('searchFailed'));
-          setTitleLoading(false);
+          dispatch({
+            type: 'PATCH_TITLE_STATE',
+            results: [],
+            hint: data.error || tTmdb('searchFailed'),
+            loading: false,
+          });
           return;
         }
 
-        setTitleResults(Array.isArray(data.results) ? data.results : []);
-        setTitleHint(null);
-        setTitleLoading(false);
+        dispatch({
+          type: 'PATCH_TITLE_STATE',
+          results: Array.isArray(data.results) ? data.results : [],
+          hint: null,
+          loading: false,
+        });
       } catch (err) {
         if (err?.name === 'AbortError') return;
-        setTitleResults([]);
-        setTitleHint(tTmdb('searchFailed'));
-        setTitleLoading(false);
+        dispatch({
+          type: 'PATCH_TITLE_STATE',
+          results: [],
+          hint: tTmdb('searchFailed'),
+          loading: false,
+        });
       }
     }, TITLE_SEARCH_DEBOUNCE_MS);
 
@@ -303,21 +428,17 @@ export default function SearchBar() {
   }, [localQuery, tmdbConfigured, tmdbHasLoaded, addons, tTmdb]);
 
   const runMediaIdSearch = (id, options = {}) => {
-    setLocalQuery(id);
-    setShowHistory(false);
-    setShowSuggestions(false);
-    setEpisodePick(null);
-    setTitleResults([]);
-    setTitleHint(null);
+    dispatch({ type: 'PREPARE_MEDIA_SEARCH', query: id });
     setQuery(id, options);
   };
 
   const handleSelectTitle = (item) => {
     if (item.mediaType === 'tv') {
-      setLocalQuery(item.title || item.streamId || '');
-      setEpisodePick(item);
-      setShowHistory(false);
-      setShowSuggestions(false);
+      dispatch({
+        type: 'PREPARE_TV_PICK',
+        localQuery: item.title || item.streamId || '',
+        item,
+      });
       return;
     }
     const meta = suggestionToHistoryEntry(item);
@@ -337,9 +458,7 @@ export default function SearchBar() {
         handleSelectTitle(titleResults[0]);
         return;
       }
-      setShowHistory(false);
-      setShowSuggestions(false);
-      setEpisodePick(null);
+      dispatch({ type: 'SUBMIT_MEDIA_ID' });
       setQuery(q);
       return;
     }
@@ -350,10 +469,9 @@ export default function SearchBar() {
       return;
     }
 
-    setShowHistory(true);
-    setShowSuggestions(true);
+    dispatch({ type: 'SHOW_OVERLAYS' });
     if (tmdbHasLoaded && !tmdbConfigured) {
-      setTitleHint(tTmdb('configureKeyHint'));
+      dispatch({ type: 'PATCH_TITLE_STATE', hint: tTmdb('configureKeyHint') });
     }
   };
 
@@ -393,21 +511,17 @@ export default function SearchBar() {
                 type="text"
                 value={localQuery}
                 onChange={(e) => {
-                  setLocalQuery(e.target.value);
-                  setEpisodePick(null);
-                  setShowHistory(true);
-                  setShowSuggestions(true);
+                  dispatch({ type: 'INPUT_CHANGE', query: e.target.value });
                 }}
                 onFocus={() => {
-                  setShowHistory(true);
-                  setShowSuggestions(true);
+                  dispatch({ type: 'FOCUS_INPUT' });
                 }}
                 onKeyDown={(e) => {
                   if (e.nativeEvent.isComposing) return;
                   if (e.key === 'Enter') handleSearch();
                 }}
                 placeholder={t('placeholderSearch')}
-                className="w-full rounded-md border border-border/80 bg-surface-alt/50 py-2.5 pl-10 pr-9 text-sm text-primary-text placeholder:text-primary-text/35 focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/30 dark:border-border-dark/80 dark:bg-surface-alt-dark/50 dark:text-primary-text-dark dark:placeholder:text-primary-text-dark/35 dark:focus:border-accent-dark/50 dark:focus:ring-accent-dark/30"
+                className="w-full rounded-md border border-border/80 bg-surface-alt/50 py-2.5 pl-10 pr-9 text-sm text-primary-text placeholder:text-primary-text/35 focus:border-accent/50 focus:outline-hidden focus:ring-1 focus:ring-accent/30 dark:border-border-dark/80 dark:bg-surface-alt-dark/50 dark:text-primary-text-dark dark:placeholder:text-primary-text-dark/35 dark:focus:border-accent-dark/50 dark:focus:ring-accent-dark/30"
                 spellCheck={false}
                 autoCapitalize="off"
                 autoCorrect="off"
@@ -418,10 +532,7 @@ export default function SearchBar() {
                   type="button"
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-primary-text/40 hover:bg-surface-alt hover:text-primary-text dark:text-primary-text-dark/40 dark:hover:bg-surface-alt-dark dark:hover:text-primary-text-dark"
                   onClick={() => {
-                    setLocalQuery('');
-                    setEpisodePick(null);
-                    setTitleResults([]);
-                    setTitleHint(null);
+                    dispatch({ type: 'CLEAR_SEARCH' });
                     clearResults();
                   }}
                   aria-label={t('clearSearch')}
@@ -451,10 +562,11 @@ export default function SearchBar() {
               tmdbConfigured={tmdbConfigured}
               onSelectHistory={(entry) => {
                 if (tmdbConfigured && entry?.kind === 'tmdb' && entry.mediaType === 'tv') {
-                  setLocalQuery(entry.title || entry.streamId || '');
-                  setEpisodePick(entry);
-                  setShowHistory(false);
-                  setShowSuggestions(false);
+                  dispatch({
+                    type: 'SET_EPISODE_PICK',
+                    episodePick: entry,
+                    localQuery: entry.title || entry.streamId || '',
+                  });
                   return;
                 }
                 if (tmdbConfigured && entry?.kind === 'tmdb' && entry.mediaType === 'movie') {
@@ -480,13 +592,13 @@ export default function SearchBar() {
             <EpisodePicker
               suggestion={episodePick}
               onConfirm={(streamId, suggestion) => {
-                setEpisodePick(null);
+                dispatch({ type: 'CLEAR_EPISODE_PICK' });
                 runMediaIdSearch(streamId, {
                   types: ['series'],
                   historyMeta: suggestionToHistoryEntry(suggestion),
                 });
               }}
-              onCancel={() => setEpisodePick(null)}
+              onCancel={() => dispatch({ type: 'CLEAR_EPISODE_PICK' })}
             />
           ) : null}
         </div>

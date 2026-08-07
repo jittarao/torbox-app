@@ -28,7 +28,7 @@ export default function ItemCardTitleRow({
         onChange={(e) => onItemSelection(selectionId, e.target.checked, index, e.shiftKey)}
         onClick={(e) => e.stopPropagation()}
         disabled={hasSelectedFiles}
-        className="accent-accent dark:accent-accent-dark flex-shrink-0 mt-0.5 outline-none focus:outline-none focus-visible:outline-none focus:ring-0"
+        className="accent-accent dark:accent-accent-dark shrink-0 mt-0.5 outline-hidden focus:outline-hidden focus-visible:outline-hidden focus:ring-0"
       />
       <h3
         className={`text-sm md:text-base lg:text-[18px] font-medium text-primary-text dark:text-primary-text-dark flex-1 min-w-0 ${

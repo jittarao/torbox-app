@@ -33,7 +33,7 @@ export default function FiltersSidebarSearch({ value, onChange }) {
         onChange={(e) => onChange(e.target.value)}
         placeholder={t('sidebarSearchPlaceholder')}
         aria-label={t('sidebarSearchPlaceholder')}
-        className="w-full rounded-lg border border-border/60 bg-white/50 py-1.5 pl-8 pr-2 text-xs text-primary-text placeholder:text-primary-text/40 shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/10 dark:border-border-dark/60 dark:bg-white/[0.04] dark:text-primary-text-dark dark:placeholder:text-primary-text-dark/40 dark:focus:border-accent-dark/40 dark:focus:ring-accent-dark/10"
+        className="w-full rounded-lg border border-border/60 bg-white/50 py-1.5 pl-8 pr-2 text-xs text-primary-text placeholder:text-primary-text/40 shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus:border-accent/40 focus:outline-hidden focus:ring-2 focus:ring-accent/10 dark:border-border-dark/60 dark:bg-white/[0.04] dark:text-primary-text-dark dark:placeholder:text-primary-text-dark/40 dark:focus:border-accent-dark/40 dark:focus:ring-accent-dark/10"
       />
     </div>
   );

@@ -136,18 +136,19 @@ export default function AutoRefreshIndicator({
           group relative flex items-center justify-center shrink-0
           size-9 rounded-full
           border border-border/60 dark:border-border-dark/60
-          bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-sm
-          shadow-sm
+          bg-surface/90 dark:bg-surface-dark/90 backdrop-blur-xs
+          shadow-xs
+          text-primary-text dark:text-primary-text-dark
           transition-colors duration-200
           hover:border-accent/50 dark:hover:border-accent-dark/50
           hover:bg-surface-alt dark:hover:bg-surface-alt-dark
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:focus-visible:ring-accent-dark
+          focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent dark:focus-visible:ring-accent-dark
           disabled:opacity-60 disabled:pointer-events-none
         `}
       >
         {!ringMuted && showCountdown && <ProgressRing progress={progress} />}
         <Refresh
-          className={`relative z-10 size-4 text-secondary-text dark:text-secondary-text-dark group-hover:text-accent dark:group-hover:text-accent-dark transition-colors ${
+          className={`relative z-10 size-4 transition-colors group-hover:text-accent dark:group-hover:text-accent-dark ${
             isRefreshing ? 'animate-spin' : ''
           }`}
           aria-hidden

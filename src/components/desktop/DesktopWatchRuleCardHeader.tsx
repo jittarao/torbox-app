@@ -54,7 +54,7 @@ export default function DesktopWatchRuleCardHeader({
         onClick={onToggleExpanded}
         aria-expanded={expanded}
         aria-controls={`watch-rule-panel-${rule.id}`}
-        className="mt-0.5 flex min-w-0 flex-1 items-start gap-3 rounded-lg text-left transition-colors hover:bg-surface-alt/60 focus:outline-none focus:ring-2 focus:ring-accent/25 dark:hover:bg-surface-dark/60 dark:focus:ring-accent-dark/25"
+        className="mt-0.5 flex min-w-0 flex-1 items-start gap-3 rounded-lg text-left transition-colors hover:bg-surface-alt/60 focus:outline-hidden focus:ring-2 focus:ring-accent/25 dark:hover:bg-surface-dark/60 dark:focus:ring-accent-dark/25"
       >
         <span
           className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold tabular-nums ${

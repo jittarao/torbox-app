@@ -37,7 +37,7 @@ export default function MultiSelectTrigger({
                   disabled={disabled}
                   onClick={(e) => onRemoveOption(opt.value, e)}
                   onMouseDown={(e) => e.preventDefault()}
-                  className="hover:text-accent/80 dark:hover:text-accent-dark/80 focus:outline-none focus:ring-1 focus:ring-accent dark:focus:ring-accent-dark rounded-sm cursor-pointer disabled:cursor-not-allowed"
+                  className="hover:text-accent/80 dark:hover:text-accent-dark/80 focus:outline-hidden focus:ring-1 focus:ring-accent dark:focus:ring-accent-dark rounded-xs cursor-pointer disabled:cursor-not-allowed"
                   aria-label={`Remove ${opt.label}`}
                 >
                   ×
@@ -50,7 +50,7 @@ export default function MultiSelectTrigger({
             type="button"
             onClick={onToggle}
             disabled={disabled}
-            className="truncate text-left flex-1 min-w-0 bg-transparent border-0 p-0 focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset rounded-sm disabled:cursor-not-allowed touch-manipulation"
+            className="truncate text-left flex-1 min-w-0 bg-transparent border-0 p-0 focus:outline-hidden focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset rounded-xs disabled:cursor-not-allowed touch-manipulation"
             aria-haspopup="listbox"
             aria-expanded={isOpen}
           >
@@ -62,7 +62,7 @@ export default function MultiSelectTrigger({
         type="button"
         onClick={onToggle}
         disabled={disabled}
-        className="ml-2 flex-shrink-0 rounded-sm focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset touch-manipulation disabled:cursor-not-allowed"
+        className="ml-2 shrink-0 rounded-xs focus:outline-hidden focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset touch-manipulation disabled:cursor-not-allowed"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label={showChips ? displayText : undefined}

@@ -199,7 +199,7 @@ export default function Select({
           border border-border dark:border-border-dark rounded-md
           bg-surface dark:bg-surface-dark
           hover:border-accent/50 dark:hover:border-accent-dark/50
-          focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
+          focus:outline-hidden focus:ring-2 focus:ring-accent dark:focus:ring-accent-dark focus:ring-inset
           transition-colors
           disabled:opacity-50 disabled:cursor-not-allowed
           touch-manipulation
@@ -210,7 +210,7 @@ export default function Select({
       >
         <span className="truncate">{selectedLabel || placeholder}</span>
         <svg
-          className={`w-4 h-4 ml-2 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 ml-2 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

@@ -4,7 +4,7 @@ import { CreditCard, BarChart3, Download } from '@/components/icons';
 
 export function UserProfileAccountStatus({ userData, t, getPlanName, formatDate }) {
   return (
-    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
+    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-xs">
       <div className="flex items-center gap-2 mb-6">
         <CreditCard className="size-5 text-accent dark:text-accent-dark" />
         <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
@@ -37,7 +37,7 @@ export function UserProfileAccountStatus({ userData, t, getPlanName, formatDate 
 
 export function UserProfileUsageStats({ userData, t, formatTransferBytes }) {
   return (
-    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
+    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-xs">
       <div className="flex items-center gap-2 mb-6">
         <BarChart3 className="size-5 text-accent dark:text-accent-dark" />
         <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">
@@ -92,7 +92,7 @@ export function UserProfileUsageStats({ userData, t, formatTransferBytes }) {
 
 export function UserProfileDownloadBreakdown({ userData, t }) {
   return (
-    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-sm">
+    <div className="bg-surface dark:bg-surface-dark rounded-lg border border-border dark:border-border-dark p-6 shadow-xs">
       <div className="flex items-center gap-2 mb-6">
         <Download className="size-5 text-accent dark:text-accent-dark" />
         <h3 className="text-lg font-semibold text-primary-text dark:text-primary-text-dark">

@@ -31,7 +31,7 @@ function MetaBadge({ label, value }: { label: string; value?: string | null }) {
   }
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-white px-3 py-2 text-xs shadow-sm dark:border-border-dark/60 dark:bg-surface-dark">
+    <div className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-white px-3 py-2 text-xs shadow-xs dark:border-border-dark/60 dark:bg-surface-dark">
       <span className="font-medium text-muted dark:text-muted-dark">{label}</span>
       <span className="font-mono text-text dark:text-text-dark">{value}</span>
     </div>
@@ -64,7 +64,7 @@ export default function DesktopPageClient() {
           <div className="flex flex-col gap-5 border-b border-border/50 pb-6 dark:border-border-dark/50 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-white text-accent shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark dark:text-accent-dark">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-white text-accent shadow-xs dark:border-border-dark/60 dark:bg-surface-alt-dark dark:text-accent-dark">
                   <Settings className="size-5" />
                 </span>
                 <div>
@@ -93,7 +93,7 @@ export default function DesktopPageClient() {
             <p className="text-sm text-muted dark:text-muted-dark">{tCommon('loading')}</p>
           </div>
         ) : initError ? (
-          <div className="mx-auto max-w-xl rounded-xl border border-border/60 bg-white p-8 text-center shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark">
+          <div className="mx-auto max-w-xl rounded-xl border border-border/60 bg-white p-8 text-center shadow-xs dark:border-border-dark/60 dark:bg-surface-alt-dark">
             <p className="text-base font-semibold text-text dark:text-text-dark">
               {t('initFailedTitle')}
             </p>
@@ -109,7 +109,7 @@ export default function DesktopPageClient() {
             </button>
           </div>
         ) : !available ? (
-          <div className="mx-auto max-w-xl rounded-xl border border-border/60 bg-white p-8 text-center shadow-sm dark:border-border-dark/60 dark:bg-surface-alt-dark">
+          <div className="mx-auto max-w-xl rounded-xl border border-border/60 bg-white p-8 text-center shadow-xs dark:border-border-dark/60 dark:bg-surface-alt-dark">
             <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl border border-border/60 bg-surface-alt text-muted dark:border-border-dark/60 dark:bg-surface-dark dark:text-muted-dark">
               <HardDrive className="size-6" />
             </span>

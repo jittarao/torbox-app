@@ -297,7 +297,7 @@ const VirtualizedTableBodyInner = memo(function VirtualizedTableBodyInner({
         <tr>
           <td
             colSpan={activeColumns.length + 2}
-            className="text-center py-8 text-text-secondary dark:text-text-secondary-dark"
+            className="text-center py-8 text-primary-text/70 dark:text-primary-text-dark/70"
           >
             {t('noDownloads')}
           </td>

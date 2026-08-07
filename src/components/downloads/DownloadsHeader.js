@@ -63,7 +63,7 @@ export default function DownloadsHeader({
       />
 
       {isRefreshing && (
-        <p className="text-xs text-secondary-text dark:text-secondary-text-dark text-center py-1">
+        <p className="text-xs text-primary-text/70 dark:text-primary-text-dark/70 text-center py-1">
           {fetchStatusT('refreshing')}
         </p>
       )}

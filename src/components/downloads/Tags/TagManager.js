@@ -60,7 +60,7 @@ function TagRow({
             className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold
               text-white bg-red-600 hover:bg-red-500
               disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+              transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500/40"
           >
             {loading ? (
               <span className="inline-block size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -100,7 +100,7 @@ function TagRow({
             }}
             className="min-w-0 flex-1 rounded-lg border border-border/80 bg-surface px-3 py-2 text-sm
               text-primary-text placeholder:text-primary-text/40
-              focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20
+              focus:border-accent/50 focus:outline-hidden focus:ring-2 focus:ring-accent/20
               dark:border-border-dark/80 dark:bg-surface-dark dark:text-primary-text-dark
               dark:focus:border-accent-dark/50 dark:focus:ring-accent-dark/20"
             aria-label={t('menuRename')}
@@ -311,7 +311,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
         {/* Header */}
         <div className="relative shrink-0 border-b border-border/50 px-4 pb-2.5 sm:overflow-hidden sm:px-5 sm:pb-4 sm:pt-5 dark:border-border-dark/50">
           <div
-            className="pointer-events-none absolute inset-0 hidden bg-gradient-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
+            className="pointer-events-none absolute inset-0 hidden bg-linear-to-br from-accent/8 via-transparent to-transparent dark:from-accent-dark/10 sm:block"
             aria-hidden
           />
           <div className="relative flex items-center gap-2 sm:items-start sm:gap-3">
@@ -377,7 +377,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                 disabled={loading}
                 className="w-full rounded-xl border border-border/80 bg-surface-alt/50 py-2.5 pl-9 pr-3 text-sm
                     text-primary-text placeholder:text-primary-text/40
-                    focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/15
+                    focus:border-accent/50 focus:bg-surface focus:outline-hidden focus:ring-2 focus:ring-accent/15
                     disabled:opacity-60
                     dark:border-border-dark/80 dark:bg-surface-alt-dark/40 dark:text-primary-text-dark
                     dark:focus:border-accent-dark/50 dark:focus:bg-surface-dark dark:focus:ring-accent-dark/15"
@@ -410,7 +410,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
                 placeholder={t('tagManagerSearchPlaceholder')}
                 className="w-full rounded-xl border border-border/60 bg-transparent py-2 pl-9 pr-3 text-sm
                     text-primary-text placeholder:text-primary-text/40
-                    focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/10
+                    focus:border-accent/40 focus:outline-hidden focus:ring-2 focus:ring-accent/10
                     dark:border-border-dark/60 dark:text-primary-text-dark
                     dark:focus:border-accent-dark/40 dark:focus:ring-accent-dark/10"
                 aria-label={t('tagManagerSearchPlaceholder')}
