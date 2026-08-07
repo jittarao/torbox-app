@@ -44,7 +44,7 @@ describe('desktopStore', () => {
   });
 
   beforeEach(() => {
-    globalThis.window = {};
+    restoreDomGlobals();
   });
 
   test('initialize marks unavailable outside Tauri without error', async () => {

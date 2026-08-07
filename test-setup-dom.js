@@ -1,4 +1,5 @@
 import { Window } from 'happy-dom';
+import { afterEach, beforeEach } from 'bun:test';
 
 const matchMediaMock = (query) => ({
   matches: false,
@@ -47,3 +48,16 @@ applyDomGlobals(window);
 export function restoreDomGlobals() {
   applyDomGlobals(window);
 }
+
+// Reset happy-dom globals before/after each test so DOM suites do not leak state
+// across files in Bun's default single-process test runner.
+beforeEach(() => {
+  restoreDomGlobals();
+});
+
+afterEach(() => {
+  restoreDomGlobals();
+  if (typeof document !== 'undefined') {
+    document.body.innerHTML = '';
+  }
+});
