@@ -27,8 +27,9 @@ const nextConfig = {
   // Always enabled since this config is used for production builds
   output: 'standalone',
 
-  // Cache Components (Next.js 16.1.1+)
-  cacheComponents: process.env.NODE_ENV === 'production',
+  // Cache Components + Partial Prefetching (Next.js 16.3+) — instant navigations / App Shell prefetch
+  cacheComponents: true,
+  partialPrefetching: true,
 
   // React Strict Mode — opt-in via REACT_STRICT_MODE=true in .env.local.
   // Off by default in dev: it double-invokes every render and effect, which

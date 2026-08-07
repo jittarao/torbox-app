@@ -1,27 +1,28 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useCallback } from 'react';
-import AppShell from '@/components/navigation/AppShell';
 import dynamic from 'next/dynamic';
 import { useFileHandler } from '@/hooks/useFileHandler';
-import useIsClient from '@/hooks/useIsClient';
 import { useUpload } from '@/components/shared/hooks/useUpload';
 import { useSession } from '@/components/shared/hooks/useSession';
 import { useEnsureUserDb } from '@/components/shared/hooks/useEnsureUserDb';
 import { useAppAlert } from '@/hooks/useAppAlert';
 
-const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
-  loading: () => (
+function DownloadsFallback() {
+  return (
     <div className="flex justify-center items-center p-8">
-      <div className="animate-spin rounded-full size-8 border-2 border-amber-500/30 border-t-amber-500"></div>
+      <div className="animate-spin rounded-full size-8 border-2 border-amber-500/30 border-t-amber-500" />
     </div>
-  ),
+  );
+}
+
+const Downloads = dynamic(() => import('@/components/downloads/Downloads'), {
+  loading: () => <DownloadsFallback />,
   ssr: false,
 });
 
 export default function HomePageClient() {
-  const { apiKey, hydrated, setApiKey } = useSession();
-  const isClient = useIsClient();
+  const { apiKey, setApiKey } = useSession();
   const mainRef = useRef(null);
   const didFocusMainRef = useRef(false);
   const { setLinkInput, validateAndAddFiles } = useUpload(apiKey, 'torrents');
@@ -72,40 +73,33 @@ export default function HomePageClient() {
   );
 
   useEffect(() => {
-    if (!isClient || !hydrated || !apiKey || didFocusMainRef.current) return;
+    if (!apiKey || didFocusMainRef.current) return;
     didFocusMainRef.current = true;
     const el = mainRef.current;
     if (el && typeof el.focus === 'function') {
       el.focus({ preventScroll: true });
     }
-  }, [isClient, hydrated, apiKey]);
+  }, [apiKey]);
 
   const handleKeyChange = (newKey) => {
     setApiKey(newKey);
   };
 
-  if (!isClient || !hydrated || !apiKey) {
-    return <div className="min-h-dvh bg-[#0a0a0b] font-sans" aria-hidden inert />;
-  }
-
   return (
-    <AppShell apiKey={apiKey} className="min-h-dvh bg-surface dark:bg-surface-dark font-sans">
+    <>
       <div
         ref={mainRef}
         tabIndex={-1}
         className="container-downloads mx-auto px-2 sm:px-4 pt-2 pb-4 outline-hidden"
       >
-        <Suspense
-          fallback={
-            <div className="flex justify-center items-center p-8">
-              <div className="animate-spin rounded-full size-8 border-2 border-amber-500/30 border-t-amber-500" />
-            </div>
-          }
-        >
-          <Downloads apiKey={apiKey} onApiKeyChange={handleKeyChange} />
-        </Suspense>
+        {/* Keep segment mounted for Instant Nav while unauthenticated, but defer Downloads. */}
+        {apiKey ? (
+          <Suspense fallback={<DownloadsFallback />}>
+            <Downloads apiKey={apiKey} onApiKeyChange={handleKeyChange} />
+          </Suspense>
+        ) : null}
       </div>
       <AppAlert />
-    </AppShell>
+    </>
   );
 }

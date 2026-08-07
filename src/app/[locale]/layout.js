@@ -1,4 +1,3 @@
-import { FileHandler } from '@/components/shared/FileHandler';
 import { ErrorHandlerInitializer } from '@/components/shared/ErrorHandlerInitializer';
 import { LocaleContentBoundary } from '@/components/shared/LocaleContentBoundary';
 import { DesktopBridgeInit } from '@/components/desktop/DesktopBridgeInit';
@@ -6,8 +5,6 @@ import { PostHogProvider } from './providers';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FeatureFlagsProvider } from '@/contexts/FeatureFlagsContext';
 import { isOnboardingAuxActive, isSearchPageDisabled } from '@/utils/featureFlags';
-import ActivityBeacon from '@/components/shared/ActivityBeacon';
-import ApiKeyRouteGate from '@/components/shared/ApiKeyRouteGate';
 import { Suspense } from 'react';
 
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
@@ -60,21 +57,28 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-async function MessagesLoader({ locale, children }) {
-  const messages = await getMessages();
-  return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      {children}
-    </NextIntlClientProvider>
-  );
-}
-
-export default async function LocaleLayout({ children, params }) {
+async function LocaleContent({ params, children }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 
+  const messages = await getMessages();
+
+  return (
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <PostHogProvider>
+        <LocaleContentBoundary>
+          <ErrorHandlerInitializer />
+          <DesktopBridgeInit />
+          {children}
+        </LocaleContentBoundary>
+      </PostHogProvider>
+    </NextIntlClientProvider>
+  );
+}
+
+export default function LocaleLayout({ children, params }) {
   const searchPageDisabled = isSearchPageDisabled();
   const onboardingAuxActive = isOnboardingAuxActive();
 
@@ -89,23 +93,7 @@ export default async function LocaleLayout({ children, params }) {
             <div className="animate-spin rounded-full size-8 border-b-2 border-accent mx-auto mt-16" />
           }
         >
-          <MessagesLoader locale={locale}>
-            <PostHogProvider>
-              <LocaleContentBoundary>
-                <ErrorHandlerInitializer />
-                <DesktopBridgeInit />
-                <FileHandler />
-                <ActivityBeacon />
-                <Suspense
-                  fallback={
-                    <div className="animate-spin rounded-full size-8 border-b-2 border-accent" />
-                  }
-                >
-                  <ApiKeyRouteGate>{children}</ApiKeyRouteGate>
-                </Suspense>
-              </LocaleContentBoundary>
-            </PostHogProvider>
-          </MessagesLoader>
+          <LocaleContent params={params}>{children}</LocaleContent>
         </Suspense>
       </FeatureFlagsProvider>
     </ThemeProvider>

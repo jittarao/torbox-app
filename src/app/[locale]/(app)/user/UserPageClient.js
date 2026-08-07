@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import AppShell from '@/components/navigation/AppShell';
 import UserProfile from '@/components/user/UserProfile';
 import ReferralUpgradeCard from '@/components/referral/ReferralUpgradeCard';
 import Toast from '@/components/shared/Toast';
@@ -10,7 +9,7 @@ import { useSession } from '@/components/shared/hooks/useSession';
 
 export default function UserPageClient() {
   const [toast, setToast] = useState(null);
-  const { apiKey, hydrated, setApiKey } = useSession();
+  const { apiKey, hydrated } = useSession();
   const t = useTranslations('User');
 
   useEffect(() => {
@@ -23,30 +22,18 @@ export default function UserPageClient() {
     }
   }, [apiKey]);
 
-  const handleKeyChange = (newKey) => {
-    setApiKey(newKey);
-    if (newKey) {
-      import('@/utils/ensureUserDb').then(({ ensureUserDb }) => {
-        ensureUserDb(newKey).catch((error) => {
-          console.error('Error ensuring user database:', error);
-        });
-      });
-    }
-  };
-
   if (!hydrated) {
-    return <div className={`min-h-dvh bg-surface dark:bg-surface-dark font-sans`}></div>;
+    return null;
   }
 
   return (
-    <AppShell apiKey={apiKey} className={`min-h-dvh bg-surface dark:bg-surface-dark font-sans`}>
+    <>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text dark:text-text-dark mb-2">{t('title')}</h1>
           <p className="text-muted dark:text-muted-dark">{t('description')}</p>
         </div>
 
-        {/* User Profile Content */}
         <div>
           <ErrorBoundary>
             <ReferralUpgradeCard apiKey={apiKey} onToast={setToast} />
@@ -55,9 +42,8 @@ export default function UserPageClient() {
         </div>
       </div>
 
-      {/* Toast Notifications */}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </AppShell>
+    </>
   );
 }
 

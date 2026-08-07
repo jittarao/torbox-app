@@ -1,7 +1,6 @@
 'use client';
 
 import ArchivedDownloads from '@/components/ArchivedDownloads';
-import AppShell from '@/components/navigation/AppShell';
 import Spinner from '@/components/shared/Spinner';
 import { useEffect } from 'react';
 import { useSession } from '@/components/shared/hooks/useSession';
@@ -21,17 +20,15 @@ export default function ArchivedPageClient() {
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-surface dark:bg-surface-dark">
+      <div className="flex items-center justify-center p-8">
         <Spinner size="lg" className="text-primary-text dark:text-primary-text-dark" />
       </div>
     );
   }
 
   return (
-    <AppShell apiKey={apiKey} className="min-h-dvh bg-surface dark:bg-surface-dark font-sans">
-      <div className="container mx-auto p-4">
-        <ArchivedDownloads apiKey={apiKey} />
-      </div>
-    </AppShell>
+    <div className="container mx-auto p-4">
+      <ArchivedDownloads apiKey={apiKey} />
+    </div>
   );
 }
