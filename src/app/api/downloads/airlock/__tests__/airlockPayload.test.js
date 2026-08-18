@@ -7,6 +7,9 @@ import {
   isIdInQueuedList,
   normalizeAssetType,
   normalizeEditableArray,
+  normalizeEditName,
+  normalizeEditTags,
+  resolveEditResourceId,
 } from '../airlockPayload';
 
 describe('airlockPayload', () => {
@@ -37,6 +40,14 @@ describe('airlockPayload', () => {
     expect(findDownloadById({ data: [{ id: 1 }] }, 9)).toBeNull();
   });
 
+  test('findDownloadById matches type-specific id fields', () => {
+    expect(findDownloadById({ data: { usenet_id: 55, name: 'nzb' } }, 55)).toEqual({
+      usenet_id: 55,
+      name: 'nzb',
+    });
+    expect(findDownloadById({ data: [{ web_id: 9 }] }, 9)).toEqual({ web_id: 9 });
+  });
+
   test('builds preserved TorBox edit payload without TBM tag mappings', () => {
     expect(
       buildEditPayload(
@@ -47,7 +58,8 @@ describe('airlockPayload', () => {
           alternative_hashes: ['abc'],
         },
         'torrent_id',
-        true
+        true,
+        123
       )
     ).toEqual({
       torrent_id: 123,
@@ -74,7 +86,7 @@ describe('airlockPayload', () => {
 
   test('buildEditPayload preserves camelCase alternative hashes', () => {
     expect(
-      buildEditPayload({ id: 1, name: 'x', alternativeHashes: ['hash'] }, 'torrent_id', false)
+      buildEditPayload({ id: 1, name: 'x', alternativeHashes: ['hash'] }, 'torrent_id', false, 1)
     ).toEqual({
       torrent_id: 1,
       name: 'x',
@@ -84,8 +96,52 @@ describe('airlockPayload', () => {
     });
   });
 
+  test('buildEditPayload resolves usenet_id and normalizes tag objects', () => {
+    expect(
+      buildEditPayload(
+        { usenet_id: 55, name: 'Usenet item', tags: [{ id: 1, name: 'keep' }] },
+        'usenet_id',
+        false,
+        55
+      )
+    ).toEqual({
+      usenet_id: 55,
+      name: 'Usenet item',
+      tags: ['keep'],
+      alternative_hashes: [],
+      airlocked: false,
+    });
+  });
+
+  test('buildEditPayload resolves webdl_id from web_id', () => {
+    expect(
+      buildEditPayload({ web_id: 9, name: 'Web download', tags: ['x'] }, 'webdl_id', true, 9)
+    ).toEqual({
+      webdl_id: 9,
+      name: 'Web download',
+      tags: ['x'],
+      alternative_hashes: [],
+      airlocked: true,
+    });
+  });
+
+  test('normalizeEditName falls back when upstream name is blank', () => {
+    expect(normalizeEditName('  ', 77)).toBe('Download 77');
+    expect(normalizeEditName(' valid ', 77)).toBe('valid');
+  });
+
+  test('normalizeEditTags keeps string tags and maps tag objects to names', () => {
+    expect(normalizeEditTags(['a', { name: 'b' }, { id: 1 }])).toEqual(['a', 'b']);
+  });
+
+  test('resolveEditResourceId prefers type-specific fields', () => {
+    expect(resolveEditResourceId({ usenet_id: 55 }, 'usenet_id', 99)).toBe(55);
+    expect(resolveEditResourceId({ web_id: 9 }, 'webdl_id', 9)).toBe(9);
+  });
+
   test('isIdInQueuedList matches ids with string coercion', () => {
     expect(isIdInQueuedList({ data: [{ id: 7 }] }, '7')).toBe(true);
     expect(isIdInQueuedList({ data: [{ id: 7 }] }, 99)).toBe(false);
+    expect(isIdInQueuedList({ data: [{ usenet_id: 7 }] }, '7')).toBe(true);
   });
 });

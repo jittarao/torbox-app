@@ -653,7 +653,8 @@ function isTimeoutLikeMessage(message) {
   return (
     message.includes('Request timeout') ||
     message.includes('aborted due to timeout') ||
-    message.includes('fetch failed')
+    message.includes('fetch failed') ||
+    (message.includes('Unexpected token') && message.includes('JSON'))
   );
 }
 

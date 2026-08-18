@@ -77,6 +77,7 @@ export function isExpectedApiError(error) {
   if (message === 'User not registered' || message.includes('API key inactive')) return true;
   if (message.includes('ECONNREFUSED') || message.includes('backend unreachable')) return true;
   if (message.includes('Unexpected token') && message.includes('JSON')) return true;
+  if (/^API responded with status: 5\d\d$/.test(message)) return true;
   return false;
 }
 
@@ -125,7 +126,11 @@ export function backendProxyErrorResponse(response, context) {
     response?.data?.error || response?.data?.detail || `Backend responded with status: ${status}`;
 
   if (status === 401 || status === 403 || status === 404) {
-    if (!shouldRateLimit(`${context}:${status}:${error}`, EXPECTED_RATE_MS)) {
+    const sharedKey =
+      status === 404 && error === 'User not registered'
+        ? 'backend:user-not-registered:404'
+        : `${context}:${status}:${error}`;
+    if (!shouldRateLimit(sharedKey, EXPECTED_RATE_MS)) {
       console.warn(`${context}: ${error} (${status})`);
     }
     return NextResponse.json({ success: false, error }, { status });

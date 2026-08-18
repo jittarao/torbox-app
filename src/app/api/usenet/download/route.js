@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { isTorboxFetchTimeout, torboxFetch, TORBOX_TIMEOUT_ERROR } from '@/app/api/lib/torboxFetch';
+import { logRouteError } from '@/utils/routeLog';
 import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET(request) {
   const headersList = await headers();
@@ -49,7 +50,7 @@ export async function GET(request) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching usenet download link:', error);
+    logRouteError('Error fetching usenet download link', error);
     if (isTorboxFetchTimeout(error)) {
       return NextResponse.json({ success: false, error: TORBOX_TIMEOUT_ERROR }, { status: 408 });
     }

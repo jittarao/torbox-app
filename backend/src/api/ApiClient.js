@@ -182,7 +182,47 @@ function getAirlockListEndpoint(assetType) {
 
 function findDownloadInListData(data, id) {
   const items = Array.isArray(data?.data) ? data.data : data?.data ? [data.data] : [];
-  return items.find((item) => String(item.id) === String(id)) || null;
+  const matchFields = ['id', 'torrent_id', 'usenet_id', 'webdl_id', 'web_id'];
+  return (
+    items.find((item) =>
+      matchFields.some((field) => item?.[field] != null && String(item[field]) === String(id))
+    ) || null
+  );
+}
+
+function normalizeEditTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags
+    .map((tag) => {
+      if (typeof tag === 'string') return tag.trim();
+      if (tag && typeof tag === 'object' && typeof tag.name === 'string') return tag.name.trim();
+      return '';
+    })
+    .filter((tag) => tag.length > 0);
+}
+
+function normalizeEditName(name, resourceId) {
+  const trimmed = typeof name === 'string' ? name.trim() : '';
+  if (trimmed.length > 0) return trimmed;
+  return `Download ${resourceId}`;
+}
+
+function resolveEditResourceId(download, idField, requestId) {
+  const candidates =
+    idField === 'torrent_id'
+      ? ['torrent_id', 'id']
+      : idField === 'usenet_id'
+        ? ['usenet_id', 'id']
+        : idField === 'webdl_id'
+          ? ['webdl_id', 'web_id', 'id']
+          : [idField, 'id'];
+  for (const field of candidates) {
+    const value = download?.[field];
+    if (value !== undefined && value !== null && value !== '') {
+      return value;
+    }
+  }
+  return requestId;
 }
 
 function normalizeEditableArray(value) {
@@ -193,11 +233,13 @@ function buildAirlockEditPayload(download, airlocked) {
   const assetType = normalizeAssetTypeForEdit(download);
   const { idField } = getAirlockEditConfig(assetType);
   const alternativeHashes = download.alternative_hashes ?? download.alternativeHashes;
+  const requestId = download.id;
+  const resourceId = resolveEditResourceId(download, idField, requestId);
 
   return {
-    [idField]: download.id,
-    name: download.name || '',
-    tags: normalizeEditableArray(download.tags),
+    [idField]: resourceId,
+    name: normalizeEditName(download.name, resourceId),
+    tags: normalizeEditTags(download.tags),
     alternative_hashes: normalizeEditableArray(alternativeHashes),
     airlocked,
   };

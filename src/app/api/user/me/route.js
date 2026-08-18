@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
+import { logRouteError } from '@/utils/routeLog';
 import { sanitizeError } from '@/utils/sanitizeError';
 export async function GET() {
   const headersList = await headers();
@@ -35,7 +36,7 @@ export async function GET() {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching user profile:', error);
+    logRouteError('Error fetching user profile', error);
     return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }
