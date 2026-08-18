@@ -1,16 +1,13 @@
-import { isTorboxFetchTimeout, torboxFetch } from '@/app/api/lib/torboxFetch';
-import { safeJsonParse } from '@/utils/safeJsonParse';
-import {
-  buildListSyncResponse,
-  handleListSyncRequest,
-  patchCacheRemoveIds,
-} from '@/app/api/lib/downloadListSync';
+import { isTorboxFetchTimeout } from '@/app/api/lib/torboxFetch';
+import { buildListSyncResponse, handleListSyncRequest } from '@/app/api/lib/downloadListSync';
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { queueTorrentUpload } from '@/app/api/lib/queueTorrentUpload';
 import { publicApiErrorResponse, sanitizeError } from '@/utils/sanitizeError';
 import { logRouteError } from '@/utils/routeLog';
-import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
-import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
+import {
+  deleteDownloadItem,
+  deleteDownloadItemErrorResponse,
+} from '@/app/api/lib/deleteDownloadItem';
 
 const CACHE_TYPE = 'torrents';
 
@@ -73,97 +70,11 @@ export async function POST(request) {
 export async function DELETE(request) {
   const auth = await requireTorboxApiKey();
   if (auth.response) return auth.response;
-  const apiKey = auth.apiKey;
-  const { id } = await request.json();
 
   try {
-    const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
-    if (blocked) return blocked;
-
-    const [torrentsResponse, queuedResponse] = await Promise.all([
-      torboxFetch(`${API_BASE}/${API_VERSION}/api/torrents/mylist?id=${id}`, {
-        cache: 'no-store',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-        },
-      }),
-      torboxFetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=torrent`, {
-        cache: 'no-store',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-        },
-      }),
-    ]);
-
-    const [torrentsData, queuedData] = await Promise.all([
-      safeJsonParse(torrentsResponse),
-      safeJsonParse(queuedResponse),
-    ]);
-
-    const isQueued = queuedData.data?.some((item) => item.id === id);
-
-    const endpoint = isQueued
-      ? `${API_BASE}/${API_VERSION}/api/queued/controlqueued`
-      : `${API_BASE}/${API_VERSION}/api/torrents/controltorrent`;
-
-    const body = isQueued
-      ? JSON.stringify({
-          queued_id: id,
-          operation: 'delete',
-          type: 'torrent',
-        })
-      : JSON.stringify({
-          torrent_id: id,
-          operation: 'delete',
-        });
-
-    const response = await torboxFetch(endpoint, {
-      cache: 'no-store',
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-      },
-      body,
-    });
-
-    const data = await safeJsonParse(response);
-
-    if (!response.ok) {
-      logRouteError('[torrents DELETE] Upstream error', {
-        error: data.error || `API responded with status: ${response.status}`,
-        detail: data.detail,
-        message: data.detail
-          ? `${data.error || response.status}: ${data.detail}`
-          : data.error || `API responded with status: ${response.status}`,
-      });
-      return Response.json(
-        {
-          success: false,
-          error: data.error || `API responded with status: ${response.status}`,
-          detail: data.detail,
-        },
-        { status: response.status }
-      );
-    }
-
-    await patchCacheRemoveIds(apiKey, CACHE_TYPE, [id]);
-
-    return Response.json(data);
+    const { id } = await request.json();
+    return await deleteDownloadItem({ apiKey: auth.apiKey, id, assetType: 'torrents' });
   } catch (error) {
-    logRouteError('[torrents DELETE] Error', error);
-    return Response.json(
-      {
-        success: false,
-        error:
-          sanitizeError(error) ||
-          'There was an unknown error deleting this torrent. Please try again later.',
-        detail: 'DOWNLOAD_SERVER_ERROR',
-      },
-      { status: 500 }
-    );
+    return deleteDownloadItemErrorResponse(error, 'torrents');
   }
 }

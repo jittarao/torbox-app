@@ -11,7 +11,10 @@ import {
 import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { publicApiErrorResponse, sanitizeError } from '@/utils/sanitizeError';
 import { logRouteError } from '@/utils/routeLog';
-import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
+import {
+  deleteDownloadItem,
+  deleteDownloadItemErrorResponse,
+} from '@/app/api/lib/deleteDownloadItem';
 
 const CACHE_TYPE = 'usenet';
 
@@ -221,79 +224,8 @@ export async function DELETE(request) {
   const { id } = await request.json();
 
   try {
-    const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
-    if (blocked) return blocked;
-
-    // First, fetch the usenet data to determine if it's queued
-    const [downloadsResponse, queuedResponse] = await Promise.all([
-      torboxFetch(`${API_BASE}/${API_VERSION}/api/usenet/mylist?id=${id}`, {
-        cache: 'no-store',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-        },
-      }),
-      torboxFetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=usenet`, {
-        cache: 'no-store',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-        },
-      }),
-    ]);
-
-    const [downloadsData, queuedData] = await Promise.all([
-      downloadsResponse.json(),
-      queuedResponse.json(),
-    ]);
-
-    // Check if the usenet item is in the queued list
-    const isQueued = queuedData.data?.some((item) => item.id === id);
-
-    // Use appropriate endpoint based on whether usenet item is queued
-    const endpoint = isQueued
-      ? `${API_BASE}/${API_VERSION}/api/queued/controlqueued`
-      : `${API_BASE}/${API_VERSION}/api/usenet/controlusenetdownload`;
-
-    const body = isQueued
-      ? JSON.stringify({
-          queued_id: id,
-          operation: 'delete',
-          type: 'usenet',
-        })
-      : JSON.stringify({
-          usenet_id: id,
-          operation: 'delete',
-        });
-
-    const response = await torboxFetch(endpoint, {
-      cache: 'no-store',
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'User-Agent': `TorBoxManager/${TORBOX_MANAGER_VERSION}`,
-      },
-      body,
-    });
-
-    const data = await safeJsonParse(response);
-
-    if (!response.ok) {
-      return Response.json(
-        {
-          success: false,
-          error: data.error || `API responded with status: ${response.status}`,
-          detail: data.detail,
-        },
-        { status: response.status }
-      );
-    }
-
-    await patchCacheRemoveIds(apiKey, CACHE_TYPE, [id]);
-
-    return Response.json(data);
+    return await deleteDownloadItem({ apiKey, id, assetType: 'usenet' });
   } catch (error) {
-    return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
+    return deleteDownloadItemErrorResponse(error, 'usenet');
   }
 }

@@ -271,16 +271,24 @@ class PollingScheduler {
   async runWithPipelineLock(authId, operation, timeoutMs = null) {
     const mutex = this.getPipelineMutex(authId);
     await mutex.acquire();
+    const cancelToken = { cancelled: false };
     try {
+      const invoke = () => operation({ cancelToken });
       if (timeoutMs != null && timeoutMs > 0) {
         return await withTimeout(
-          operation(),
+          invoke(),
           timeoutMs,
-          `Pipeline lock operation timed out after ${timeoutMs / 1000}s`
+          `Pipeline lock operation timed out after ${timeoutMs / 1000}s`,
+          {
+            onTimeout: () => {
+              cancelToken.cancelled = true;
+            },
+          }
         );
       }
-      return await operation();
+      return await invoke();
     } finally {
+      cancelToken.cancelled = true;
       mutex.release();
       if (mutex.isEmpty()) {
         this.pipelineMutexes.delete(authId);
@@ -623,9 +631,10 @@ class PollingScheduler {
       (pollMeta.changes?.new || 0) +
       (pollMeta.changes?.updated || 0) +
       (pollMeta.changes?.removed || 0);
-    // Quiet idle polls; keep info when state changed or rules queued/executed actions.
-    if (changeCount > 0 || pollMeta.rulesExecuted > 0) {
-      logger.info('Poll completed successfully', pollMeta);
+    const pendingActionsCount = result.ruleResults?.pendingActions?.length ?? 0;
+    // Quiet idle polls; keep info when state changed or rules queued work.
+    if (changeCount > 0 || pendingActionsCount > 0) {
+      logger.info('Poll completed successfully', { ...pollMeta, pendingActionsCount });
     } else {
       logger.debug('Poll completed successfully', pollMeta);
     }

@@ -834,7 +834,11 @@ class UserPoller {
       }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-      logger.info('Poll completed successfully', {
+      const changeCount =
+        (result.changes.new?.length || 0) +
+        (result.changes.updated?.length || 0) +
+        (result.changes.removed?.length || 0);
+      const pollMeta = {
         authId: this.authId,
         duration: `${duration}s`,
         new: result.changes.new?.length || 0,
@@ -847,7 +851,12 @@ class UserPoller {
         hasActiveRules,
         nextPollAt: result.nextPollAt?.toISOString() || 'unknown',
         timestamp: new Date().toISOString(),
-      });
+      };
+      if (changeCount > 0 || (result.ruleResults?.pendingActions?.length ?? 0) > 0) {
+        logger.info('Poll completed successfully', pollMeta);
+      } else {
+        logger.debug('Poll completed successfully', pollMeta);
+      }
 
       return {
         success: true,
