@@ -117,7 +117,7 @@ class RuleExecutor {
 
           if (result?.skipped === true && result?.reason === PROTECTION_SKIP_REASON) {
             protectedSkippedCount++;
-            logger.info('Action skipped — download is protected', {
+            logger.debug('Action skipped — download is protected', {
               authId: this.authId,
               ruleId: rule.id,
               ruleName: rule.name,
@@ -182,7 +182,7 @@ class RuleExecutor {
                   ruleName: rule.name,
                   torrentId: torrent.id,
                   abortedRemaining: abortedCount,
-                  message: abortReason,
+                  abortReason,
                 }
               );
             }

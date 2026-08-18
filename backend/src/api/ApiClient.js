@@ -502,7 +502,7 @@ class ApiClient {
         if (torboxApiOutageCoordinator.isAutomationAllowed()) {
           logger.warn(logMessage, {
             ...errorDetails,
-            message:
+            torboxDetail:
               serverText ||
               (connectionErrorFallback !== null
                 ? 'TorBox API is down or not responding. Operation skipped.'
@@ -549,7 +549,7 @@ class ApiClient {
           errorCode: error.response?.data?.error,
           torboxErrorCode: error.response?.data?.error,
           errorKind: error.isActiveDownloadLimit ? 'active_download_limit' : 'application_500',
-          message: appMessage,
+          torboxDetail: appMessage,
           isActiveDownloadLimit: error.isActiveDownloadLimit || undefined,
         });
         throw error;
@@ -565,7 +565,7 @@ class ApiClient {
           ...context,
           status: 403,
           errorCode: 'PLAN_RESTRICTED_FEATURE',
-          message: error.response?.data?.detail || error.message,
+          torboxDetail: error.response?.data?.detail || error.message,
         });
       } else {
         logger.error(`Error ${operation || 'in API call'}`, error, {

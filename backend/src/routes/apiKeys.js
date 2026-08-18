@@ -156,6 +156,7 @@ export function setupApiKeyRoutes(app, backend) {
         }
       } else {
         if (!(await validateApiKeyWithTorBox(apiKey))) {
+          res.locals.expectedClientError = true;
           return res.status(400).json({
             success: false,
             error: 'Invalid API key or TorBox API unavailable',

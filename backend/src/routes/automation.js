@@ -310,7 +310,7 @@ export function setupAutomationRoutes(app, backend) {
         if (!engine) {
           return sendEngineUnavailableResponse(res, backend, authId);
         }
-        const runRule = () => engine.runRuleManually(ruleId);
+        const runRule = ({ cancelToken } = {}) => engine.runRuleManually(ruleId, { cancelToken });
         const result = backend.pollingScheduler
           ? await backend.pollingScheduler.runWithPipelineLock(
               authId,
@@ -321,7 +321,9 @@ export function setupAutomationRoutes(app, backend) {
         if (result?.successCount > 0 && isTagActionType(result.actionType)) {
           notifyTagsChanged(backend, authId);
         }
-        res.json({ success: true, result });
+        if (!res.headersSent) {
+          res.json({ success: true, result });
+        }
       } catch (error) {
         logger.error('Error running rule manually', error, {
           endpoint: `/api/automation/rules/${req.params.id}/run`,
@@ -329,7 +331,10 @@ export function setupAutomationRoutes(app, backend) {
           ruleId,
           authId,
         });
-        res.status(500).json(serverErrorPayload(error));
+        if (!res.headersSent) {
+          const status = error?.isCancelled || error?.name === 'CancelledError' ? 504 : 500;
+          res.status(status).json(serverErrorPayload(error));
+        }
       }
     }
   );

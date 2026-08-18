@@ -1,10 +1,7 @@
 import { isNonRetryableResponse } from '@/config/errors';
 import { FETCH_TIMEOUT_MS } from '@/config/apiConstants';
 import { retryFetch } from '@/utils/retryFetch';
-import { runWithConcurrency } from '@/utils/runWithConcurrency';
 import { getEndpointForAssetType } from '@/utils/apiEndpoints';
-
-const CONCURRENT_DELETES = 3;
 
 /** Bulk deletes: one attempt per item so a slow slot frees after at most FETCH_TIMEOUT_MS. */
 export const BULK_DELETE_FETCH_OPTIONS = {
@@ -42,17 +39,27 @@ export const deleteItemHelper = async (id, apiKey, assetType = 'torrents', fetch
 };
 
 export const batchDeleteHelper = async (ids, apiKey, assetType = 'torrents') => {
-  const successfulIds = [];
+  if (!apiKey || ids.length === 0) return [];
 
   try {
-    await runWithConcurrency(ids, CONCURRENT_DELETES, async (id) => {
-      const result = await deleteItemHelper(id, apiKey, assetType, BULK_DELETE_FETCH_OPTIONS);
-      if (result.success) {
-        successfulIds.push(id);
-      }
+    const result = await retryFetch('/api/downloads/bulk-delete', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: { ids, assetType },
+      timeout: FETCH_TIMEOUT_MS,
+      maxRetries: 1,
+      permanent: [(data) => isNonRetryableResponse(data)],
+      ...BULK_DELETE_FETCH_OPTIONS,
     });
 
-    return successfulIds;
+    if (result.success && Array.isArray(result.deleted_ids)) {
+      return result.deleted_ids;
+    }
+
+    throw new Error(result.error || 'Bulk delete failed');
   } catch (error) {
     return [];
   }

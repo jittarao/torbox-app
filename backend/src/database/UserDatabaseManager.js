@@ -36,6 +36,17 @@ class DatabasePool {
       critical: 0.9, // 90% - log critical warning
       emergency: 0.95, // 95% - log emergency warning
     };
+    /** Hysteresis: clear latched warn levels when usage falls below these ratios */
+    this.warningClearThresholds = {
+      warning: 0.7,
+      critical: 0.85,
+      emergency: 0.92,
+    };
+    this._capacityWarningLatched = {
+      warning: false,
+      critical: false,
+      emergency: false,
+    };
 
     // Proactive eviction threshold - start evicting when we reach this percentage
     this.evictionThreshold =
@@ -362,7 +373,16 @@ class DatabasePool {
     }
     const currentSize = this.cache.size;
     const usagePercent = currentSize / this.maxSize;
-    const previousPercent = previousSize / this.maxSize;
+
+    if (usagePercent < this.warningClearThresholds.warning) {
+      this._capacityWarningLatched.warning = false;
+    }
+    if (usagePercent < this.warningClearThresholds.critical) {
+      this._capacityWarningLatched.critical = false;
+    }
+    if (usagePercent < this.warningClearThresholds.emergency) {
+      this._capacityWarningLatched.emergency = false;
+    }
 
     // Only log if we crossed a threshold (to avoid spam)
     const now = Date.now();
@@ -376,7 +396,7 @@ class DatabasePool {
 
     if (
       usagePercent >= this.warningThresholds.emergency &&
-      previousPercent < this.warningThresholds.emergency
+      !this._capacityWarningLatched.emergency
     ) {
       if (timeSinceLastWarning >= WARNING_THROTTLE_MS) {
         logger.error('Database pool at EMERGENCY capacity - immediate action required', {
@@ -388,10 +408,11 @@ class DatabasePool {
           misses: this.metrics.misses,
         });
         this.metrics.lastWarningAt = new Date().toISOString();
+        this._capacityWarningLatched.emergency = true;
       }
     } else if (
       usagePercent >= this.warningThresholds.critical &&
-      previousPercent < this.warningThresholds.critical
+      !this._capacityWarningLatched.critical
     ) {
       if (timeSinceLastWarning >= WARNING_THROTTLE_MS) {
         logger.error('Database pool at CRITICAL capacity - pool exhaustion imminent', {
@@ -403,10 +424,11 @@ class DatabasePool {
           misses: this.metrics.misses,
         });
         this.metrics.lastWarningAt = new Date().toISOString();
+        this._capacityWarningLatched.critical = true;
       }
     } else if (
       usagePercent >= this.warningThresholds.warning &&
-      previousPercent < this.warningThresholds.warning
+      !this._capacityWarningLatched.warning
     ) {
       if (timeSinceLastWarning >= WARNING_THROTTLE_MS) {
         logger.warn('Database pool approaching capacity - consider increasing MAX_DB_CONNECTIONS', {
@@ -416,6 +438,7 @@ class DatabasePool {
           evictions: this.metrics.evictions,
         });
         this.metrics.lastWarningAt = new Date().toISOString();
+        this._capacityWarningLatched.warning = true;
       }
     }
   }

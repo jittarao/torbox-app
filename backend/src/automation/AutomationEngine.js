@@ -29,6 +29,15 @@ import {
 } from './helpers/ruleExecutionLogging.js';
 import { fetchDownloadsForAssetTypes } from './helpers/downloadFetch.js';
 
+function assertManualRunNotCancelled(cancelToken) {
+  if (cancelToken?.cancelled) {
+    const error = new Error('Manual rule execution cancelled');
+    error.name = 'CancelledError';
+    error.isCancelled = true;
+    throw error;
+  }
+}
+
 /**
  * Per-user Automation Engine
  * Evaluates and executes automation rules for a single user
@@ -758,7 +767,9 @@ class AutomationEngine {
     }
 
     // Return action descriptor for the global queue; execution and recordExecution happen in PollingScheduler
-    logger.info('Rule matched torrents, queuing actions', {
+    const logMatched =
+      torrentsToProcess.length >= 10 ? logger.info.bind(logger) : logger.debug.bind(logger);
+    logMatched('Rule matched torrents, queuing actions', {
       authId: this.authId,
       ruleId: rule.id,
       ruleName: rule.name,
@@ -783,10 +794,12 @@ class AutomationEngine {
    * @param {number} ruleId - ID of the rule to run
    * @returns {Promise<Object>} - Detailed execution results
    */
-  async runRuleManually(ruleId) {
+  async runRuleManually(ruleId, options = {}) {
+    const { cancelToken = null } = options;
     const executionStartTime = Date.now();
     let ruleName = 'Unknown';
     try {
+      assertManualRunNotCancelled(cancelToken);
       logger.info('Manual rule execution started', {
         authId: this.authId,
         ruleId,
@@ -867,6 +880,8 @@ class AutomationEngine {
       // We update it before expensive operations so subsequent requests are rate limited
       await this.ruleRepository.updateLastEvaluatedAt(rule.id);
 
+      assertManualRunNotCancelled(cancelToken);
+
       const ruleAssetTypes = new Set(rule.assetTypes || ['torrent']);
       const downloads = await fetchDownloadsForAssetTypes(
         this.apiClient,
@@ -881,6 +896,8 @@ class AutomationEngine {
       });
 
       const torrents = downloads;
+
+      assertManualRunNotCancelled(cancelToken);
 
       // Shadow/telemetry diff only applies to torrent items
       const torrentOnlyForDiff = downloads.filter((d) => (d.assetType || 'torrent') === 'torrent');
@@ -899,6 +916,8 @@ class AutomationEngine {
           context: { authId: this.authId, ruleId },
         }
       );
+
+      assertManualRunNotCancelled(cancelToken);
 
       logger.debug('State changes processed for manual rule execution', {
         authId: this.authId,
