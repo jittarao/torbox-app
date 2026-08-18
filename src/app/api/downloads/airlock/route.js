@@ -4,6 +4,7 @@ import { requireTorboxApiKey } from '@/app/api/lib/requireTorboxApiKey';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { sanitizeError } from '@/utils/sanitizeError';
 import { AIRLOCK_LIMIT_REACHED_ERROR } from '@/config/errors';
+import { logRouteError } from '@/utils/routeLog';
 import {
   EDIT_CONFIG,
   QUEUED_TYPE_BY_ASSET,
@@ -12,6 +13,46 @@ import {
   isIdInQueuedList,
   normalizeAssetType,
 } from './airlockPayload';
+
+/** @type {Map<string, number>} */
+const airlockUpstreamLogAt = new Map();
+const AIRLOCK_UPSTREAM_LOG_RATE_MS = 60_000;
+
+function formatUpstreamValidationDetail(detail) {
+  if (!detail) return '';
+  if (typeof detail === 'string') return detail;
+  if (!Array.isArray(detail)) return '';
+  return detail
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return '';
+      const loc = Array.isArray(entry.loc) ? entry.loc.join('.') : '';
+      const msg = entry.msg || '';
+      return loc && msg ? `${loc}: ${msg}` : msg || loc;
+    })
+    .filter(Boolean)
+    .join('; ');
+}
+
+function logAirlockUpstreamError({ assetType, id, status, error, detail }) {
+  const validation = formatUpstreamValidationDetail(detail);
+  const summary = error || validation || `status ${status}`;
+  if (error === AIRLOCK_LIMIT_REACHED_ERROR) return;
+
+  const key = `airlock:${assetType}:${status}:${summary}`;
+  const now = Date.now();
+  const last = airlockUpstreamLogAt.get(key) || 0;
+  if (now - last < AIRLOCK_UPSTREAM_LOG_RATE_MS) return;
+  airlockUpstreamLogAt.set(key, now);
+  if (airlockUpstreamLogAt.size > 200) {
+    const cutoff = now - AIRLOCK_UPSTREAM_LOG_RATE_MS * 2;
+    for (const [k, ts] of airlockUpstreamLogAt) {
+      if (ts < cutoff) airlockUpstreamLogAt.delete(k);
+    }
+  }
+
+  const suffix = validation && error !== validation ? ` (${validation})` : '';
+  console.warn(`[airlock PUT] Upstream edit error ${assetType} id=${id}: ${summary}${suffix}`);
+}
 
 function buildTorboxHeaders(apiKey) {
   return {
@@ -115,12 +156,12 @@ export async function PUT(request) {
         ...headers,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(buildEditPayload(currentItem, config.idField, airlocked)),
+      body: JSON.stringify(buildEditPayload(currentItem, config.idField, airlocked, id)),
     });
     const editData = await safeJsonParse(editResponse);
 
     if (!editResponse.ok) {
-      console.error('[airlock PUT] Upstream edit error:', {
+      logAirlockUpstreamError({
         assetType,
         id,
         status: editResponse.status,
@@ -161,7 +202,7 @@ export async function PUT(request) {
       return Response.json({ success: false, error: sanitizeError(error) }, { status: 408 });
     }
 
-    console.error('[airlock PUT] Unexpected error:', error);
+    logRouteError('[airlock PUT] Unexpected error', error);
     return Response.json({ success: false, error: sanitizeError(error) }, { status: 500 });
   }
 }

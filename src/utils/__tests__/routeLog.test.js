@@ -80,6 +80,31 @@ describe('routeLog', () => {
     }
   });
 
+  test('isExpectedApiError recognizes upstream 5xx status messages', () => {
+    expect(isExpectedApiError(new Error('API responded with status: 500'))).toBe(true);
+    expect(isExpectedApiError(new Error('API responded with status: 404'))).toBe(false);
+  });
+
+  test('backendProxyErrorResponse rate-limits unregistered users across routes', async () => {
+    const warn = mock(() => {});
+    const originalWarn = console.warn;
+    console.warn = warn;
+
+    try {
+      backendProxyErrorResponse(
+        { status: 404, data: { success: false, error: 'User not registered' } },
+        'Error fetching tags from backend'
+      );
+      backendProxyErrorResponse(
+        { status: 404, data: { success: false, error: 'User not registered' } },
+        'Error fetching custom views from backend'
+      );
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      console.warn = originalWarn;
+    }
+  });
+
   test('backendProxyErrorResponse preserves 404 for unregistered users', async () => {
     const warn = mock(() => {});
     const originalWarn = console.warn;
