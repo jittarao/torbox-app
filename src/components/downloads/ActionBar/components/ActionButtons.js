@@ -39,6 +39,7 @@ export default function ActionButtons({
   const {
     downloading: isDownloading,
     deleting: isDeleting,
+    deleteProgress = { current: 0, total: 0 },
     exporting: isExporting,
     archiving: isArchiving,
   } = bulkProgress;
@@ -124,6 +125,7 @@ export default function ActionButtons({
       bulkProgress={createBulkProgress({
         isDownloading,
         isDeleting,
+        deleteProgress,
         isExporting,
         isArchiving,
         isForceStarting: handlers.isForceStarting,

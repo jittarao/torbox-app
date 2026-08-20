@@ -72,8 +72,8 @@ export async function DELETE(request) {
   if (auth.response) return auth.response;
 
   try {
-    const { id } = await request.json();
-    return await deleteDownloadItem({ apiKey: auth.apiKey, id, assetType: 'torrents' });
+    const { id, queued = false } = await request.json();
+    return await deleteDownloadItem({ apiKey: auth.apiKey, id, assetType: 'torrents', queued });
   } catch (error) {
     return deleteDownloadItemErrorResponse(error, 'torrents');
   }

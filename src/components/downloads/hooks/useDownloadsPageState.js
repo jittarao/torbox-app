@@ -217,7 +217,7 @@ export function useDownloadsPageState(apiKey) {
     [downloadSingle, requestDownloadLink]
   );
 
-  const { isDeleting, deleteItem, deleteItems } = useDelete(
+  const { isDeleting, deleteProgress, deleteItem, deleteItems } = useDelete(
     apiKey,
     setSelectedItems,
     setToast,
@@ -400,6 +400,7 @@ export function useDownloadsPageState(apiKey) {
     isDownloading,
     handleBulkDownload,
     isDeleting,
+    deleteProgress,
     deleteItems,
     isArchiving,
     archiveItems,

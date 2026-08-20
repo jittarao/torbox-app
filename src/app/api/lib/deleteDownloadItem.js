@@ -9,21 +9,18 @@ import { sanitizeError } from '@/utils/sanitizeError';
 const DELETE_CONFIG = {
   torrents: {
     cacheType: 'torrents',
-    mylistPath: '/api/torrents/mylist',
     queuedType: 'torrent',
     controlPath: '/api/torrents/controltorrent',
     idField: 'torrent_id',
   },
   usenet: {
     cacheType: 'usenet',
-    mylistPath: '/api/usenet/mylist',
     queuedType: 'usenet',
     controlPath: '/api/usenet/controlusenetdownload',
     idField: 'usenet_id',
   },
   webdl: {
     cacheType: 'webdl',
-    mylistPath: '/api/webdl/mylist',
     queuedType: 'webdl',
     controlPath: '/api/webdl/controlwebdownload',
     idField: 'webdl_id',
@@ -43,37 +40,17 @@ function buildTorboxHeaders(apiKey) {
  * @param {string} options.apiKey
  * @param {string|number} options.id
  * @param {'torrents'|'usenet'|'webdl'} [options.assetType='torrents']
- * @param {boolean} [options.skipProtectionCheck=false]
+ * @param {boolean} [options.queued=false] Client-known queue vs mylist routing (avoids getqueued).
  * @returns {Promise<Response>}
  */
-export async function deleteDownloadItem({
-  apiKey,
-  id,
-  assetType = 'torrents',
-  skipProtectionCheck = false,
-}) {
+export async function deleteDownloadItem({ apiKey, id, assetType = 'torrents', queued = false }) {
   const config = DELETE_CONFIG[assetType] || DELETE_CONFIG.torrents;
 
-  if (!skipProtectionCheck) {
-    const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
-    if (blocked) return blocked;
-  }
+  const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
+  if (blocked) return blocked;
 
   const headers = buildTorboxHeaders(apiKey);
-
-  const [, queuedResponse] = await Promise.all([
-    torboxFetch(`${API_BASE}/${API_VERSION}${config.mylistPath}?id=${id}`, {
-      cache: 'no-store',
-      headers,
-    }),
-    torboxFetch(`${API_BASE}/${API_VERSION}/api/queued/getqueued?type=${config.queuedType}`, {
-      cache: 'no-store',
-      headers,
-    }),
-  ]);
-
-  const queuedData = await safeJsonParse(queuedResponse);
-  const isQueued = queuedData.data?.some((item) => item.id === id);
+  const isQueued = queued === true;
 
   const endpoint = isQueued
     ? `${API_BASE}/${API_VERSION}/api/queued/controlqueued`

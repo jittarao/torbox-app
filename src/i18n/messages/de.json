@@ -42,6 +42,7 @@
       "cancel": "Abbrechen",
       "confirm": "Löschen ",
       "deleting": "Löschen…",
+      "deletingProgress": "Löschen {current}/{total}…",
       "includeParentDownloads": "Übergeordnete Downloads löschen",
       "includeParentDownloadsTooltip": "Wenn Dateien innerhalb von Downloads ausgewählt sind, wird diese Option die gesamten Downloads löschen.",
       "message": "Möchten Sie {count} {type} wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden. ",

@@ -1,20 +1,25 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useLatestRef } from '@/hooks/useLatestRef';
 import { useTranslations } from 'next-intl';
-import { deleteItemHelper, batchDeleteHelper } from '@/utils/deleteHelpers';
+import { deleteItemHelper, batchDeleteHelper, deleteEntryFromItem } from '@/utils/deleteHelpers';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
+import { isQueuedItem } from '@/utils/utility';
 import { useDestructiveActionGuard } from '@/components/downloads/hooks/useDestructiveActionGuard';
+
+const EMPTY_DELETE_PROGRESS = { current: 0, total: 0 };
 
 export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, assetType = 'torrents') {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState(EMPTY_DELETE_PROGRESS);
   const t = useTranslations('ItemActions.toast');
   const { partition, toastAllBlocked, skipSuffix, mapProtectedError, guardSingle } =
     useDestructiveActionGuard(setToast);
 
   const setIsDeletingRef = useLatestRef(setIsDeleting);
+  const setDeleteProgressRef = useLatestRef(setDeleteProgress);
 
   const applyLocalRemovals = (successfulIds, itemsForGrouping = []) => {
     const store = useTorboxDownloadsStore.getState();
@@ -38,6 +43,14 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
     }
   };
 
+  const removeItemFromSelection = (item) => {
+    const selectionId = getDownloadSelectionId(item);
+    setSelectedItems((prev) => ({
+      items: new Set([...prev.items].filter((id) => id !== selectionId)),
+      files: new Map([...prev.files].filter(([id]) => id !== selectionId)),
+    }));
+  };
+
   const deleteItem = async (id, bulk = false, itemAssetType = null, item = null) => {
     if (!apiKey) return;
 
@@ -48,7 +61,9 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
     try {
       setIsDeletingRef.current(true);
       const actualAssetType = assetType === 'all' && itemAssetType ? itemAssetType : assetType;
-      const result = await deleteItemHelper(id, apiKey, actualAssetType);
+      const result = await deleteItemHelper(id, apiKey, actualAssetType, {
+        queued: isQueuedItem(item),
+      });
 
       if (result.success) {
         if (!bulk) {
@@ -92,6 +107,24 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
         return [];
       }
 
+      setDeleteProgressRef.current({ current: 0, total: allowedIds.length });
+
+      const itemById = new Map(allowed.map((item) => [item.id, item]));
+      const onItemComplete = ({ id, success }) => {
+        if (!success) return;
+
+        const item = itemById.get(id);
+        if (item) {
+          applyLocalRemovals([id], [item]);
+          removeItemFromSelection(item);
+        }
+
+        setDeleteProgressRef.current((prev) => ({
+          ...prev,
+          current: Math.min(prev.current + 1, prev.total),
+        }));
+      };
+
       let successfulIds = [];
 
       if (assetType === 'all' && allowed.length > 0) {
@@ -103,42 +136,20 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
 
         allowed.forEach((item) => {
           const itemAssetType = item.assetType || 'torrents';
-          if (groupedItems[itemAssetType]) {
-            groupedItems[itemAssetType].push(item.id);
+          const entry = deleteEntryFromItem(item);
+          if (groupedItems[itemAssetType] && entry) {
+            groupedItems[itemAssetType].push(entry);
           }
         });
 
-        const results = await Promise.all(
-          Object.entries(groupedItems).flatMap(([type, typeIds]) =>
-            typeIds.length > 0 ? [batchDeleteHelper(typeIds, apiKey, type)] : []
-          )
-        );
-        for (const batchIds of results) {
+        for (const [type, typeEntries] of Object.entries(groupedItems)) {
+          if (typeEntries.length === 0) continue;
+          const batchIds = await batchDeleteHelper(typeEntries, apiKey, type, { onItemComplete });
           successfulIds.push(...batchIds);
         }
       } else {
-        successfulIds = await batchDeleteHelper(allowedIds, apiKey, assetType);
-      }
-
-      if (successfulIds.length > 0) {
-        applyLocalRemovals(successfulIds, allowed);
-
-        const successfulIdSet = new Set(successfulIds);
-        const removedSelectionIds = new Set(
-          allowed.reduce((acc, item) => {
-            if (successfulIdSet.has(item.id)) {
-              acc.push(getDownloadSelectionId(item));
-            }
-            return acc;
-          }, [])
-        );
-
-        setSelectedItems((prev) => ({
-          items: new Set([...prev.items].filter((id) => !removedSelectionIds.has(id))),
-          files: new Map(
-            [...prev.files].filter(([selectionId]) => !removedSelectionIds.has(selectionId))
-          ),
-        }));
+        const entries = allowed.map((item) => deleteEntryFromItem(item)).filter(Boolean);
+        successfulIds = await batchDeleteHelper(entries, apiKey, assetType, { onItemComplete });
       }
 
       const totalRequested = ids.length;
@@ -170,6 +181,8 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
         type: 'error',
       });
       return [];
+    } finally {
+      setDeleteProgressRef.current(EMPTY_DELETE_PROGRESS);
     }
   };
 
@@ -208,6 +221,7 @@ export function useDelete(apiKey, setSelectedItems, setToast, _fetchItems, asset
 
   return {
     isDeleting,
+    deleteProgress,
     deleteItem,
     deleteItems,
   };

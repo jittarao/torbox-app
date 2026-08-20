@@ -42,6 +42,7 @@
       "cancel": "キャンセル",
       "confirm": "削除",
       "deleting": "削除中…",
+      "deletingProgress": "削除 {current}/{total}…",
       "includeParentDownloads": "親ダウンロードを削除",
       "includeParentDownloadsTooltip": "ダウンロード内のファイルを選択した場合、このオプションはダウンロード全体を削除します。",
       "message": "{count} {type} を削除してもよろしいですか？この操作は取り消しできません。",
