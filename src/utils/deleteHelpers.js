@@ -6,8 +6,8 @@ import { runWithConcurrency } from '@/utils/runWithConcurrency';
 import { getEndpointForAssetType } from '@/utils/apiEndpoints';
 import { isQueuedItem } from '@/utils/utility';
 
-/** One at a time: TorBox control APIs AUTH_ERROR/timeout under parallel writes. */
-export const CONCURRENT_DELETES = 1;
+/** Bounded parallelism: TorBox control APIs can AUTH_ERROR/timeout under heavy parallel writes. */
+export const CONCURRENT_DELETES = 3;
 
 /** Per-item deletes in a bulk selection: one attempt per id so a slow slot frees after FETCH_TIMEOUT_MS. */
 export const BULK_DELETE_FETCH_OPTIONS = {
