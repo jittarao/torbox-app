@@ -122,10 +122,10 @@ export async function POST(request) {
 export async function DELETE(request) {
   const headersList = await headers();
   const apiKey = headersList.get('x-api-key');
-  const { id } = await request.json();
+  const { id, queued = false } = await request.json();
 
   try {
-    return await deleteDownloadItem({ apiKey, id, assetType: 'webdl' });
+    return await deleteDownloadItem({ apiKey, id, assetType: 'webdl', queued });
   } catch (error) {
     return deleteDownloadItemErrorResponse(error, 'webdl');
   }

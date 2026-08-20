@@ -42,6 +42,7 @@
       "cancel": "Annuler",
       "confirm": "Supprimer",
       "deleting": "Suppression…",
+      "deletingProgress": "Suppression {current}/{total}…",
       "includeParentDownloads": "Supprimer les téléchargements",
       "includeParentDownloadsTooltip": "Lorsque des fichiers sont sélectionnés dans les téléchargements, cette option supprimera le téléchargement complet.",
       "message": "Êtes-vous sûr de vouloir supprimer {count} {type} ? Cette action ne peut pas être annulée.",

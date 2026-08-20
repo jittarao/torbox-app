@@ -42,6 +42,7 @@
       "cancel": "Anuluj",
       "confirm": "Usuń",
       "deleting": "Usuwanie…",
+      "deletingProgress": "Usuwanie {current}/{total}…",
       "includeParentDownloads": "Usuń nadrzędne pobierania",
       "includeParentDownloadsTooltip": "Gdy pliki w pobieraniach są wybrane, ta opcja usunie całe pobieranie.",
       "message": "Czy na pewno chcesz usunąć {count} {type}? Ta akcja nie może zostać cofnięta.",

@@ -15,6 +15,7 @@ export default function ActionBarBulk({ itemTypeName, itemTypePlural }) {
   const {
     isDownloading,
     isDeleting,
+    deleteProgress,
     isExporting,
     handleBulkDownload: onBulkDownload,
     deleteItems: onBulkDelete,
@@ -55,6 +56,7 @@ export default function ActionBarBulk({ itemTypeName, itemTypePlural }) {
       bulkProgress={{
         downloading: isDownloading,
         deleting: isDeleting,
+        deleteProgress,
         archiving: isArchiving,
         exporting: isExporting,
       }}

@@ -17,9 +17,9 @@ mock.module('next-intl', () => ({
 
 mock.module('@/utils/deleteHelpers', () => ({
   deleteItemHelper: mock(() => Promise.resolve({ success: true })),
-  batchDeleteHelper: mock((ids) => {
-    batchDeleteCalls.push(ids);
-    return Promise.resolve(ids);
+  batchDeleteHelper: mock((entries) => {
+    batchDeleteCalls.push(entries);
+    return Promise.resolve(entries.map((entry) => entry.id));
   }),
 }));
 
@@ -79,7 +79,12 @@ describe('useDelete protection', () => {
       );
     });
 
-    expect(batchDeleteCalls).toEqual([[2, 3]]);
+    expect(batchDeleteCalls).toEqual([
+      [
+        { id: 2, queued: false },
+        { id: 3, queued: false },
+      ],
+    ]);
     expect(toastMessages[0]).toMatchObject({
       type: 'warning',
       message: 'Deleted 2/3 1 skipped',
