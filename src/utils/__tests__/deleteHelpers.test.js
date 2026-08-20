@@ -32,6 +32,30 @@ describe('batchDeleteHelper', () => {
     expect(fetchCalls[1].body).toEqual({ id: 3, queued: true });
   });
 
+  test('runs at most one delete at a time', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+
+    mock.module('@/utils/retryFetch', () => ({
+      retryFetch: async () => {
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        inFlight -= 1;
+        return { success: true };
+      },
+    }));
+
+    const { batchDeleteHelper } = await import('../deleteHelpers.js');
+    await batchDeleteHelper(
+      [1, 2, 3, 4, 5].map((id) => ({ id, queued: false })),
+      'test-key',
+      'torrents'
+    );
+
+    expect(maxInFlight).toBe(1);
+  });
+
   test('invokes onItemComplete for each entry', async () => {
     const completions = [];
 
