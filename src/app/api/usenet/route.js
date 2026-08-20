@@ -219,12 +219,12 @@ export async function POST(request) {
 
 // Delete a usenet item
 export async function DELETE(request) {
-  const headersList = await headers();
-  const apiKey = headersList.get('x-api-key');
-  const { id, queued = false } = await request.json();
+  const auth = await requireTorboxApiKey();
+  if (auth.response) return auth.response;
 
   try {
-    return await deleteDownloadItem({ apiKey, id, assetType: 'usenet', queued });
+    const { id, queued = false } = await request.json();
+    return await deleteDownloadItem({ apiKey: auth.apiKey, id, assetType: 'usenet', queued });
   } catch (error) {
     return deleteDownloadItemErrorResponse(error, 'usenet');
   }

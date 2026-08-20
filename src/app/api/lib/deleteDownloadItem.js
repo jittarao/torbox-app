@@ -35,6 +35,18 @@ function buildTorboxHeaders(apiKey) {
 }
 
 /**
+ * TorBox control APIs expect numeric ids. JSON/client paths sometimes pass strings.
+ * @param {string|number} id
+ * @returns {string|number}
+ */
+export function coerceTorboxDownloadId(id) {
+  if (typeof id === 'number' && Number.isFinite(id)) return id;
+  if (id === '' || id == null) return id;
+  const parsed = Number(id);
+  return Number.isFinite(parsed) ? parsed : id;
+}
+
+/**
  * Delete one download via TorBox control API.
  * @param {object} options
  * @param {string} options.apiKey
@@ -45,8 +57,9 @@ function buildTorboxHeaders(apiKey) {
  */
 export async function deleteDownloadItem({ apiKey, id, assetType = 'torrents', queued = false }) {
   const config = DELETE_CONFIG[assetType] || DELETE_CONFIG.torrents;
+  const downloadId = coerceTorboxDownloadId(id);
 
-  const blocked = await guardDestructiveOrRespond(apiKey, [id], 'delete');
+  const blocked = await guardDestructiveOrRespond(apiKey, [downloadId], 'delete');
   if (blocked) return blocked;
 
   const headers = buildTorboxHeaders(apiKey);
@@ -58,12 +71,12 @@ export async function deleteDownloadItem({ apiKey, id, assetType = 'torrents', q
 
   const body = isQueued
     ? JSON.stringify({
-        queued_id: id,
+        queued_id: downloadId,
         operation: 'delete',
         type: config.queuedType,
       })
     : JSON.stringify({
-        [config.idField]: id,
+        [config.idField]: downloadId,
         operation: 'delete',
       });
 
@@ -79,7 +92,7 @@ export async function deleteDownloadItem({ apiKey, id, assetType = 'torrents', q
 
   const data = await safeJsonParse(response);
 
-  if (!response.ok) {
+  if (!response.ok || data.success === false) {
     if (assetType === 'torrents') {
       logRouteError('[torrents DELETE] Upstream error', {
         error: data.error || `API responded with status: ${response.status}`,
@@ -92,11 +105,11 @@ export async function deleteDownloadItem({ apiKey, id, assetType = 'torrents', q
         error: data.error || `API responded with status: ${response.status}`,
         detail: data.detail,
       },
-      { status: response.status }
+      { status: response.ok ? 200 : response.status }
     );
   }
 
-  await patchCacheRemoveIds(apiKey, config.cacheType, [id]);
+  await patchCacheRemoveIds(apiKey, config.cacheType, [downloadId]);
 
   return Response.json(data);
 }
