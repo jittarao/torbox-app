@@ -101,6 +101,52 @@ describe('upload lifecycle routes', () => {
     expect(getRes.status).toBe(404);
   });
 
+  test('DELETE /api/uploads/bulk is not blocked after the upload-create rate limiter is exhausted', async () => {
+    const previousMax = process.env.UPLOAD_RATE_LIMIT_MAX;
+    process.env.UPLOAD_RATE_LIMIT_MAX = '1';
+    const limitedApp = buildUploadApp(env);
+
+    try {
+      const created = await request(limitedApp)
+        .post('/api/uploads')
+        .set('x-api-key', env.apiKey)
+        .send({
+          type: 'torrent',
+          upload_type: 'magnet',
+          url: 'magnet:?xt=urn:btih:abc123',
+          name: 'Queued then deleted',
+        });
+      expect(created.status).toBe(200);
+
+      const blocked = await request(limitedApp)
+        .post('/api/uploads')
+        .set('x-api-key', env.apiKey)
+        .send({
+          type: 'torrent',
+          upload_type: 'magnet',
+          url: 'magnet:?xt=urn:btih:def456',
+          name: 'Should be rate limited',
+        });
+      expect(blocked.status).toBe(429);
+      expect(blocked.body.error).toContain('Too many upload requests');
+
+      const deleted = await request(limitedApp)
+        .delete('/api/uploads/bulk')
+        .set('x-api-key', env.apiKey)
+        .send({ ids: [created.body.data.id] });
+
+      expect(deleted.status).toBe(200);
+      expect(deleted.body.success).toBe(true);
+      expect(deleted.body.data.deleted).toBe(1);
+    } finally {
+      if (previousMax === undefined) {
+        delete process.env.UPLOAD_RATE_LIMIT_MAX;
+      } else {
+        process.env.UPLOAD_RATE_LIMIT_MAX = previousMax;
+      }
+    }
+  });
+
   test('DELETE /api/uploads/:id does not decrement counter for completed uploads', async () => {
     const upload = await createUpload();
     expect(await getQueuedCount()).toBe(1);

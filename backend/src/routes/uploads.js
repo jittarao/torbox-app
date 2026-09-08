@@ -215,8 +215,9 @@ function nudgeUploadProcessor(backend, authId) {
 export function setupUploadsRoutes(app, backend) {
   const { userRateLimiter, uploadQuotaService } = backend;
 
-  // Create a more permissive rate limiter for upload endpoints
-  // Allows 1000 requests per 15 minutes (vs 200 for general endpoints)
+  // Rate limiter for enqueue operations (create file, create entry, batch, retry).
+  // Delete/list/reorder use userRateLimiter so exhausting the create quota cannot
+  // block cancelling queued uploads.
   const uploadRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: parseInt(process.env.UPLOAD_RATE_LIMIT_MAX || '1000', 10),
@@ -332,7 +333,7 @@ export function setupUploadsRoutes(app, backend) {
   app.delete(
     '/api/uploads/file',
     backend.requireRegisteredUser,
-    uploadRateLimiter,
+    userRateLimiter,
     async (req, res) => {
       try {
         const authId = req.validatedAuthId;
@@ -1541,7 +1542,7 @@ export function setupUploadsRoutes(app, backend) {
   app.delete(
     '/api/uploads/bulk',
     backend.requireRegisteredUser,
-    uploadRateLimiter,
+    userRateLimiter,
     async (req, res) => {
       try {
         const authId = req.validatedAuthId;
