@@ -378,7 +378,7 @@ export function setupLinkHistoryRoutes(app, backend) {
         const result = upsertMany(validatedEntries);
         const insertedCount = result.inserted;
 
-        logger.info('Bulk link history migration', {
+        logger.debug('Bulk link history migration', {
           authId,
           requested: entries.length,
           validated: validatedEntries.length,

@@ -174,7 +174,7 @@ class RuleExecutor {
               abortReason = error.message || 'Active download limit reached';
               errorCount++;
               discardRemaining();
-              logger.warn(
+              logger.debug(
                 'Active download limit reached — aborting remaining force_start actions',
                 {
                   authId: this.authId,

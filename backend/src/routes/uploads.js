@@ -757,7 +757,7 @@ export function setupUploadsRoutes(app, backend) {
         )
         .get(result.lastInsertRowid);
 
-      logger.info('Upload created', {
+      logger.debug('Upload created', {
         authId,
         uploadId: upload.id,
         type,

@@ -168,7 +168,7 @@ class AutomationEngine {
    */
   async initializeNextPollAt(enabledRules) {
     if (enabledRules.length === 0 || !this.masterDb) {
-      logger.info('Skipping next_poll_at initialization check', {
+      logger.debug('Skipping next_poll_at initialization check', {
         authId: this.authId,
         hasEnabledRules: enabledRules.length > 0,
         hasMasterDb: !!this.masterDb,
@@ -419,7 +419,7 @@ class AutomationEngine {
       const nextPollAt = new Date(Date.now() + adjustedIntervalMinutes * 60 * 1000);
       this.masterDb.updateNextPollAt(this.authId, nextPollAt, 0); // Count will be updated on next poll
 
-      logger.info('Reset next_poll_at', {
+      logger.debug('Reset next_poll_at', {
         authId: this.authId,
         baseInterval: `${INITIAL_POLL_INTERVAL_MINUTES}min`,
         adjustedInterval:
@@ -518,12 +518,8 @@ class AutomationEngine {
             ? `${(evaluationDuration / enabledRules.length).toFixed(2)}s`
             : '0s',
       };
-      // Quiet no-op cycles; keep info when rules executed or errored.
-      if (results.executedCount > 0 || results.errorCount > 0) {
-        logger.info('Rule evaluation cycle completed', cycleMeta);
-      } else {
-        logger.debug('Rule evaluation cycle completed', cycleMeta);
-      }
+      // Per-user cycle bookkeeping — debug only; Poll completed (on change) is the info signal.
+      logger.debug('Rule evaluation cycle completed', cycleMeta);
 
       return {
         evaluated: enabledRules.length,
@@ -767,9 +763,7 @@ class AutomationEngine {
     }
 
     // Return action descriptor for the global queue; execution and recordExecution happen in PollingScheduler
-    const logMatched =
-      torrentsToProcess.length >= 10 ? logger.info.bind(logger) : logger.debug.bind(logger);
-    logMatched('Rule matched torrents, queuing actions', {
+    logger.debug('Rule matched torrents, queuing actions', {
       authId: this.authId,
       ruleId: rule.id,
       ruleName: rule.name,
@@ -800,7 +794,7 @@ class AutomationEngine {
     let ruleName = 'Unknown';
     try {
       assertManualRunNotCancelled(cancelToken);
-      logger.info('Manual rule execution started', {
+      logger.debug('Manual rule execution started', {
         authId: this.authId,
         ruleId,
         timestamp: new Date().toISOString(),
@@ -928,7 +922,7 @@ class AutomationEngine {
         stateTransitions: changes.stateTransitions?.length ?? 0,
       });
 
-      logger.info('Running rule manually', {
+      logger.debug('Running rule manually', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
@@ -1095,7 +1089,7 @@ class AutomationEngine {
       } else {
         // No actions were executed, but we still evaluated the rule
         // Don't update last_executed_at or create a log entry
-        logger.info('No actions executed (all failed or filtered out)', {
+        logger.debug('No actions executed (all failed or filtered out)', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,

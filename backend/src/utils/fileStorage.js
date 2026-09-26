@@ -65,7 +65,7 @@ export async function saveUploadFile(authId, fileBuffer, originalFilename, type)
 
     // Return relative path from storage root
     const relativePath = path.relative(UPLOAD_STORAGE_DIR, filePath);
-    logger.info('File saved successfully', {
+    logger.debug('File saved successfully', {
       authId,
       type,
       originalFilename,
