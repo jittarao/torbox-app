@@ -23,7 +23,7 @@ describe('airlockPayload', () => {
     });
     expect(EDIT_CONFIG.usenet).toMatchObject({
       editEndpoint: '/api/usenet/editusenetdownload',
-      idField: 'usenet_id',
+      idField: 'usenet_download_id',
     });
     expect(EDIT_CONFIG.webdl).toMatchObject({
       editEndpoint: '/api/webdl/editwebdownload',
@@ -96,16 +96,16 @@ describe('airlockPayload', () => {
     });
   });
 
-  test('buildEditPayload resolves usenet_id and normalizes tag objects', () => {
+  test('buildEditPayload emits usenet_download_id and normalizes tag objects', () => {
     expect(
       buildEditPayload(
         { usenet_id: 55, name: 'Usenet item', tags: [{ id: 1, name: 'keep' }] },
-        'usenet_id',
+        'usenet_download_id',
         false,
         55
       )
     ).toEqual({
-      usenet_id: 55,
+      usenet_download_id: 55,
       name: 'Usenet item',
       tags: ['keep'],
       alternative_hashes: [],
@@ -135,7 +135,8 @@ describe('airlockPayload', () => {
   });
 
   test('resolveEditResourceId prefers type-specific fields', () => {
-    expect(resolveEditResourceId({ usenet_id: 55 }, 'usenet_id', 99)).toBe(55);
+    expect(resolveEditResourceId({ usenet_id: 55 }, 'usenet_download_id', 99)).toBe(55);
+    expect(resolveEditResourceId({ id: 55 }, 'usenet_download_id', 99)).toBe(55);
     expect(resolveEditResourceId({ web_id: 9 }, 'webdl_id', 9)).toBe(9);
   });
 
