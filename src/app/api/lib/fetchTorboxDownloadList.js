@@ -22,6 +22,47 @@ const ASSET_CONFIG = {
   },
 };
 
+/**
+ * Parse a TorBox JSON body, surfacing the HTTP status when upstream returns a
+ * non-JSON page (Cloudflare/CDN 429/5xx HTML). Keeps the original parse message
+ * so list-sync still classifies the failure as an expected transient fault.
+ * @param {Response} response
+ * @param {string} label
+ * @returns {Promise<object>}
+ */
+async function parseTorboxBody(response, label) {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'invalid JSON';
+    throw new Error(`TorBox ${label} returned non-JSON (HTTP ${response.status}): ${detail}`);
+  }
+}
+
+/**
+ * TorBox sometimes returns `error` as a string code, sometimes as a payload
+ * object. Never let an object collapse to `[object Object]` in error messages.
+ * @param {{ error?: unknown } | null | undefined} body
+ * @param {string} fallback
+ * @returns {string}
+ */
+export function torboxErrorMessage(body, fallback) {
+  const err = body?.error;
+  if (typeof err === 'string' && err) return err;
+  if (err && typeof err === 'object') {
+    const nested = err.code || err.error || err.message || err.detail;
+    if (typeof nested === 'string' && nested) return nested;
+    try {
+      return JSON.stringify(err);
+    } catch {
+      // non-serializable — fall through to fallback
+    }
+  }
+  return fallback;
+}
+
 function torboxHeaders(apiKey) {
   return {
     Authorization: `Bearer ${apiKey}`,
@@ -89,9 +130,11 @@ export async function fetchMyListPage(apiKey, assetType, { offset = 0, limit = P
     headers: torboxHeaders(apiKey),
   });
 
-  const body = await response.json();
+  const body = await parseTorboxBody(response, 'mylist');
   if (!response.ok || body.success === false) {
-    throw new Error(body.error || `TorBox mylist failed with status ${response.status}`);
+    throw new Error(
+      torboxErrorMessage(body, `TorBox mylist failed with status ${response.status}`)
+    );
   }
 
   return {
@@ -120,9 +163,11 @@ export async function fetchQueuedList(apiKey, assetType) {
     headers: torboxHeaders(apiKey),
   });
 
-  const body = await response.json();
+  const body = await parseTorboxBody(response, 'getqueued');
   if (!response.ok || body.success === false) {
-    throw new Error(body.error || `TorBox getqueued failed with status ${response.status}`);
+    throw new Error(
+      torboxErrorMessage(body, `TorBox getqueued failed with status ${response.status}`)
+    );
   }
 
   return {

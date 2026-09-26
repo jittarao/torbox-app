@@ -1,10 +1,16 @@
 import { describe, expect, test, beforeEach, afterEach, mock } from 'bun:test';
 
-const torboxFetchMock = mock(async () => ({
-  ok: true,
-  status: 200,
-  json: async () => ({ success: true, data: [] }),
-}));
+function jsonResponse(body, status = 200) {
+  const text = JSON.stringify(body);
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => JSON.parse(text),
+    text: async () => text,
+  };
+}
+
+const torboxFetchMock = mock(async () => jsonResponse({ success: true, data: [] }));
 
 describe('fetchTorboxDownloadList', () => {
   let fetchFullDownloadList;
@@ -39,21 +45,13 @@ describe('fetchTorboxDownloadList', () => {
 
     torboxFetchMock.mockImplementation(async (url) => {
       if (url.includes('getqueued')) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ success: true, data: [] }),
-        };
+        return jsonResponse({ success: true, data: [] });
       }
 
       const offset = Number(new URL(url).searchParams.get('offset') || 0);
       const data = offset === 0 ? page0 : page1;
 
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ success: true, data }),
-      };
+      return jsonResponse({ success: true, data });
     });
 
     const result = await fetchFullDownloadList('test-key', 'torrents');
@@ -61,5 +59,23 @@ describe('fetchTorboxDownloadList', () => {
     expect(result.pageCount).toBe(2);
     expect(result.data).toHaveLength(1001);
     expect(result.data.find((row) => row.id === 1000).name).toBe('item-1000-updated');
+  });
+
+  test('fetchMyListPage reports non-JSON gateway responses with the HTTP status', async () => {
+    torboxFetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      text: async () => '<!DOCTYPE html><html>bad gateway</html>',
+    });
+
+    await expect(fetchMyListPage('test-key', 'torrents')).rejects.toThrow(/non-JSON \(HTTP 502\)/);
+  });
+
+  test('fetchMyListPage never surfaces [object Object] for object error payloads', async () => {
+    torboxFetchMock.mockResolvedValueOnce(
+      jsonResponse({ success: false, error: { code: 'DATABASE_ERROR', detail: 'db down' } })
+    );
+
+    await expect(fetchMyListPage('test-key', 'torrents')).rejects.toThrow(/DATABASE_ERROR/);
   });
 });

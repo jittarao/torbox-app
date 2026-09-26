@@ -19,6 +19,30 @@ describe('routeLog', () => {
     expect(isExpectedApiError(new Error('SQL blew up'))).toBe(false);
   });
 
+  test('logRouteError emits non-actionable faults once per context per process', () => {
+    const warn = mock(() => {});
+    const error = mock(() => {});
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    console.warn = warn;
+    console.error = error;
+
+    try {
+      for (let i = 0; i < 5; i++) {
+        logRouteError('Error fetching torrents', new Error('AUTH_ERROR'));
+      }
+      logRouteError('Error fetching usenet data', new Error('PLAN_RESTRICTED_FEATURE'));
+
+      expect(warn).toHaveBeenCalledTimes(2);
+      expect(error).not.toHaveBeenCalled();
+      expect(warn.mock.calls[0][0]).toContain('AUTH_ERROR');
+      expect(warn.mock.calls[1][0]).toContain('PLAN_RESTRICTED_FEATURE');
+    } finally {
+      console.warn = originalWarn;
+      console.error = originalError;
+    }
+  });
+
   test('logRouteError rate-limits expected faults without stacks', () => {
     const warn = mock(() => {});
     const error = mock(() => {});
@@ -32,6 +56,32 @@ describe('routeLog', () => {
       logRouteError('Error fetching torrents', new Error('PLAN_RESTRICTED_FEATURE'));
       expect(warn).toHaveBeenCalledTimes(1);
       expect(error).not.toHaveBeenCalled();
+    } finally {
+      console.warn = originalWarn;
+      console.error = originalError;
+    }
+  });
+
+  test('logRouteError summarizes plain TorBox payload objects instead of [object Object]', () => {
+    const warn = mock(() => {});
+    const error = mock(() => {});
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    console.warn = warn;
+    console.error = error;
+
+    try {
+      logRouteError('[torrents DELETE] Upstream error', {
+        error: 'DATABASE_ERROR',
+        detail: 'upstream db issue',
+      });
+      const payload = { code: 500, reason: 'boom' };
+      logRouteError('[torrents DELETE] Upstream error', { error: payload });
+
+      const output = [...warn.mock.calls, ...error.mock.calls].map((call) => call[0]);
+      expect(output).toContain('[torrents DELETE] Upstream error: DATABASE_ERROR');
+      expect(output.join('\n')).not.toContain('[object Object]');
+      expect(output.join('\n')).toContain('boom');
     } finally {
       console.warn = originalWarn;
       console.error = originalError;

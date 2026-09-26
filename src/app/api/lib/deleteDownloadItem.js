@@ -1,6 +1,7 @@
 import { torboxFetch } from '@/app/api/lib/torboxFetch';
 import { safeJsonParse } from '@/utils/safeJsonParse';
 import { patchCacheRemoveIds } from '@/app/api/lib/downloadListSync';
+import { torboxErrorMessage } from '@/app/api/lib/fetchTorboxDownloadList';
 import { guardDestructiveOrRespond } from '@/app/api/lib/downloadProtectionGuard';
 import { API_BASE, API_VERSION, TORBOX_MANAGER_VERSION } from '@/components/constants';
 import { logRouteError } from '@/utils/routeLog';
@@ -93,16 +94,17 @@ export async function deleteDownloadItem({ apiKey, id, assetType = 'torrents', q
   const data = await safeJsonParse(response);
 
   if (!response.ok || data.success === false) {
+    const errorMessage = torboxErrorMessage(data, `API responded with status: ${response.status}`);
     if (assetType === 'torrents') {
       logRouteError('[torrents DELETE] Upstream error', {
-        error: data.error || `API responded with status: ${response.status}`,
+        error: errorMessage,
         detail: data.detail,
       });
     }
     return Response.json(
       {
         success: false,
-        error: data.error || `API responded with status: ${response.status}`,
+        error: errorMessage,
         detail: data.detail,
       },
       { status: response.ok ? 200 : response.status }
