@@ -1702,7 +1702,15 @@ class UploadProcessor {
           );
           return uploadProcessResult(false, stopTypeDrain);
         }
-        throw apiError;
+        // TorBox returns HTTP 400 with a duplicate envelope (e.g. { error: 'DIFF_ISSUE',
+        // detail: 'Download already queued.' }) when the item is already on the account.
+        // That is an idempotent success — route it through the same duplicate path as an
+        // HTTP 200 success:false response instead of marking the upload permanently failed.
+        if (isTorboxDuplicateUploadResponse(apiError.response)) {
+          response = apiError.response;
+        } else {
+          throw apiError;
+        }
       }
 
       this.updateRateLimitFromResponse(upload.authId, type, response, {
