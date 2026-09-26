@@ -52,6 +52,29 @@ export const AIRLOCK_LIMIT_REACHED_ERROR = 'AIRLOCK_LIMIT_REACHED';
 const TORBOX_ERROR_CODE_SET = new Set(Object.values(TORBOX_ERROR_CODES));
 
 /**
+ * Permanent, user-specific faults that are already surfaced in the UI and are
+ * never actionable from server logs (plan limits, dead keys, missing items).
+ * Loggers may emit these once per process then stay quiet to avoid drowning out
+ * real outages (dashboard can show 100k+ lines of PLAN_RESTRICTED_FEATURE).
+ */
+export const NON_ACTIONABLE_ERROR_CODES = new Set([
+  TORBOX_ERROR_CODES.PLAN_RESTRICTED_FEATURE,
+  TORBOX_ERROR_CODES.BAD_TOKEN,
+  TORBOX_ERROR_CODES.NO_AUTH,
+  TORBOX_ERROR_CODES.AUTH_ERROR,
+  TORBOX_ERROR_CODES.ITEM_NOT_FOUND,
+  TORBOX_ERROR_CODES.ENDPOINT_NOT_FOUND,
+]);
+
+/**
+ * @param {unknown} code
+ * @returns {boolean}
+ */
+export function isNonActionableErrorCode(code) {
+  return typeof code === 'string' && NON_ACTIONABLE_ERROR_CODES.has(code);
+}
+
+/**
  * True when TorBox classifies the code as a server fault.
  * Rule: code ends with "ERROR".
  * @param {unknown} code

@@ -105,4 +105,29 @@ describe('deleteDownloadItem', () => {
 
     expect(body).toMatchObject({ success: false, error: 'AUTH_ERROR' });
   });
+
+  test('normalizes object upstream errors to a readable string', async () => {
+    torboxFetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({ success: false, error: { code: 'DATABASE_ERROR', detail: 'db down' } }),
+        {
+          status: 500,
+          headers: { 'content-type': 'application/json' },
+        }
+      )
+    );
+
+    const { deleteDownloadItem } = await loadDeleteDownloadItem();
+    const response = await deleteDownloadItem({
+      apiKey: 'test-key',
+      id: 7,
+      assetType: 'torrents',
+      queued: false,
+    });
+    const body = await response.json();
+
+    expect(body.success).toBe(false);
+    expect(typeof body.error).toBe('string');
+    expect(body.error).toBe('DATABASE_ERROR');
+  });
 });
