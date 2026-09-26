@@ -7,7 +7,7 @@ export const EDIT_CONFIG = {
   usenet: {
     listEndpoint: '/api/usenet/mylist',
     editEndpoint: '/api/usenet/editusenetdownload',
-    idField: 'usenet_id',
+    idField: 'usenet_download_id',
   },
   webdl: {
     listEndpoint: '/api/webdl/mylist',
@@ -20,7 +20,7 @@ const MATCH_ID_FIELDS = ['id', 'torrent_id', 'usenet_id', 'webdl_id', 'web_id'];
 
 const RESOURCE_ID_FIELDS = {
   torrent_id: ['torrent_id', 'id'],
-  usenet_id: ['usenet_id', 'id'],
+  usenet_download_id: ['usenet_id', 'id'],
   webdl_id: ['webdl_id', 'web_id', 'id'],
 };
 
