@@ -23,6 +23,7 @@ import {
   alignCreateQuotaWindowForBlockedGate,
 } from '../automation/uploadDeferral.js';
 import { attachCreateWasCached } from '../automation/uploadAttemptLookup.js';
+import { buildAttachmentContentDisposition } from '../utils/contentDisposition.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
@@ -1084,7 +1085,7 @@ export function setupUploadsRoutes(app, backend) {
           const contentType = contentTypeMap[ext] || 'application/octet-stream';
 
           res.setHeader('Content-Type', contentType);
-          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          res.setHeader('Content-Disposition', buildAttachmentContentDisposition(filename));
           res.send(fileBuffer);
         } catch (fileError) {
           logger.error('Error reading upload file', fileError, {

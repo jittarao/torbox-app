@@ -155,9 +155,16 @@ export function useUploadActions(
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = 'download';
         if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="?(.+?)"?$/);
-          if (filenameMatch) {
-            filename = filenameMatch[1];
+          const encodedMatch = contentDisposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+          const plainMatch = contentDisposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+          if (encodedMatch) {
+            try {
+              filename = decodeURIComponent(encodedMatch[1].trim());
+            } catch {
+              filename = encodedMatch[1].trim();
+            }
+          } else if (plainMatch) {
+            filename = plainMatch[1].trim();
           }
         }
 
