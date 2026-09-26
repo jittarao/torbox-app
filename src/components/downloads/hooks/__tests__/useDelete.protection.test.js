@@ -16,6 +16,10 @@ mock.module('next-intl', () => ({
 }));
 
 mock.module('@/utils/deleteHelpers', () => ({
+  CONCURRENT_DELETES: 3,
+  BULK_DELETE_FETCH_OPTIONS: {},
+  deleteEntryFromItem: (item) =>
+    item?.id == null ? null : { id: item.id, queued: item.status === 'queued' },
   deleteItemHelper: mock(() => Promise.resolve({ success: true })),
   batchDeleteHelper: mock((entries) => {
     batchDeleteCalls.push(entries);

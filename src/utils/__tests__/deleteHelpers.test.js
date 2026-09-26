@@ -32,7 +32,7 @@ describe('batchDeleteHelper', () => {
     expect(fetchCalls[1].body).toEqual({ id: 3, queued: true });
   });
 
-  test('runs at most one delete at a time', async () => {
+  test('bounds concurrency to CONCURRENT_DELETES', async () => {
     let inFlight = 0;
     let maxInFlight = 0;
 
@@ -46,14 +46,14 @@ describe('batchDeleteHelper', () => {
       },
     }));
 
-    const { batchDeleteHelper } = await import('../deleteHelpers.js');
+    const { batchDeleteHelper, CONCURRENT_DELETES } = await import('../deleteHelpers.js');
     await batchDeleteHelper(
       [1, 2, 3, 4, 5].map((id) => ({ id, queued: false })),
       'test-key',
       'torrents'
     );
 
-    expect(maxInFlight).toBe(1);
+    expect(maxInFlight).toBe(CONCURRENT_DELETES);
   });
 
   test('invokes onItemComplete for each entry', async () => {

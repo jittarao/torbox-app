@@ -4,6 +4,13 @@ import torboxApiOutageCoordinator from '../../api/TorboxApiOutageCoordinator.js'
 
 const ENV_KEY = 'AUTOMATION_INACTIVE_USER_DAYS';
 
+function sqlDateDaysAgo(days) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+}
+
 describe('PollingScheduler inactivity gating', () => {
   let scheduler;
   let savedEnv;
@@ -29,7 +36,7 @@ describe('PollingScheduler inactivity gating', () => {
       getUserRegistryInfo: () => ({
         auth_id: 'inactive-user',
         encrypted_key: 'enc',
-        last_seen_at: '2026-06-01 00:00:00',
+        last_seen_at: sqlDateDaysAgo(60),
       }),
       touchUserActivityBatch: () => {},
     };
@@ -45,7 +52,7 @@ describe('PollingScheduler inactivity gating', () => {
   });
 
   it('triggerPoll fast-persists activity and proceeds for returning users', async () => {
-    let lastSeenAt = '2026-06-01 00:00:00';
+    let lastSeenAt = sqlDateDaysAgo(60);
     scheduler.masterDb = {
       getUserRegistryInfo: () => ({
         auth_id: 'returning-user',
@@ -53,7 +60,7 @@ describe('PollingScheduler inactivity gating', () => {
         last_seen_at: lastSeenAt,
       }),
       touchUserActivityBatch: (entries) => {
-        lastSeenAt = '2026-07-10 12:00:00';
+        lastSeenAt = sqlDateDaysAgo(0);
         for (const { authId } of entries) {
           scheduler.masterDb.getUserRegistryInfo = () => ({
             auth_id: authId,
