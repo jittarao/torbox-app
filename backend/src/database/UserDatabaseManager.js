@@ -391,8 +391,9 @@ class DatabasePool {
       : 0;
     const timeSinceLastWarning = now - lastWarningTime;
 
-    // Throttle warnings to at most once per minute
-    const WARNING_THROTTLE_MS = 60000;
+    // Throttle warnings to at most once per 10 minutes — capacity oscillates around the
+    // threshold under steady churn and the 80% warn is already latched with hysteresis.
+    const WARNING_THROTTLE_MS = 600000;
 
     if (
       usagePercent >= this.warningThresholds.emergency &&
