@@ -273,9 +273,28 @@ class TorBoxBackend {
         context.authId = req.validatedAuthId;
       }
 
+      const isPayloadTooLarge =
+        error?.type === 'entity.too.large' ||
+        error?.name === 'PayloadTooLargeError' ||
+        error?.status === 413 ||
+        error?.statusCode === 413;
+
+      if (isPayloadTooLarge) {
+        logger.warn('Request body too large', context);
+        if (!res.headersSent) {
+          return res.status(413).json({
+            success: false,
+            error: 'Request body too large',
+          });
+        }
+        return;
+      }
+
       logger.error('Unhandled error in request handler', error, context);
 
-      res.status(500).json(serverErrorPayload(error));
+      if (!res.headersSent) {
+        res.status(500).json(serverErrorPayload(error));
+      }
     });
 
     // 404 handler (pathless — Express 5 no longer supports '*' wildcard paths)

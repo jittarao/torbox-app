@@ -112,8 +112,20 @@ const CONNECTION_DEFER_MS = UPLOAD_CONNECTION_DEFER_MS;
 const CONNECTION_SOFT_DEFER_MS = UPLOAD_CONNECTION_SOFT_DEFER_MS;
 const CONNECTION_STRIKES_BEFORE_PAUSE = UPLOAD_CONNECTION_STRIKES_BEFORE_PAUSE;
 const GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE = UPLOAD_GLOBAL_CONNECTION_STRIKES_BEFORE_PAUSE;
-/** Min interval between per-type connection-defer warn logs (soft or hard). */
-const CONNECTION_DEFER_WARN_THROTTLE_MS = UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS;
+/**
+ * Min interval between per-type connection-defer warn logs (soft or hard).
+ * Floored at the outage pause window so a sustained TorBox outage cannot warn more
+ * than once per window per type even if the env var is set lower.
+ */
+const CONNECTION_DEFER_WARN_THROTTLE_MS = Math.max(
+  UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS,
+  UPLOAD_CONNECTION_DEFER_MS
+);
+/** Min interval between global-outage-pause warn logs for the same type. */
+const GLOBAL_PAUSE_WARN_THROTTLE_MS = Math.max(
+  UPLOAD_CONNECTION_DEFER_WARN_THROTTLE_MS,
+  30 * 60 * 1000
+);
 const CLEANUP_RETENTION_DAYS = 7;
 const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes - if processing longer, consider stuck
 const API_CLIENT_CACHE_MAX = parseInt(process.env.UPLOAD_API_CLIENT_CACHE_MAX || '300', 10);
@@ -177,6 +189,9 @@ class UploadProcessor {
 
     /** @type {Map<string, number>} Suppressed connection-defer warns since last emitted warn. */
     this._connectionDeferSuppressedByType = new Map();
+
+    /** @type {Map<string, number>} Last global-outage-pause warn timestamp keyed by type. */
+    this._globalPauseWarnAtByType = new Map();
   }
 
   /**
@@ -986,6 +1001,14 @@ class UploadProcessor {
     this._globalConnectionPauseUntilByType.set(type, untilMs);
     this._globalConnectionStrikesByType.set(type, 0);
     if (!alreadyPaused) {
+      // During a sustained outage the pause re-opens every CONNECTION_DEFER_MS; only
+      // re-log periodically so a multi-hour TorBox outage does not spam one line per window.
+      const now = Date.now();
+      const lastWarnAt = this._globalPauseWarnAtByType.get(type) ?? 0;
+      if (now - lastWarnAt < GLOBAL_PAUSE_WARN_THROTTLE_MS) {
+        return;
+      }
+      this._globalPauseWarnAtByType.set(type, now);
       logger.warn('TorBox create API global outage pause', {
         type,
         reason,
@@ -1342,7 +1365,7 @@ class UploadProcessor {
       });
     }
 
-    logger.info('Upload processed successfully', {
+    logger.debug('Upload processed successfully', {
       uploadId: id,
       type,
       upload_type: upload.upload_type,
@@ -1702,7 +1725,15 @@ class UploadProcessor {
           );
           return uploadProcessResult(false, stopTypeDrain);
         }
-        throw apiError;
+        // TorBox returns HTTP 400 with a duplicate envelope (e.g. { error: 'DIFF_ISSUE',
+        // detail: 'Download already queued.' }) when the item is already on the account.
+        // That is an idempotent success — route it through the same duplicate path as an
+        // HTTP 200 success:false response instead of marking the upload permanently failed.
+        if (isTorboxDuplicateUploadResponse(apiError.response)) {
+          response = apiError.response;
+        } else {
+          throw apiError;
+        }
       }
 
       this.updateRateLimitFromResponse(upload.authId, type, response, {

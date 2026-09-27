@@ -3,6 +3,7 @@ import { backendFetch } from '@/utils/backendRequest';
 import { DOWNLOAD_PROTECTED_CODE, DOWNLOAD_PROTECTED_MESSAGE } from '@/config/downloadProtection';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
+const PROTECTION_ASSERT_TIMEOUT_MS = 8000;
 
 export { DOWNLOAD_PROTECTED_CODE, DOWNLOAD_PROTECTED_MESSAGE };
 
@@ -30,14 +31,21 @@ export async function assertDestructiveAllowed(apiKey, downloadIds, operation) {
     return { allowed: ids, blocked: [] };
   }
 
-  const response = await backendFetch(`${BACKEND_URL}/api/downloads/protect/assert`, {
-    apiKey,
-    method: 'POST',
-    body: {
-      download_ids: ids,
-      operation,
-    },
-  });
+  let response;
+  try {
+    response = await backendFetch(`${BACKEND_URL}/api/downloads/protect/assert`, {
+      apiKey,
+      method: 'POST',
+      body: {
+        download_ids: ids,
+        operation,
+      },
+      signal: AbortSignal.timeout(PROTECTION_ASSERT_TIMEOUT_MS),
+    });
+  } catch {
+    // Hung/unreachable backend must not consume the TorBox delete budget.
+    return { allowed: ids, blocked: [] };
+  }
 
   const data = await response.json().catch(() => ({}));
 

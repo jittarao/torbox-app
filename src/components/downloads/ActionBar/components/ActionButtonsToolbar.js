@@ -61,6 +61,7 @@ export default function ActionButtonsToolbar({
   const {
     downloading: isDownloading,
     deleting: isDeleting,
+    deleteProgress = { current: 0, total: 0 },
     exporting: isExporting,
     archiving: isArchiving,
     forceStarting: isForceStarting,
@@ -95,6 +96,16 @@ export default function ActionButtonsToolbar({
   };
 
   const deleteParentFileCount = getSelectedItems().files?.size || 0;
+
+  const deleteButtonLabel =
+    isDeleting && deleteProgress.total > 1
+      ? t('deleteConfirm.deletingProgress', {
+          current: deleteProgress.current,
+          total: deleteProgress.total,
+        })
+      : isDeleting
+        ? t('deleteConfirm.deleting')
+        : t('deleteConfirm.confirm');
 
   return (
     <div
@@ -243,7 +254,7 @@ export default function ActionButtonsToolbar({
           disabled={isDeleting || deleteSelectionBlocked}
           loading={isDeleting}
           icon={<Delete />}
-          label={isDeleting ? t('deleteConfirm.deleting') : t('deleteConfirm.confirm')}
+          label={deleteButtonLabel}
           title={deleteSelectionBlocked ? t('deleteProtectedTitle') : t('deleteConfirm.title')}
         />
       )}

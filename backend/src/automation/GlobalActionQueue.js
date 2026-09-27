@@ -260,7 +260,7 @@ class GlobalActionQueue {
               continue;
             }
             if (!stillEnabled) {
-              logger.info('Skipping pending action batch — rule is disabled', {
+              logger.debug('Skipping pending action batch — rule is disabled', {
                 authId: merged.authId,
                 ruleId,
                 ruleName: merged.rule?.name,

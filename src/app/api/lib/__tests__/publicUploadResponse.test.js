@@ -54,4 +54,30 @@ describe('toPublicUploadResponse', () => {
       }).data.error_message
     ).toBe('Upload failed');
   });
+
+  test('echoes batch index and name when present', () => {
+    expect(
+      toPublicUploadResponse({
+        id: 42,
+        status: 'queued',
+        queue_order: 5,
+        index: 2,
+        name: 'file-c.torrent',
+      }).data
+    ).toEqual({
+      upload_id: 42,
+      status: 'queued',
+      queue_order: 5,
+      hash: null,
+      torrent_id: null,
+      auth_id: null,
+      index: 2,
+      name: 'file-c.torrent',
+    });
+  });
+
+  test('omits index for single-status rows without one', () => {
+    const data = toPublicUploadResponse({ id: 7, status: 'queued', queue_order: 1 }).data;
+    expect(data).not.toHaveProperty('index');
+  });
 });

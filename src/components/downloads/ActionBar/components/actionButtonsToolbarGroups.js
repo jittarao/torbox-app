@@ -3,6 +3,7 @@
 export function createBulkProgress({
   isDownloading = false,
   isDeleting = false,
+  deleteProgress = { current: 0, total: 0 },
   isExporting = false,
   isArchiving = false,
   isForceStarting = false,
@@ -13,6 +14,7 @@ export function createBulkProgress({
   return {
     downloading: isDownloading,
     deleting: isDeleting,
+    deleteProgress,
     exporting: isExporting,
     archiving: isArchiving,
     forceStarting: isForceStarting,

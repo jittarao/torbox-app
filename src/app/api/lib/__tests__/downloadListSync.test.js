@@ -1148,5 +1148,28 @@ describe('downloadListSync', () => {
       expect(fs.existsSync(revPath)).toBe(true);
       expect(Buffer.compare(fs.readFileSync(bodyPath), fs.readFileSync(revPath))).toBe(0);
     });
+
+    test('suppresses repeat logs for non-actionable reconcile failures', async () => {
+      setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
+      setDownloadListSyncCacheMetaForTests(API_KEY, TYPE, { lastShallowPollAt: 0 });
+
+      const warn = mock(() => {});
+      const originalWarn = console.warn;
+      console.warn = warn;
+      try {
+        fetchShallowDownloadListMock.mockRejectedValueOnce(new Error('PLAN_RESTRICTED_FEATURE'));
+        await runShallowRefresh(API_KEY, TYPE, { blocking: true });
+        fetchShallowDownloadListMock.mockRejectedValueOnce(new Error('PLAN_RESTRICTED_FEATURE'));
+        await runShallowRefresh(API_KEY, TYPE, { blocking: true });
+
+        const lines = warn.mock.calls
+          .map((call) => String(call[0]))
+          .filter((line) => line.includes('PLAN_RESTRICTED_FEATURE'));
+        expect(lines).toHaveLength(1);
+        expect(lines[0]).toContain('suppressing repeats');
+      } finally {
+        console.warn = originalWarn;
+      }
+    });
   });
 });

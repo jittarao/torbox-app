@@ -39,6 +39,11 @@ export function setupConfigRoutes(router, backend) {
         rate_limiting: {
           ip_rate_limit_max: parseInt(process.env.IP_RATE_LIMIT_MAX || '1000', 10),
           user_rate_limit_max: parseInt(process.env.USER_RATE_LIMIT_MAX || '500', 10),
+          upload_status_rate_limit_max: parseInt(
+            process.env.UPLOAD_STATUS_RATE_LIMIT_MAX || '3000',
+            10
+          ),
+          upload_status_batch_max: parseInt(process.env.UPLOAD_STATUS_BATCH_MAX || '500', 10),
           admin_rate_limit_max: parseInt(process.env.ADMIN_RATE_LIMIT_MAX || '100', 10),
           tmdb_fetch_rate_limit_max: parseInt(process.env.TMDB_FETCH_RATE_LIMIT_MAX || '60', 10),
         },

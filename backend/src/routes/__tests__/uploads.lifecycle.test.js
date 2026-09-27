@@ -101,6 +101,85 @@ describe('upload lifecycle routes', () => {
     expect(getRes.status).toBe(404);
   });
 
+  test('DELETE /api/uploads/bulk is not blocked after the upload-create rate limiter is exhausted', async () => {
+    const previousMax = process.env.UPLOAD_RATE_LIMIT_MAX;
+    process.env.UPLOAD_RATE_LIMIT_MAX = '1';
+    const limitedApp = buildUploadApp(env);
+
+    try {
+      const created = await request(limitedApp)
+        .post('/api/uploads')
+        .set('x-api-key', env.apiKey)
+        .send({
+          type: 'torrent',
+          upload_type: 'magnet',
+          url: 'magnet:?xt=urn:btih:abc123',
+          name: 'Queued then deleted',
+        });
+      expect(created.status).toBe(200);
+
+      const blocked = await request(limitedApp)
+        .post('/api/uploads')
+        .set('x-api-key', env.apiKey)
+        .send({
+          type: 'torrent',
+          upload_type: 'magnet',
+          url: 'magnet:?xt=urn:btih:def456',
+          name: 'Should be rate limited',
+        });
+      expect(blocked.status).toBe(429);
+      expect(blocked.body.error).toContain('Too many upload requests');
+
+      const deleted = await request(limitedApp)
+        .delete('/api/uploads/bulk')
+        .set('x-api-key', env.apiKey)
+        .send({ ids: [created.body.data.id] });
+
+      expect(deleted.status).toBe(200);
+      expect(deleted.body.success).toBe(true);
+      expect(deleted.body.data.deleted).toBe(1);
+    } finally {
+      if (previousMax === undefined) {
+        delete process.env.UPLOAD_RATE_LIMIT_MAX;
+      } else {
+        process.env.UPLOAD_RATE_LIMIT_MAX = previousMax;
+      }
+    }
+  });
+
+  test('upload status polls use a separate budget from the list route', async () => {
+    const previousStatusMax = process.env.UPLOAD_STATUS_RATE_LIMIT_MAX;
+    process.env.UPLOAD_STATUS_RATE_LIMIT_MAX = '1';
+    const limitedApp = buildUploadApp(env);
+
+    try {
+      const upload = await createUpload('Poll target');
+
+      const firstPoll = await request(limitedApp)
+        .get(`/api/uploads/${upload.id}`)
+        .set('x-api-key', env.apiKey);
+      expect(firstPoll.status).toBe(200);
+
+      const secondPoll = await request(limitedApp)
+        .get(`/api/uploads/${upload.id}`)
+        .set('x-api-key', env.apiKey);
+      expect(secondPoll.status).toBe(429);
+      expect(secondPoll.body.error).toContain('Too many upload status requests');
+
+      // The list route stays on the general user limiter, so exhausting the
+      // status poll budget never locks operators out of the uploads UI.
+      const list = await request(limitedApp).get('/api/uploads').set('x-api-key', env.apiKey);
+      expect(list.status).toBe(200);
+      expect(list.body.success).toBe(true);
+    } finally {
+      if (previousStatusMax === undefined) {
+        delete process.env.UPLOAD_STATUS_RATE_LIMIT_MAX;
+      } else {
+        process.env.UPLOAD_STATUS_RATE_LIMIT_MAX = previousStatusMax;
+      }
+    }
+  });
+
   test('DELETE /api/uploads/:id does not decrement counter for completed uploads', async () => {
     const upload = await createUpload();
     expect(await getQueuedCount()).toBe(1);

@@ -21,7 +21,7 @@ import {
   MYLIST_PAGE_LIMIT,
   sortByAddedDesc,
 } from '@/app/api/lib/fetchTorboxDownloadList';
-import { isTorboxServerFault } from '@/config/errors';
+import { isNonActionableErrorCode, isTorboxServerFault } from '@/config/errors';
 import { downloadRowEqual } from '@/utils/downloadListMerge';
 import { extractPublicErrorCode } from '@/utils/sanitizeError';
 
@@ -47,6 +47,8 @@ const DEFAULT_DISK_CACHE_DIR = '.download-list-cache';
 
 /** @type {Map<string, number>} */
 const reconcileFailureLogAt = new Map();
+/** Sticky user faults already logged once this process ({kind}:{type}:{code}). @type {Set<string>} */
+const nonActionableReconcileLogged = new Set();
 // Disk-backed; higher default is fine (deltas avoid full snapshot downloads).
 const REV_HISTORY_LIMIT = Math.max(1, Number(process.env.DOWNLOAD_SYNC_REV_HISTORY_LIMIT) || 10);
 const GZIP_LEVEL = 6;
@@ -623,14 +625,23 @@ function isFailedBootstrapEntry(entry) {
  * @param {'full' | 'shallow'} [kind]
  */
 function logReconcileFailure(type, reconcileError, failureCount, kind = 'full') {
+  const code = extractPublicErrorCode(reconcileError);
+  const label = kind === 'shallow' ? 'shallow refresh' : 'full reconcile';
+
+  // Sticky user faults (plan/auth/missing item) are UI-visible and unfixable
+  // from logs — one line per process, then silence even across users/polls.
+  if (isNonActionableErrorCode(code)) {
+    const stickyKey = `${kind}:${type}:${code}`;
+    if (nonActionableReconcileLogged.has(stickyKey)) return;
+    nonActionableReconcileLogged.add(stickyKey);
+    console.warn(`[downloadListSync] ${label} failed ${type}: ${code} (suppressing repeats)`);
+    return;
+  }
+
   const key = `${kind}:${type}:${reconcileError}`;
   const now = Date.now();
   const last = reconcileFailureLogAt.get(key) || 0;
-  const code = extractPublicErrorCode(reconcileError);
-  const expected =
-    (code && !isTorboxServerFault(code)) ||
-    code === 'AUTH_ERROR' ||
-    isTimeoutLikeMessage(reconcileError);
+  const expected = (code && !isTorboxServerFault(code)) || isTimeoutLikeMessage(reconcileError);
   const rateMs = expected ? NON_RETRYABLE_RECONCILE_BACKOFF_MS : RECONCILE_FAILURE_LOG_RATE_MS;
   // First failure always logs; repeats honor the longer sticky-fault window.
   if (failureCount > 1 && now - last < rateMs) return;
@@ -641,7 +652,6 @@ function logReconcileFailure(type, reconcileError, failureCount, kind = 'full') 
       if (ts < cutoff) reconcileFailureLogAt.delete(k);
     }
   }
-  const label = kind === 'shallow' ? 'shallow refresh' : 'full reconcile';
   console.warn(`[downloadListSync] ${label} failed ${type}: ${reconcileError}`);
 }
 
@@ -653,7 +663,9 @@ function isTimeoutLikeMessage(message) {
   return (
     message.includes('Request timeout') ||
     message.includes('aborted due to timeout') ||
-    message.includes('fetch failed')
+    message.includes('fetch failed') ||
+    message.includes('non-JSON') ||
+    (message.includes('Unexpected token') && message.includes('JSON'))
   );
 }
 
@@ -1558,6 +1570,8 @@ export async function resetDownloadListSyncForTests() {
 
   wipeDiskCacheDir(getDiskCacheDir());
   syncStateByKey.clear();
+  nonActionableReconcileLogged.clear();
+  reconcileFailureLogAt.clear();
   diskCacheDirOverride = null;
   diskDirEnsured = null;
 }

@@ -29,6 +29,15 @@ import {
 } from './helpers/ruleExecutionLogging.js';
 import { fetchDownloadsForAssetTypes } from './helpers/downloadFetch.js';
 
+function assertManualRunNotCancelled(cancelToken) {
+  if (cancelToken?.cancelled) {
+    const error = new Error('Manual rule execution cancelled');
+    error.name = 'CancelledError';
+    error.isCancelled = true;
+    throw error;
+  }
+}
+
 /**
  * Per-user Automation Engine
  * Evaluates and executes automation rules for a single user
@@ -159,7 +168,7 @@ class AutomationEngine {
    */
   async initializeNextPollAt(enabledRules) {
     if (enabledRules.length === 0 || !this.masterDb) {
-      logger.info('Skipping next_poll_at initialization check', {
+      logger.debug('Skipping next_poll_at initialization check', {
         authId: this.authId,
         hasEnabledRules: enabledRules.length > 0,
         hasMasterDb: !!this.masterDb,
@@ -410,7 +419,7 @@ class AutomationEngine {
       const nextPollAt = new Date(Date.now() + adjustedIntervalMinutes * 60 * 1000);
       this.masterDb.updateNextPollAt(this.authId, nextPollAt, 0); // Count will be updated on next poll
 
-      logger.info('Reset next_poll_at', {
+      logger.debug('Reset next_poll_at', {
         authId: this.authId,
         baseInterval: `${INITIAL_POLL_INTERVAL_MINUTES}min`,
         adjustedInterval:
@@ -509,12 +518,8 @@ class AutomationEngine {
             ? `${(evaluationDuration / enabledRules.length).toFixed(2)}s`
             : '0s',
       };
-      // Quiet no-op cycles; keep info when rules executed or errored.
-      if (results.executedCount > 0 || results.errorCount > 0) {
-        logger.info('Rule evaluation cycle completed', cycleMeta);
-      } else {
-        logger.debug('Rule evaluation cycle completed', cycleMeta);
-      }
+      // Per-user cycle bookkeeping — debug only; Poll completed (on change) is the info signal.
+      logger.debug('Rule evaluation cycle completed', cycleMeta);
 
       return {
         evaluated: enabledRules.length,
@@ -758,7 +763,7 @@ class AutomationEngine {
     }
 
     // Return action descriptor for the global queue; execution and recordExecution happen in PollingScheduler
-    logger.info('Rule matched torrents, queuing actions', {
+    logger.debug('Rule matched torrents, queuing actions', {
       authId: this.authId,
       ruleId: rule.id,
       ruleName: rule.name,
@@ -783,11 +788,13 @@ class AutomationEngine {
    * @param {number} ruleId - ID of the rule to run
    * @returns {Promise<Object>} - Detailed execution results
    */
-  async runRuleManually(ruleId) {
+  async runRuleManually(ruleId, options = {}) {
+    const { cancelToken = null } = options;
     const executionStartTime = Date.now();
     let ruleName = 'Unknown';
     try {
-      logger.info('Manual rule execution started', {
+      assertManualRunNotCancelled(cancelToken);
+      logger.debug('Manual rule execution started', {
         authId: this.authId,
         ruleId,
         timestamp: new Date().toISOString(),
@@ -867,6 +874,8 @@ class AutomationEngine {
       // We update it before expensive operations so subsequent requests are rate limited
       await this.ruleRepository.updateLastEvaluatedAt(rule.id);
 
+      assertManualRunNotCancelled(cancelToken);
+
       const ruleAssetTypes = new Set(rule.assetTypes || ['torrent']);
       const downloads = await fetchDownloadsForAssetTypes(
         this.apiClient,
@@ -881,6 +890,8 @@ class AutomationEngine {
       });
 
       const torrents = downloads;
+
+      assertManualRunNotCancelled(cancelToken);
 
       // Shadow/telemetry diff only applies to torrent items
       const torrentOnlyForDiff = downloads.filter((d) => (d.assetType || 'torrent') === 'torrent');
@@ -900,6 +911,8 @@ class AutomationEngine {
         }
       );
 
+      assertManualRunNotCancelled(cancelToken);
+
       logger.debug('State changes processed for manual rule execution', {
         authId: this.authId,
         ruleId,
@@ -909,7 +922,7 @@ class AutomationEngine {
         stateTransitions: changes.stateTransitions?.length ?? 0,
       });
 
-      logger.info('Running rule manually', {
+      logger.debug('Running rule manually', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
@@ -1076,7 +1089,7 @@ class AutomationEngine {
       } else {
         // No actions were executed, but we still evaluated the rule
         // Don't update last_executed_at or create a log entry
-        logger.info('No actions executed (all failed or filtered out)', {
+        logger.debug('No actions executed (all failed or filtered out)', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,
