@@ -27,9 +27,7 @@ export async function onRequestError(
     routePath: string;
     routeType: 'render' | 'route' | 'action' | 'proxy';
     renderSource:
-      | 'react-server-components'
-      | 'react-server-components-payload'
-      | 'server-rendering';
+      'react-server-components' | 'react-server-components-payload' | 'server-rendering';
     revalidateReason: 'on-demand' | 'stale' | undefined;
     renderType: 'dynamic' | 'dynamic-resume';
   }
