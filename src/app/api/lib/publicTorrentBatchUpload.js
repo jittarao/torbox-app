@@ -31,36 +31,56 @@ export async function queuePublicTorrentBatchUploads(request, apiKey) {
       return NextResponse.json({ success: false, error: validationError }, { status: 400 });
     }
 
-    const fileUploadPromises = uploads.reduce((acc, upload) => {
-      if (upload.upload_type === 'file' && upload.file_data) {
-        acc.push(
-          (async () => {
-            const fileUploadResponse = await fetch(`${BACKEND_URL}/api/uploads/file`, {
-              method: 'POST',
-              cache: 'no-store',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-              },
-              body: JSON.stringify({
-                file_data: upload.file_data,
-                filename: upload.filename,
-                type: 'torrent',
-              }),
-            });
-
-            if (!fileUploadResponse.ok) {
-              const errorData = await fileUploadResponse.json().catch(() => ({}));
-              return { upload, error: errorData.error || 'Failed to save file' };
-            }
-
-            const fileUploadData = await fileUploadResponse.json();
-            return { upload, file_path: fileUploadData.data.file_path };
-          })()
-        );
+    const fileUploadPromises = uploads.flatMap((upload, index) => {
+      if (upload.upload_type !== 'file') {
+        return [];
       }
-      return acc;
-    }, []);
+
+      if (!upload.file_data) {
+        // A file upload without file_data can never be staged. Surface it as a
+        // per-item staging error instead of silently dropping it so the response
+        // indices and meta counts stay aligned with the request.
+        return [
+          Promise.resolve({
+            index,
+            upload,
+            code: 'file_stage_failed',
+            error: 'file_data is required for file uploads',
+          }),
+        ];
+      }
+
+      return [
+        (async () => {
+          const fileUploadResponse = await fetch(`${BACKEND_URL}/api/uploads/file`, {
+            method: 'POST',
+            cache: 'no-store',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+            },
+            body: JSON.stringify({
+              file_data: upload.file_data,
+              filename: upload.filename,
+              type: 'torrent',
+            }),
+          });
+
+          if (!fileUploadResponse.ok) {
+            const errorData = await fileUploadResponse.json().catch(() => ({}));
+            return {
+              index,
+              upload,
+              code: 'file_stage_failed',
+              error: errorData.error || 'Failed to save file',
+            };
+          }
+
+          const fileUploadData = await fileUploadResponse.json();
+          return { index, upload, file_path: fileUploadData.data.file_path };
+        })(),
+      ];
+    });
 
     const fileUploadResults = await Promise.all(fileUploadPromises);
     const filePathMap = new Map();
@@ -68,24 +88,33 @@ export async function queuePublicTorrentBatchUploads(request, apiKey) {
 
     fileUploadResults.forEach((result) => {
       if (result.error) {
-        fileUploadErrors.push(result);
+        fileUploadErrors.push({
+          index: result.index,
+          name: result.upload?.name ?? null,
+          code: result.code || 'file_stage_failed',
+          error: result.error,
+          upload: result.upload,
+        });
       } else {
-        filePathMap.set(result.upload, result.file_path);
+        filePathMap.set(result.index, result.file_path);
       }
     });
 
-    const preparedUploads = uploads.reduce((acc, upload) => {
-      if (upload.upload_type !== 'file' || filePathMap.has(upload)) {
-        const prepared = { ...upload, type: 'torrent' };
-        if (upload.upload_type === 'file') {
-          prepared.file_path = filePathMap.get(upload);
-          delete prepared.file_data;
-          delete prepared.filename;
-        }
-        acc.push(prepared);
+    const preparedUploads = [];
+    uploads.forEach((upload, index) => {
+      const isFile = upload.upload_type === 'file';
+      if (isFile && !filePathMap.has(index)) {
+        return;
       }
-      return acc;
-    }, []);
+
+      const prepared = { ...upload, type: 'torrent', index };
+      if (isFile) {
+        prepared.file_path = filePathMap.get(index);
+        delete prepared.file_data;
+        delete prepared.filename;
+      }
+      preparedUploads.push(prepared);
+    });
 
     const response = await fetch(`${BACKEND_URL}/api/uploads/batch`, {
       method: 'POST',
@@ -131,17 +160,25 @@ export async function queuePublicTorrentBatchUploads(request, apiKey) {
     const errors = [
       ...fileUploadErrors,
       ...((Array.isArray(data.data?.errors) && data.data.errors) || []),
-    ];
+    ].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
+    const publicUploads = (data.data?.uploads || []).map(
+      (upload) => toPublicUploadResponse(upload).data
+    );
 
     return NextResponse.json({
       success: true,
       error: null,
       detail: 'Torrents Queued Successfully',
       data: {
-        uploads: (data.data?.uploads || []).map((upload) => toPublicUploadResponse(upload).data),
+        uploads: publicUploads,
         errors: errors.length > 0 ? errors : undefined,
       },
-      meta: data.meta,
+      meta: {
+        total: uploads.length,
+        successful: publicUploads.length,
+        failed: errors.length,
+      },
     });
   } catch (error) {
     console.error('Error creating public torrent batch upload:', error);

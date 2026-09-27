@@ -10,8 +10,10 @@ implementation_roots:
   - src/app/api/v1/torrents/createtorrent/route.js
   - src/app/api/v1/torrents/batch/route.js
   - src/app/api/v1/uploads/[id]/route.js
+  - src/app/api/v1/uploads/status/route.js
   - src/app/api/lib/queueTorrentUpload.js
   - src/app/api/lib/publicTorrentBatchUpload.js
+  - src/app/api/lib/publicUploadStatus.js
   - src/app/api/lib/publicUploadResponse.js
   - backend/src/routes/uploads.js
   - backend/src/automation/UploadProcessor.js
@@ -82,6 +84,8 @@ Success responses mirror TorBox-style fields:
 | `torrent_id`    | `status === "completed"` | TorBox torrent id (use for TorBox API lookups)                                                                         |
 | `auth_id`       | `status === "completed"` | TorBox auth id from createtorrent                                                                                      |
 | `error_message` | `status === "failed"`    | TBM queue/processor failure reason (not a live TorBox API error)                                                       |
+| `name`          | when known               | Echo of the submitted item name (batch, bulk status, and single status responses)                                      |
+| `index`         | batch only               | Zero-based position of the item in the original batch request `uploads` array (stable across partial failures)         |
 
 `detail` strings: `Torrent Queued Successfully`, `Torrent Created Successfully`, `Torrent Upload Failed`.
 
@@ -100,6 +104,8 @@ POST createtorrent/batch  →  TBM status=queued  →  backend processor  →  T
 ```
 
 Poll TBM until `completed` or `failed`. Poll interval: your choice; TBM processes uploads every ~5s (`UPLOAD_PROCESSOR_INTERVAL_MS`). After `completed`, use `torrent_id` / `hash` against TorBox for ongoing download state.
+
+**Polling rate limit:** status reads have a dedicated per-user budget (`UPLOAD_STATUS_RATE_LIMIT_MAX`, default `3000` per 15 min, i.e. ~200 reads/min) and do **not** consume the general API budget. Both `GET /api/v1/uploads/:id` and `POST /api/v1/uploads/status` draw from this one budget: a single-id poll costs 1, and a bulk read costs the number of unique ids it requests (so N ids ≈ N single polls). Poll each upload no more often than every ~10 seconds, and for large batches poll a rolling subset — the bulk endpoint makes that cheap. Aggressive polling returns `429` with `error: "Too many upload status requests, please try again later."` (honor the `Retry-After` header). Exhausting this budget does not affect the app UI.
 
 ---
 
@@ -186,6 +192,8 @@ Rules:
 
 **Response:**
 
+Every entry in `data.uploads` carries `index` — the zero-based position of the item in the request `uploads` array — and the echoed `name`. Use `index` to map results back to the torrents you submitted; it stays correct even when some items fail at any stage.
+
 ```json
 {
   "success": true,
@@ -194,19 +202,48 @@ Rules:
   "data": {
     "uploads": [
       {
-        "upload_id": 1,
+        "index": 0,
+        "upload_id": 42,
         "status": "queued",
         "queue_order": 0,
         "hash": null,
         "torrent_id": null,
-        "auth_id": null
+        "auth_id": null,
+        "name": "file-a.torrent"
       }
     ],
-    "errors": []
+    "errors": [
+      {
+        "index": 2,
+        "name": "file-c.torrent",
+        "code": "file_stage_failed",
+        "error": "Failed to save file",
+        "upload": { "type": "torrent", "upload_type": "file", "name": "file-c.torrent" }
+      }
+    ]
   },
-  "meta": { "total": 1, "successful": 1, "failed": 0 }
+  "meta": { "total": 3, "successful": 1, "failed": 1 }
 }
 ```
+
+Items that fail (staging, validation, or insert) appear in `data.errors`, never in `data.uploads`. Both `data.uploads[*]` and `data.errors[*]` carry the original `index`, so a partial failure never renumbers the successes. `meta.total` is always the number of items in the request; `successful + failed === total`.
+
+Error `code` values (stable):
+
+| `code`                | Meaning                                                                         |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `file_stage_failed`   | File staging failed (bad/oversized data, no `file_data`, or backend save error) |
+| `invalid_type`        | `type` missing or not torrent/usenet/webdl                                      |
+| `invalid_upload_type` | `upload_type` invalid, or `magnet` used with non-torrent                        |
+| `name_required`       | `name` missing                                                                  |
+| `file_path_required`  | `upload_type: "file"` without `file_path`                                       |
+| `invalid_extension`   | File extension does not match the type                                          |
+| `invalid_file_path`   | File path does not belong to the authenticated user                             |
+| `url_required`        | `upload_type: "magnet"`/`"link"` without `url`                                  |
+| `insert_failed`       | Row insert failed                                                               |
+| `unknown`             | Unclassified failure                                                            |
+
+Errors keep the nested `upload` object for backward compatibility.
 
 ---
 
@@ -239,13 +276,71 @@ If the upload was created with `as_queued: true`, the torrent may appear in TorB
 
 ---
 
+## POST `/api/v1/uploads/status`
+
+Bulk read of **TBM internal queue status** for many uploads in one request. Read-only and side-effect free: like the single endpoint it reads the local per-user `uploads` table and **never calls `api.torbox.app`**. Use it to poll a rolling subset of a large queue without one request per upload.
+
+**Content-Type:** `application/json`
+
+**Request:**
+
+```json
+{ "ids": [42, 43, 44] }
+```
+
+- `ids` must be a non-empty array of positive integers.
+- Duplicate ids are deduped silently (each id is looked up once).
+- Up to `UPLOAD_STATUS_BATCH_MAX` ids per request (default `500`). Over the cap → `400` (never truncated).
+- Ids that are unknown, deleted, or belong to another user are returned in `data.not_found` — they do not fail the whole request.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "error": null,
+  "detail": "Upload Statuses Fetched",
+  "data": {
+    "uploads": [
+      {
+        "upload_id": 42,
+        "status": "completed",
+        "queue_order": null,
+        "hash": "abc…",
+        "torrent_id": 123,
+        "auth_id": 9,
+        "name": "Example"
+      },
+      {
+        "upload_id": 44,
+        "status": "queued",
+        "queue_order": 7,
+        "hash": null,
+        "torrent_id": null,
+        "auth_id": null,
+        "name": "Other"
+      }
+    ],
+    "not_found": [43]
+  },
+  "meta": { "requested": 3, "found": 2, "not_found": 1 }
+}
+```
+
+Each entry in `data.uploads` has the same shape as `GET /api/v1/uploads/:id`'s `data`, keyed by `upload_id`. Order is not semantically meaningful (entries are sorted ascending by `upload_id` for convenience); `meta.requested` counts unique ids after dedupe, and `requested === found + not_found`. Failed uploads include `error_message`.
+
+**Rate limiting:** the read is charged against the shared upload-status budget (see **Polling rate limit** under [Upload lifecycle](#upload-lifecycle)) — a request for N unique ids costs ≈N, so bulk reads cannot exceed `UPLOAD_STATUS_RATE_LIMIT_MAX` in aggregate. Over-budget requests return the usual `429` shape with `Retry-After`.
+
+---
+
 ## Related internal routes (UI / same backend)
 
-| Route                     | Purpose                                                             |
-| ------------------------- | ------------------------------------------------------------------- |
-| `POST /api/torrents`      | App UI upload (multipart; supports `link`; internal response shape) |
-| `POST /api/uploads/batch` | Raw backend proxy (full upload objects, all types)                  |
-| `GET /api/uploads`        | List/filter uploads (internal)                                      |
+| Route                      | Purpose                                                             |
+| -------------------------- | ------------------------------------------------------------------- |
+| `POST /api/torrents`       | App UI upload (multipart; supports `link`; internal response shape) |
+| `POST /api/uploads/batch`  | Raw backend proxy (full upload objects, all types)                  |
+| `POST /api/uploads/status` | Bulk queue status (internal/backend; same semantics as v1)          |
+| `GET /api/uploads`         | List/filter uploads (internal)                                      |
 
 Prefer **v1** routes for TorBox-compatible integrations.
 
@@ -254,8 +349,8 @@ Prefer **v1** routes for TorBox-compatible integrations.
 ## Agent checklist
 
 1. Confirm backend is enabled (`BACKEND_DISABLED` not true).
-2. `POST` createtorrent or batch → save `data.upload_id`(s).
-3. Poll `GET /api/v1/uploads/:id` until TBM `status` is `completed` or `failed` (this is queue status, not TorBox download status).
+2. `POST` createtorrent or batch → save `data.upload_id`(s); map them with the batch `index` / `name` fields.
+3. Poll `GET /api/v1/uploads/:id` (or `POST /api/v1/uploads/status` for many ids at once) until TBM `status` is `completed` or `failed` (this is queue status, not TorBox download status).
 4. On `completed`, read `hash`, `torrent_id`, `auth_id` from `data`.
 5. On `failed`, read `data.error_message` (TBM processor/queue failure).
 6. Do not call TorBox `createtorrent` directly if using this queue — the backend processor owns that call.
@@ -263,11 +358,13 @@ Prefer **v1** routes for TorBox-compatible integrations.
 
 ## Common errors
 
-| HTTP | `error`                                   | Cause                           |
-| ---- | ----------------------------------------- | ------------------------------- |
-| 401  | API key is required                       | Missing/invalid auth header     |
-| 400  | multipart/form-data body is required      | createtorrent without multipart |
-| 400  | Exactly one of file or magnet is required | createtorrent validation        |
-| 400  | link is not supported on this endpoint    | createtorrent with `link`       |
-| 503  | backend disabled message                  | `BACKEND_DISABLED=true`         |
-| 404  | Upload not found                          | unknown `upload_id`             |
+| HTTP | `error`                                   | Cause                                      |
+| ---- | ----------------------------------------- | ------------------------------------------ |
+| 401  | API key is required                       | Missing/invalid auth header                |
+| 400  | multipart/form-data body is required      | createtorrent without multipart            |
+| 400  | Exactly one of file or magnet is required | createtorrent validation                   |
+| 400  | link is not supported on this endpoint    | createtorrent with `link`                  |
+| 400  | Maximum N upload ids per status request   | bulk status over `UPLOAD_STATUS_BATCH_MAX` |
+| 503  | backend disabled message                  | `BACKEND_DISABLED=true`                    |
+| 404  | Upload not found                          | unknown `upload_id`                        |
+| 429  | Too many upload status requests...        | status poll budget exhausted               |

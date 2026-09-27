@@ -632,11 +632,11 @@ class PollingScheduler {
       (pollMeta.changes?.updated || 0) +
       (pollMeta.changes?.removed || 0);
     const pendingActionsCount = result.ruleResults?.pendingActions?.length ?? 0;
-    // Quiet idle polls; keep info when state changed or rules queued work.
-    if (changeCount > 0 || pendingActionsCount > 0) {
+    // Info only when the catalog actually changed; routine polls (incl. queued actions) are debug.
+    if (changeCount > 0) {
       logger.info('Poll completed successfully', { ...pollMeta, pendingActionsCount });
     } else {
-      logger.debug('Poll completed successfully', pollMeta);
+      logger.debug('Poll completed successfully', { ...pollMeta, pendingActionsCount });
     }
   }
 
@@ -956,7 +956,7 @@ class PollingScheduler {
 
       const timeSinceLastPoll = now - new Date(lastPollAt).getTime();
       if (timeSinceLastPoll > cleanupThresholdMs) {
-        logger.info('Removing stale poller (not polled recently)', {
+        logger.debug('Removing stale poller (not polled recently)', {
           authId,
           lastPollAt: lastPollAt.toISOString(),
           hoursSinceLastPoll: (timeSinceLastPoll / (60 * 60 * 1000)).toFixed(2),
@@ -969,7 +969,7 @@ class PollingScheduler {
     }
 
     if (cleanedCount > 0) {
-      logger.info('Poller cleanup completed', {
+      logger.debug('Poller cleanup completed', {
         cleanedCount,
         remainingPollers: this.pollers.size,
       });
@@ -1563,7 +1563,7 @@ class PollingScheduler {
         if (!activeRulesAuthIdSet.has(authId)) {
           this.pollers.delete(authId);
           this._cleanupEngineAndMutexForAuth(authId);
-          logger.info('Removed poller for user without active rules', {
+          logger.debug('Removed poller for user without active rules', {
             authId,
           });
           stats.removed++;

@@ -852,7 +852,7 @@ class UserPoller {
         nextPollAt: result.nextPollAt?.toISOString() || 'unknown',
         timestamp: new Date().toISOString(),
       };
-      if (changeCount > 0 || (result.ruleResults?.pendingActions?.length ?? 0) > 0) {
+      if (changeCount > 0) {
         logger.info('Poll completed successfully', pollMeta);
       } else {
         logger.debug('Poll completed successfully', pollMeta);

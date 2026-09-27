@@ -13,6 +13,16 @@ export function toPublicUploadResponse(upload) {
     data.error_message = upload.error_message ?? null;
   }
 
+  // Stable batch identity (additive): zero-based request position and name echo.
+  // Single-status rows do not carry `index`, so it is omitted for them.
+  if (upload.index !== undefined && upload.index !== null) {
+    data.index = upload.index;
+  }
+
+  if (upload.name !== undefined && upload.name !== null) {
+    data.name = upload.name;
+  }
+
   return {
     success: true,
     error: null,

@@ -11,6 +11,8 @@ import {
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { readFile, stat } from 'fs/promises';
 import path from 'path';
+import { parseRateLimitMax } from '../utils/ip.js';
+import { createWeightedRateLimiter } from '../utils/weightedRateLimiter.js';
 import {
   markUploadsTorboxUnavailable,
   splitRetriesByTorboxPresence,
@@ -23,6 +25,7 @@ import {
   alignCreateQuotaWindowForBlockedGate,
 } from '../automation/uploadDeferral.js';
 import { attachCreateWasCached } from '../automation/uploadAttemptLookup.js';
+import { buildAttachmentContentDisposition } from '../utils/contentDisposition.js';
 
 const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const parsedMaxUploadBytes = parseInt(process.env.MAX_UPLOAD_FILE_SIZE ?? '', 10);
@@ -233,6 +236,24 @@ export function setupUploadsRoutes(app, backend) {
         detail: 'Upload rate limit exceeded. Please wait before making more requests.',
       });
     },
+  });
+
+  // Dedicated per-user limiter for upload status reads (GET /api/uploads/:id).
+  // The public v1 integration API (GET /api/v1/uploads/:id) is documented to be
+  // polled until an upload reaches a terminal status. Those polls must not share
+  // the general USER_RATE_LIMIT_MAX budget, otherwise a polling client starves
+  // the uploads UI (and every other backend route) and the page shows
+  // "Too many requests, please try again later."
+  //
+  // The same budget is shared with the bulk status route (POST /api/uploads/status):
+  // a bulk request for N ids is charged ~N tokens so a client cannot read
+  // UPLOAD_STATUS_RATE_LIMIT_MAX × UPLOAD_STATUS_BATCH_MAX statuses per window.
+  const uploadStatusRateLimiter = createWeightedRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: parseRateLimitMax(process.env.UPLOAD_STATUS_RATE_LIMIT_MAX, 3000),
+    message: 'Too many upload status requests, please try again later.',
+    detail: 'Upload status rate limit exceeded. Please wait before making more requests.',
+    keyGenerator: (req) => req.validatedAuthId || ipKeyGenerator(req.ip),
   });
 
   // POST /api/uploads/file - Upload file to storage
@@ -455,7 +476,13 @@ export function setupUploadsRoutes(app, backend) {
 
           let currentQueueOrder = (maxOrderResult?.max_order ?? -1) + 1;
           const results = [];
-          for (const upload of uploads) {
+          for (let position = 0; position < uploads.length; position++) {
+            const upload = uploads[position];
+            // Honor a caller-supplied original index (the public batch layer forwards
+            // the request position even after staging failures filter items out);
+            // fall back to the array position for direct callers.
+            const itemIndex =
+              Number.isInteger(upload?.index) && upload.index >= 0 ? upload.index : position;
             const {
               type,
               upload_type,
@@ -469,46 +496,50 @@ export function setupUploadsRoutes(app, backend) {
               password,
             } = upload;
 
+            const fail = (code, error) => {
+              errors.push({
+                index: itemIndex,
+                name: upload?.name ?? null,
+                code,
+                error,
+                upload,
+              });
+            };
+
             // Validation
             if (!type || !VALID_TYPES.has(type)) {
-              errors.push({ upload, error: 'Invalid type. Must be torrent, usenet, or webdl' });
+              fail('invalid_type', 'Invalid type. Must be torrent, usenet, or webdl');
               continue;
             }
 
             if (!upload_type || !VALID_UPLOAD_TYPES.has(upload_type)) {
-              errors.push({
-                upload,
-                error: 'Invalid upload_type. Must be file, magnet, or link',
-              });
+              fail('invalid_upload_type', 'Invalid upload_type. Must be file, magnet, or link');
               continue;
             }
 
             // Validate that magnet links can only be used with torrent type
             if (upload_type === 'magnet' && type !== 'torrent') {
-              errors.push({
-                upload,
-                error: 'Invalid combination: magnet links can only be used with type="torrent"',
-              });
+              fail(
+                'invalid_upload_type',
+                'Invalid combination: magnet links can only be used with type="torrent"'
+              );
               continue;
             }
 
             if (!name) {
-              errors.push({ upload, error: 'name is required' });
+              fail('name_required', 'name is required');
               continue;
             }
 
             if (upload_type === 'file' && !file_path) {
-              errors.push({ upload, error: 'file_path is required for file uploads' });
+              fail('file_path_required', 'file_path is required for file uploads');
               continue;
             }
 
             // Validate file extension when upload_type is 'file' to prevent unauthorized file types
             const extensionError = validateFileExtension(type, upload_type, file_path);
             if (extensionError) {
-              errors.push({
-                upload,
-                error: extensionError,
-              });
+              fail('invalid_extension', extensionError);
               continue;
             }
 
@@ -521,16 +552,16 @@ export function setupUploadsRoutes(app, backend) {
                   endpoint: '/api/uploads/batch',
                   method: 'POST',
                 });
-                errors.push({
-                  upload,
-                  error: 'Invalid file path: file must belong to authenticated user',
-                });
+                fail(
+                  'invalid_file_path',
+                  'Invalid file path: file must belong to authenticated user'
+                );
                 continue;
               }
             }
 
             if ((upload_type === 'magnet' || upload_type === 'link') && !url) {
-              errors.push({ upload, error: 'url is required for magnet/link uploads' });
+              fail('url_required', 'url is required for magnet/link uploads');
               continue;
             }
 
@@ -550,9 +581,9 @@ export function setupUploadsRoutes(app, backend) {
               );
 
               const createdUpload = selectStmt.get(result.lastInsertRowid);
-              results.push(createdUpload);
+              results.push({ ...createdUpload, index: itemIndex });
             } catch (error) {
-              errors.push({ upload, error: error.message });
+              fail('insert_failed', error.message);
             }
           }
           return results;
@@ -606,6 +637,93 @@ export function setupUploadsRoutes(app, backend) {
       }
     }
   );
+
+  // POST /api/uploads/status - Bulk read TBM queue status for many uploads.
+  // Read-only and local: reads the per-user SQLite `uploads` table only (never
+  // calls TorBox). Shares the status budget with GET /api/uploads/:id and is
+  // charged by the number of unique ids so a bulk read costs ≈N single polls.
+  app.post('/api/uploads/status', backend.requireRegisteredUser, async (req, res) => {
+    try {
+      const authId = req.validatedAuthId;
+      const { ids } = req.body || {};
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'ids array is required and must not be empty',
+        });
+      }
+
+      const invalidIds = ids.filter((id) => !validateNumericId(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid ids. All IDs must be positive integers.',
+        });
+      }
+
+      // Dedupe silently; duplicate ids are harmless read-only lookups.
+      const uniqueIds = [...new Set(ids.map((id) => parseInt(id, 10)))];
+
+      const maxBatch = parseRateLimitMax(process.env.UPLOAD_STATUS_BATCH_MAX, 500);
+      if (uniqueIds.length > maxBatch) {
+        return res.status(400).json({
+          success: false,
+          error: `Maximum ${maxBatch} upload ids per status request`,
+          detail: 'Split the request into smaller batches or raise UPLOAD_STATUS_BATCH_MAX.',
+        });
+      }
+
+      if (!backend.userDatabaseManager) {
+        return res.status(503).json({
+          success: false,
+          error: 'Service is initializing, please try again in a moment',
+        });
+      }
+
+      // Charge the status budget by the number of ids read (≈N single polls).
+      if (!uploadStatusRateLimiter.consume(req, res, uniqueIds.length)) {
+        return;
+      }
+
+      const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+
+      const placeholders = uniqueIds.map(() => '?').join(',');
+      const rows = userDb.db
+        .prepare(`SELECT ${UPLOAD_DETAIL_SELECT} FROM uploads WHERE id IN (${placeholders})`)
+        .all(...uniqueIds);
+
+      const foundIds = new Set(rows.map((row) => row.id));
+      const notFound = uniqueIds.filter((id) => !foundIds.has(id));
+      // Order is not semantically meaningful; ascending is friendly to clients.
+      const uploads = [...rows].sort((a, b) => a.id - b.id);
+
+      res.json({
+        success: true,
+        error: null,
+        data: {
+          uploads,
+          not_found: notFound,
+        },
+        meta: {
+          requested: uniqueIds.length,
+          found: uploads.length,
+          not_found: notFound.length,
+        },
+      });
+    } catch (error) {
+      logger.error('Error fetching bulk upload status', error, {
+        endpoint: '/api/uploads/status',
+        method: 'POST',
+        authId: req.validatedAuthId,
+      });
+      res.status(500).json(serverErrorPayload(error));
+    } finally {
+      if (req.validatedAuthId && backend.userDatabaseManager) {
+        backend.userDatabaseManager.releaseConnection(req.validatedAuthId);
+      }
+    }
+  });
 
   // POST /api/uploads - Create upload entry
   app.post('/api/uploads', backend.requireRegisteredUser, uploadRateLimiter, async (req, res) => {
@@ -756,7 +874,7 @@ export function setupUploadsRoutes(app, backend) {
         )
         .get(result.lastInsertRowid);
 
-      logger.info('Upload created', {
+      logger.debug('Upload created', {
         authId,
         uploadId: upload.id,
         type,
@@ -974,7 +1092,7 @@ export function setupUploadsRoutes(app, backend) {
     '/api/uploads/:id',
     backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
-    userRateLimiter,
+    uploadStatusRateLimiter.middleware(),
     async (req, res) => {
       try {
         const authId = req.validatedAuthId;
@@ -1084,7 +1202,7 @@ export function setupUploadsRoutes(app, backend) {
           const contentType = contentTypeMap[ext] || 'application/octet-stream';
 
           res.setHeader('Content-Type', contentType);
-          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          res.setHeader('Content-Disposition', buildAttachmentContentDisposition(filename));
           res.send(fileBuffer);
         } catch (fileError) {
           logger.error('Error reading upload file', fileError, {
