@@ -31,7 +31,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -90,7 +90,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
