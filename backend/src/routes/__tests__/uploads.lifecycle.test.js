@@ -147,6 +147,39 @@ describe('upload lifecycle routes', () => {
     }
   });
 
+  test('upload status polls use a separate budget from the list route', async () => {
+    const previousStatusMax = process.env.UPLOAD_STATUS_RATE_LIMIT_MAX;
+    process.env.UPLOAD_STATUS_RATE_LIMIT_MAX = '1';
+    const limitedApp = buildUploadApp(env);
+
+    try {
+      const upload = await createUpload('Poll target');
+
+      const firstPoll = await request(limitedApp)
+        .get(`/api/uploads/${upload.id}`)
+        .set('x-api-key', env.apiKey);
+      expect(firstPoll.status).toBe(200);
+
+      const secondPoll = await request(limitedApp)
+        .get(`/api/uploads/${upload.id}`)
+        .set('x-api-key', env.apiKey);
+      expect(secondPoll.status).toBe(429);
+      expect(secondPoll.body.error).toContain('Too many upload status requests');
+
+      // The list route stays on the general user limiter, so exhausting the
+      // status poll budget never locks operators out of the uploads UI.
+      const list = await request(limitedApp).get('/api/uploads').set('x-api-key', env.apiKey);
+      expect(list.status).toBe(200);
+      expect(list.body.success).toBe(true);
+    } finally {
+      if (previousStatusMax === undefined) {
+        delete process.env.UPLOAD_STATUS_RATE_LIMIT_MAX;
+      } else {
+        process.env.UPLOAD_STATUS_RATE_LIMIT_MAX = previousStatusMax;
+      }
+    }
+  });
+
   test('DELETE /api/uploads/:id does not decrement counter for completed uploads', async () => {
     const upload = await createUpload();
     expect(await getQueuedCount()).toBe(1);

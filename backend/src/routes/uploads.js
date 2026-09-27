@@ -11,6 +11,7 @@ import {
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { readFile, stat } from 'fs/promises';
 import path from 'path';
+import { parseRateLimitMax } from '../utils/ip.js';
 import {
   markUploadsTorboxUnavailable,
   splitRetriesByTorboxPresence,
@@ -232,6 +233,29 @@ export function setupUploadsRoutes(app, backend) {
         success: false,
         error: 'Too many upload requests, please try again later.',
         detail: 'Upload rate limit exceeded. Please wait before making more requests.',
+      });
+    },
+  });
+
+  // Dedicated per-user limiter for upload status reads (GET /api/uploads/:id).
+  // The public v1 integration API (GET /api/v1/uploads/:id) is documented to be
+  // polled until an upload reaches a terminal status. Those polls must not share
+  // the general USER_RATE_LIMIT_MAX budget, otherwise a polling client starves
+  // the uploads UI (and every other backend route) and the page shows
+  // "Too many requests, please try again later."
+  const uploadStatusRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseRateLimitMax(process.env.UPLOAD_STATUS_RATE_LIMIT_MAX, 3000),
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+      return req.validatedAuthId || ipKeyGenerator(req.ip);
+    },
+    handler: (req, res) => {
+      res.status(429).json({
+        success: false,
+        error: 'Too many upload status requests, please try again later.',
+        detail: 'Upload status rate limit exceeded. Please wait before making more requests.',
       });
     },
   });
@@ -975,7 +999,7 @@ export function setupUploadsRoutes(app, backend) {
     '/api/uploads/:id',
     backend.requireRegisteredUser,
     validateNumericIdMiddleware('id'),
-    userRateLimiter,
+    uploadStatusRateLimiter,
     async (req, res) => {
       try {
         const authId = req.validatedAuthId;

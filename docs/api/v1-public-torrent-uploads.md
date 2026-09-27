@@ -101,6 +101,8 @@ POST createtorrent/batch  →  TBM status=queued  →  backend processor  →  T
 
 Poll TBM until `completed` or `failed`. Poll interval: your choice; TBM processes uploads every ~5s (`UPLOAD_PROCESSOR_INTERVAL_MS`). After `completed`, use `torrent_id` / `hash` against TorBox for ongoing download state.
 
+**Polling rate limit:** status polls have a dedicated per-user budget (`UPLOAD_STATUS_RATE_LIMIT_MAX`, default `3000` per 15 min, i.e. ~200 polls/min) and do **not** consume the general API budget. Poll each upload no more often than every ~10 seconds, and for large batches poll a rolling subset rather than every upload at once. Aggressive polling returns `429` with `error: "Too many upload status requests, please try again later."` (honor the `Retry-After` header). Exhausting this budget does not affect the app UI.
+
 ---
 
 ## POST `/api/v1/torrents/createtorrent`
@@ -271,3 +273,4 @@ Prefer **v1** routes for TorBox-compatible integrations.
 | 400  | link is not supported on this endpoint    | createtorrent with `link`       |
 | 503  | backend disabled message                  | `BACKEND_DISABLED=true`         |
 | 404  | Upload not found                          | unknown `upload_id`             |
+| 429  | Too many upload status requests...        | status poll budget exhausted    |
