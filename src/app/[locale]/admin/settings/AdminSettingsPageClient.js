@@ -80,6 +80,10 @@ export default function AdminSettingsPageClient() {
                   value={config.rate_limiting?.user_rate_limit_max}
                 />
                 <AdminStatRow
+                  label="Upload status rate limit"
+                  value={config.rate_limiting?.upload_status_rate_limit_max}
+                />
+                <AdminStatRow
                   label="Admin rate limit"
                   value={config.rate_limiting?.admin_rate_limit_max}
                 />

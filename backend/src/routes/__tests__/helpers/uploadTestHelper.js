@@ -46,7 +46,11 @@ export function cleanupUploadTestEnv({ tempDir, masterDatabase, userDatabaseMana
 export function buildUploadApp({
   masterDatabase,
   userDatabaseManager,
-  uploadProcessor = { isRunning: false },
+  uploadProcessor = {
+    isRunning: false,
+    getRateLimitStatisticsForUser: () => undefined,
+    getRateLimitSyncContext: () => undefined,
+  },
   uploadQuotaService = null,
 }) {
   const app = express();
