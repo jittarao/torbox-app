@@ -112,7 +112,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Install dumb-init for proper signal handling
 # dumb-init ensures signals (SIGTERM, SIGINT) are properly forwarded to the Node.js process
 # ffmpeg: provides ffprobe for audiobook chapter extraction (API route); Alpine build is musl-compatible
-RUN apk add --no-cache dumb-init ffmpeg
+# jemalloc returns dirty pages to the OS. musl malloc keeps the high-water
+# mark after a large catalog parse, so Dozzle RSS stays at the spike.
+RUN apk add --no-cache dumb-init ffmpeg jemalloc \
+ && test -f /usr/lib/libjemalloc.so.2
 
 # Create non-root user for enhanced security
 # Running as non-root user limits potential damage if container is compromised
@@ -156,6 +159,8 @@ RUN mkdir -p .next/cache data logs && \
 
 # Set production environment variables
 ENV NODE_ENV=production
+ENV LD_PRELOAD=/usr/lib/libjemalloc.so.2
+ENV MALLOC_CONF=dirty_decay_ms:1000,muzzy_decay_ms:1000
 # Use system ffprobe (Alpine package); avoids auto-download of glibc binary that cannot run on musl
 ENV FFPROBE_PATH=/usr/bin/ffprobe
 # Port the application will listen on

@@ -14,6 +14,7 @@ export async function torboxFetch(url, options = {}) {
 
   try {
     return await fetch(url, {
+      cache: 'no-store',
       ...fetchOptions,
       signal: controller.signal,
     });

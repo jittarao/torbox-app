@@ -27,9 +27,12 @@ const nextConfig = {
   // Always enabled since this config is used for production builds
   output: 'standalone',
 
-  // Cache Components + Partial Prefetching (Next.js 16.3+) — instant navigations / App Shell prefetch
+  // Cache Components + Partial Prefetching (Next.js 16.3+) — instant navigations / App Shell prefetch.
+  // No "use cache" in this app. The default 50MB in-memory page cache does not
+  // evict reliably on self-hosted standalone (Next.js 16.3), so keep it off.
   cacheComponents: true,
   partialPrefetching: true,
+  cacheMaxMemorySize: 0,
 
   // React Strict Mode — opt-in via REACT_STRICT_MODE=true in .env.local.
   // Off by default in dev: it double-invokes every render and effect, which

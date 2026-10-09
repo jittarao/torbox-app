@@ -76,6 +76,11 @@ const syncStateByKey = new Map();
 // Per-key locks if a large library must not delay other users' compares.
 let bodyWork = Promise.resolve();
 
+// ponytail: one full library resident at a time. The All tab cold-starts
+// torrent + usenet + webdl together; overlapping those pins three catalogs
+// and musl never returns the RSS. Split the slot per type if hosts have RAM.
+let catalogSlot = Promise.resolve();
+
 /**
  * @template T
  * @param {() => T} fn
@@ -84,6 +89,20 @@ let bodyWork = Promise.resolve();
 function withBodyWork(fn) {
   const run = bodyWork.then(() => fn());
   bodyWork = run.then(
+    () => {},
+    () => {}
+  );
+  return run;
+}
+
+/**
+ * @template T
+ * @param {() => T} fn
+ * @returns {Promise<T>}
+ */
+function withCatalogSlot(fn) {
+  const run = catalogSlot.then(() => fn());
+  catalogSlot = run.then(
     () => {},
     () => {}
   );
@@ -1096,7 +1115,7 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
     return undefined;
   }
 
-  const reconcileTask = (async () => {
+  const reconcileTask = withCatalogSlot(async () => {
     const now = Date.now();
     const existingEntry = getEntry(authId, type, { touch: false, body: false });
     const publishGenerationAtStart = state.publishGeneration;
@@ -1115,6 +1134,7 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
       const isMultiPage = isMultiPageFromFullReconcile(result.data, result.pageCount);
 
       if (revAtStart != null && !diskEntryExists(key)) {
+        result.data = null;
         return { success: false, error: new Error('cache evicted during reconcile') };
       }
 
@@ -1123,6 +1143,7 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
         state.publishGeneration !== publishGenerationAtStart ||
         (revAtStart != null && currentEntry?.rev !== revAtStart)
       ) {
+        result.data = null;
         scheduleMutationReconcile(apiKey, type);
         return { success: true, skipped: true };
       }
@@ -1140,6 +1161,7 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
 
         if (currentEntry && listsEqual(previousData, result.data)) {
           previousData = null;
+          result.data = null;
           const touchedAt = Date.now();
           patchEntry(authId, type, currentEntry, {
             lastFullReconcileAt: touchedAt,
@@ -1151,14 +1173,15 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
           });
           return {
             success: result.success,
-            data: result.data,
             rev: currentEntry.rev,
             unchanged: true,
           };
         }
 
+        const list = result.data;
         previousData = null;
-        const { rev } = writeEntry(authId, type, result.data, {
+        result.data = null;
+        const { rev } = writeEntry(authId, type, list, {
           lastFullReconcileAt: Date.now(),
           lastShallowPollAt: Date.now(),
           reconcileState: 'fresh',
@@ -1167,7 +1190,7 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
           reconcileFailureCount: 0,
         });
 
-        return { success: result.success, data: result.data, rev };
+        return { success: result.success, rev };
       });
     } catch (error) {
       const reconcileError = error?.message || 'reconcile failed';
@@ -1198,7 +1221,7 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
       }
       return { success: false, error, reconcileError };
     }
-  })();
+  });
 
   state.fullReconcilePromise = reconcileTask;
   reconcileTask.finally(() => {
@@ -1646,6 +1669,7 @@ export async function resetDownloadListSyncForTests() {
   syncStateByKey.clear();
   nonActionableReconcileLogged.clear();
   reconcileFailureLogAt.clear();
+  catalogSlot = Promise.resolve();
   diskCacheDirOverride = null;
   diskDirEnsured = null;
 }
