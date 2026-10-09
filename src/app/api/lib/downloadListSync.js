@@ -6,8 +6,11 @@
  * before responding.
  *
  * No durable in-memory catalog — only lightweight per-key coordination
- * (coalesced promises) stays in process RAM. Shallow failure backoff is also
- * persisted in disk meta so restarts honor TorBox fault holds.
+ * (coalesced promises) stays in process RAM. Body loads check gzip magic
+ * (or a tail rev on the hot-mirror fallback) and do not JSON.parse. The
+ * catalog is parsed only when a mutate/delta/compare needs the rows, and
+ * those inflates run one at a time. Shallow failure backoff is persisted
+ * in disk meta so restarts honor TorBox fault holds.
  * Single Next.js instance assumed (Docker Compose default).
  */
 
@@ -68,6 +71,24 @@ const mutationReconcileTimers = new Map();
  * @type {Map<string, SyncKeyState>}
  */
 const syncStateByKey = new Map();
+
+// ponytail: process-wide lock so two users/types cannot JSON.parse catalogs at once.
+// Per-key locks if a large library must not delay other users' compares.
+let bodyWork = Promise.resolve();
+
+/**
+ * @template T
+ * @param {() => T} fn
+ * @returns {Promise<T>}
+ */
+function withBodyWork(fn) {
+  const run = bodyWork.then(() => fn());
+  bodyWork = run.then(
+    () => {},
+    () => {}
+  );
+  return run;
+}
 
 /**
  * @typedef {object} SyncKeyState
@@ -270,18 +291,62 @@ function readDiskMetaOnly(key) {
 }
 
 /**
- * @param {string} key
+ * @param {Buffer} buffer
+ * @returns {boolean}
+ */
+function isGzipBuffer(buffer) {
+  return Buffer.isBuffer(buffer) && buffer.length >= 2 && buffer[0] === 0x1f && buffer[1] === 0x8b;
+}
+
+/**
+ * @param {string} filePath
  * @returns {Buffer | null}
  */
-function readDiskBodyOnly(key) {
-  const { bodyPath } = diskPathsForKey(key);
+function readGzipFile(filePath) {
   try {
-    const compressedBody = fs.readFileSync(bodyPath);
-    if (!Buffer.isBuffer(compressedBody) || compressedBody.length === 0) return null;
+    const compressedBody = fs.readFileSync(filePath);
+    if (!isGzipBuffer(compressedBody)) return null;
     return compressedBody;
   } catch {
     return null;
   }
+}
+
+/**
+ * Rev is the last key in the snapshot JSON. Reads the tail so a mirror
+ * fallback can reject a rev mismatch without building the item graph.
+ * @param {Buffer} buffer
+ * @returns {number}
+ */
+function peekGzipRev(buffer) {
+  const raw = zlib.gunzipSync(buffer);
+  const start = Math.max(0, raw.length - 64);
+  const tail = raw.toString('utf8', start);
+  const match = tail.match(/"rev":(\d+)\s*}\s*$/);
+  if (!match) throw new Error('gzip payload missing rev');
+  return Number(match[1]);
+}
+
+/**
+ * Prefer the immutable `*.rev.N.gz` named with meta.rev (no JSON parse).
+ * Hot-mirror fallback is only for a missing rev file.
+ * @param {string} key
+ * @param {number} metaRev
+ * @returns {Buffer | null}
+ */
+function loadCompressedBody(key, metaRev) {
+  const { revPath, bodyPath } = diskPathsForKey(key);
+  const named = readGzipFile(revPath(metaRev));
+  if (named) return named;
+
+  const mirror = readGzipFile(bodyPath);
+  if (!mirror) return null;
+  try {
+    if (peekGzipRev(mirror) !== metaRev) return null;
+  } catch {
+    return null;
+  }
+  return mirror;
 }
 
 /**
@@ -368,18 +433,8 @@ function persistEntryMeta(key, entry) {
 function readDiskEntry(key) {
   const shell = readDiskMetaOnly(key);
   if (!shell) return null;
-  const compressedBody = readDiskBodyOnly(key);
+  const compressedBody = loadCompressedBody(key, shell.rev);
   if (!compressedBody) {
-    deleteDiskEntry(key);
-    return null;
-  }
-  try {
-    const parsed = decompressBody(compressedBody);
-    if (parsed?.rev != null && parsed.rev !== shell.rev) {
-      deleteDiskEntry(key);
-      return null;
-    }
-  } catch {
     deleteDiskEntry(key);
     return null;
   }
@@ -395,18 +450,8 @@ function readDiskEntry(key) {
  */
 function ensureEntryBody(entry, key) {
   if (entry?.compressedBody) return true;
-  const compressedBody = readDiskBodyOnly(key);
+  const compressedBody = loadCompressedBody(key, entry.rev);
   if (!compressedBody) {
-    deleteDiskEntry(key);
-    return false;
-  }
-  try {
-    const parsed = decompressBody(compressedBody);
-    if (parsed?.rev != null && parsed.rev !== entry.rev) {
-      deleteDiskEntry(key);
-      return false;
-    }
-  } catch {
     deleteDiskEntry(key);
     return false;
   }
@@ -768,7 +813,7 @@ export function computeDelta(prevList, currList) {
       continue;
     }
     const prev = prevById.get(item.id);
-    if (prev && !listsEqual([prev], [item])) {
+    if (prev && !downloadRowEqual(prev, item)) {
       data.push(item);
     }
   }
@@ -809,13 +854,16 @@ function pruneRevHistoryOnDisk(key, currentRev) {
  */
 function archiveRevSnapshot(key, existing, nextRev) {
   if (!existing) return;
-  if (!ensureEntryBody(existing, key)) return;
-  // Gzip only — never retain the live uncompressed `data` array here. Deltas
-  // decompress via getSnapshotData when a client polls with a stale rev.
+  // The rev file was written when this rev was published. Reload the mirror
+  // only if that file is gone — never JSON.parse the catalog just to re-copy it.
   try {
     ensureDiskDir();
     const { revPath } = diskPathsForKey(key);
-    atomicWriteFile(revPath(existing.rev), existing.compressedBody, 0o600);
+    if (!fs.existsSync(revPath(existing.rev))) {
+      if (!ensureEntryBody(existing, key)) return;
+      atomicWriteFile(revPath(existing.rev), existing.compressedBody, 0o600);
+      existing.compressedBody = null;
+    }
   } catch (error) {
     logDiskFailure(error?.message || 'rev archive write failed');
   }
@@ -890,11 +938,7 @@ function getEntryData(entry) {
 function writeEntry(authId, type, data, meta = {}) {
   const key = getCacheKey(authId, type);
   const now = Date.now();
-  // Prefer meta-only read; load body only when archiving the previous rev.
-  let existing = readDiskMetaOnly(key);
-  if (existing && (meta.rev == null || meta.rev !== existing.rev)) {
-    ensureEntryBody(existing, key);
-  }
+  const existing = readDiskMetaOnly(key);
   const list = Array.isArray(data) ? data : [];
   const rev = meta.rev ?? (existing?.rev ?? 0) + 1;
 
@@ -1074,7 +1118,7 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
         return { success: false, error: new Error('cache evicted during reconcile') };
       }
 
-      const currentEntry = getEntry(authId, type, { touch: false });
+      const currentEntry = getEntry(authId, type, { touch: false, body: false });
       if (
         state.publishGeneration !== publishGenerationAtStart ||
         (revAtStart != null && currentEntry?.rev !== revAtStart)
@@ -1083,35 +1127,48 @@ export async function runFullReconciliation(apiKey, type, { blocking = true } = 
         return { success: true, skipped: true };
       }
 
-      const previousData = currentEntry ? getEntryData(currentEntry) : [];
-      if (currentEntry && listsEqual(previousData, result.data)) {
-        const touchedAt = Date.now();
-        patchEntry(authId, type, currentEntry, {
-          lastFullReconcileAt: touchedAt,
-          lastShallowPollAt: touchedAt,
+      return await withBodyWork(() => {
+        let previousData = [];
+        if (currentEntry) {
+          if (!ensureEntryBody(currentEntry, key)) {
+            scheduleMutationReconcile(apiKey, type);
+            return { success: true, skipped: true };
+          }
+          previousData = getEntryData(currentEntry);
+          currentEntry.compressedBody = null;
+        }
+
+        if (currentEntry && listsEqual(previousData, result.data)) {
+          previousData = null;
+          const touchedAt = Date.now();
+          patchEntry(authId, type, currentEntry, {
+            lastFullReconcileAt: touchedAt,
+            lastShallowPollAt: touchedAt,
+            reconcileState: 'fresh',
+            reconcileError: null,
+            reconcileFailureCount: 0,
+            isMultiPage,
+          });
+          return {
+            success: result.success,
+            data: result.data,
+            rev: currentEntry.rev,
+            unchanged: true,
+          };
+        }
+
+        previousData = null;
+        const { rev } = writeEntry(authId, type, result.data, {
+          lastFullReconcileAt: Date.now(),
+          lastShallowPollAt: Date.now(),
           reconcileState: 'fresh',
           reconcileError: null,
-          reconcileFailureCount: 0,
           isMultiPage,
+          reconcileFailureCount: 0,
         });
-        return {
-          success: result.success,
-          data: result.data,
-          rev: currentEntry.rev,
-          unchanged: true,
-        };
-      }
 
-      const { rev } = writeEntry(authId, type, result.data, {
-        lastFullReconcileAt: Date.now(),
-        lastShallowPollAt: Date.now(),
-        reconcileState: 'fresh',
-        reconcileError: null,
-        isMultiPage,
-        reconcileFailureCount: 0,
+        return { success: result.success, data: result.data, rev };
       });
-
-      return { success: result.success, data: result.data, rev };
     } catch (error) {
       const reconcileError = error?.message || 'reconcile failed';
       const now = Date.now();
@@ -1188,13 +1245,12 @@ async function runShallowRefresh(apiKey, type, { blocking = true } = {}) {
     state.lastShallowAttemptAt = attemptAt;
 
     try {
-      const entry = getEntry(authId, type);
+      const entry = getEntry(authId, type, { body: false });
       if (!entry) {
         return { success: false };
       }
 
       const revBefore = entry.rev;
-      const prevList = getEntryData(entry);
       const isMultiPage = entry.isMultiPage;
 
       const shallow = await fetchShallowDownloadList(apiKey, type);
@@ -1206,66 +1262,75 @@ async function runShallowRefresh(apiKey, type, { blocking = true } = {}) {
         await state.fullReconcilePromise.catch(() => {});
       }
 
-      const currentEntry = getEntry(authId, type, { touch: false, body: false });
-      if (!currentEntry || !diskEntryExists(key)) {
-        return { success: false };
-      }
+      return await withBodyWork(() => {
+        const currentEntry = getEntry(authId, type, { touch: false, body: false });
+        if (!currentEntry || !diskEntryExists(key)) {
+          return { success: false };
+        }
 
-      if (currentEntry.rev !== revBefore) {
+        if (currentEntry.rev !== revBefore) {
+          state.shallowFailureCount = 0;
+          state.lastShallowError = null;
+          persistShallowFailureState(key, state);
+          return { success: true };
+        }
+
+        if (!ensureEntryBody(currentEntry, key)) {
+          return { success: false };
+        }
+        let prevList = getEntryData(currentEntry);
+        currentEntry.compressedBody = null;
+
+        const boundaryCrossed = !isMultiPage && shallow.regularPageLength >= MYLIST_PAGE_LIMIT;
+        const effectiveMultiPage = isMultiPage || boundaryCrossed;
+        const nextList = effectiveMultiPage
+          ? applyShallowPatch(prevList, shallow.data)
+          : applySinglePageShallowMerge(shallow.data);
+
+        const now = Date.now();
+        const listChanged = !listsEqual(prevList, nextList);
+        prevList = null;
+        const hasChanges = boundaryCrossed || listChanged;
+
+        if (listChanged) {
+          writeEntry(authId, type, nextList, {
+            lastShallowPollAt: now,
+            isMultiPage: effectiveMultiPage,
+            lastShallowAttemptAt: state.lastShallowAttemptAt,
+            shallowFailureCount: 0,
+            lastShallowError: null,
+          });
+
+          if (effectiveMultiPage) {
+            scheduleBackgroundReconcileIfDue(apiKey, type);
+          }
+          if (boundaryCrossed) {
+            scheduleMutationReconcile(apiKey, type);
+          }
+        } else if (hasChanges) {
+          patchEntry(authId, type, currentEntry, {
+            lastShallowPollAt: now,
+            isMultiPage: effectiveMultiPage,
+            lastShallowAttemptAt: state.lastShallowAttemptAt,
+            shallowFailureCount: 0,
+            lastShallowError: null,
+          });
+          if (boundaryCrossed) {
+            scheduleMutationReconcile(apiKey, type);
+          }
+        } else {
+          patchEntry(authId, type, currentEntry, {
+            lastShallowPollAt: now,
+            lastShallowAttemptAt: state.lastShallowAttemptAt,
+            shallowFailureCount: 0,
+            lastShallowError: null,
+          });
+        }
+
         state.shallowFailureCount = 0;
         state.lastShallowError = null;
-        persistShallowFailureState(key, state);
         return { success: true };
-      }
-
-      const boundaryCrossed = !isMultiPage && shallow.regularPageLength >= MYLIST_PAGE_LIMIT;
-      const effectiveMultiPage = isMultiPage || boundaryCrossed;
-      const nextList = effectiveMultiPage
-        ? applyShallowPatch(prevList, shallow.data)
-        : applySinglePageShallowMerge(shallow.data);
-
-      const now = Date.now();
-      const listChanged = !listsEqual(prevList, nextList);
-      const hasChanges = boundaryCrossed || listChanged;
-
-      if (listChanged) {
-        writeEntry(authId, type, nextList, {
-          lastShallowPollAt: now,
-          isMultiPage: effectiveMultiPage,
-          lastShallowAttemptAt: state.lastShallowAttemptAt,
-          shallowFailureCount: 0,
-          lastShallowError: null,
-        });
-
-        if (effectiveMultiPage) {
-          scheduleBackgroundReconcileIfDue(apiKey, type);
-        }
-        if (boundaryCrossed) {
-          scheduleMutationReconcile(apiKey, type);
-        }
-      } else if (hasChanges) {
-        patchEntry(authId, type, currentEntry, {
-          lastShallowPollAt: now,
-          isMultiPage: effectiveMultiPage,
-          lastShallowAttemptAt: state.lastShallowAttemptAt,
-          shallowFailureCount: 0,
-          lastShallowError: null,
-        });
-        if (boundaryCrossed) {
-          scheduleMutationReconcile(apiKey, type);
-        }
-      } else {
-        patchEntry(authId, type, currentEntry, {
-          lastShallowPollAt: now,
-          lastShallowAttemptAt: state.lastShallowAttemptAt,
-          shallowFailureCount: 0,
-          lastShallowError: null,
-        });
-      }
-
-      state.shallowFailureCount = 0;
-      state.lastShallowError = null;
-      return { success: true };
+      });
     } catch (error) {
       state.shallowFailureCount = (state.shallowFailureCount || 0) + 1;
       state.lastShallowError = error?.message || 'shallow refresh failed';
@@ -1329,29 +1394,33 @@ function serveForClientRev(authId, type, entry, clientRev, isValidRev) {
   }
 
   const key = getCacheKey(authId, type);
-  if (!ensureEntryBody(entry, key)) {
-    throw new Error('Cache miss after body load');
-  }
-
-  if (isValidRev && clientRev < entry.rev) {
-    const baseSnapshot = getClientBaseSnapshot(key, clientRev);
-    if (baseSnapshot) {
-      const { data, removed } = computeDelta(getSnapshotData(baseSnapshot), getEntryData(entry));
-      if (data.length === 0 && removed.length === 0) {
-        // Rev advanced (e.g. no-op full reconcile) but catalog matches client's snapshot.
-        return serveSnapshot(entry, { status: 304 });
-      }
-      return serveDelta({
-        data,
-        removed,
-        rev: entry.rev,
-        itemCount: entry.itemCount,
-      });
+  if (!(isValidRev && clientRev < entry.rev)) {
+    if (!ensureEntryBody(entry, key)) {
+      throw new Error('Cache miss after body load');
     }
+    return serveSnapshot(entry, { syncMode: 'full' });
   }
 
-  return serveSnapshot(entry, {
-    syncMode: isValidRev && clientRev < entry.rev ? 'stale-full' : 'full',
+  return withBodyWork(() => {
+    if (!ensureEntryBody(entry, key)) {
+      throw new Error('Cache miss after body load');
+    }
+    const baseSnapshot = getClientBaseSnapshot(key, clientRev);
+    if (!baseSnapshot) {
+      return serveSnapshot(entry, { syncMode: 'stale-full' });
+    }
+    const { data, removed } = computeDelta(getSnapshotData(baseSnapshot), getEntryData(entry));
+    entry.compressedBody = null;
+    if (data.length === 0 && removed.length === 0) {
+      // Rev advanced (e.g. no-op full reconcile) but catalog matches client's snapshot.
+      return serveSnapshot(entry, { status: 304 });
+    }
+    return serveDelta({
+      data,
+      removed,
+      rev: entry.rev,
+      itemCount: entry.itemCount,
+    });
   });
 }
 
@@ -1362,7 +1431,7 @@ function serveForClientRev(authId, type, entry, clientRev, isValidRev) {
  */
 async function runForegroundRefresh(apiKey, type) {
   const authId = hashApiKey(apiKey);
-  let entry = getEntry(authId, type);
+  let entry = getEntry(authId, type, { body: false });
 
   if (!entry || isFailedBootstrapEntry(entry)) {
     await runFullReconciliation(apiKey, type, { blocking: true });
@@ -1371,7 +1440,7 @@ async function runForegroundRefresh(apiKey, type) {
 
   await runShallowRefresh(apiKey, type, { blocking: true });
 
-  entry = getEntry(authId, type);
+  entry = getEntry(authId, type, { body: false });
   if (!entry?.isMultiPage) return 'shallow';
 
   const state = getSyncState(getCacheKey(authId, type));
@@ -1436,19 +1505,24 @@ export async function patchCacheRemoveIds(apiKey, type, ids) {
 
   const authId = hashApiKey(apiKey);
   const key = getCacheKey(authId, type);
-  const entry = getEntry(authId, type);
-  if (!entry) return;
-
   const state = getSyncState(key);
-  state.publishGeneration += 1;
 
-  const idSet = new Set(ids);
-  const data = getEntryData(entry).filter((item) => !idSet.has(item.id));
-  writeEntry(authId, type, data, {
-    reconcileState: 'stale',
-    isMultiPage: entry.isMultiPage,
+  const removed = await withBodyWork(() => {
+    const entry = getEntry(authId, type);
+    if (!entry) return false;
+
+    state.publishGeneration += 1;
+    const idSet = new Set(ids);
+    const data = getEntryData(entry).filter((item) => !idSet.has(item.id));
+    const isMultiPage = entry.isMultiPage;
+    entry.compressedBody = null;
+    writeEntry(authId, type, data, {
+      reconcileState: 'stale',
+      isMultiPage,
+    });
+    return true;
   });
-  scheduleMutationReconcile(apiKey, type);
+  if (removed) scheduleMutationReconcile(apiKey, type);
 }
 
 /**

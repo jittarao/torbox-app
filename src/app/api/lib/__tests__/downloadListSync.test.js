@@ -1066,7 +1066,9 @@ describe('downloadListSync', () => {
       const rev = setDownloadListSyncCacheForTests(API_KEY, TYPE, [item(1, '2020-01-02')]);
       const keyHash = require('crypto').createHash('sha256').update(API_KEY).digest('hex');
       const bodyPath = path.join(testDiskDir, `${keyHash}_torrents.gz`);
+      const revPath = path.join(testDiskDir, `${keyHash}_torrents.rev.${rev}.gz`);
       fs.writeFileSync(bodyPath, Buffer.from('not-gzip'));
+      fs.writeFileSync(revPath, Buffer.from('not-gzip'));
 
       expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)).toBeNull();
 

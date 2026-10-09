@@ -113,7 +113,7 @@ The downloads page syncs torrent, Usenet, and WebDL lists through Next.js (`src/
 
 **Idle vs active:** Stale reads block on a coalesced TorBox shallow refresh when `lastShallowPollAt` is older than `DOWNLOAD_SYNC_SHALLOW_FRESHNESS_MS`. Multiple tabs share one refresh per user/type per window. Re-engage after idle uses normal polling (not `bypass-cache`); the first stale poll may block briefly on shallow refresh.
 
-**Memory model:** Catalogs are **disk-only** (gzip body + JSON meta under `DOWNLOAD_SYNC_DISK_CACHE_DIR`). Process RAM holds only lightweight per-key coordination (coalesced promises, failure backoff). Mutate/delta paths decompress on demand and discard. Rev history is also gzip-on-disk (default last 10 revs). Hot polls read meta JSON only for 304s; gzip bodies load lazily. SSD-backed hosts are the expected deployment.
+**Memory model:** Catalogs are **disk-only** (gzip body + JSON meta under `DOWNLOAD_SYNC_DISK_CACHE_DIR`). Process RAM holds only lightweight per-key coordination (coalesced promises, failure backoff). Serving a snapshot sends the gzip bytes and does not parse them. Mutate, delta, and equality paths decompress on demand, one catalog at a time, and discard. Rev history is also gzip-on-disk (default last 10 revs). Hot polls read meta JSON only for 304s; gzip bodies load lazily. SSD-backed hosts are the expected deployment.
 
 **Multi-instance:** Catalogs live on local disk of the Next.js process. Single-container / single-replica Compose is the supported layout. Multiple frontend replicas without a shared volume/cache are not supported.
 
