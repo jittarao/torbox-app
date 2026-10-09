@@ -748,9 +748,48 @@ describe('downloadListSync', () => {
       });
 
       const [a, b] = await Promise.all([first, second]);
-      expect(a.data).toHaveLength(1);
-      expect(b.data).toHaveLength(1);
+      expect(a.rev).toBe(b.rev);
+      expect(getDownloadListSyncCacheEntry(API_KEY, TYPE)?.data).toHaveLength(1);
       expect(fetchFullDownloadListMock).toHaveBeenCalledTimes(1);
+    });
+
+    test('full reconciles for different types do not overlap', async () => {
+      let inFlight = 0;
+      let maxInFlight = 0;
+      const resolvers = [];
+      fetchFullDownloadListMock.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            inFlight += 1;
+            maxInFlight = Math.max(maxInFlight, inFlight);
+            resolvers.push(() => {
+              inFlight -= 1;
+              resolve({
+                success: true,
+                data: [item(1, '2020-01-02')],
+                pageCount: 1,
+              });
+            });
+          })
+      );
+
+      const torrents = runFullReconciliation(API_KEY, 'torrents', { blocking: true });
+      const usenet = runFullReconciliation(API_KEY, 'usenet', { blocking: true });
+
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(resolvers).toHaveLength(1);
+      expect(maxInFlight).toBe(1);
+
+      resolvers[0]();
+      await torrents;
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(resolvers).toHaveLength(2);
+      expect(maxInFlight).toBe(1);
+
+      resolvers[1]();
+      await usenet;
+      expect(maxInFlight).toBe(1);
+      expect(fetchFullDownloadListMock).toHaveBeenCalledTimes(2);
     });
 
     test('patchCacheRemoveIds removes trusted ids and bumps rev', async () => {
