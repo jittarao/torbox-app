@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useUploaderStore } from '@/store/uploaderStore';
 import { getItem, getJSON, setItem, setJSON } from '@/utils/storage';
+import { resolveUsenetUploadNames } from '@/utils/nzbLinkName';
 
 const STORAGE_KEY = 'torrent-upload-options';
 const SHOW_OPTIONS_KEY = 'uploader-options-expanded';
@@ -76,33 +77,14 @@ export function useUploadQueue(assetType = 'torrents') {
   };
 
   const createLinkItem = async (link) => {
-    let name = link.substring(0, 60) + '...';
+    let name = link.length > 60 ? `${link.substring(0, 60)}...` : link;
 
     if (assetType === 'usenet') {
       try {
-        if (link.includes('api') && (link.includes('nzb') || link.includes('usenet'))) {
-          const url = new URL(link);
-          const filenameParam =
-            url.searchParams.get('filename') ||
-            url.searchParams.get('name') ||
-            url.searchParams.get('title');
-
-          if (filenameParam) {
-            name = decodeURIComponent(filenameParam);
-          } else {
-            const domain = url.hostname.replace('www.', '');
-            name = `${domain} - NZB Download`;
-          }
-        } else if (link.includes('.nzb')) {
-          const url = new URL(link);
-          const pathParts = url.pathname.split('/');
-          const filename = pathParts[pathParts.length - 1];
-          if (filename && filename.endsWith('.nzb')) {
-            name = filename.replace('.nzb', '');
-          }
-        }
+        name = resolveUsenetUploadNames({ sourceUrl: link }).slotName;
       } catch (err) {
         console.warn('Failed to parse usenet link for filename:', err);
+        name = 'nzb-download';
       }
     }
 
