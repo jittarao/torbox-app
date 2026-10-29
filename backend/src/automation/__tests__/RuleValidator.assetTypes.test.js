@@ -72,6 +72,41 @@ describe('RuleValidator assetTypes', () => {
     expect(errors.some((e) => e.includes('Action archive is not supported'))).toBe(true);
   });
 
+  test('rejects ORIGINAL_URL for torrent-only rule', () => {
+    const rule = {
+      ...baseRule(),
+      groups: [
+        {
+          logicOperator: 'and',
+          conditions: [{ type: 'ORIGINAL_URL', operator: 'contains', value: 'example.com' }],
+        },
+      ],
+    };
+    const { valid, errors } = validator.validate(rule);
+    expect(valid).toBe(false);
+    expect(
+      errors.some((e) => e.includes('Condition ORIGINAL_URL is not supported for asset types'))
+    ).toBe(true);
+  });
+
+  test('rejects ALLOW_ZIP for usenet-only rule', () => {
+    const rule = {
+      ...baseRule(),
+      assetTypes: ['usenet'],
+      groups: [
+        {
+          logicOperator: 'and',
+          conditions: [{ type: 'ALLOW_ZIP', operator: 'is_true', value: true }],
+        },
+      ],
+    };
+    const { valid, errors } = validator.validate(rule);
+    expect(valid).toBe(false);
+    expect(
+      errors.some((e) => e.includes('Condition ALLOW_ZIP is not supported for asset types'))
+    ).toBe(true);
+  });
+
   test('accepts shared conditions for torrent+usenet', () => {
     const rule = {
       ...baseRule(),

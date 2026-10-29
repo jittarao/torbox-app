@@ -37,6 +37,8 @@ describe('ruleCapabilities', () => {
     const actions = getSupportedActions(['torrent']);
     expect(conditions).toContain('RATIO');
     expect(conditions).toContain('DOWNLOAD_STALLED_TIME');
+    expect(conditions).toContain('ALLOW_ZIP');
+    expect(conditions).not.toContain('ORIGINAL_URL');
     expect(actions).toContain('stop_seeding');
     expect(actions).toContain('archive');
   });
@@ -47,6 +49,7 @@ describe('ruleCapabilities', () => {
     expect(conditions).not.toContain('RATIO');
     expect(conditions).not.toContain('DOWNLOAD_STALLED_TIME');
     expect(conditions).not.toContain('LAST_DOWNLOAD_ACTIVITY_AT');
+    expect(conditions).not.toContain('ALLOW_ZIP');
     expect(conditions).toContain('STATUS');
     expect(conditions).toContain('PROGRESS');
     expect(conditions).toContain('AGE');
@@ -57,10 +60,12 @@ describe('ruleCapabilities', () => {
     expect(actions).toContain('force_start');
   });
 
-  test('torrent+usenet intersection excludes torrent-only', () => {
+  test('torrent+usenet intersection excludes type-specific conditions', () => {
     const conditions = getSupportedConditions(['torrent', 'usenet']);
     const actions = getSupportedActions(['torrent', 'usenet']);
     expect(conditions).not.toContain('RATIO');
+    expect(conditions).not.toContain('ALLOW_ZIP');
+    expect(conditions).not.toContain('ORIGINAL_URL');
     expect(conditions).toContain('STATUS');
     expect(actions).not.toContain('archive');
     expect(actions).toContain('delete');

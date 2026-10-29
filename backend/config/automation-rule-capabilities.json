@@ -18,8 +18,10 @@
     "DOWNLOAD_STALLED_TIME",
     "TRACKER",
     "AVAILABILITY",
-    "PRIVATE"
+    "PRIVATE",
+    "ALLOW_ZIP"
   ],
+  "usenetWebdlOnlyConditions": ["ORIGINAL_URL"],
   "torrentOnlyActions": ["stop_seeding", "archive"],
   "allConditions": [
     "STATUS",
