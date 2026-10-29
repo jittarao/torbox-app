@@ -12,6 +12,7 @@ import { CONDITION_TYPES } from '../AutomationRules/constants';
  * @property {number} order - Sort order within group
  * @property {FilterValueKind} valueKind
  * @property {boolean} [torrentOnly]
+ * @property {boolean} [nonTorrent] - usenet/webdl only
  * @property {boolean} customView
  * @property {boolean} automation
  * @property {string} [labelKey] - i18n key under AutomationRules.conditions.*
@@ -397,6 +398,7 @@ export const FILTER_FIELD_DEFINITIONS = [
     group: 'metadata',
     order: 6,
     valueKind: 'text',
+    nonTorrent: true,
     customView: true,
     automation: true,
     labelKey: 'originalUrl',
@@ -431,6 +433,7 @@ export const FILTER_FIELD_DEFINITIONS = [
     group: 'metadata',
     order: 9,
     valueKind: 'boolean',
+    torrentOnly: true,
     customView: true,
     automation: true,
     labelKey: 'allowZip',
@@ -534,6 +537,9 @@ export function getConditionTypeForColumnKey(columnKey) {
  * @param {string} activeType - downloads tab: 'all' | 'torrents' | 'usenet' | 'webdl'
  */
 function isFieldVisibleForAssetType(def, activeType) {
+  if (def.nonTorrent) {
+    return activeType !== 'torrents';
+  }
   if (!def.torrentOnly) return true;
   if (!activeType || activeType === 'all') return true;
   return activeType === 'torrents';
@@ -544,6 +550,7 @@ function isFieldVisibleForAssetType(def, activeType) {
  */
 function isFieldVisibleForAssetTypes(def, assetTypes) {
   if (!assetTypes || assetTypes.length === 0) return true;
+  if (def.nonTorrent) return assetTypes.some((type) => type !== 'torrent');
   if (!def.torrentOnly) return true;
   return assetTypes.includes('torrent');
 }

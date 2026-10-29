@@ -94,6 +94,33 @@ describe('filterFieldRegistry', () => {
     expect(usenetValues).toContain('age');
   });
 
+  test('torrent-only and usenet/webdl-only fields are hidden per tab', () => {
+    const valuesFor = (activeType) =>
+      getGroupedFilterFields('customView', { activeType, automationT }).flatMap((g) =>
+        g.options.map((o) => o.value)
+      );
+
+    const torrentValues = valuesFor('torrents');
+    const usenetValues = valuesFor('usenet');
+
+    expect(torrentValues).toContain('allow_zip');
+    expect(usenetValues).not.toContain('allow_zip');
+    expect(usenetValues).toContain('original_url');
+    expect(torrentValues).not.toContain('original_url');
+  });
+
+  test('automation fields respect asset types in both directions', () => {
+    const automationValues = (assetTypes) =>
+      getGroupedFilterFields('automation', { assetTypes, automationT }).flatMap((g) =>
+        g.options.map((o) => o.value)
+      );
+
+    expect(automationValues(['torrent'])).toContain('ALLOW_ZIP');
+    expect(automationValues(['torrent'])).not.toContain('ORIGINAL_URL');
+    expect(automationValues(['usenet'])).not.toContain('ALLOW_ZIP');
+    expect(automationValues(['usenet'])).toContain('ORIGINAL_URL');
+  });
+
   test('definitions use canonical group order', () => {
     const groupsInDefs = [...new Set(FILTER_FIELD_DEFINITIONS.map((d) => d.group))];
     expect(groupsInDefs).toEqual(GROUP_ORDER);

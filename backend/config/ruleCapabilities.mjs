@@ -2,12 +2,13 @@ import registry from './automation-rule-capabilities.json';
 
 const VALID_ASSET_TYPES = new Set(registry.assetTypes);
 const torrentOnlyConditions = new Set(registry.torrentOnlyConditions);
+const usenetWebdlOnlyConditions = new Set(registry.usenetWebdlOnlyConditions ?? []);
 const torrentOnlyActions = new Set(registry.torrentOnlyActions);
 const allConditions = registry.allConditions;
 const allActions = registry.allActions;
 
 const conditionsByAsset = Object.freeze({
-  torrent: new Set(allConditions),
+  torrent: new Set(allConditions.filter((c) => !usenetWebdlOnlyConditions.has(c))),
   usenet: new Set(allConditions.filter((c) => !torrentOnlyConditions.has(c))),
   webdl: new Set(allConditions.filter((c) => !torrentOnlyConditions.has(c))),
 });
