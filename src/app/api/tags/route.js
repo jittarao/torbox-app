@@ -34,7 +34,10 @@ export async function GET(request) {
     const url = new URL(`${BACKEND_URL}/api/tags`);
     url.searchParams.set('authId', authId);
 
-    const response = await backendHttpGet(url, { headers: backendProxyHeaders(apiKey) });
+    const response = await backendHttpGet(url, {
+      headers: backendProxyHeaders(apiKey),
+      timeoutMs: 90_000,
+    });
 
     if (response.ok) {
       return NextResponse.json(response.data);

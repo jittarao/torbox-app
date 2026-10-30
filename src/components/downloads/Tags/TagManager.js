@@ -191,7 +191,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
   const t = useTranslations('DownloadsFilters');
   const tActions = useTranslations('CustomViews');
   const tCommon = useTranslations('Common');
-  const { tags, loading, createTag, updateTag, deleteTag } = useTags(apiKey);
+  const { tags, loading, error, createTag, updateTag, deleteTag } = useTags(apiKey);
 
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
@@ -420,6 +420,7 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
         </div>
 
         {/* Tag list */}
+        {error && <p role="alert" className="px-4 pt-2 text-sm text-red-600 dark:text-red-400 sm:px-5">{error}</p>}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5">
           {loading && tags.length === 0 ? (
             <ul className="space-y-2" aria-busy="true" aria-label={tCommon('loading')}>
