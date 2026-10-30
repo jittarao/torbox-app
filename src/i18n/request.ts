@@ -10,6 +10,7 @@ const localeLoaders: Record<string, () => Promise<{ default: Record<string, unkn
   fr: () => import('./messages/fr.json'),
   ja: () => import('./messages/ja.json'),
   pl: () => import('./messages/pl.json'),
+  'pt-BR': () => import('./messages/pt-BR.json'),
 };
 
 export default getRequestConfig(async ({ requestLocale }) => {

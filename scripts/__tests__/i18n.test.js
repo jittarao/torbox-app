@@ -78,7 +78,7 @@ describe('i18n repo invariants', () => {
   const en = JSON.parse(readFileSync(path.join(MESSAGES_DIR, 'en.json'), 'utf8'));
 
   test('non-English locale files contain no keys identical to en', () => {
-    for (const locale of ['de', 'es', 'fr', 'ja', 'pl']) {
+    for (const locale of ['de', 'es', 'fr', 'ja', 'pl', 'pt-BR']) {
       const data = JSON.parse(readFileSync(path.join(MESSAGES_DIR, `${locale}.json`), 'utf8'));
       expect(findRedundantKeys(en, data)).toEqual([]);
     }
