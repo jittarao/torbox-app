@@ -6,7 +6,7 @@
       "cancel": "Cancelar",
       "confirm": "Arquivar",
       "message": "Arquivar {count} torrent(s)? Eles aparecerão em Downloads Arquivados e serão removidos da sua lista ativa.",
-      "title": "Confirmar Arquivamento"
+      "title": "Confirmar arquivamento"
     },
     "archiveTitle": "Arquivar os torrents selecionados no TBM e remover do TorBox",
     "assignTags": "Marcar",
@@ -46,7 +46,7 @@
       "includeParentDownloads": "Excluir downloads pai",
       "includeParentDownloadsTooltip": "Quando arquivos dentro de downloads estão selecionados, marcar esta opção excluirá o download inteiro.",
       "message": "Tem certeza de que deseja excluir {count} {type}? Esta ação não pode ser desfeita.",
-      "title": "Confirmar Exclusão"
+      "title": "Confirmar exclusão"
     },
     "deleteProtectedTitle": "Downloads protegidos não podem ser excluídos",
     "downloadLinks": "Baixar",
@@ -68,34 +68,34 @@
     "stopSeedingTitle": "Parar a semeadura dos torrents selecionados",
     "stoppingSeeding": "Parando…",
     "toolbarLabel": "Ações de seleção",
-    "uploadToCloud": "Enviar para a Nuvem",
+    "uploadToCloud": "Enviar para a nuvem",
     "uploading": "Enviando..."
   },
   "ApiKeyInput": {
     "hide": "Ocultar chave de API",
     "label": "Chave de API",
-    "manageKeys": "Gerenciar Chaves",
+    "manageKeys": "Gerenciar chaves",
     "placeholder": "Digite a chave de API do TorBox",
     "show": "Mostrar chave de API"
   },
   "ApiKeyManager": {
     "active": "Ativa",
     "add": "Adicionar",
-    "addKey": "Adicionar Chave",
-    "addNewKey": "Adicionar Nova Chave de API",
+    "addKey": "Adicionar chave",
+    "addNewKey": "Adicionar nova chave de API",
     "addNewKeyHint": "Os rótulos ajudam a distinguir as contas rapidamente.",
     "apiKey": "Chave de API",
     "apiKeyPlaceholder": "Digite sua chave de API",
     "cancel": "Cancelar",
     "close": "Fechar",
-    "deleteKey": "Excluir Chave",
-    "keyLabel": "Rótulo da Chave",
+    "deleteKey": "Excluir chave",
+    "keyLabel": "Rótulo da chave",
     "keyLabelPlaceholder": "ex.: Pessoal, Família",
     "keysCount": "{count, plural, =0 {Nenhuma chave} one {# chave} other {# chaves}}",
     "managerPinned": "Desative “Manter aberto” para fechar",
     "noKeys": "Nenhuma chave salva",
     "noKeysHint": "Armazene perfis para alternar rapidamente entre contas do TorBox.",
-    "savedKeys": "Chaves de API Salvas",
+    "savedKeys": "Chaves de API salvas",
     "toggleOpen": "Manter aberto"
   },
   "ArchivedDownloads": {
@@ -107,19 +107,19 @@
     },
     "columns": {
       "actions": "Ações",
-      "archivedAt": "Arquivado Em",
-      "itemId": "ID do Item",
-      "itemName": "Nome do Item",
-      "itemType": "Tipo do Item"
+      "archivedAt": "Arquivado em",
+      "itemId": "ID do item",
+      "itemName": "Nome do item",
+      "itemType": "Tipo do item"
     },
     "emptyState": {
       "description": "Configure uma regra de automação para arquivar downloads automaticamente. Quando um download for arquivado, você o encontrará aqui para restaurar, copiar ou excluir.",
       "howItWorks": "Como funciona:",
       "noSearchResults": "Nenhum download arquivado corresponde à sua pesquisa.",
-      "step1": "Adicione uma regra com a ação \"Arquivar Download\"",
+      "step1": "Adicione uma regra com a ação \"Arquivar download\"",
       "step2": "Quando a regra for acionada, os downloads correspondentes serão arquivados",
       "step3": "Eles aparecem aqui para que você possa restaurar, copiar ou excluir",
-      "title": "Nenhum Download Arquivado"
+      "title": "Nenhum download arquivado"
     },
     "title": "Downloads Arquivados",
     "toast": {
@@ -139,18 +139,18 @@
       "addAirlockDescription": "Bloquear o download no TorBox Airlock",
       "addTag": "Adicionar etiqueta",
       "addTagDescription": "Adicionar uma ou mais etiquetas ao download",
-      "archive": "Arquivar Download",
+      "archive": "Arquivar download",
       "archiveDescription": "Mover o download para os downloads arquivados sem excluir os arquivos",
-      "delete": "Excluir Download",
+      "delete": "Excluir download",
       "deleteDescription": "Excluir permanentemente o download e seus arquivos",
-      "forceStart": "Forçar Início do Download",
+      "forceStart": "Forçar início do download",
       "forceStartDescription": "Forçar o download a iniciar",
       "removeAirlock": "Remover Airlock",
       "removeAirlockDescription": "Desbloquear o download do TorBox Airlock",
       "removeTag": "Remover etiqueta",
       "removeTagDescription": "Remover uma ou mais etiquetas do download",
       "selectTags": "Selecionar etiquetas",
-      "stopSeeding": "Parar Semeadura",
+      "stopSeeding": "Parar semeadura",
       "stopSeedingDescription": "Parar a semeadura do torrent, mas mantê-lo na lista de downloads"
     },
     "actionsFailed": "ações falharam",
@@ -187,7 +187,7 @@
     "conditions": {
       "age": "Idade",
       "ageDescription": "Tempo desde que o download foi adicionado (em horas)",
-      "allowZip": "Permitir Zip",
+      "allowZip": "Permitir ZIP",
       "allowZipDescription": "Se o torrent permite a extração de arquivos ZIP",
       "availability": "Disponibilidade",
       "availabilityDescription": "Proporção de partes disponíveis em relação ao total de partes (0.0-1.0)",
@@ -546,7 +546,7 @@
       "chooseFolder": "Escolher pasta",
       "chooseMoveFolder": "Escolher pasta de destino",
       "clearFolder": "Limpar",
-      "credentialRequired": "Salve sua chave de API neste dispositivo nas configurações Gerais antes de usar o monitor de pastas.",
+      "credentialRequired": "Salve sua chave de API neste dispositivo nas configurações gerais antes de usar o monitor de pastas.",
       "customMovePathRequired": "Escolha uma pasta de destino para moveToCustom",
       "description": "Envie automaticamente novos arquivos .torrent de uma ou mais pastas, mesmo quando o aplicativo estiver em segundo plano.",
       "disableWatcher": "Desativar monitor",
@@ -1165,7 +1165,7 @@
       "video": "Vídeo"
     },
     "players": {
-      "web": "Player Web",
+      "web": "Player da web",
       "webHint": "Reprodução no navegador com seleção de faixa"
     },
     "preparingStream": "Preparando o stream…",
@@ -1297,10 +1297,10 @@
     },
     "pageDescription": "Gerencie feeds RSS e navegue pelos itens",
     "pageTitle": "Gerenciamento de RSS",
-    "passCheck": "Pular Verificação",
+    "passCheck": "Pular verificação",
     "passCheckDescription": "Pular a verificação de cache para este feed",
     "proSubscriptionRequired": "Assinatura Pro necessária",
-    "proUserRequired": "Você precisa ser um usuário Pro para usar Feeds RSS.",
+    "proUserRequired": "Você precisa ser um usuário Pro para usar feeds RSS.",
     "refresh": "Atualizar",
     "refreshing": "Atualizando",
     "save": "Salvar",
@@ -1334,7 +1334,7 @@
     "refresh": "Atualizar",
     "search": "Buscar",
     "searchPlaceholder": "Buscar itens...",
-    "selectFeed": "Selecionar Feed RSS",
+    "selectFeed": "Selecionar feed RSS",
     "selectFeedPlaceholder": "Escolha um feed para ver os itens",
     "size": "Tamanho",
     "sortBy": "Ordenar por",
