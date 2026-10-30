@@ -63,7 +63,7 @@ export const useDownloadTagsStore = create((set, get) => ({
   }),
 
   // Fetch all download-tag mappings from /api/downloads/tags
-  fetchDownloadTags: async (apiKey, { force = false } = {}) => {
+  fetchDownloadTags: async (apiKey, { force = false, sync = false } = {}) => {
     if (!apiKey) {
       set({ error: 'API key is required', loading: false });
       return;
@@ -96,6 +96,7 @@ export const useDownloadTagsStore = create((set, get) => ({
       const rawOrigin = typeof window !== 'undefined' ? window.location?.origin : null;
       const baseOrigin = rawOrigin && rawOrigin !== 'null' ? rawOrigin : 'http://localhost';
       const url = new URL('/api/downloads/tags', baseOrigin);
+      if (sync) url.searchParams.set('sync', 'true');
 
       const response = await fetch(url.toString(), {
         headers: {
@@ -192,6 +193,7 @@ export const useDownloadTagsStore = create((set, get) => ({
       const data = await response.json();
       if (data.success) {
         await get().fetchDownloadTags(apiKey, { force: true });
+        await useTagsStore.getState().loadTags(apiKey, { force: true });
         return true;
       }
 
@@ -200,6 +202,8 @@ export const useDownloadTagsStore = create((set, get) => ({
     } catch (err) {
       console.error('Error assigning tags:', err);
       set({ tagMappings: previousMappings, error: err.message });
+      await get().fetchDownloadTags(apiKey, { force: true });
+      await useTagsStore.getState().loadTags(apiKey, { force: true });
       throw err;
     }
   },

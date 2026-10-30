@@ -34,8 +34,14 @@ export async function GET(request) {
 
     const url = new URL(`${BACKEND_URL}/api/downloads/tags`);
     url.searchParams.set('authId', authId);
+    if (new URL(request.url).searchParams.get('sync') === 'true') {
+      url.searchParams.set('sync', 'true');
+    }
 
-    const response = await backendHttpGet(url, { headers: backendProxyHeaders(apiKey) });
+    const response = await backendHttpGet(url, {
+      headers: backendProxyHeaders(apiKey),
+      timeoutMs: 90_000,
+    });
 
     if (response.ok) {
       return NextResponse.json(response.data);
@@ -86,7 +92,10 @@ export async function POST(request) {
       return NextResponse.json(data);
     } else {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Backend responded with status: ${response.status}`);
+      return NextResponse.json(
+        { success: false, error: errorData.error || `Backend responded with status: ${response.status}` },
+        { status: response.status }
+      );
     }
   } catch (error) {
     console.error('Error assigning tags to downloads in backend:', error);

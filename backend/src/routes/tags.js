@@ -2,6 +2,7 @@ import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import { notifyTagsChanged } from '../utils/userEvents.js';
+import { changeTorboxTags, syncTorboxTags } from '../utils/torboxTagSync.js';
 
 /**
  * Tags routes
@@ -22,6 +23,7 @@ export function setupTagsRoutes(app, backend) {
       }
 
       const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+      await syncTorboxTags(req, userDb.db);
 
       const tags = userDb.db
         .prepare(
@@ -154,6 +156,7 @@ export function setupTagsRoutes(app, backend) {
         }
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
+        await syncTorboxTags(req, userDb.db);
 
         const tag = userDb.db
           .prepare(
@@ -236,7 +239,7 @@ export function setupTagsRoutes(app, backend) {
         const existing = userDb.db
           .prepare(
             `
-          SELECT id FROM tags WHERE id = ?
+          SELECT id, name FROM tags WHERE id = ?
         `
           )
           .get(tagId);
@@ -264,6 +267,13 @@ export function setupTagsRoutes(app, backend) {
           });
         }
 
+        await changeTorboxTags(req, userDb.db, {
+          targets: (items) => items.filter((item) => item.tags?.some((value) =>
+            typeof value === 'string' && value.toLowerCase() === existing.name.toLowerCase())),
+          update: (names) => names.map((value) =>
+            value.toLowerCase() === existing.name.toLowerCase() ? trimmedName : value),
+        });
+
         userDb.db
           .prepare(
             `
@@ -288,6 +298,9 @@ export function setupTagsRoutes(app, backend) {
 
         res.json({ success: true, tag });
       } catch (error) {
+        if (error.isTorboxTagSyncError) {
+          return res.status(502).json({ success: false, error: error.message });
+        }
         logger.error('Error updating tag', error, {
           endpoint: `/api/tags/${req.params.id}`,
           method: 'PUT',
@@ -327,7 +340,7 @@ export function setupTagsRoutes(app, backend) {
         const existing = userDb.db
           .prepare(
             `
-          SELECT id FROM tags WHERE id = ?
+          SELECT id, name FROM tags WHERE id = ?
         `
           )
           .get(tagId);
@@ -338,6 +351,13 @@ export function setupTagsRoutes(app, backend) {
             error: 'Tag not found',
           });
         }
+
+        await changeTorboxTags(req, userDb.db, {
+          targets: (items) => items.filter((item) => item.tags?.some((value) =>
+            typeof value === 'string' && value.toLowerCase() === existing.name.toLowerCase())),
+          update: (names) => names.filter((value) =>
+            value.toLowerCase() !== existing.name.toLowerCase()),
+        });
 
         // Delete (cascade will remove download_tags associations)
         userDb.db
@@ -352,6 +372,9 @@ export function setupTagsRoutes(app, backend) {
 
         res.json({ success: true, message: 'Tag deleted successfully' });
       } catch (error) {
+        if (error.isTorboxTagSyncError) {
+          return res.status(502).json({ success: false, error: error.message });
+        }
         logger.error('Error deleting tag', error, {
           endpoint: `/api/tags/${req.params.id}`,
           method: 'DELETE',
