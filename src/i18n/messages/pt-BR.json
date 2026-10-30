@@ -307,7 +307,7 @@
       "deleteInactive": "Excluir downloads inativos",
       "deleteIncomplete": "Excluir torrents incompletos",
       "deleteQueued": "Excluir downloads na fila (6+ horas)",
-      "deleteStalled": "Excluir downloads travados (1+ horas)",
+      "deleteStalled": "Excluir downloads parados (1+ horas)",
       "deleteUnavailable": "Excluir torrents indisponíveis",
       "stopSeedingLowRatio": "Parar de semear com proporção baixa",
       "title": "Predefinições rápidas"
@@ -561,7 +561,7 @@
       "noRules": "Nenhuma regra de monitoramento ainda. Adicione uma regra para escolher uma pasta e configurar seu comportamento.",
       "optionAddOnlyIfCached": "Adicionar apenas se estiver em cache",
       "optionAllowZip": "Permitir download em zip",
-      "optionAsQueued": "Adicionar como na fila",
+      "optionAsQueued": "Adicionar à fila",
       "optionSeed": "Semear o torrent após adicionar",
       "overlappingWatchPaths": "As pastas monitoradas não podem se sobrepor nem ficar aninhadas umas nas outras.",
       "pickFolderFailed": "Falha ao escolher pasta",
@@ -607,13 +607,13 @@
       },
       "title": "Monitor de pastas",
       "unsavedChanges": "Você tem alterações não salvas no monitor. Salve antes de iniciar o monitor.",
-      "updateDesktopApp": "Atualize o aplicativo desktop para ativar o monitoramento de pastas",
+      "updateDesktopApp": "Atualize o aplicativo de desktop para ativar o monitoramento de pastas",
       "uploadedPreview": "Os arquivos serão movidos para {path}",
       "uploadsToday": "Envios hoje",
       "watchFolder": "Pasta monitorada",
       "watchFolderRequired": "Escolha uma pasta monitorada primeiro"
     },
-    "initFailedTitle": "Não foi possível conectar ao aplicativo desktop",
+    "initFailedTitle": "Não foi possível conectar ao aplicativo de desktop",
     "initRetry": "Tentar novamente",
     "instanceUrlCancel": "Cancelar",
     "instanceUrlChangeAction": "Alterar URL da instância",
@@ -621,7 +621,7 @@
     "instanceUrlHelp": "Use uma URL do TorBox Manager auto-hospedado em vez da instância padrão. HTTPS é obrigatório para hosts públicos; HTTP é permitido para endereços locais ou de rede privada (por exemplo, http://192.168.1.10:3000).",
     "instanceUrlSave": "Salvar URL",
     "instanceUrlSaveFailed": "Não foi possível salvar a URL da instância",
-    "instanceUrlSaved": "URL da instância salva. Reinicie o aplicativo desktop para conectar.",
+    "instanceUrlSaved": "URL da instância salva. Reinicie o aplicativo de desktop para conectar.",
     "instanceUrlTitle": "URL de instância personalizada",
     "launchAtLogin": {
       "description": "Inicie o aplicativo automaticamente ao entrar no computador.",
@@ -636,7 +636,7 @@
       "startHiddenLabel": "Iniciar oculto ao fazer login",
       "startHiddenSaveFailed": "Falha ao atualizar a preferência de iniciar oculto",
       "title": "Inicialização",
-      "updateDesktopApp": "Atualize o aplicativo desktop para ativar o abrir ao iniciar"
+      "updateDesktopApp": "Atualize o aplicativo de desktop para ativar o abrir ao iniciar"
     },
     "nativeNotifications": {
       "description": "Mostre notificações do sistema para envios do monitor de pastas e alertas da conta TorBox.",
@@ -650,14 +650,14 @@
       "title": "Notificações",
       "torboxHelp": "Alerte quando novas notificações da conta TorBox chegarem com o aplicativo em segundo plano.",
       "torboxLabel": "Notificar sobre notificações do TorBox",
-      "updateDesktopApp": "Atualize o aplicativo desktop para ativar as notificações nativas",
+      "updateDesktopApp": "Atualize o aplicativo de desktop para ativar as notificações nativas",
       "uploadFailureHelp": "Alerte quando o envio de um torrent monitorado falhar.",
       "uploadFailureLabel": "Notificar em caso de falha no envio",
       "uploadSuccessHelp": "Alerte quando o envio de um torrent monitorado for concluído.",
       "uploadSuccessLabel": "Notificar em caso de envio bem-sucedido"
     },
     "platform": "Plataforma",
-    "restartRequired": "Reinicie o aplicativo desktop depois de alterar a URL da instância.",
+    "restartRequired": "Reinicie o aplicativo de desktop depois de alterar a URL da instância.",
     "tabs": {
       "ariaLabel": "Seções de configurações",
       "general": "Geral",
@@ -682,14 +682,14 @@
       "startHiddenHelp": "Quando combinado com abrir ao iniciar, o aplicativo inicia na bandeja sem abrir uma janela.",
       "startHiddenLabel": "Iniciar oculto",
       "title": "Bandeja e segundo plano",
-      "updateDesktopApp": "Atualize o aplicativo desktop para ativar os recursos da bandeja"
+      "updateDesktopApp": "Atualize o aplicativo de desktop para ativar os recursos da bandeja"
     },
-    "updateDesktopApp": "Atualize o aplicativo desktop para usar este recurso",
+    "updateDesktopApp": "Atualize o aplicativo de desktop para usar este recurso",
     "updater": {
       "checkAction": "Verificar atualizações",
       "checkFailed": "Não foi possível verificar atualizações",
       "currentVersion": "Versão instalada",
-      "description": "Verifique se há uma versão mais recente do aplicativo desktop.",
+      "description": "Verifique se há uma versão mais recente do aplicativo de desktop.",
       "installAction": "Instalar atualização e reiniciar",
       "installFailed": "Não foi possível instalar a atualização",
       "title": "Atualizações do desktop",
@@ -1234,7 +1234,7 @@
       "step3": "Conclua sua primeira compra paga; os dias de bônus são adicionados automaticamente.",
       "title": "Como funciona"
     },
-    "title": "Ganhe Tempo Premium Grátis",
+    "title": "Ganhe tempo Premium grátis",
     "upgradeCard": {
       "description": "Aplique nosso código de indicação e conclua sua primeira assinatura paga no TorBox para receber 7 dias extras por mês adquirido.",
       "title": "Faça upgrade com dias de bônus"
@@ -1245,7 +1245,7 @@
     "actions": "Ações",
     "active": "Ativo",
     "addError": "Falha ao adicionar feed RSS",
-    "addFeed": "Adicionar Feed RSS",
+    "addFeed": "Adicionar feed RSS",
     "addSuccess": "Feed RSS adicionado com sucesso",
     "cancel": "Cancelar",
     "checkingSubscription": "Verificando assinatura...",
@@ -1253,7 +1253,7 @@
       "cancel": "Cancelar",
       "confirm": "Excluir",
       "message": "Tem certeza de que deseja excluir este feed RSS? Esta ação não pode ser desfeita.",
-      "title": "Excluir Feed RSS"
+      "title": "Excluir feed RSS"
     },
     "delete": "Excluir",
     "deleteError": "Falha ao excluir o feed RSS",
@@ -1262,30 +1262,30 @@
     "disableError": "Falha ao desativar o feed RSS",
     "disableSuccess": "Feed RSS desativado com sucesso",
     "disabled": "Desativado",
-    "doRegex": "Baixar Regex (Opcional)",
+    "doRegex": "Baixar por regex (opcional)",
     "doRegexPlaceholder": "Baixar itens correspondentes a esta regex",
-    "dontOlderThan": "Ignorar Mais Antigos Que (dias)",
+    "dontOlderThan": "Ignorar mais antigos que (dias)",
     "dontOlderThanPlaceholder": "Ignorar itens mais antigos que X dias",
-    "dontRegex": "Ignorar Regex (Opcional)",
+    "dontRegex": "Ignorar por regex (opcional)",
     "dontRegexPlaceholder": "Ignorar itens correspondentes a esta regex",
-    "downloadType": "Tipo de Download",
+    "downloadType": "Tipo de download",
     "downloadTypePlaceholder": "Selecione o tipo de download",
     "editError": "Falha ao atualizar o feed RSS",
-    "editFeed": "Editar Feed RSS",
+    "editFeed": "Editar feed RSS",
     "editSuccess": "Feed RSS atualizado com sucesso",
     "enable": "Ativar",
     "enableError": "Falha ao ativar o feed RSS",
     "enableSuccess": "Feed RSS ativado com sucesso",
     "enabled": "Ativado",
     "error": "Erro ao carregar feeds RSS",
-    "feedName": "Nome do Feed",
+    "feedName": "Nome do feed",
     "feedNamePlaceholder": "Digite o nome do feed",
-    "feedUrl": "URL do Feed",
+    "feedUrl": "URL do feed",
     "feedUrlPlaceholder": "Digite a URL do feed RSS",
     "inactive": "Inativo",
     "itemCount": "Itens",
     "items": "Itens",
-    "lastCheck": "Última Verificação",
+    "lastCheck": "Última verificação",
     "loading": "Carregando feeds RSS...",
     "never": "Nunca",
     "noFeeds": "Nenhum feed RSS configurado",
@@ -1293,22 +1293,22 @@
       "auto": "Automático",
       "dontSeed": "Não semear",
       "seed": "Semear",
-      "webdl": "Download Web"
+      "webdl": "Download da web"
     },
     "pageDescription": "Gerencie feeds RSS e navegue pelos itens",
     "pageTitle": "Gerenciamento de RSS",
     "passCheck": "Pular Verificação",
     "passCheckDescription": "Pular a verificação de cache para este feed",
-    "proSubscriptionRequired": "Assinatura Pro Necessária",
+    "proSubscriptionRequired": "Assinatura Pro necessária",
     "proUserRequired": "Você precisa ser um usuário Pro para usar Feeds RSS.",
     "refresh": "Atualizar",
     "refreshing": "Atualizando",
     "save": "Salvar",
-    "scanInterval": "Intervalo de Varredura (minutos)",
+    "scanInterval": "Intervalo de verificação (minutos)",
     "scanIntervalPlaceholder": "Com que frequência verificar este feed",
     "tabs": {
-      "feeds": "Gerenciamento de Feeds",
-      "items": "Gerenciamento de Itens"
+      "feeds": "Gerenciamento de feeds",
+      "items": "Gerenciamento de itens"
     },
     "title": "Feeds RSS",
     "torrentSeeding": "Semeadura de torrent",
@@ -1320,16 +1320,16 @@
     }
   },
   "RssItems": {
-    "allTypes": "Todos os Tipos",
+    "allTypes": "Todos os tipos",
     "category": "Categoria",
     "date": "Data",
     "error": "Erro ao carregar itens",
     "loading": "Carregando itens...",
-    "newestFirst": "Mais Recentes Primeiro",
+    "newestFirst": "Mais recentes primeiro",
     "noDescription": "Nenhuma descrição disponível",
     "noItems": "Nenhum item encontrado",
     "noMatchingItems": "Nenhum item corresponde aos seus critérios de busca",
-    "oldestFirst": "Mais Antigos Primeiro",
+    "oldestFirst": "Mais antigos primeiro",
     "published": "Publicado",
     "refresh": "Atualizar",
     "search": "Buscar",
@@ -1337,8 +1337,8 @@
     "selectFeed": "Selecionar Feed RSS",
     "selectFeedPlaceholder": "Escolha um feed para ver os itens",
     "size": "Tamanho",
-    "sortBy": "Ordenar Por",
-    "sortOrder": "Ordem de Classificação",
+    "sortBy": "Ordenar por",
+    "sortOrder": "Ordem de classificação",
     "title": "Itens RSS",
     "toast": {
       "downloadFailed": "Falha ao iniciar o download",
@@ -1347,10 +1347,10 @@
     },
     "type": "Tipo",
     "unknown": "Desconhecido",
-    "webdl": "Download Web"
+    "webdl": "Download da web"
   },
   "SearchBar": {
-    "clearFilters": "Limpar Filtros",
+    "clearFilters": "Limpar filtros",
     "clearHistory": "Limpar",
     "clearSearch": "Limpar busca",
     "examples": {
@@ -1368,7 +1368,7 @@
     "placeholderDownloads": "Buscar {itemType}…",
     "placeholderDownloadsShort": "Buscar…",
     "placeholderSearch": "Título, ID do IMDb (tt…), ou prefixo:id (ex.: anilist:16498)",
-    "recentSearches": "Buscas Recentes",
+    "recentSearches": "Buscas recentes",
     "removeSearch": "Remover das buscas recentes",
     "search": "Buscar",
     "searchDownloadsAria": "Buscar {itemType} ou nomes de arquivo",
@@ -1480,7 +1480,7 @@
     "inactive": "Inativo",
     "queued": "Na fila",
     "seeding": "Semeando",
-    "stalled": "Travado",
+    "stalled": "Parado",
     "unknown": "Desconhecido",
     "uploading": "Enviando"
   },
@@ -1578,14 +1578,14 @@
     }
   },
   "TmdbKey": {
-    "confirmRemove": "Remover sua chave de API do TMDB salva?",
+    "confirmRemove": "Remover a chave de API do TMDB salva?",
     "docsLink": "Obter uma chave de API do TMDB",
     "errors": {
       "removeFailed": "Falha ao remover a chave de API do TMDB",
       "saveFailed": "Falha ao salvar a chave de API do TMDB"
     },
     "help": "Sua chave é criptografada e armazenada no servidor. Ela é usada apenas para buscar títulos de filmes e séries na busca de streams.",
-    "keyTypeHint": "Use a Chave de API (v3) ou o Token de Acesso de Leitura (v4) das suas configurações do TMDB.",
+    "keyTypeHint": "Use a chave de API (v3) ou o token de acesso de leitura (v4) das suas configurações do TMDB.",
     "loading": "Carregando…",
     "placeholder": "Chave de API do TMDB (v3) ou token de acesso de leitura",
     "placeholderReplace": "Digite uma nova chave de API do TMDB para substituir",
@@ -1621,7 +1621,7 @@
   "TorrentOptions": {
     "allowZip": {
       "description": "Para torrents com mais de 100 arquivos",
-      "label": "Permitir Zip"
+      "label": "Permitir ZIP"
     },
     "autoStart": {
       "label": "Ativar início automático",
@@ -1794,7 +1794,7 @@
     "mute": "Silenciar",
     "pause": "Pausar",
     "play": "Reproduzir",
-    "playbackProgress": "Avançar posição da reprodução",
+    "playbackProgress": "Posição da reprodução",
     "playbackSpeed": "Velocidade de reprodução",
     "retry": "Tentar novamente",
     "seekBack10": "Voltar 10 segundos",
