@@ -29,7 +29,7 @@ describe('PollingScheduler processUserPoll pin release', () => {
     scheduler.pollKickoutMs = 5000;
   });
 
-  it('releases durable DB pin in finally after processFetchedTorrents', async () => {
+  it('releases durable DB pin in finally after processFetchedDownloads', async () => {
     const authId = 'pin-leak-user';
     const releaseDbPin = mock(() => {});
     const poller = {
@@ -39,7 +39,7 @@ describe('PollingScheduler processUserPoll pin release', () => {
       dbManager: { db: {} },
       _dbPinned: true,
       _releaseDbPin: releaseDbPin,
-      processFetchedTorrents: async () => ({
+      processFetchedDownloads: async () => ({
         success: true,
         changes: { new: [], updated: [], removed: [], stateTransitions: [] },
         ruleResults: { pendingActions: [] },
@@ -74,7 +74,7 @@ describe('PollingScheduler processUserPoll pin release', () => {
     expect(counters.success).toBe(1);
   });
 
-  it('still releases pin when processFetchedTorrents throws', async () => {
+  it('still releases pin when processFetchedDownloads throws', async () => {
     const authId = 'pin-leak-error-user';
     const releaseDbPin = mock(() => {});
     const poller = {
@@ -84,7 +84,7 @@ describe('PollingScheduler processUserPoll pin release', () => {
       dbManager: { db: {} },
       _dbPinned: true,
       _releaseDbPin: releaseDbPin,
-      processFetchedTorrents: async () => {
+      processFetchedDownloads: async () => {
         throw new Error('boom');
       },
     };

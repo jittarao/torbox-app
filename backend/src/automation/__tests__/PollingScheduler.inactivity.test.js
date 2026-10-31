@@ -96,7 +96,7 @@ describe('PollingScheduler inactivity gating', () => {
     scheduler.isRunning = true;
     scheduler.pollSemaphore = { acquire: async () => {}, release: () => {} };
     scheduler.processSemaphore = { acquire: async () => {}, release: () => {} };
-    scheduler.fetchTorrentsForUser = async () => ({
+    scheduler.fetchDownloadsForUser = async () => ({
       error: { message: 'skip processing in test' },
       user: { auth_id: 'active-user' },
     });

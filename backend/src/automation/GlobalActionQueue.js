@@ -20,6 +20,9 @@ const ACTION_RETRY_BACKOFF_BASE_MS = 5000;
 /**
  * Cross-user action queue: drains pending rule actions in the background so the next tick's
  * fetch phase is not blocked. Uses ApiClient's action semaphore internally when executing.
+ *
+ * Persisted payloads keep the legacy `torrentsToProcess` key, but entries may be torrent,
+ * usenet, or webdl downloads.
  */
 class GlobalActionQueue {
   constructor(scheduler) {

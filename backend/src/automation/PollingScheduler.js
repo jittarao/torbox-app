@@ -39,7 +39,7 @@ const SKIPPED_POLL_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours when user has no
 const CLEANUP_CYCLE_MULTIPLIER = 10; // Run cleanup every 10 poll cycles
 const PENDING_ACTIONS_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — delete pending_actions older than this
 const PENDING_ACTIONS_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // Run pending_actions TTL cleanup hourly
-/** Max torrents per action sub-batch so each chunk can finish within ACTION_BATCH_TIMEOUT_MS */
+/** Max downloads per action sub-batch so each chunk can finish within ACTION_BATCH_TIMEOUT_MS */
 const ACTION_BATCH_CHUNK_SIZE = Math.max(
   1,
   parseInt(process.env.ACTION_BATCH_CHUNK_SIZE || '50', 10)
@@ -1119,12 +1119,12 @@ class PollingScheduler {
   }
 
   /**
-   * Fetch torrents for a single user (TorBox API only).
+   * Fetch downloads for a single user (TorBox API only).
    * @param {Object} user - User from master DB
    * @param {Semaphore|null} semaphore - Optional concurrency cap; if provided, acquire/release around fetch. If null, caller holds the slot (e.g. unified fetch+process worker).
-   * @returns {Promise<{user, poller, torrents?}|{user, poller, error}>}
+   * @returns {Promise<{user, poller, downloads?}|{user, poller, error}>}
    */
-  async fetchTorrentsForUser(user, semaphore) {
+  async fetchDownloadsForUser(user, semaphore) {
     if (!user?.auth_id) {
       return { user, poller: null, error: new Error('Invalid user') };
     }
@@ -1139,14 +1139,19 @@ class PollingScheduler {
 
       const poller = await this.getOrCreatePoller(auth_id, encrypted_key);
 
+      // Stage 1 fetches downloads before Stage 2 attaches the engine, but the fetch
+      // needs the active rules to know which asset types to request. Attach it now so
+      // multi-asset rules do not silently fall back to torrents only.
+      poller.automationEngine = await this.createEngineForPoll(auth_id, encrypted_key);
+
       const fetchTimeoutMs = Math.min(this.pollKickoutMs, 90000);
-      const torrents = await withTimeout(
+      const downloads = await withTimeout(
         poller.fetchDownloadsForActiveRules(),
         fetchTimeoutMs,
         `Fetch timeout after ${fetchTimeoutMs / 1000}s`
       );
 
-      return { user, poller, torrents };
+      return { user, poller, downloads };
     } catch (error) {
       const poller = this.pollers.get(auth_id) || null;
       return { user, poller, error };
@@ -1156,14 +1161,14 @@ class PollingScheduler {
   }
 
   /**
-   * Stage 2: Process fetched torrents for one user (state diff, rule eval; no API calls).
+   * Stage 2: Process fetched downloads for one user (state diff, rule eval; no API calls).
    * @param {Object} user - User from master DB
    * @param {UserPoller} poller - Poller instance
-   * @param {Array} torrents - Fetched torrent list
+   * @param {Array} downloads - Fetched download list
    * @param {Object} counters - Success/skipped/error counters
    * @param {Object} [options] - callerHoldsPipelineMutex: true when caller acquired mutex before semaphore (scheduled path)
    */
-  async processUserPoll(user, poller, torrents, counters, options = {}) {
+  async processUserPoll(user, poller, downloads, counters, options = {}) {
     const { auth_id } = user;
     const callerHoldsPipelineMutex = options.callerHoldsPipelineMutex === true;
     let engineForPoll = null;
@@ -1180,7 +1185,7 @@ class PollingScheduler {
 
       const hasActiveRules = await engineForPoll.hasActiveRules();
 
-      pipelinePromise = poller.processFetchedTorrents(torrents, {
+      pipelinePromise = poller.processFetchedDownloads(downloads, {
         hasActiveRules,
         calculateStaggerOffset: (pollAuthId, baseIntervalMinutes) =>
           this.calculateStaggerOffset(pollAuthId, baseIntervalMinutes),
@@ -1260,7 +1265,7 @@ class PollingScheduler {
       if (auth_id) {
         const p = this.pollers.get(auth_id);
         if (p) p.automationEngine = null;
-        // Must unpin before closeConnection — processFetchedTorrents / runPipeline pin via
+        // Must unpin before closeConnection — processFetchedDownloads / runPipeline pin via
         // _ensureDbManager; skipping _releaseDbPin leaves activeOperations>0 forever and
         // fills the pool until nothing is evictable (prod: "Database pool exhausted").
         if (poller) {
@@ -1406,7 +1411,7 @@ class PollingScheduler {
             await pollSem.acquire();
             try {
               counters.attempted++;
-              const result = await this.fetchTorrentsForUser(user, null);
+              const result = await this.fetchDownloadsForUser(user, null);
               if (result.error) {
                 counters.error++;
                 const resultAuthId = result.user.auth_id;
@@ -1422,7 +1427,7 @@ class PollingScheduler {
                 ) {
                   counters.authErrors++;
                   // Record consecutive failures / deactivate after threshold.
-                  // Unified fetch uses fetchDownloadsForActiveRules (not fetchTorrents),
+                  // Unified fetch uses fetchDownloadsForActiveRules (not fetchDownloads),
                   // so handleAuthenticationError must be invoked here explicitly.
                   const poller = result.poller;
                   if (poller?.handleAuthenticationError) {
@@ -1438,20 +1443,20 @@ class PollingScheduler {
                 }
                 continue;
               }
-              if (!result.torrents) continue;
+              if (!result.downloads) continue;
 
               counters.fetchSuccesses++;
               torboxApiOutageCoordinator.noteSuccessfulCall(auth_id);
 
               if (!processSem) {
-                await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
+                await this.processUserPoll(result.user, result.poller, result.downloads, counters, {
                   callerHoldsPipelineMutex: true,
                 });
                 continue;
               }
               await processSem.acquire();
               try {
-                await this.processUserPoll(result.user, result.poller, result.torrents, counters, {
+                await this.processUserPoll(result.user, result.poller, result.downloads, counters, {
                   callerHoldsPipelineMutex: true,
                 });
               } finally {
