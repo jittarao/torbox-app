@@ -2,7 +2,7 @@ import logger from '../../utils/logger.js';
 import { getTorrentStatus } from '../../utils/torrentStatus.js';
 
 /**
- * Helper for filtering torrents based on rule actions
+ * Helper for filtering downloads based on rule actions
  */
 class RuleFilter {
   constructor(authId, getUserDb) {
@@ -11,13 +11,13 @@ class RuleFilter {
   }
 
   /**
-   * Build a map of download ID -> tag IDs from the database for the given torrents.
-   * @param {Array} matchingTorrents - Torrents to look up tags for
+   * Build a map of download ID -> tag IDs from the database for the given downloads.
+   * @param {Array} matchingDownloads - Downloads to look up tags for
    * @returns {Promise<Map<string, number[]>>} - Map of downloadId (string) to array of tag_id
    */
-  async _buildTagsByDownloadId(matchingTorrents) {
+  async _buildTagsByDownloadId(matchingDownloads) {
     const userDb = await this.getUserDb();
-    const allDownloadIds = matchingTorrents.flatMap((t) => {
+    const allDownloadIds = matchingDownloads.flatMap((t) => {
       const id =
         t.id?.toString() ||
         t.torrent_id?.toString() ||
@@ -76,26 +76,26 @@ class RuleFilter {
   }
 
   /**
-   * Filter torrents for add_tag action - skip torrents that already have all the tags
-   * @param {Array} matchingTorrents - Torrents that matched the rule conditions
+   * Filter downloads for add_tag action - skip downloads that already have all the tags
+   * @param {Array} matchingDownloads - Downloads that matched the rule conditions
    * @param {Object} action - Action configuration
    * @param {Object} [options] - Optional; tagsByDownloadId (Map<downloadId, Array<{id,name}>>) from RuleEvaluator
-   * @returns {Promise<Array>} - Filtered torrents
+   * @returns {Promise<Array>} - Filtered downloads
    */
-  async filterForAddTag(matchingTorrents, action, options = {}) {
+  async filterForAddTag(matchingDownloads, action, options = {}) {
     if (action.type !== 'add_tag' || !action.tagIds || action.tagIds.length === 0) {
-      return matchingTorrents;
+      return matchingDownloads;
     }
 
-    // Always load tags for matching torrents — batch preloads can be stale or keyed differently.
-    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
+    // Always load tags for matching downloads — batch preloads can be stale or keyed differently.
+    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingDownloads);
     const targetTagIds = this._normalizeTagIdSet(action.tagIds);
-    const filtered = matchingTorrents.filter((torrent) => {
+    const filtered = matchingDownloads.filter((download) => {
       const downloadId =
-        torrent.id?.toString() ||
-        torrent.torrent_id?.toString() ||
-        torrent.usenet_id?.toString() ||
-        torrent.web_id?.toString();
+        download.id?.toString() ||
+        download.torrent_id?.toString() ||
+        download.usenet_id?.toString() ||
+        download.web_id?.toString();
       if (!downloadId) {
         return true;
       }
@@ -104,10 +104,10 @@ class RuleFilter {
       const hasAllTags = this._hasAllTargetTags(existingTagIds, targetTagIds);
 
       if (hasAllTags) {
-        logger.debug('Skipping torrent - already has all tags', {
+        logger.debug('Skipping download - already has all tags', {
           authId: this.authId,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
+          torrentId: download.id,
+          torrentName: download.name,
           existingTagIds: Array.from(existingTagIds),
           targetTagIds: Array.from(targetTagIds),
         });
@@ -117,11 +117,11 @@ class RuleFilter {
       return true;
     });
 
-    const skippedCount = matchingTorrents.length - filtered.length;
+    const skippedCount = matchingDownloads.length - filtered.length;
     if (skippedCount > 0) {
-      logger.debug('Filtered torrents that already have all tags', {
+      logger.debug('Filtered downloads that already have all tags', {
         authId: this.authId,
-        originalCount: matchingTorrents.length,
+        originalCount: matchingDownloads.length,
         filteredCount: filtered.length,
         skippedCount,
       });
@@ -130,19 +130,19 @@ class RuleFilter {
     return filtered;
   }
 
-  async filterForRemoveTag(matchingTorrents, action, options = {}) {
+  async filterForRemoveTag(matchingDownloads, action, options = {}) {
     if (action.type !== 'remove_tag' || !action.tagIds || action.tagIds.length === 0) {
-      return matchingTorrents;
+      return matchingDownloads;
     }
 
-    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingTorrents);
+    const tagsByDownloadId = await this._buildTagsByDownloadId(matchingDownloads);
     const targetTagIds = this._normalizeTagIdSet(action.tagIds);
-    const filtered = matchingTorrents.filter((torrent) => {
+    const filtered = matchingDownloads.filter((download) => {
       const downloadId =
-        torrent.id?.toString() ||
-        torrent.torrent_id?.toString() ||
-        torrent.usenet_id?.toString() ||
-        torrent.web_id?.toString();
+        download.id?.toString() ||
+        download.torrent_id?.toString() ||
+        download.usenet_id?.toString() ||
+        download.web_id?.toString();
       if (!downloadId) {
         return true;
       }
@@ -151,10 +151,10 @@ class RuleFilter {
       const hasAnyTag = [...targetTagIds].some((tagId) => existingTagIds.has(tagId));
 
       if (!hasAnyTag) {
-        logger.debug('Skipping torrent - does not have any tags to remove', {
+        logger.debug('Skipping download - does not have any tags to remove', {
           authId: this.authId,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
+          torrentId: download.id,
+          torrentName: download.name,
           existingTagIds: Array.from(existingTagIds),
           targetTagIds: Array.from(targetTagIds),
         });
@@ -164,11 +164,11 @@ class RuleFilter {
       return true;
     });
 
-    const skippedCount = matchingTorrents.length - filtered.length;
+    const skippedCount = matchingDownloads.length - filtered.length;
     if (skippedCount > 0) {
-      logger.debug('Filtered torrents that do not have tags to remove', {
+      logger.debug('Filtered downloads that do not have tags to remove', {
         authId: this.authId,
-        originalCount: matchingTorrents.length,
+        originalCount: matchingDownloads.length,
         filteredCount: filtered.length,
         skippedCount,
       });
@@ -181,29 +181,29 @@ class RuleFilter {
     return value === true || value === 1 || value === 'true';
   }
 
-  filterForAddAirlock(matchingTorrents, action) {
+  filterForAddAirlock(matchingDownloads, action) {
     if (action.type !== 'add_airlock') {
-      return matchingTorrents;
+      return matchingDownloads;
     }
 
-    const filtered = matchingTorrents.filter((torrent) => {
-      const isAirlocked = this.normalizeBooleanValue(torrent.airlocked);
+    const filtered = matchingDownloads.filter((download) => {
+      const isAirlocked = this.normalizeBooleanValue(download.airlocked);
       if (isAirlocked) {
         logger.debug('Skipping download - already airlocked', {
           authId: this.authId,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
+          torrentId: download.id,
+          torrentName: download.name,
         });
         return false;
       }
       return true;
     });
 
-    const skippedCount = matchingTorrents.length - filtered.length;
+    const skippedCount = matchingDownloads.length - filtered.length;
     if (skippedCount > 0) {
       logger.debug('Filtered downloads that are already airlocked', {
         authId: this.authId,
-        originalCount: matchingTorrents.length,
+        originalCount: matchingDownloads.length,
         filteredCount: filtered.length,
         skippedCount,
       });
@@ -212,29 +212,29 @@ class RuleFilter {
     return filtered;
   }
 
-  filterForRemoveAirlock(matchingTorrents, action) {
+  filterForRemoveAirlock(matchingDownloads, action) {
     if (action.type !== 'remove_airlock') {
-      return matchingTorrents;
+      return matchingDownloads;
     }
 
-    const filtered = matchingTorrents.filter((torrent) => {
-      const isAirlocked = this.normalizeBooleanValue(torrent.airlocked);
+    const filtered = matchingDownloads.filter((download) => {
+      const isAirlocked = this.normalizeBooleanValue(download.airlocked);
       if (!isAirlocked) {
         logger.debug('Skipping download - not airlocked', {
           authId: this.authId,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
+          torrentId: download.id,
+          torrentName: download.name,
         });
         return false;
       }
       return true;
     });
 
-    const skippedCount = matchingTorrents.length - filtered.length;
+    const skippedCount = matchingDownloads.length - filtered.length;
     if (skippedCount > 0) {
       logger.debug('Filtered downloads that are not airlocked', {
         authId: this.authId,
-        originalCount: matchingTorrents.length,
+        originalCount: matchingDownloads.length,
         filteredCount: filtered.length,
         skippedCount,
       });
@@ -244,25 +244,25 @@ class RuleFilter {
   }
 
   /**
-   * Filter torrents for stop_seeding action - skip torrents that are not currently seeding
-   * @param {Array} matchingTorrents - Torrents that matched the rule conditions
+   * Filter downloads for stop_seeding action - skip downloads that are not currently seeding
+   * @param {Array} matchingDownloads - Downloads that matched the rule conditions
    * @param {Object} action - Action configuration
-   * @returns {Promise<Array>} - Filtered torrents
+   * @returns {Promise<Array>} - Filtered downloads
    */
-  async filterForStopSeeding(matchingTorrents, action) {
+  async filterForStopSeeding(matchingDownloads, action) {
     if (action.type !== 'stop_seeding') {
-      return matchingTorrents;
+      return matchingDownloads;
     }
 
-    const filtered = matchingTorrents.filter((torrent) => {
-      const status = getTorrentStatus(torrent);
+    const filtered = matchingDownloads.filter((download) => {
+      const status = getTorrentStatus(download);
       const isSeeding = status === 'seeding';
 
       if (!isSeeding) {
-        logger.debug('Skipping torrent - not currently seeding', {
+        logger.debug('Skipping download - not currently seeding', {
           authId: this.authId,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
+          torrentId: download.id,
+          torrentName: download.name,
           status,
         });
         return false;
@@ -271,11 +271,11 @@ class RuleFilter {
       return true;
     });
 
-    const skippedCount = matchingTorrents.length - filtered.length;
+    const skippedCount = matchingDownloads.length - filtered.length;
     if (skippedCount > 0) {
-      logger.debug('Filtered torrents that are not seeding', {
+      logger.debug('Filtered downloads that are not seeding', {
         authId: this.authId,
-        originalCount: matchingTorrents.length,
+        originalCount: matchingDownloads.length,
         filteredCount: filtered.length,
         skippedCount,
       });
@@ -285,26 +285,26 @@ class RuleFilter {
   }
 
   /**
-   * Filter torrents for force_start action - only keep queued torrents.
-   * force_start is only valid for queued torrents; inactive/seeding/etc. cannot be force-started.
-   * @param {Array} matchingTorrents - Torrents that matched the rule conditions
+   * Filter downloads for force_start action - only keep queued downloads.
+   * force_start is only valid for queued downloads; inactive/seeding/etc. cannot be force-started.
+   * @param {Array} matchingDownloads - Downloads that matched the rule conditions
    * @param {Object} action - Action configuration
-   * @returns {Promise<Array>} - Filtered torrents
+   * @returns {Promise<Array>} - Filtered downloads
    */
-  async filterForForceStart(matchingTorrents, action) {
+  async filterForForceStart(matchingDownloads, action) {
     if (action.type !== 'force_start') {
-      return matchingTorrents;
+      return matchingDownloads;
     }
 
-    const filtered = matchingTorrents.filter((torrent) => {
-      const isQueued = getTorrentStatus(torrent) === 'queued';
+    const filtered = matchingDownloads.filter((download) => {
+      const isQueued = getTorrentStatus(download) === 'queued';
 
       if (!isQueued) {
-        logger.debug('Skipping torrent for force_start - not queued', {
+        logger.debug('Skipping download for force_start - not queued', {
           authId: this.authId,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
-          status: getTorrentStatus(torrent),
+          torrentId: download.id,
+          torrentName: download.name,
+          status: getTorrentStatus(download),
         });
         return false;
       }
@@ -312,11 +312,11 @@ class RuleFilter {
       return true;
     });
 
-    const skippedCount = matchingTorrents.length - filtered.length;
+    const skippedCount = matchingDownloads.length - filtered.length;
     if (skippedCount > 0) {
-      logger.debug('Filtered torrents for force_start (only queued allowed)', {
+      logger.debug('Filtered downloads for force_start (only queued allowed)', {
         authId: this.authId,
-        originalCount: matchingTorrents.length,
+        originalCount: matchingDownloads.length,
         filteredCount: filtered.length,
         skippedCount,
       });
@@ -326,43 +326,43 @@ class RuleFilter {
   }
 
   /**
-   * Filter torrents based on action type
-   * @param {Array} matchingTorrents - Torrents that matched the rule conditions
+   * Filter downloads based on action type
+   * @param {Array} matchingDownloads - Downloads that matched the rule conditions
    * @param {Object} action - Action configuration
    * @param {Object} [options] - Optional; tagsByDownloadId from RuleEvaluator to avoid duplicate SELECT
-   * @returns {Promise<Array>} - Filtered torrents
+   * @returns {Promise<Array>} - Filtered downloads
    */
-  async filterTorrents(matchingTorrents, action, options = {}) {
+  async filterDownloads(matchingDownloads, action, options = {}) {
     if (!action || !action.type) {
-      return matchingTorrents;
+      return matchingDownloads;
     }
 
     switch (action.type) {
       case 'add_tag':
-        return await this.filterForAddTag(matchingTorrents, action, options);
+        return await this.filterForAddTag(matchingDownloads, action, options);
       case 'remove_tag':
-        return await this.filterForRemoveTag(matchingTorrents, action, options);
+        return await this.filterForRemoveTag(matchingDownloads, action, options);
       case 'add_airlock':
-        return this.filterForAddAirlock(matchingTorrents, action);
+        return this.filterForAddAirlock(matchingDownloads, action);
       case 'remove_airlock':
-        return this.filterForRemoveAirlock(matchingTorrents, action);
+        return this.filterForRemoveAirlock(matchingDownloads, action);
       case 'stop_seeding':
-        return await this.filterForStopSeeding(matchingTorrents, action);
+        return await this.filterForStopSeeding(matchingDownloads, action);
       case 'force_start':
-        return await this.filterForForceStart(matchingTorrents, action);
+        return await this.filterForForceStart(matchingDownloads, action);
       case 'archive':
       case 'delete':
         // Archive and delete actions don't need filtering
         // Archived downloads are removed from main list
         // Delete action removes downloads completely
-        return matchingTorrents;
+        return matchingDownloads;
       default:
         // Unknown action type, don't filter
         logger.warn('Unknown action type, skipping filter', {
           authId: this.authId,
           actionType: action.type,
         });
-        return matchingTorrents;
+        return matchingDownloads;
     }
   }
 }

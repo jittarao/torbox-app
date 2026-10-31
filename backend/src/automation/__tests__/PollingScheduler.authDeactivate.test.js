@@ -57,7 +57,7 @@ describe('PollingScheduler scheduled auth deactivation', () => {
       status: 403,
     });
 
-    scheduler.fetchTorrentsForUser = async (user) => ({
+    scheduler.fetchDownloadsForUser = async (user) => ({
       user,
       poller: {
         authId: user.auth_id,

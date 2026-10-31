@@ -79,16 +79,16 @@ class UserPoller {
   }
 
   /**
-   * Count non-terminal torrents by checking each torrent's state (completed/failed excluded).
-   * @param {Array} torrents - Array of torrent objects
+   * Count non-terminal downloads by checking each download's state (completed/failed excluded).
+   * @param {Array} downloads - Array of download objects
    * @param {Object} [_changes] - Unused; kept for API compatibility
-   * @returns {number} - Count of non-terminal torrents
+   * @returns {number} - Count of non-terminal downloads
    */
-  countNonTerminalTorrents(torrents, _changes = null) {
-    if (!Array.isArray(torrents)) {
-      logger.warn('countNonTerminalTorrents called with non-array', {
+  countNonTerminalDownloads(downloads, _changes = null) {
+    if (!Array.isArray(downloads)) {
+      logger.warn('countNonTerminalDownloads called with non-array', {
         authId: this.authId,
-        torrentsType: typeof torrents,
+        downloadsType: typeof downloads,
       });
       return 0;
     }
@@ -97,20 +97,20 @@ class UserPoller {
     try {
       const stateDiffEngine = this.dbManager.getStateDiffEngine();
       let count = 0;
-      for (const torrent of torrents) {
-        if (!torrent) {
+      for (const download of downloads) {
+        if (!download) {
           continue;
         }
-        const state = stateDiffEngine.getTorrentState(torrent);
+        const state = stateDiffEngine.getTorrentState(download);
         if (!stateDiffEngine.isTerminalState(state)) {
           count++;
         }
       }
       return count;
     } catch (error) {
-      logger.warn('Error counting non-terminal torrents', error, {
+      logger.warn('Error counting non-terminal downloads', error, {
         authId: this.authId,
-        torrentCount: torrents.length,
+        torrentCount: downloads.length,
         errorMessage: error.message,
       });
       return 0;
@@ -202,7 +202,7 @@ class UserPoller {
    * - idle: User has active rules but no recent executions -> poll every 60 minutes
    * - active: User has active rules and recent executions -> poll based on rule intervals or fallback logic
    *
-   * @param {number} nonTerminalCount - Count of non-terminal torrents
+   * @param {number} nonTerminalCount - Count of non-terminal downloads
    * @param {boolean} hasActiveRules - Whether user has active rules
    * @param {Function} calculateStaggerOffset - Function to calculate stagger offset
    * @param {Object} ruleResults - Optional rule evaluation results with execution info
@@ -344,10 +344,6 @@ class UserPoller {
   }
 
   /**
-   * Fetch torrents from the API
-   * @returns {Promise<Array>} - Array of torrent objects
-   */
-  /**
    * Fetch downloads for all asset types required by enabled rules.
    * @returns {Promise<Array>}
    */
@@ -363,23 +359,27 @@ class UserPoller {
           errorMessage: error.message,
         });
       }
+    } else {
+      logger.warn('No automation engine attached; fetching torrent downloads only', {
+        authId: this.authId,
+      });
     }
     return fetchDownloadsForAssetTypes(this.apiClient, assetTypes, true);
   }
 
-  async fetchTorrents() {
+  async fetchDownloads() {
     const apiFetchStart = Date.now();
-    logger.debug('Fetching torrents from API', { authId: this.authId });
+    logger.debug('Fetching downloads from API', { authId: this.authId });
 
     try {
-      const torrents = await this.fetchDownloadsForActiveRules();
+      const downloads = await this.fetchDownloadsForActiveRules();
       const apiFetchDuration = ((Date.now() - apiFetchStart) / 1000).toFixed(2);
-      logger.debug('Torrents fetched from API', {
+      logger.debug('Downloads fetched from API', {
         authId: this.authId,
-        torrentCount: torrents.length,
+        torrentCount: downloads.length,
         apiFetchDuration: `${apiFetchDuration}s`,
       });
-      return torrents;
+      return downloads;
     } catch (error) {
       const apiFetchDuration = ((Date.now() - apiFetchStart) / 1000).toFixed(2);
 
@@ -409,9 +409,9 @@ class UserPoller {
         apiFetchDuration: `${apiFetchDuration}s`,
       };
       if (isPlanRestricted) {
-        logger.info('Failed to fetch torrents from API', logPayload);
+        logger.info('Failed to fetch downloads from API', logPayload);
       } else {
-        logger.error('Failed to fetch torrents from API', error, logPayload);
+        logger.error('Failed to fetch downloads from API', error, logPayload);
       }
       throw error;
     }
@@ -545,12 +545,12 @@ class UserPoller {
   }
 
   /**
-   * Evaluate automation rules for torrents
-   * @param {Array} torrents - Array of torrent objects
+   * Evaluate automation rules for downloads
+   * @param {Array} downloads - Array of download objects
    * @param {Object} [changes] - Optional state diff; when provided, transition-only rules are evaluated against a subset
    * @returns {Promise<Object>} - Object with evaluated and executed counts
    */
-  async evaluateRules(torrents, changes = null) {
+  async evaluateRules(downloads, changes = null) {
     const rulesStart = Date.now();
     let ruleResults = { evaluated: 0, executed: 0 };
 
@@ -563,11 +563,11 @@ class UserPoller {
 
     logger.debug('Evaluating automation rules', {
       authId: this.authId,
-      torrentCount: torrents.length,
+      torrentCount: downloads.length,
     });
 
     try {
-      ruleResults = await this.automationEngine.evaluateRules(torrents, changes);
+      ruleResults = await this.automationEngine.evaluateRules(downloads, changes);
       const rulesDuration = ((Date.now() - rulesStart) / 1000).toFixed(2);
       logger.debug('Automation rules evaluated', {
         authId: this.authId,
@@ -578,7 +578,7 @@ class UserPoller {
     } catch (error) {
       logger.error('Failed to evaluate automation rules', error, {
         authId: this.authId,
-        torrentCount: torrents.length,
+        torrentCount: downloads.length,
         errorMessage: error.message,
       });
       // Don't throw - rule evaluation errors are logged but don't fail the poll
@@ -590,7 +590,7 @@ class UserPoller {
   /**
    * Update master database with poll results
    * @param {Date} nextPollAt - Next poll timestamp
-   * @param {number} nonTerminalCount - Count of non-terminal torrents
+   * @param {number} nonTerminalCount - Count of non-terminal downloads
    * @returns {Promise<void>}
    */
   async updateMasterDatabase(nextPollAt, nonTerminalCount) {
@@ -616,9 +616,9 @@ class UserPoller {
 
   /**
    * Single canonical pipeline: optionally fetch, then state diff → derived fields → speed → rule eval → next poll.
-   * Used by both the two-phase scheduler (with prefetchedTorrents) and triggerPoll (fetches inside).
+   * Used by both the two-phase scheduler (with prefetchedDownloads) and triggerPoll (fetches inside).
    * @param {Object} options - Options
-   * @param {Array} [options.prefetchedTorrents] - If provided, skip API fetch and use this list
+   * @param {Array} [options.prefetchedDownloads] - If provided, skip API fetch and use this list
    * @param {boolean} options.hasActiveRules - Whether user has active rules
    * @param {Function|null} [options.calculateStaggerOffset] - Optional stagger calculator
    * @param {boolean} [options.updateMasterDb=false] - Whether to write next_poll_at to master DB
@@ -627,7 +627,7 @@ class UserPoller {
    */
   async runPipeline(options = {}) {
     const {
-      prefetchedTorrents,
+      prefetchedDownloads,
       hasActiveRules,
       calculateStaggerOffset = null,
       updateMasterDb = false,
@@ -640,17 +640,19 @@ class UserPoller {
     }
     if (this.dbManager) await this.ensureDatabaseConnection();
 
-    let torrents = prefetchedTorrents;
-    if (torrents === undefined) {
+    let downloads = prefetchedDownloads;
+    if (downloads === undefined) {
       if (checkCancelled) checkCancelled();
-      torrents = await this.fetchTorrents();
+      downloads = await this.fetchDownloads();
     }
-    if (!Array.isArray(torrents)) {
-      throw new Error('Torrents must be an array');
+    if (!Array.isArray(downloads)) {
+      throw new Error('Downloads must be an array');
     }
 
     if (checkCancelled) checkCancelled();
-    const torrentOnlyForDiff = torrents.filter((t) => (t.assetType || 'torrent') === 'torrent');
+    const torrentOnlyForDiff = downloads.filter(
+      (download) => (download.assetType || 'torrent') === 'torrent'
+    );
     const changes = await this.processStateChanges(torrentOnlyForDiff);
     if (!changes || typeof changes !== 'object') {
       throw new Error('processStateChanges returned invalid changes object');
@@ -666,8 +668,8 @@ class UserPoller {
     await this.processSpeedUpdates(changes.updated);
 
     if (checkCancelled) checkCancelled();
-    const ruleResults = await this.evaluateRules(torrents, changes);
-    const nonTerminalCount = this.countNonTerminalTorrents(torrents, changes);
+    const ruleResults = await this.evaluateRules(downloads, changes);
+    const nonTerminalCount = this.countNonTerminalDownloads(downloads, changes);
     const nextPollAt = await this.calculateNextPollAt(
       nonTerminalCount,
       hasActiveRules,
@@ -689,22 +691,22 @@ class UserPoller {
   }
 
   /**
-   * Process already-fetched torrents (state diff, derived fields, speed updates, rule evaluation).
-   * Used by the two-phase scheduler: Stage 1 fetches torrents, Stage 2 calls this with no API calls.
-   * @param {Array} torrents - Array of torrent objects from API
+   * Process already-fetched downloads (state diff, derived fields, speed updates, rule evaluation).
+   * Used by the two-phase scheduler: Stage 1 fetches downloads, Stage 2 calls this with no API calls.
+   * @param {Array} downloads - Array of download objects from API
    * @param {Object} options - Options
    * @param {boolean} options.hasActiveRules - Whether user has active rules
    * @param {Function|null} [options.calculateStaggerOffset] - Optional stagger calculator
    * @returns {Promise<Object>} - { success, changes, ruleResults, nextPollAt, nonTerminalCount }
    */
-  async processFetchedTorrents(torrents, options = {}) {
-    if (!Array.isArray(torrents)) {
-      throw new Error('processFetchedTorrents requires an array of torrents');
+  async processFetchedDownloads(downloads, options = {}) {
+    if (!Array.isArray(downloads)) {
+      throw new Error('processFetchedDownloads requires an array of downloads');
     }
     const cancelToken = options.cancelToken ?? this._newCancelToken();
     try {
       return await this.runPipeline({
-        prefetchedTorrents: torrents,
+        prefetchedDownloads: downloads,
         hasActiveRules: options.hasActiveRules,
         calculateStaggerOffset: options.calculateStaggerOffset ?? null,
         updateMasterDb: false,

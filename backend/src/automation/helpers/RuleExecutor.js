@@ -15,18 +15,18 @@ class RuleExecutor {
   }
 
   /**
-   * Execute actions on a list of torrents with bounded concurrency.
+   * Execute actions on a list of downloads with bounded concurrency.
    *
-   * Previously actions ran serially: N matched torrents × 30s axios timeout = N×30s, which
-   * easily exhausted the 180s per-user poll budget for rules that match many torrents.
+   * Previously actions ran serially: N matched downloads × 30s axios timeout = N×30s, which
+   * easily exhausted the 180s per-user poll budget for rules that match many downloads.
    * Running up to RULE_ACTION_CONCURRENCY actions in parallel collapses that to
    * ceil(N / concurrency) × 30s, giving the poll enough headroom to complete.
    *
    * @param {Object} rule - Rule configuration
-   * @param {Array} torrents - Torrents to process
+   * @param {Array} downloads - Downloads to process
    * @returns {Promise<Object>} - { successCount, errorCount, protectedSkippedCount, abortedCount }
    */
-  async executeActions(rule, torrents) {
+  async executeActions(rule, downloads) {
     let successCount = 0;
     let errorCount = 0;
     let protectedSkippedCount = 0;
@@ -47,8 +47,8 @@ class RuleExecutor {
     const actionType = rule.action?.type;
     let protectedSet = null;
     if (isDestructiveOperation(actionType)) {
-      const downloadIds = torrents.flatMap((torrent) => {
-        const id = ruleEvaluator.extractDownloadId(torrent);
+      const downloadIds = downloads.flatMap((download) => {
+        const id = ruleEvaluator.extractDownloadId(download);
         return id ? [id] : [];
       });
       protectedSet = ruleEvaluator.protectionService.getProtectedSet(downloadIds);
@@ -66,7 +66,7 @@ class RuleExecutor {
 
     // Worker-pool: each worker drains the shared queue until empty.
     // Node.js is single-threaded so queue.shift() and counter mutations are safe across workers.
-    const queue = [...torrents];
+    const queue = [...downloads];
     let abortRemaining = false;
     let abortReason = null;
 
@@ -82,8 +82,8 @@ class RuleExecutor {
           return;
         }
 
-        const torrent = queue.shift();
-        if (!torrent) continue;
+        const download = queue.shift();
+        if (!download) continue;
 
         // Re-check after dequeue — another worker may have aborted while we waited.
         if (abortRemaining) {
@@ -94,14 +94,14 @@ class RuleExecutor {
         try {
           const action = rule.action;
           const currentActionType = action?.type;
-          logger.debug('Executing action on torrent', {
+          logger.debug('Executing action on download', {
             authId: this.authId,
             ruleId: rule.id,
             ruleName: rule.name,
-            torrentId: torrent.id,
-            torrentName: torrent.name,
+            torrentId: download.id,
+            torrentName: download.name,
             action: currentActionType,
-            torrentStatus: ruleEvaluator.getTorrentStatus(torrent),
+            torrentStatus: ruleEvaluator.getTorrentStatus(download),
           });
 
           // Final abort check immediately before the outbound TorBox call.
@@ -110,7 +110,7 @@ class RuleExecutor {
             continue;
           }
 
-          const result = await ruleEvaluator.executeAction(action, torrent, {
+          const result = await ruleEvaluator.executeAction(action, download, {
             skipValidation: tagActionValidated,
             protectedSet,
           });
@@ -121,8 +121,8 @@ class RuleExecutor {
               authId: this.authId,
               ruleId: rule.id,
               ruleName: rule.name,
-              torrentId: torrent.id,
-              torrentName: torrent.name,
+              torrentId: download.id,
+              torrentName: download.name,
               action: currentActionType,
             });
             continue;
@@ -133,8 +133,8 @@ class RuleExecutor {
               authId: this.authId,
               ruleId: rule.id,
               ruleName: rule.name,
-              torrentId: torrent.id,
-              torrentName: torrent.name,
+              torrentId: download.id,
+              torrentName: download.name,
               action: currentActionType,
             });
             continue;
@@ -148,7 +148,7 @@ class RuleExecutor {
               authId: this.authId,
               ruleId: rule.id,
               ruleName: rule.name,
-              torrentId: torrent.id,
+              torrentId: download.id,
               action: currentActionType,
               error: result?.error,
               message: result?.message,
@@ -162,8 +162,8 @@ class RuleExecutor {
             authId: this.authId,
             ruleId: rule.id,
             ruleName: rule.name,
-            torrentId: torrent.id,
-            torrentName: torrent.name,
+            torrentId: download.id,
+            torrentName: download.name,
             action: currentActionType,
           });
         } catch (error) {
@@ -180,7 +180,7 @@ class RuleExecutor {
                   authId: this.authId,
                   ruleId: rule.id,
                   ruleName: rule.name,
-                  torrentId: torrent.id,
+                  torrentId: download.id,
                   abortedRemaining: abortedCount,
                   abortReason,
                 }
@@ -192,17 +192,17 @@ class RuleExecutor {
 
           let torrentStatus = 'unknown';
           try {
-            torrentStatus = ruleEvaluator.getTorrentStatus(torrent);
+            torrentStatus = ruleEvaluator.getTorrentStatus(download);
           } catch (_) {
             // Status unavailable — log without it
           }
 
-          logger.error('Action failed for torrent', error, {
+          logger.error('Action failed for download', error, {
             authId: this.authId,
             ruleId: rule.id,
             ruleName: rule.name,
-            torrentId: torrent.id,
-            torrentName: torrent.name,
+            torrentId: download.id,
+            torrentName: download.name,
             torrentStatus,
             action: rule.action?.type,
           });
@@ -211,7 +211,7 @@ class RuleExecutor {
       }
     };
 
-    const workerCount = Math.min(concurrency, torrents.length);
+    const workerCount = Math.min(concurrency, downloads.length);
     await Promise.all(Array.from({ length: workerCount }, worker));
 
     return { successCount, errorCount, protectedSkippedCount, abortedCount };

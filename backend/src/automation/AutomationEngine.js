@@ -463,15 +463,15 @@ class AutomationEngine {
 
   /**
    * Evaluate and execute rules (called after each poll)
-   * @param {Array} torrents - Current torrents from API
+   * @param {Array} downloads - Current downloads from API
    * @param {Object} [changes] - Optional diff result; when provided, rules that only use transition-only conditions are evaluated against a subset (new + state transitions) to save work
    */
-  async evaluateRules(torrents, changes = null) {
+  async evaluateRules(downloads, changes = null) {
     const evaluationStartTime = Date.now();
     try {
       logger.debug('Starting rule evaluation', {
         authId: this.authId,
-        torrentCount: torrents.length,
+        torrentCount: downloads.length,
         timestamp: new Date().toISOString(),
       });
 
@@ -492,7 +492,7 @@ class AutomationEngine {
       logger.debug('Evaluating automation rules', {
         authId: this.authId,
         enabledRuleCount: enabledRules.length,
-        torrentCount: torrents.length,
+        torrentCount: downloads.length,
         ruleNames: enabledRules.map((r) => r.name),
         ruleIds: enabledRules.map((r) => r.id),
         ruleTriggers: enabledRules.map((r) => ({
@@ -502,7 +502,7 @@ class AutomationEngine {
         })),
       });
 
-      const results = await this.evaluateRulesBatch(enabledRules, torrents, changes);
+      const results = await this.evaluateRulesBatch(enabledRules, downloads, changes);
       const evaluationDuration = ((Date.now() - evaluationStartTime) / 1000).toFixed(2);
 
       const cycleMeta = {
@@ -552,11 +552,11 @@ class AutomationEngine {
    * outbound semaphore in ApiClient when many users are polling simultaneously.
    *
    * @param {Array} enabledRules - Rules to evaluate
-   * @param {Array} torrents - Torrents to evaluate against
+   * @param {Array} downloads - Downloads to evaluate against
    * @param {Object} [changes] - Optional diff; when set, transition-only rules are evaluated against new + stateTransitions subset
    * @returns {Promise<Object>} - { executedCount, skippedCount, errorCount, pendingActions }
    */
-  async evaluateRulesBatch(enabledRules, torrents, changes = null) {
+  async evaluateRulesBatch(enabledRules, downloads, changes = null) {
     let executedCount = 0;
     let skippedCount = 0;
     let errorCount = 0;
@@ -564,9 +564,9 @@ class AutomationEngine {
     const evaluatedRuleIdsNoAction = [];
 
     const ruleEvaluator = await this.getRuleEvaluator();
-    const torrentIds = torrents.reduce((ids, t) => {
-      if ((t.assetType || 'torrent') === 'torrent' && t.id != null) {
-        ids.push(t.id);
+    const torrentIds = downloads.reduce((ids, download) => {
+      if ((download.assetType || 'torrent') === 'torrent' && download.id != null) {
+        ids.push(download.id);
       }
       return ids;
     }, []);
@@ -591,7 +591,7 @@ class AutomationEngine {
 
     const sharedMaps = {
       telemetryMap: needsTelemetry ? ruleEvaluator.loadTelemetryData(torrentIds) : new Map(),
-      tagsByDownloadId: needsTags ? ruleEvaluator.loadTagsDataForTorrents(torrents) : new Map(),
+      tagsByDownloadId: needsTags ? ruleEvaluator.loadTagsDataForDownloads(downloads) : new Map(),
       speedHistoryMap:
         needsSpeed && torrentIds.length > 0
           ? ruleEvaluator.loadSpeedHistoryDataForHours(torrentIds, maxSpeedHours)
@@ -612,15 +612,15 @@ class AutomationEngine {
         const isTorrentOnlyRule = ruleTypes.length === 1 && ruleTypes[0] === 'torrent';
         const usesTorrentDiff =
           isTorrentOnlyRule && changes && ruleEvaluator.ruleCanUseChangedOnlyScope(rule);
-        const torrentOnly = torrents.filter((t) => (t.assetType || 'torrent') === 'torrent');
-        const torrentList = usesTorrentDiff
+        const torrentOnly = downloads.filter((t) => (t.assetType || 'torrent') === 'torrent');
+        const downloadsToEvaluate = usesTorrentDiff
           ? this._buildChangedOnlySubset(torrentOnly, changes)
-          : torrents;
+          : downloads;
 
         try {
           const result = await this.evaluateSingleRule(
             rule,
-            torrentList,
+            downloadsToEvaluate,
             sharedMaps,
             ruleEvaluator
           );
@@ -657,12 +657,12 @@ class AutomationEngine {
   /**
    * Evaluate a single rule
    * @param {Object} rule - Rule to evaluate
-   * @param {Array} torrents - Torrents to evaluate against
+   * @param {Array} downloads - Downloads to evaluate against
    * @param {Object} [sharedMaps] - Optional pre-loaded { telemetryMap, tagsByDownloadId, speedHistoryMap }
    * @param {Object} [ruleEvaluatorInstance] - Optional pre-fetched RuleEvaluator (avoids per-rule getRuleEvaluator when called from batch)
    * @returns {Promise<Object>} - { executed: boolean, skipped: boolean }
    */
-  async evaluateSingleRule(rule, torrents, sharedMaps = null, ruleEvaluatorInstance = null) {
+  async evaluateSingleRule(rule, downloads, sharedMaps = null, ruleEvaluatorInstance = null) {
     // Check if rule has an action configured
     if (!rule.action || !rule.action.type) {
       logger.warn('Rule has no action configured, skipping execution', {
@@ -683,7 +683,7 @@ class AutomationEngine {
       lastEvaluatedAt: rule.last_evaluated_at,
       lastExecutedAt: rule.last_executed_at,
       executionCount: rule.execution_count,
-      torrentCount: torrents.length,
+      torrentCount: downloads.length,
     });
 
     // Check if rule should be evaluated based on interval (synchronous guard before async work)
@@ -712,63 +712,67 @@ class AutomationEngine {
     }
 
     const ruleAssetTypes = new Set(rule.assetTypes || ['torrent']);
-    const scopedDownloads = torrents.filter((d) => ruleAssetTypes.has(d.assetType || 'torrent'));
+    const scopedDownloads = downloads.filter((d) => ruleAssetTypes.has(d.assetType || 'torrent'));
 
     const ruleEvaluator = ruleEvaluatorInstance ?? (await this.getRuleEvaluator());
 
     // Evaluate rule (last_evaluated_at is batch-updated at end of evaluateRulesBatch)
-    const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(
+    const { matchingDownloads, tagsByDownloadId } = await ruleEvaluator.evaluateRule(
       rule,
       scopedDownloads,
       sharedMaps
     );
 
-    if (matchingTorrents.length === 0) {
-      logger.debug('Rule did not match any torrents', {
+    if (matchingDownloads.length === 0) {
+      logger.debug('Rule did not match any downloads', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
         trigger: rule.trigger,
-        torrentCount: torrents.length,
+        torrentCount: downloads.length,
         lastEvaluatedAt: rule.last_evaluated_at,
-        reason: 'No torrents matched rule conditions',
+        reason: 'No downloads matched rule conditions',
       });
       return { executed: false, skipped: true, ruleId: rule.id };
     }
 
-    logger.debug('Rule matched torrents', {
+    logger.debug('Rule matched downloads', {
       authId: this.authId,
       ruleId: rule.id,
       ruleName: rule.name,
-      matchedCount: matchingTorrents.length,
-      matchedIds: matchingTorrents.map((t) => t.id),
+      matchedCount: matchingDownloads.length,
+      matchedIds: matchingDownloads.map((t) => t.id),
     });
 
-    // Filter torrents based on action type (pass pre-loaded tags to avoid duplicate SELECT)
-    const torrentsToProcess = await this.ruleFilter.filterTorrents(matchingTorrents, rule.action, {
-      tagsByDownloadId,
-    });
+    // Filter downloads based on action type (pass pre-loaded tags to avoid duplicate SELECT)
+    const downloadsToProcess = await this.ruleFilter.filterDownloads(
+      matchingDownloads,
+      rule.action,
+      {
+        tagsByDownloadId,
+      }
+    );
 
-    if (torrentsToProcess.length === 0) {
-      logger.debug('No torrents to process after filtering', {
+    if (downloadsToProcess.length === 0) {
+      logger.debug('No downloads to process after filtering', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
-        matchedCount: matchingTorrents.length,
+        matchedCount: matchingDownloads.length,
         actionType: rule.action?.type,
         reason:
-          'All matching torrents were filtered out (action already applied or not applicable)',
+          'All matching downloads were filtered out (action already applied or not applicable)',
       });
       return { executed: false, skipped: true, ruleId: rule.id };
     }
 
     // Return action descriptor for the global queue; execution and recordExecution happen in PollingScheduler
-    logger.debug('Rule matched torrents, queuing actions', {
+    logger.debug('Rule matched downloads, queuing actions', {
       authId: this.authId,
       ruleId: rule.id,
       ruleName: rule.name,
-      matchedCount: matchingTorrents.length,
-      processedCount: torrentsToProcess.length,
+      matchedCount: matchingDownloads.length,
+      processedCount: downloadsToProcess.length,
     });
 
     return {
@@ -778,7 +782,8 @@ class AutomationEngine {
       pendingAction: {
         authId: this.authId,
         rule,
-        torrentsToProcess,
+        // Persisted/queue key kept as torrentsToProcess for payload compatibility.
+        torrentsToProcess: downloadsToProcess,
       },
     };
   }
@@ -889,8 +894,6 @@ class AutomationEngine {
         assetTypes: [...ruleAssetTypes],
       });
 
-      const torrents = downloads;
-
       assertManualRunNotCancelled(cancelToken);
 
       // Shadow/telemetry diff only applies to torrent items
@@ -926,7 +929,7 @@ class AutomationEngine {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
-        torrentCount: torrents.length,
+        torrentCount: downloads.length,
         lastEvaluatedAt: rule.last_evaluated_at,
       });
 
@@ -935,7 +938,7 @@ class AutomationEngine {
         const result = {
           ruleId: rule.id,
           ruleName: rule.name,
-          totalTorrents: torrents.length,
+          totalTorrents: downloads.length,
           matchedTorrents: 0,
           processedTorrents: 0,
           successCount: 0,
@@ -959,7 +962,7 @@ class AutomationEngine {
         return {
           ruleId: rule.id,
           ruleName: rule.name,
-          totalTorrents: torrents.length,
+          totalTorrents: downloads.length,
           matchedTorrents: 0,
           processedTorrents: 0,
           successCount: 0,
@@ -971,7 +974,7 @@ class AutomationEngine {
         };
       }
 
-      const scopedDownloads = torrents.filter((d) => ruleAssetTypes.has(d.assetType || 'torrent'));
+      const scopedDownloads = downloads.filter((d) => ruleAssetTypes.has(d.assetType || 'torrent'));
 
       const ruleEvaluator = await this.getRuleEvaluator();
       const torrentIds = scopedDownloads.reduce((ids, t) => {
@@ -988,7 +991,7 @@ class AutomationEngine {
             ? ruleEvaluator.loadTelemetryData(torrentIds)
             : new Map(),
         tagsByDownloadId: analysis.needsTags
-          ? ruleEvaluator.loadTagsDataForTorrents(scopedDownloads)
+          ? ruleEvaluator.loadTagsDataForDownloads(scopedDownloads)
           : new Map(),
         speedHistoryMap:
           needsTorrentData && analysis.needsSpeed && torrentIds.length > 0
@@ -997,72 +1000,72 @@ class AutomationEngine {
       };
 
       // Evaluate rule (bypass interval check for manual execution)
-      const { matchingTorrents, tagsByDownloadId } = await ruleEvaluator.evaluateRule(
+      const { matchingDownloads, tagsByDownloadId } = await ruleEvaluator.evaluateRule(
         rule,
         scopedDownloads,
         sharedMaps
       );
 
-      if (matchingTorrents.length === 0) {
+      if (matchingDownloads.length === 0) {
         const result = {
           ruleId: rule.id,
           ruleName: rule.name,
-          totalTorrents: torrents.length,
+          totalTorrents: downloads.length,
           matchedTorrents: 0,
           processedTorrents: 0,
           successCount: 0,
           errorCount: 0,
           executed: false,
           skipped: true,
-          reason: 'No torrents matched rule conditions',
+          reason: 'No downloads matched rule conditions',
           executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
         };
-        logger.debug('Rule did not match any torrents', {
+        logger.debug('Rule did not match any downloads', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,
-          torrentCount: torrents.length,
+          torrentCount: downloads.length,
         });
         return result;
       }
 
-      logger.debug('Rule matched torrents', {
+      logger.debug('Rule matched downloads', {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
-        matchedCount: matchingTorrents.length,
-        matchedIds: matchingTorrents.map((t) => t.id),
+        matchedCount: matchingDownloads.length,
+        matchedIds: matchingDownloads.map((t) => t.id),
       });
 
-      // Filter torrents based on action type (pass pre-loaded tags to avoid duplicate SELECT)
-      const torrentsToProcess = await this.ruleFilter.filterTorrents(
-        matchingTorrents,
+      // Filter downloads based on action type (pass pre-loaded tags to avoid duplicate SELECT)
+      const downloadsToProcess = await this.ruleFilter.filterDownloads(
+        matchingDownloads,
         rule.action,
         {
           tagsByDownloadId,
         }
       );
 
-      if (torrentsToProcess.length === 0) {
+      if (downloadsToProcess.length === 0) {
         const result = {
           ruleId: rule.id,
           ruleName: rule.name,
-          totalTorrents: torrents.length,
-          matchedTorrents: matchingTorrents.length,
+          totalTorrents: downloads.length,
+          matchedTorrents: matchingDownloads.length,
           processedTorrents: 0,
           successCount: 0,
           errorCount: 0,
           executed: false,
           skipped: true,
           reason:
-            'All matching torrents were filtered out (action already applied or not applicable)',
+            'All matching downloads were filtered out (action already applied or not applicable)',
           executionTime: ((Date.now() - executionStartTime) / 1000).toFixed(2),
         };
-        logger.debug('No torrents to process after filtering', {
+        logger.debug('No downloads to process after filtering', {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,
-          matchedCount: matchingTorrents.length,
+          matchedCount: matchingDownloads.length,
           actionType: rule.action?.type,
         });
         return result;
@@ -1073,7 +1076,7 @@ class AutomationEngine {
         successCount,
         errorCount,
         protectedSkippedCount = 0,
-      } = await this.ruleExecutor.executeActions(rule, torrentsToProcess);
+      } = await this.ruleExecutor.executeActions(rule, downloadsToProcess);
 
       const batchResult = { successCount, errorCount, protectedSkippedCount };
 
@@ -1093,8 +1096,8 @@ class AutomationEngine {
           authId: this.authId,
           ruleId: rule.id,
           ruleName: rule.name,
-          matchedCount: matchingTorrents.length,
-          processedCount: torrentsToProcess.length,
+          matchedCount: matchingDownloads.length,
+          processedCount: downloadsToProcess.length,
           successCount,
           errorCount,
           protectedSkippedCount,
@@ -1107,8 +1110,8 @@ class AutomationEngine {
         authId: this.authId,
         ruleId: rule.id,
         ruleName: rule.name,
-        matchedCount: matchingTorrents.length,
-        processedCount: torrentsToProcess.length,
+        matchedCount: matchingDownloads.length,
+        processedCount: downloadsToProcess.length,
         successCount,
         errorCount,
         protectedSkippedCount,
@@ -1119,9 +1122,9 @@ class AutomationEngine {
         ruleId: rule.id,
         ruleName: rule.name,
         actionType: rule.action?.type,
-        totalTorrents: torrents.length,
-        matchedTorrents: matchingTorrents.length,
-        processedTorrents: torrentsToProcess.length,
+        totalTorrents: downloads.length,
+        matchedTorrents: matchingDownloads.length,
+        processedTorrents: downloadsToProcess.length,
         successCount,
         errorCount,
         executed: true,

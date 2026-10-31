@@ -115,22 +115,22 @@ class RuleEvaluator {
 
   /**
    * Load tags data for all downloads. When options.rule is provided, returns empty Map if rule has no TAGS conditions.
-   * @param {Array} torrents - Array of torrent objects
+   * @param {Array} downloads - Array of download objects
    * @param {Object} [options] - Optional; { rule } to gate on hasTagsCondition(rule)
    * @returns {Map} - Map of download_id -> array of tag ids
    */
-  loadTagsData(torrents, options = {}) {
+  loadTagsData(downloads, options = {}) {
     const { rule } = options;
     if (rule != null && !this.ruleNeedsTagData(rule)) {
       return new Map();
     }
-    if (torrents.length === 0) {
+    if (downloads.length === 0) {
       return new Map();
     }
 
     const allDownloadIds = new Set();
-    for (const torrent of torrents) {
-      const downloadId = this.extractDownloadId(torrent);
+    for (const download of downloads) {
+      const downloadId = this.extractDownloadId(download);
       if (downloadId) {
         allDownloadIds.add(downloadId);
       }
@@ -162,11 +162,11 @@ class RuleEvaluator {
 
   /**
    * Load tags data for all downloads (shared batch loading; no rule gate).
-   * @param {Array} torrents - Array of torrent objects
+   * @param {Array} downloads - Array of download objects
    * @returns {Map} - Map of download_id -> array of tag ids
    */
-  loadTagsDataForTorrents(torrents) {
-    return this.loadTagsData(torrents, {});
+  loadTagsDataForDownloads(downloads) {
+    return this.loadTagsData(downloads, {});
   }
 
   /**
@@ -218,22 +218,28 @@ class RuleEvaluator {
   }
 
   /**
-   * Evaluate a rule against current torrents
+   * Evaluate a rule against current downloads
    * Supports both old flat structure and new group structure.
    * When sharedMaps is provided (from evaluateRulesBatch), uses pre-loaded data; otherwise loads per rule.
    * @param {Object} rule - Rule configuration
-   * @param {Array} torrents - Current torrents from API
+   * @param {Array} downloads - Current downloads from API
    * @param {Object} [sharedMaps] - Optional pre-loaded { telemetryMap, tagsByDownloadId, speedHistoryMap }
-   * @returns {Promise<Array>} - Matching torrents
+   * @returns {Promise<Array>} - Matching downloads
    */
-  evaluateRule(rule, torrents, sharedMaps = null) {
-    const empty = { matchingTorrents: [], tagsByDownloadId: new Map() };
+  evaluateRule(rule, downloads, sharedMaps = null) {
+    const empty = { matchingDownloads: [], tagsByDownloadId: new Map() };
     if (!rule.enabled) {
       return empty;
     }
     // Interval-skip is already checked in AutomationEngine.evaluateSingleRule (shouldSkipRuleEvaluation)
 
-    const torrentIds = torrents.map((t) => t.id).filter((id) => id != null);
+    // Telemetry and speed history are torrent-only datasets.
+    const torrentIds = downloads.reduce((ids, download) => {
+      if ((download.assetType || 'torrent') === 'torrent' && download.id != null) {
+        ids.push(download.id);
+      }
+      return ids;
+    }, []);
     let telemetryMap;
     let tagsByDownloadId;
     let speedHistoryMap;
@@ -245,7 +251,7 @@ class RuleEvaluator {
     } else {
       const analysis = this.analyzeRule(rule);
       telemetryMap = analysis.needsTelemetry ? this.loadTelemetryData(torrentIds) : new Map();
-      tagsByDownloadId = analysis.needsTags ? this.loadTagsDataForTorrents(torrents) : new Map();
+      tagsByDownloadId = analysis.needsTags ? this.loadTagsDataForDownloads(downloads) : new Map();
       speedHistoryMap = analysis.needsSpeed
         ? this.loadSpeedHistoryDataForHours(torrentIds, analysis.maxSpeedHours)
         : new Map();
@@ -253,49 +259,61 @@ class RuleEvaluator {
 
     const hasGroups = rule.groups && Array.isArray(rule.groups) && rule.groups.length > 0;
 
-    logger.debug('Evaluating rule against torrents', {
+    logger.debug('Evaluating rule against downloads', {
       ruleId: rule.id,
       ruleName: rule.name,
       hasGroups,
-      torrentCount: torrents.length,
+      torrentCount: downloads.length,
       groupCount: hasGroups ? rule.groups.length : 0,
     });
 
-    const matchingTorrents = hasGroups
-      ? this.evaluateGroupStructure(rule, torrents, telemetryMap, tagsByDownloadId, speedHistoryMap)
-      : this.evaluateFlatStructure(rule, torrents, telemetryMap, tagsByDownloadId, speedHistoryMap);
+    const matchingDownloads = hasGroups
+      ? this.evaluateGroupStructure(
+          rule,
+          downloads,
+          telemetryMap,
+          tagsByDownloadId,
+          speedHistoryMap
+        )
+      : this.evaluateFlatStructure(
+          rule,
+          downloads,
+          telemetryMap,
+          tagsByDownloadId,
+          speedHistoryMap
+        );
 
     logger.debug('Rule evaluation completed', {
       ruleId: rule.id,
       ruleName: rule.name,
-      torrentCount: torrents.length,
-      matchedCount: matchingTorrents.length,
-      matchedIds: matchingTorrents.map((t) => t.id),
+      torrentCount: downloads.length,
+      matchedCount: matchingDownloads.length,
+      matchedIds: matchingDownloads.map((d) => d.id),
       structure: hasGroups ? 'group' : 'flat',
     });
 
-    return { matchingTorrents, tagsByDownloadId };
+    return { matchingDownloads, tagsByDownloadId };
   }
 
   /**
    * Evaluate rule with group structure
    * @param {Object} rule - Rule configuration with groups
-   * @param {Array} torrents - Array of torrent objects
+   * @param {Array} downloads - Array of download objects
    * @param {Map} telemetryMap - Pre-loaded telemetry data
    * @param {Map} tagsByDownloadId - Pre-loaded tags data
    * @param {Map} speedHistoryMap - Pre-loaded speed history data
-   * @returns {Array} - Matching torrents
+   * @returns {Array} - Matching downloads
    */
-  evaluateGroupStructure(rule, torrents, telemetryMap, tagsByDownloadId, speedHistoryMap) {
+  evaluateGroupStructure(rule, downloads, telemetryMap, tagsByDownloadId, speedHistoryMap) {
     const groupLogicOperator = rule.logicOperator || 'and';
     const groups = rule.groups || [];
 
-    return torrents.filter((torrent) => {
+    return downloads.filter((download) => {
       if (groups.length === 0) {
         logger.debug('No groups in rule, matches nothing', {
           ruleId: rule.id,
           ruleName: rule.name,
-          torrentId: torrent.id,
+          torrentId: download.id,
         });
         return false;
       }
@@ -304,18 +322,18 @@ class RuleEvaluator {
         const groupResult = this.evaluateGroup(
           groups[groupIndex],
           groupIndex,
-          torrent,
+          download,
           rule,
           telemetryMap,
           tagsByDownloadId,
           speedHistoryMap
         );
         if (groupLogicOperator === 'or' && groupResult) {
-          logger.debug('Torrent matched rule', {
+          logger.debug('Download matched rule', {
             ruleId: rule.id,
             ruleName: rule.name,
-            torrentId: torrent.id,
-            torrentName: torrent.name,
+            torrentId: download.id,
+            torrentName: download.name,
           });
           return true;
         }
@@ -326,11 +344,11 @@ class RuleEvaluator {
 
       const finalResult = groupLogicOperator === 'and';
       if (finalResult) {
-        logger.debug('Torrent matched rule', {
+        logger.debug('Download matched rule', {
           ruleId: rule.id,
           ruleName: rule.name,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
+          torrentId: download.id,
+          torrentName: download.name,
         });
       }
       return finalResult;
@@ -341,14 +359,22 @@ class RuleEvaluator {
    * Evaluate a single group within a rule
    * @param {Object} group - Group configuration
    * @param {number} groupIndex - Index of the group
-   * @param {Object} torrent - Torrent object
+   * @param {Object} download - Download object
    * @param {Object} rule - Rule configuration (for logging)
    * @param {Map} telemetryMap - Pre-loaded telemetry data
    * @param {Map} tagsByDownloadId - Pre-loaded tags data
    * @param {Map} speedHistoryMap - Pre-loaded speed history data
    * @returns {boolean} - True if group matches
    */
-  evaluateGroup(group, groupIndex, torrent, rule, telemetryMap, tagsByDownloadId, speedHistoryMap) {
+  evaluateGroup(
+    group,
+    groupIndex,
+    download,
+    rule,
+    telemetryMap,
+    tagsByDownloadId,
+    speedHistoryMap
+  ) {
     const conditions = group.conditions || [];
     const groupLogicOp = group.logicOperator || 'and';
 
@@ -357,7 +383,7 @@ class RuleEvaluator {
         ruleId: rule.id,
         ruleName: rule.name,
         groupIndex,
-        torrentId: torrent.id,
+        torrentId: download.id,
       });
       return false;
     }
@@ -366,7 +392,7 @@ class RuleEvaluator {
       const condition = conditions[condIndex];
       const result = this.evaluateCondition(
         condition,
-        torrent,
+        download,
         telemetryMap,
         tagsByDownloadId,
         speedHistoryMap
@@ -378,7 +404,7 @@ class RuleEvaluator {
           groupIndex,
           condIndex,
           conditionType: condition.type,
-          torrentId: torrent.id,
+          torrentId: download.id,
           matched: result,
         });
       }
@@ -406,17 +432,17 @@ class RuleEvaluator {
   /**
    * Evaluate rule with flat structure (backward compatibility)
    * @param {Object} rule - Rule configuration with flat conditions
-   * @param {Array} torrents - Array of torrent objects
+   * @param {Array} downloads - Array of download objects
    * @param {Map} telemetryMap - Pre-loaded telemetry data
    * @param {Map} tagsByDownloadId - Pre-loaded tags data
    * @param {Map} speedHistoryMap - Pre-loaded speed history data
-   * @returns {Array} - Matching torrents
+   * @returns {Array} - Matching downloads
    */
-  evaluateFlatStructure(rule, torrents, telemetryMap, tagsByDownloadId, speedHistoryMap) {
+  evaluateFlatStructure(rule, downloads, telemetryMap, tagsByDownloadId, speedHistoryMap) {
     const conditions = rule.conditions || [];
     const logicOperator = rule.logicOperator || 'and';
 
-    return torrents.filter((torrent) => {
+    return downloads.filter((download) => {
       // Rule with no conditions matches nothing (same as empty group); avoids accidental mass-actions
       if (conditions.length === 0) {
         return false;
@@ -425,17 +451,17 @@ class RuleEvaluator {
       for (let i = 0; i < conditions.length; i++) {
         const result = this.evaluateCondition(
           conditions[i],
-          torrent,
+          download,
           telemetryMap,
           tagsByDownloadId,
           speedHistoryMap
         );
         if (logicOperator === 'or' && result) {
-          logger.debug('Torrent matched rule (flat structure)', {
+          logger.debug('Download matched rule (flat structure)', {
             ruleId: rule.id,
             ruleName: rule.name,
-            torrentId: torrent.id,
-            torrentName: torrent.name,
+            torrentId: download.id,
+            torrentName: download.name,
           });
           return true;
         }
@@ -446,11 +472,11 @@ class RuleEvaluator {
 
       const finalResult = logicOperator === 'and';
       if (finalResult) {
-        logger.debug('Torrent matched rule (flat structure)', {
+        logger.debug('Download matched rule (flat structure)', {
           ruleId: rule.id,
           ruleName: rule.name,
-          torrentId: torrent.id,
-          torrentName: torrent.name,
+          torrentId: download.id,
+          torrentName: download.name,
         });
       }
       return finalResult;
@@ -640,24 +666,24 @@ class RuleEvaluator {
    */
   evaluateCondition(
     condition,
-    torrent,
+    download,
     telemetryMap = new Map(),
     tagsByDownloadId = new Map(),
     speedHistoryMap = new Map()
   ) {
-    const telemetry = telemetryMap.get(String(torrent.id));
+    const telemetry = telemetryMap.get(String(download.id));
     const handler = this.getConditionHandler(condition.type);
 
     if (!handler) {
       logger.warn('Unknown condition type in rule evaluation', {
         conditionType: condition.type,
         condition: JSON.stringify(condition),
-        torrentId: torrent.id,
+        torrentId: download.id,
       });
       return false;
     }
 
-    return handler(condition, torrent, telemetry, telemetryMap, tagsByDownloadId, speedHistoryMap);
+    return handler(condition, download, telemetry, telemetryMap, tagsByDownloadId, speedHistoryMap);
   }
 
   /**
