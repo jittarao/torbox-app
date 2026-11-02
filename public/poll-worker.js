@@ -12,18 +12,29 @@ const DEFAULT_AUTO_START = {
   origin: null,
   limit: 3,
   queuedIntervalMs: 60_000,
-  watchIntervalMs: 15 * 60_000,
+  watchIntervalMs: 2 * 60_000,
   betweenStartsMs: 400,
   processedTtlMs: 90_000,
+  requestTimeoutMs: 60_000,
 };
 
-/** @type {typeof DEFAULT_AUTO_START & { processedIds: Map<number|string, number>, loopTimerId: number | null, running: boolean }} */
+/** @type {typeof DEFAULT_AUTO_START & { processedIds: Map<number|string, number>, loopTimerId: number | null, running: boolean, activeCount: number, queuedCount: number, ownerPort: MessagePort | null }} */
 let autoStart = {
   ...DEFAULT_AUTO_START,
   processedIds: new Map(),
   loopTimerId: null,
   running: false,
+  activeCount: 0,
+  queuedCount: 0,
+  ownerPort: null,
 };
+
+/**
+ * Windows that want auto-start, oldest first. All same-origin windows share this worker, so one
+ * window leaving must not stop the loop for the others.
+ * @type {Map<MessagePort, object>}
+ */
+const autoStartOwners = new Map();
 
 function broadcast(message) {
   for (const port of ports) {
@@ -67,52 +78,64 @@ function scheduleAutoStartLoop(delayMs) {
   );
 }
 
+/** Fetch JSON with a deadline so a hung request cannot wedge the loop in `running`. */
+async function fetchJsonWithTimeout(url, init) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), autoStart.requestTimeoutMs);
+
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    const data = await response.json().catch((error) => {
+      if (controller.signal.aborted) throw error;
+      return null;
+    });
+    return { ok: response.ok, status: response.status, data };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function fetchTorrentList() {
-  const response = await fetch(`${autoStart.origin}/api/torrents`, {
+  const { ok, status, data } = await fetchJsonWithTimeout(`${autoStart.origin}/api/torrents`, {
     headers: {
       'x-api-key': autoStart.apiKey,
       'Cache-Control': 'no-cache',
     },
   });
 
-  if (!response.ok) {
-    throw new Error(`torrent fetch failed: ${response.status}`);
+  if (!ok) {
+    throw new Error(`torrent fetch failed: ${status}`);
   }
 
-  const data = await response.json();
   if (!data || data.success !== true || !Array.isArray(data.data)) {
-    return [];
+    throw new Error('torrent fetch returned an unusable body');
   }
 
   return data.data;
 }
 
 async function startQueuedTorrent(id) {
-  const response = await fetch(`${autoStart.origin}/api/torrents/controlqueued`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': autoStart.apiKey,
-    },
-    body: JSON.stringify({
-      queued_id: id,
-      operation: 'start',
-      type: 'torrent',
-    }),
-  });
+  try {
+    const { ok, data } = await fetchJsonWithTimeout(
+      `${autoStart.origin}/api/torrents/controlqueued`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': autoStart.apiKey,
+        },
+        body: JSON.stringify({
+          queued_id: id,
+          operation: 'start',
+          type: 'torrent',
+        }),
+      }
+    );
 
-  if (!response.ok) {
+    return ok && data?.success === true;
+  } catch {
     return false;
   }
-
-  let data = {};
-  try {
-    data = await response.json();
-  } catch {
-    // ignore parse errors
-  }
-
-  return data.success === true;
 }
 
 async function runAutoStartCycle() {
@@ -128,8 +151,7 @@ async function runAutoStartCycle() {
 
   autoStart.running = true;
 
-  let activeCount = 0;
-  let queuedCount = 0;
+  let listFailed = false;
   const startedIds = [];
 
   try {
@@ -146,8 +168,8 @@ async function runAutoStartCycle() {
       autoStart.processedTtlMs
     );
 
-    activeCount = plan.activeCount;
-    queuedCount = plan.queuedCount;
+    autoStart.activeCount = plan.activeCount;
+    autoStart.queuedCount = plan.queuedCount;
 
     for (let i = 0; i < plan.toStart.length; i += 1) {
       const id = plan.toStart[i];
@@ -165,23 +187,25 @@ async function runAutoStartCycle() {
       }
     }
   } catch {
-    // Keep scheduling so a transient failure does not stop the loop.
+    // Keep the last known counts: a failed fetch says nothing about the queue.
+    listFailed = true;
   } finally {
     autoStart.running = false;
   }
 
   broadcast({
     type: 'autoStart:result',
-    activeCount,
-    queuedCount,
+    activeCount: autoStart.activeCount,
+    queuedCount: autoStart.queuedCount,
     startedIds,
     at: Date.now(),
   });
 
   if (!autoStart.enabled) return;
 
-  const hasQueuedWork = queuedCount > 0;
-  const nextDelay = hasQueuedWork ? autoStart.queuedIntervalMs : autoStart.watchIntervalMs;
+  const hasQueuedWork = autoStart.queuedCount > 0;
+  const nextDelay =
+    listFailed || hasQueuedWork ? autoStart.queuedIntervalMs : autoStart.watchIntervalMs;
   scheduleAutoStartLoop(nextDelay);
 }
 
@@ -205,21 +229,35 @@ function applyAutoStartConfigure(msg) {
   if (typeof msg.processedTtlMs === 'number' && msg.processedTtlMs > 0) {
     autoStart.processedTtlMs = msg.processedTtlMs;
   }
+  if (typeof msg.requestTimeoutMs === 'number' && msg.requestTimeoutMs > 0) {
+    autoStart.requestTimeoutMs = msg.requestTimeoutMs;
+  }
 
   clearAutoStartLoopTimer();
 
   if (!enabled) {
     autoStart.processedIds.clear();
-    broadcast({ type: 'autoStart:stopped', at: Date.now() });
     return;
   }
 
-  broadcast({ type: 'autoStart:started', at: Date.now() });
   scheduleAutoStartLoop(0);
 }
 
-function stopAutoStart() {
-  applyAutoStartConfigure({ enabled: false });
+function enrollAutoStartOwner(port, msg) {
+  autoStartOwners.delete(port);
+  autoStartOwners.set(port, msg);
+  autoStart.ownerPort = port;
+  applyAutoStartConfigure(msg);
+}
+
+/** Stop only when the last enrolled window leaves; otherwise the newest remaining window takes over. */
+function removeAutoStartOwner(port) {
+  autoStartOwners.delete(port);
+  if (autoStart.ownerPort !== port) return;
+
+  const remaining = [...autoStartOwners.entries()].at(-1);
+  autoStart.ownerPort = remaining ? remaining[0] : null;
+  applyAutoStartConfigure(remaining ? remaining[1] : { enabled: false });
 }
 
 function handlePollStart(port, intervalMs) {
@@ -244,12 +282,28 @@ self.onconnect = (event) => {
     const msg = event.data || {};
 
     if (msg.type === 'autoStart:configure') {
-      applyAutoStartConfigure(msg);
+      if (msg.enabled === true && msg.apiKey && msg.origin) {
+        enrollAutoStartOwner(port, msg);
+        port.postMessage({ type: 'autoStart:started', at: Date.now() });
+      } else {
+        removeAutoStartOwner(port);
+        port.postMessage({ type: 'autoStart:stopped', at: Date.now() });
+      }
       return;
     }
 
     if (msg.type === 'autoStart:stop') {
-      stopAutoStart();
+      removeAutoStartOwner(port);
+      port.postMessage({ type: 'autoStart:stopped', at: Date.now() });
+      return;
+    }
+
+    if (msg.type === 'autoStart:ping') {
+      port.postMessage({
+        type: 'autoStart:pong',
+        seq: msg.seq,
+        enabled: autoStart.enabled && autoStartOwners.has(port),
+      });
       return;
     }
 
@@ -268,5 +322,6 @@ self.onconnect = (event) => {
   port.addEventListener('close', () => {
     ports.delete(port);
     clearPollTimer(port);
+    removeAutoStartOwner(port);
   });
 };

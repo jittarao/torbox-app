@@ -1,36 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getAutoStartOptions } from '@/utils/utility';
 import { POLLING_CONFIG } from '@/components/shared/hooks/pollingConfig';
 import {
   configureAutoStartWorker,
-  isAutoStartWorkerActive,
+  getLastAutoStartResult,
   stopAutoStartWorker,
   subscribeAutoStartWorkerResults,
-  subscribeAutoStartWorkerState,
 } from '@/utils/autoStartWorkerClient';
 import { scheduleForceStartReconcile } from '@/store/downloadListReconcile';
 import { useTorboxDownloadsStore, selectHasQueuedTorrents } from '@/store/torboxDownloadsStore';
 
-/**
- * Drive the SharedWorker auto-start loop while Auto Start is enabled on torrents/all.
- *
- * @param {Object} options
- * @param {string | null | undefined} options.apiKey
- * @param {'torrents' | 'usenet' | 'webdl' | 'all'} options.viewType
- */
-export function useAutoStartWorker({ apiKey, viewType }) {
+/** Auto Start setting from the torrent upload options, kept in sync across windows. */
+function useAutoStartOptions() {
   const [autoStartEnabled, setAutoStartEnabled] = useState(
     () => getAutoStartOptions()?.autoStart ?? false
   );
   const [autoStartLimit, setAutoStartLimit] = useState(
     () => getAutoStartOptions()?.autoStartLimit ?? 3
   );
-  const [workerActive, setWorkerActive] = useState(() => isAutoStartWorkerActive());
-  const hasQueuedTorrents = useTorboxDownloadsStore((s) => selectHasQueuedTorrents(s));
-  const lastResultRef = useRef({ queuedCount: 0, activeCount: 0 });
-
-  const autoStartApplies =
-    autoStartEnabled && (viewType === 'torrents' || viewType === 'all') && !!apiKey;
 
   useEffect(() => {
     const syncOptions = () => {
@@ -48,16 +35,23 @@ export function useAutoStartWorker({ apiKey, viewType }) {
     };
   }, []);
 
-  useEffect(() => {
-    return subscribeAutoStartWorkerState(() => {
-      setWorkerActive(isAutoStartWorkerActive());
-    });
-  }, []);
+  return { autoStartEnabled, autoStartLimit };
+}
+
+/**
+ * Drive the SharedWorker auto-start loop while Auto Start is enabled. Mounted in the app shell:
+ * the worker fetches its own torrent list, so it must not depend on which page or tab is open.
+ *
+ * @param {Object} options
+ * @param {string | null | undefined} options.apiKey
+ */
+export function useAutoStartWorker({ apiKey }) {
+  const { autoStartEnabled, autoStartLimit } = useAutoStartOptions();
+  const autoStartApplies = autoStartEnabled && !!apiKey;
 
   useEffect(() => {
     if (!autoStartApplies) {
       stopAutoStartWorker();
-      setWorkerActive(false);
       return;
     }
 
@@ -69,11 +63,12 @@ export function useAutoStartWorker({ apiKey, viewType }) {
       watchIntervalMs: POLLING_CONFIG.autoStartWatchIntervalMs,
       betweenStartsMs: POLLING_CONFIG.autoStartBetweenStartsMs,
       processedTtlMs: POLLING_CONFIG.autoStartProcessedTtlMs,
+      requestTimeoutMs: POLLING_CONFIG.autoStartRequestTimeoutMs,
+      livenessIntervalMs: POLLING_CONFIG.autoStartLivenessIntervalMs,
     });
 
     return () => {
       stopAutoStartWorker();
-      setWorkerActive(false);
     };
   }, [apiKey, autoStartApplies, autoStartLimit]);
 
@@ -81,25 +76,32 @@ export function useAutoStartWorker({ apiKey, viewType }) {
     if (!autoStartApplies) return;
 
     return subscribeAutoStartWorkerResults((result) => {
-      lastResultRef.current = {
-        queuedCount: result.queuedCount,
-        activeCount: result.activeCount,
-      };
-
       if (result.startedIds.length > 0) {
         scheduleForceStartReconcile('torrents');
       }
     });
   }, [autoStartApplies]);
+}
 
+/**
+ * Whether auto-start has work on a torrent view, for the screen wake lock.
+ *
+ * @param {Object} options
+ * @param {string | null | undefined} options.apiKey
+ * @param {'torrents' | 'usenet' | 'webdl' | 'all'} options.viewType
+ */
+export function useAutoStartViewStatus({ apiKey, viewType }) {
+  const { autoStartEnabled, autoStartLimit } = useAutoStartOptions();
+  const hasQueuedTorrents = useTorboxDownloadsStore((s) => selectHasQueuedTorrents(s));
+
+  const autoStartApplies =
+    autoStartEnabled && (viewType === 'torrents' || viewType === 'all') && !!apiKey;
+
+  const lastResult = getLastAutoStartResult();
   const hasWork =
     hasQueuedTorrents ||
-    lastResultRef.current.queuedCount > 0 ||
-    lastResultRef.current.activeCount < autoStartLimit;
+    (lastResult?.queuedCount ?? 0) > 0 ||
+    (lastResult?.activeCount ?? 0) < autoStartLimit;
 
-  return {
-    workerActive: workerActive && autoStartApplies,
-    autoStartApplies,
-    hasWork,
-  };
+  return { autoStartApplies, hasWork };
 }

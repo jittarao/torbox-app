@@ -16,8 +16,12 @@ export const POLLING_CONFIG = {
   backgroundIntervalMs: BACKGROUND_INTERVAL_MS,
   /** Disengaged + auto-start + queued torrents: Chrome intensive-throttle floor (~60s) */
   autoStartQueuedIntervalMs: 60_000,
-  /** Disengaged + auto-start + empty queue: watch for newly queued uploads */
-  autoStartWatchIntervalMs: BACKGROUND_INTERVAL_MS,
+  /** Auto-start worker + empty queue: watch for newly queued uploads and slots */
+  autoStartWatchIntervalMs: 2 * 60_000,
+  /** Abort a hung auto-start worker request so the loop keeps running (ms) */
+  autoStartRequestTimeoutMs: 60_000,
+  /** Page → auto-start worker liveness ping; two missed pongs replace the worker (ms) */
+  autoStartLivenessIntervalMs: 30_000,
   /**
    * After tab hide or user idle, keep active-interval polling for this long before
    * switching to background interval (auto-start queued still uses 60s when applicable).
