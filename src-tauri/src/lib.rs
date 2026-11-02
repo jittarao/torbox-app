@@ -54,7 +54,13 @@ pub fn run() {
                 session_web_origin: RwLock::new(None),
             });
 
-            commands::autostart::sync_launch_at_login(app.handle(), &settings);
+            #[cfg(target_os = "macos")]
+            services::macos_autostart::init(&app.config().identifier);
+            commands::autostart::sync_launch_at_login(
+                app.handle(),
+                &settings,
+                settings.launch_at_login_is_persisted(),
+            );
 
             services::capabilities::register_dev_capabilities(app.handle())?;
             services::capabilities::register_custom_instance_capability(

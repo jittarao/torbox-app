@@ -3,10 +3,32 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use std::sync::OnceLock;
+
 use crate::constants::{APP_DISPLAY_NAME, BUNDLE_IDENTIFIER, LEGACY_LAUNCH_AGENT_LABEL, START_HIDDEN_LAUNCH_ARG};
 
-const LAUNCH_AGENT_LABEL: &str = BUNDLE_IDENTIFIER;
+/// Identifier of the running build (`tauri.conf.json` `identifier`, including any override).
+/// Login-item state is keyed on this so a test build with its own identifier never touches
+/// the production app's LaunchAgent. Falls back to the production id until `init` runs.
+static RUNNING_IDENTIFIER: OnceLock<String> = OnceLock::new();
 const LSREGISTER_PATH: &str = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
+
+pub fn init(identifier: &str) {
+    let _ = RUNNING_IDENTIFIER.set(identifier.to_string());
+}
+
+fn bundle_identifier() -> &'static str {
+    RUNNING_IDENTIFIER
+        .get()
+        .map(String::as_str)
+        .unwrap_or(BUNDLE_IDENTIFIER)
+}
+
+/// Legacy labels and System Events login items are global (not keyed on the identifier), so
+/// only the production build may remove them.
+fn owns_legacy_login_state() -> bool {
+    bundle_identifier() == BUNDLE_IDENTIFIER
+}
 
 fn launch_agents_dir() -> Option<PathBuf> {
     std::env::var_os("HOME").map(|home| PathBuf::from(home).join("Library/LaunchAgents"))
@@ -20,7 +42,7 @@ fn dev_app_bundle_path() -> Option<PathBuf> {
     std::env::var_os("HOME").map(|home| {
         PathBuf::from(home)
             .join("Library/Application Support")
-            .join(BUNDLE_IDENTIFIER)
+            .join(bundle_identifier())
             .join(format!("{APP_DISPLAY_NAME}.app"))
     })
 }
@@ -87,27 +109,26 @@ fn remove_launch_agent_plist(label: &str) {
 }
 
 pub fn remove_launch_agent_plists() {
-    for label in [
-        LEGACY_LAUNCH_AGENT_LABEL,
-        APP_DISPLAY_NAME,
-        LAUNCH_AGENT_LABEL,
-    ] {
-        remove_launch_agent_plist(label);
+    if owns_legacy_login_state() {
+        remove_launch_agent_plist(LEGACY_LAUNCH_AGENT_LABEL);
+        remove_launch_agent_plist(APP_DISPLAY_NAME);
     }
+    remove_launch_agent_plist(bundle_identifier());
 }
 
 fn launch_agent_enabled() -> bool {
-    launch_agent_plist(LAUNCH_AGENT_LABEL).is_some_and(|path| path.exists())
+    launch_agent_plist(bundle_identifier()).is_some_and(|path| path.exists())
 }
 
 fn legacy_launch_agent_enabled() -> bool {
-    [LEGACY_LAUNCH_AGENT_LABEL, APP_DISPLAY_NAME]
+    owns_legacy_login_state()
+        && [LEGACY_LAUNCH_AGENT_LABEL, APP_DISPLAY_NAME]
         .into_iter()
         .any(|label| launch_agent_plist(label).is_some_and(|path| path.exists()))
 }
 
 fn launch_agent_points_at_legacy_launcher() -> bool {
-    let Some(path) = launch_agent_plist(LAUNCH_AGENT_LABEL) else {
+    let Some(path) = launch_agent_plist(bundle_identifier()) else {
         return false;
     };
     let Ok(contents) = fs::read_to_string(path) else {
@@ -200,7 +221,7 @@ fn write_dev_app_bundle(executable: &str) -> Result<PathBuf, String> {
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>{BUNDLE_IDENTIFIER}</string>
+    <string>{bundle_id}</string>
     <key>CFBundleName</key>
     <string>{APP_DISPLAY_NAME}</string>
     <key>CFBundleDisplayName</key>
@@ -215,7 +236,8 @@ fn write_dev_app_bundle(executable: &str) -> Result<PathBuf, String> {
     <string>1</string>
 </dict>
 </plist>
-"#
+"#,
+        bundle_id = bundle_identifier(),
     );
 
     fs::write(contents.join("Info.plist"), info_plist)
@@ -284,12 +306,12 @@ fn enable_launch_agent(start_hidden: bool) -> Result<(), String> {
 </dict>
 </plist>
 "#,
-        label = LAUNCH_AGENT_LABEL,
-        bundle_id = BUNDLE_IDENTIFIER,
+        label = bundle_identifier(),
+        bundle_id = bundle_identifier(),
         program_arguments = program_arguments,
     );
 
-    let path = dir.join(format!("{LAUNCH_AGENT_LABEL}.plist"));
+    let path = dir.join(format!("{}.plist", bundle_identifier()));
     let mut file =
         fs::File::create(&path).map_err(|e| format!("Failed to create launch agent plist: {e}"))?;
     file.write_all(plist.as_bytes())
@@ -297,6 +319,9 @@ fn enable_launch_agent(start_hidden: bool) -> Result<(), String> {
 }
 
 fn remove_legacy_login_items() {
+    if !owns_legacy_login_state() {
+        return;
+    }
     for name in [LEGACY_LAUNCH_AGENT_LABEL, APP_DISPLAY_NAME] {
         delete_login_item(name);
     }
@@ -312,7 +337,7 @@ pub fn migrate_if_needed(start_hidden: bool) -> Result<(), String> {
 
     if running_in_app_bundle() && launch_agent_enabled() && !smappservice_enabled() && !start_hidden
     {
-        remove_launch_agent_plist(LAUNCH_AGENT_LABEL);
+        remove_launch_agent_plist(bundle_identifier());
         return enable_smappservice();
     }
 
@@ -346,14 +371,14 @@ pub fn enable(start_hidden: bool) -> Result<(), String> {
             disable_smappservice();
         }
         if launch_agent_points_at_legacy_launcher() {
-            remove_launch_agent_plist(LAUNCH_AGENT_LABEL);
+            remove_launch_agent_plist(bundle_identifier());
         }
         return enable_launch_agent(true);
     }
 
     if running_in_app_bundle() {
         if launch_agent_enabled() {
-            remove_launch_agent_plist(LAUNCH_AGENT_LABEL);
+            remove_launch_agent_plist(bundle_identifier());
         }
         if smappservice_enabled() {
             return Ok(());
@@ -362,7 +387,7 @@ pub fn enable(start_hidden: bool) -> Result<(), String> {
     }
 
     if launch_agent_points_at_legacy_launcher() {
-        remove_launch_agent_plist(LAUNCH_AGENT_LABEL);
+        remove_launch_agent_plist(bundle_identifier());
     }
 
     enable_launch_agent(false)
@@ -373,4 +398,21 @@ pub fn disable() -> Result<(), String> {
     remove_launch_agent_plists();
     remove_legacy_login_items();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn defaults_to_production_identifier_and_owns_legacy_state() {
+        assert_eq!(bundle_identifier(), BUNDLE_IDENTIFIER);
+        assert!(owns_legacy_login_state());
+    }
+
+    #[test]
+    fn launch_agent_plist_is_keyed_on_identifier() {
+        let path = launch_agent_plist("tools.tbm.desktop.test").unwrap();
+        assert!(path.ends_with("Library/LaunchAgents/tools.tbm.desktop.test.plist"));
+    }
 }

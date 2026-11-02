@@ -79,7 +79,16 @@ fn set_os_launch_at_login(
     }
 }
 
-pub fn sync_launch_at_login(app: &AppHandle, settings: &crate::services::settings::SettingsService) {
+/// Re-applies the stored login-item preference to the OS.
+///
+/// `allow_disable` lets an off preference remove an enabled OS item. Callers must pass `false`
+/// unless the preference was explicitly stored: defaults (missing/unreadable settings, or a
+/// fresh test build) say "off" and must never delete a login item the user turned on.
+pub fn sync_launch_at_login(
+    app: &AppHandle,
+    settings: &crate::services::settings::SettingsService,
+    allow_disable: bool,
+) {
     let desired = settings.get_launch_at_login();
     let start_hidden = settings.get_tray_settings().start_hidden;
 
@@ -90,7 +99,7 @@ pub fn sync_launch_at_login(app: &AppHandle, settings: &crate::services::setting
 
     if desired {
         let _ = set_os_launch_at_login(app, true, start_hidden);
-    } else if is_os_launch_at_login_enabled(app) {
+    } else if allow_disable && is_os_launch_at_login_enabled(app) {
         let _ = set_os_launch_at_login(app, false, false);
     }
 }
