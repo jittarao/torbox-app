@@ -26,7 +26,7 @@ pub fn set_tray_settings(
 ) -> Result<TraySettings, String> {
     validate_window_origin(&window, &state)?;
     state.settings.set_tray_settings(tray.clone())?;
-    sync_launch_at_login(&app, &state.settings);
+    sync_launch_at_login(&app, &state.settings, false);
     emit_capabilities_changed(&app);
     Ok(tray)
 }

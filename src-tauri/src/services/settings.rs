@@ -330,6 +330,12 @@ impl WindowGeometry {
     }
 }
 
+fn launch_at_login_key_present(raw: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(raw)
+        .ok()
+        .is_some_and(|v| v.get("launchAtLogin").is_some())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DesktopSettings {
@@ -375,6 +381,8 @@ impl Default for DesktopSettings {
 pub struct SettingsService {
     path: PathBuf,
     settings: Mutex<DesktopSettings>,
+    /// True only when `launchAtLogin` was read from a valid settings file (not defaulted).
+    launch_at_login_persisted: bool,
 }
 
 impl SettingsService {
@@ -385,18 +393,23 @@ impl SettingsService {
             .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
         fs::create_dir_all(&dir).map_err(|e| format!("Failed to create app data dir: {e}"))?;
         let path = dir.join("desktop-settings.json");
-        let (settings, needs_folder_watcher_persist) = if path.exists() {
+        let (settings, needs_folder_watcher_persist, launch_at_login_persisted) = if path.exists()
+        {
             let raw =
                 fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {e}"))?;
-            let settings: DesktopSettings = serde_json::from_str(&raw).unwrap_or_default();
+            let parsed = serde_json::from_str::<DesktopSettings>(&raw);
+            let launch_at_login_persisted =
+                parsed.is_ok() && launch_at_login_key_present(&raw);
+            let settings = parsed.unwrap_or_default();
             let needs_folder_watcher_persist = folder_watcher_json_needs_upgrade(&raw);
-            (settings, needs_folder_watcher_persist)
+            (settings, needs_folder_watcher_persist, launch_at_login_persisted)
         } else {
-            (DesktopSettings::default(), false)
+            (DesktopSettings::default(), false, false)
         };
         let service = Self {
             path,
             settings: Mutex::new(settings),
+            launch_at_login_persisted,
         };
         if needs_folder_watcher_persist {
             let _ = service.persist_folder_watcher_format_upgrade();
@@ -457,6 +470,10 @@ impl SettingsService {
 
     pub fn clear_stored_api_key(&self) -> Result<(), String> {
         self.set_stored_api_key(None, None)
+    }
+
+    pub fn launch_at_login_is_persisted(&self) -> bool {
+        self.launch_at_login_persisted
     }
 
     pub fn get_launch_at_login(&self) -> bool {
@@ -781,6 +798,7 @@ impl SettingsService {
         Self {
             path,
             settings: Mutex::new(DesktopSettings::default()),
+            launch_at_login_persisted: false,
         }
     }
 }
@@ -788,6 +806,13 @@ impl SettingsService {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn launch_at_login_key_detection() {
+        assert!(launch_at_login_key_present(r#"{"launchAtLogin":false}"#));
+        assert!(!launch_at_login_key_present(r#"{"instanceUrl":"https://tbm.tools"}"#));
+        assert!(!launch_at_login_key_present("not json"));
+    }
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn temp_settings_service() -> (SettingsService, PathBuf) {
