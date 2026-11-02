@@ -18,7 +18,7 @@ import {
   resetDownloadSyncRefs,
 } from '@/store/torboxDownloadsRefs';
 import { useAutoStartWakeLock } from '@/components/shared/hooks/useAutoStartWakeLock';
-import { useAutoStartWorker } from '@/components/shared/hooks/useAutoStartWorker';
+import { useAutoStartViewStatus } from '@/components/shared/hooks/useAutoStartWorker';
 import { useDownloadListPolling } from '@/components/shared/hooks/useDownloadListPolling';
 import {
   registerDownloadsSyncContext,
@@ -168,7 +168,7 @@ export function useFetchData(apiKey, type = 'torrents') {
     [setPollSchedule]
   );
 
-  const { autoStartApplies, hasWork } = useAutoStartWorker({
+  const { autoStartApplies, hasWork } = useAutoStartViewStatus({
     apiKey,
     viewType: type,
   });

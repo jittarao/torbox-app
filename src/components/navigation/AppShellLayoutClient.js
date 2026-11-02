@@ -3,6 +3,7 @@
 import AppShell from '@/components/navigation/AppShell';
 import ActivityBeacon from '@/components/shared/ActivityBeacon';
 import { FileHandler } from '@/components/shared/FileHandler';
+import { useAutoStartWorker } from '@/components/shared/hooks/useAutoStartWorker';
 import { useSession } from '@/components/shared/hooks/useSession';
 
 /**
@@ -15,6 +16,7 @@ import { useSession } from '@/components/shared/hooks/useSession';
  */
 export default function AppShellLayoutClient({ children }) {
   const { apiKey } = useSession();
+  useAutoStartWorker({ apiKey });
 
   return (
     <AppShell apiKey={apiKey} className="min-h-dvh bg-surface dark:bg-surface-dark font-sans">
