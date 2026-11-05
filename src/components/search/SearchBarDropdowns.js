@@ -79,7 +79,7 @@ function HistorySection({
             <button
               type="button"
               onClick={() => onRemoveHistory(item)}
-              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-primary-text/35 transition-all
+              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-primary-text/35 transition-opacity
                 hover:bg-red-500/10 hover:text-red-600 focus-visible:opacity-100
                 dark:text-primary-text-dark/35 dark:hover:bg-red-500/15 dark:hover:text-red-400
                 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"

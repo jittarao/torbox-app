@@ -34,9 +34,11 @@ export function applyStreamFilters(results, filters = {}) {
   const codecAliases = getCodecMatchAliases(codec);
   const hdrAliases = getHdrMatchAliases(hdr);
   const languageAliases = getLanguageMatchAliases(language);
-  const typeSet = Array.isArray(streamTypes)
-    ? streamTypes.map((t) => String(t).toLowerCase()).filter(Boolean)
-    : [];
+  const typeSet = new Set(
+    Array.isArray(streamTypes)
+      ? streamTypes.map((t) => String(t).toLowerCase()).filter(Boolean)
+      : []
+  );
 
   return (results || []).filter((item) => {
     if (showCachedOnly && !item.cached) return false;
@@ -56,9 +58,9 @@ export function applyStreamFilters(results, filters = {}) {
       if (!matchesAliases(langHaystack, languageAliases)) return false;
     }
 
-    if (typeSet.length > 0) {
+    if (typeSet.size > 0) {
       const itemType = String(item.streamType || '').toLowerCase();
-      if (!typeSet.includes(itemType)) return false;
+      if (!typeSet.has(itemType)) return false;
     }
 
     if (addonId) {

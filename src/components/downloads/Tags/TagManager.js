@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Edit, Hash, MagnifyingGlass, Plus, Trash, X } from '@/components/icons';
 import { useTags } from '@/components/shared/hooks/useTags';
@@ -201,21 +201,11 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
 
   const createInputRef = useRef(null);
 
-  const resetState = useCallback(() => {
-    setEditingId(null);
-    setEditName('');
-    setNewTagName('');
-    setSearchQuery('');
-    setPendingDelete(null);
-  }, []);
-
+  // Parent mounts this only while open, so state resets on close via unmount.
   useEffect(() => {
-    if (!isOpen) {
-      resetState();
-      return;
-    }
-    requestAnimationFrame(() => createInputRef.current?.focus());
-  }, [isOpen, resetState]);
+    const frame = requestAnimationFrame(() => createInputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const onCloseEvent = useEffectEvent(onClose);
 

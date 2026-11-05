@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useTmdbCredentialsStore } from '@/store/tmdbCredentialsStore';
@@ -14,7 +14,7 @@ export default function TmdbKeyManager() {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [localError, setLocalError] = useState(null);
   const [expanded, setExpanded] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const hasInitializedRef = useRef(false);
 
   const { configured, loading, mutating, error, fetchStatus, saveKey, removeKey } =
     useTmdbCredentialsStore(
@@ -34,11 +34,11 @@ export default function TmdbKeyManager() {
   }, [fetchStatus]);
 
   useEffect(() => {
-    if (!loading && !hasInitialized) {
+    if (!loading && !hasInitializedRef.current) {
       setExpanded(!configured);
-      setHasInitialized(true);
+      hasInitializedRef.current = true;
     }
-  }, [loading, configured, hasInitialized]);
+  }, [loading, configured]);
 
   const handleSave = async (e) => {
     e.preventDefault();

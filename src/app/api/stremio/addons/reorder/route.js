@@ -5,6 +5,7 @@ import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCh
 import { isSearchPageDisabled, getSearchPageDisabledResponse } from '@/utils/featureFlags';
 import { backendProxyHeaders } from '@/utils/backendRequest';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { backendJsonResponse } from '@/app/api/lib/backendJsonResponse';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -42,8 +43,7 @@ export async function PATCH(request) {
       body: JSON.stringify({ ...body, authId }),
     });
 
-    const data = await response.json().catch(() => ({}));
-    return NextResponse.json(data, { status: response.status });
+    return backendJsonResponse(response);
   } catch (error) {
     console.error('Error reordering stremio addons:', error);
     return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });

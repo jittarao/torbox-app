@@ -6,6 +6,7 @@ import { isSearchPageDisabled, getSearchPageDisabledResponse } from '@/utils/fea
 import { backendProxyHeaders } from '@/utils/backendRequest';
 import { publicApiErrorResponse } from '@/utils/sanitizeError';
 import { logRouteError } from '@/utils/routeLog';
+import { backendJsonResponse } from '@/app/api/lib/backendJsonResponse';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -50,8 +51,7 @@ export async function GET(request, { params }) {
       signal: AbortSignal.timeout(10_000),
     });
 
-    const data = await response.json().catch(() => ({}));
-    return NextResponse.json(data, { status: response.status });
+    return backendJsonResponse(response);
   } catch (error) {
     logRouteError('Error proxying stremio stream', error);
     const { body, status } = publicApiErrorResponse(error, { fallbackStatus: 504 });

@@ -33,12 +33,7 @@ export default function SpeedChart({ items: itemsProp }) {
   const chartRef = useRef(null);
   const isMobile = useIsMobile();
 
-  const [isExpanded, setIsExpanded] = useState(() => {
-    const savedState = getItem(CHART_EXPANDED_KEY);
-    if (savedState !== null) return savedState === 'true';
-    if (typeof window !== 'undefined') return window.innerWidth >= 1024;
-    return false;
-  });
+  const [isExpanded, setIsExpanded] = useState(() => getItem(CHART_EXPANDED_KEY) === 'true');
   const isClient = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -48,12 +43,14 @@ export default function SpeedChart({ items: itemsProp }) {
   useEffect(() => {
     if (getItem(CHART_EXPANDED_KEY) !== null) return;
 
-    const handleResize = () => {
+    // Viewport-dependent default is applied after mount so SSR and hydration match.
+    const applyViewportDefault = () => {
       setIsExpanded(window.innerWidth >= 1024);
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    applyViewportDefault();
+    window.addEventListener('resize', applyViewportDefault);
+    return () => window.removeEventListener('resize', applyViewportDefault);
   }, []);
 
   useEffect(() => {

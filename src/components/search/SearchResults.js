@@ -75,6 +75,11 @@ export default function SearchResults({ apiKey }) {
   const [showCachedOnly, setShowCachedOnly] = useState(false);
   const [addedItems, setAddedItems] = useState([]);
   const [density, setDensity] = useState(readStoredDensity);
+  const activeStreamTypes = useMemo(
+    () => new Set(streamTypes.map((type) => String(type).toLowerCase())),
+    [streamTypes]
+  );
+  const addedItemKeys = useMemo(() => new Set(addedItems), [addedItems]);
   const t = useTranslations('SearchResults');
 
   const filters = useMemo(
@@ -224,7 +229,7 @@ export default function SearchResults({ apiKey }) {
           {addonStatuses.map((status) => {
             const typeKey = String(status.type || '').toLowerCase();
             const canToggle = Boolean(typeKey);
-            const isActive = !typeFilterActive || streamTypes.includes(typeKey);
+            const isActive = !typeFilterActive || activeStreamTypes.has(typeKey);
             const activeStyle = STATUS_ACTIVE[status.status] || STATUS_ACTIVE.pending;
             const className = `inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
               isActive ? activeStyle : STATUS_INACTIVE
@@ -259,7 +264,7 @@ export default function SearchResults({ apiKey }) {
                 type="button"
                 className={className}
                 title={status.error || t('typeFilterToggle', { type: status.type })}
-                aria-pressed={typeFilterActive ? streamTypes.includes(typeKey) : false}
+                aria-pressed={typeFilterActive ? activeStreamTypes.has(typeKey) : false}
                 onClick={() => toggleStreamType(typeKey)}
               >
                 {content}
@@ -293,7 +298,7 @@ export default function SearchResults({ apiKey }) {
                 item={item}
                 density={density}
                 isUploading={Boolean(isUploading[item.key])}
-                isAdded={addedItems.includes(item.key)}
+                isAdded={addedItemKeys.has(item.key)}
                 onCopyLink={copyLink}
                 onUpload={handleUpload}
               />

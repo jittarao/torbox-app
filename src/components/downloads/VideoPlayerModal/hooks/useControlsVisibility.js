@@ -66,6 +66,9 @@ export function useControlsVisibility({
     }
   }, []);
 
+  // Release any pending hide timer on unmount.
+  useEffect(() => clearHideTimeout, [clearHideTimeout]);
+
   const isPointInElement = useCallback((element, x, y) => {
     if (!element) return false;
     const rect = element.getBoundingClientRect();

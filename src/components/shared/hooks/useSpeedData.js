@@ -40,10 +40,8 @@ export function useSpeedData(itemsOrGetter, timeRange = '10m') {
   });
 
   const intervalRef = useRef(null);
-  const lastUpdateRef = useRef(null);
-  if (lastUpdateRef.current === null) {
-    lastUpdateRef.current = Date.now();
-  }
+  // 0 means "never updated"; the first tick always passes the idle guard.
+  const lastUpdateRef = useRef(0);
   const hasActivityRef = useRef(false);
   const getItemsRef = useLatestRef(getItems);
 

@@ -58,14 +58,14 @@ export default function EpisodePicker({ suggestion, onConfirm, onCancel }) {
       setStep('seasons');
       setSelectedSeason(null);
       setEpisodes([]);
-      const apiKey = getApiKey();
-      if (!apiKey) {
-        setError(t('errors.apiKeyMissing'));
-        setLoading(false);
-        return;
-      }
 
       try {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+          setError(t('errors.apiKeyMissing'));
+          return;
+        }
+
         const res = await fetch(`/api/tmdb/tv/${suggestion.tmdbId}`, {
           headers: { 'x-api-key': apiKey },
           signal: controller.signal,
@@ -74,15 +74,14 @@ export default function EpisodePicker({ suggestion, onConfirm, onCancel }) {
         if (cancelled) return;
         if (!ok || data.success === false) {
           setError(data.error || t('errors.tvLoadFailed'));
-          setLoading(false);
           return;
         }
         setSeasons(Array.isArray(data.seasons) ? data.seasons : []);
-        setLoading(false);
       } catch (err) {
         if (cancelled || err?.name === 'AbortError') return;
         setError(t('errors.tvLoadFailed'));
-        setLoading(false);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -105,14 +104,13 @@ export default function EpisodePicker({ suggestion, onConfirm, onCancel }) {
     setError(null);
     setEpisodes([]);
 
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      setError(t('errors.apiKeyMissing'));
-      setLoading(false);
-      return;
-    }
-
     try {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        setError(t('errors.apiKeyMissing'));
+        return;
+      }
+
       const res = await fetch(`/api/tmdb/tv/${suggestion.tmdbId}/season/${season.seasonNumber}`, {
         headers: { 'x-api-key': apiKey },
         signal: controller.signal,
@@ -121,15 +119,14 @@ export default function EpisodePicker({ suggestion, onConfirm, onCancel }) {
       if (controller.signal.aborted) return;
       if (!ok || data.success === false) {
         setError(data.error || t('errors.seasonLoadFailed'));
-        setLoading(false);
         return;
       }
       setEpisodes(Array.isArray(data.episodes) ? data.episodes : []);
-      setLoading(false);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       setError(t('errors.seasonLoadFailed'));
-      setLoading(false);
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
     }
   };
 

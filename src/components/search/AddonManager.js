@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useStremioAddonsStore } from '@/store/stremioAddonsStore';
@@ -166,7 +166,7 @@ export default function AddonManager() {
   const [manifestUrl, setManifestUrl] = useState('');
   const [localError, setLocalError] = useState(null);
   const [expanded, setExpanded] = useState(true);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const hasInitializedRef = useRef(false);
 
   const {
     addons,
@@ -201,11 +201,11 @@ export default function AddonManager() {
   }, [fetchAddons]);
 
   useEffect(() => {
-    if (!loading && !hasInitialized) {
+    if (!loading && !hasInitializedRef.current) {
       setExpanded(addons.length === 0);
-      setHasInitialized(true);
+      hasInitializedRef.current = true;
     }
-  }, [loading, addons.length, hasInitialized]);
+  }, [loading, addons.length]);
 
   const enabledCount = addons.filter((a) => a.enabled).length;
 

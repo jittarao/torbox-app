@@ -5,6 +5,7 @@ import { isBackendDisabled, getBackendDisabledResponse } from '@/utils/backendCh
 import { isSearchPageDisabled, getSearchPageDisabledResponse } from '@/utils/featureFlags';
 import { backendHttpGet, backendProxyHeaders } from '@/utils/backendRequest';
 import { sanitizeError } from '@/utils/sanitizeError';
+import { backendJsonResponse } from '@/app/api/lib/backendJsonResponse';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://torbox-backend:3001';
 
@@ -80,8 +81,7 @@ export async function PUT(request) {
       signal: AbortSignal.timeout(30_000),
     });
 
-    const data = await response.json().catch(() => ({}));
-    return NextResponse.json(data, { status: response.status });
+    return backendJsonResponse(response);
   } catch (error) {
     console.error('Error saving TMDB credentials:', error);
     return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
@@ -110,8 +110,7 @@ export async function DELETE() {
       signal: AbortSignal.timeout(10_000),
     });
 
-    const data = await response.json().catch(() => ({}));
-    return NextResponse.json(data, { status: response.status });
+    return backendJsonResponse(response);
   } catch (error) {
     console.error('Error deleting TMDB credentials:', error);
     return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });

@@ -19,7 +19,15 @@ export default function UserListTableRow({
   return (
     <tr
       onClick={() => onUserClick(user.auth_id)}
-      className={`cursor-pointer bg-white dark:bg-surface-alt-dark ${adminRowHoverClass}`}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onUserClick(user.auth_id);
+        }
+      }}
+      tabIndex={0}
+      className={`cursor-pointer bg-white dark:bg-surface-alt-dark focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent dark:focus-visible:outline-accent-dark ${adminRowHoverClass}`}
     >
       <td className={`${userTdClass} max-w-0 font-mono text-xs`} title={user.auth_id}>
         <span className="block truncate">{truncateAuthId(user.auth_id)}</span>
