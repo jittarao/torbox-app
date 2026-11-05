@@ -16,6 +16,7 @@ const languages = {
   fr: { name: 'Français', flag: '/images/flags/flag-fr.png' },
   ja: { name: '日本語', flag: '/images/flags/flag-ja.png' },
   pl: { name: 'Polski', flag: '/images/flags/flag-pl.png' },
+  'pt-BR': { name: 'Português', flag: '/images/flags/flag-pt-BR.png' },
 };
 
 export default function LanguageSwitcher({ iconOnly = false, variant = 'default' }) {

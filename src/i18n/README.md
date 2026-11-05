@@ -1,6 +1,6 @@
 # i18n — Internationalisation
 
-Supported locales: `en` (default), `de`, `es`, `fr`, `ja`, `pl`.
+Supported locales: `en` (default), `de`, `es`, `fr`, `ja`, `pl`, `pt-BR`.
 
 **Primary audience:** autonomous coding agents. Use the CLI; do not hand-edit locale files without running verify.
 

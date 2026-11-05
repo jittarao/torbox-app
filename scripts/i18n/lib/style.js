@@ -43,6 +43,15 @@ export const LOCALE_STYLES = {
     notes:
       'Full Polish diacritics. Decline tag/tracker/widok/źródło in plurals. clear → Wyczyść. close → Zamknij.',
   },
+  'pt-BR': {
+    formality: 'Neutral, Brazilian Portuguese',
+    quotationMarks: '“{query}”',
+    ellipsis: '…',
+    examplePrefix: 'ex.',
+    icuPlurals: 'one, other',
+    notes:
+      'Brazilian Portuguese, not European. tag → etiqueta/etiquetas. view → visualização. clear → Limpar. close → Fechar. tracker → rastreador. download → download.',
+  },
 };
 
 export const GLOBAL_RULES = [
