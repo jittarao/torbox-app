@@ -85,11 +85,16 @@ async function fetchJsonWithTimeout(url, init) {
 
   try {
     const response = await fetch(url, { ...init, signal: controller.signal });
+    const { ok, status } = response;
+    if (!ok) {
+      return { ok, status, data: null };
+    }
+
     const data = await response.json().catch((error) => {
       if (controller.signal.aborted) throw error;
       return null;
     });
-    return { ok: response.ok, status: response.status, data };
+    return { ok, status, data };
   } finally {
     clearTimeout(timeoutId);
   }
