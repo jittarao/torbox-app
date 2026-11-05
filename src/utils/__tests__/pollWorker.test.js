@@ -226,6 +226,10 @@ describe('poll-worker auto-start loop', () => {
     await failing.advance(0);
     expect(api.started).toEqual([11]);
 
+    // The failed id is marked so it is skipped while the TTL is active.
+    await failing.advance(CONFIG.queuedIntervalMs);
+    expect(api.started).toEqual([11]);
+
     await failing.advance(CONFIG.queuedIntervalMs);
     expect(api.started).toEqual([11, 10]);
   });

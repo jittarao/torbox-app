@@ -146,6 +146,20 @@ describe('downloadListSync', () => {
       expect(patched.find((row) => row.id === 1500)).toBeTruthy();
     });
 
+    test('applyShallowPatch drops queued rows that are no longer in the queue', () => {
+      const authoritative = [
+        item(1, '2020-01-03'),
+        item(500, '2020-01-01', { status: 'queued' }),
+        item(501, '2020-01-02', { status: 'queued' }),
+        item(1500, '2019-12-31'),
+      ];
+      const partial = [item(1, '2020-01-03'), item(501, '2020-01-02', { status: 'queued' })];
+
+      const patched = applyShallowPatch(authoritative, partial);
+
+      expect(patched.map((row) => row.id)).toEqual([1, 501, 1500]);
+    });
+
     test('applySinglePageShallowMerge replaces the catalog and allows removals', () => {
       const partial = [item(1, '2020-01-02', { progress: 0.5 })];
       const merged = applySinglePageShallowMerge(partial);

@@ -100,13 +100,23 @@ describe('fillAutoStartSlots', () => {
     expect(controlQueuedItemMock).toHaveBeenCalledTimes(2);
   });
 
-  test('removes processed marker when start fails so the next poll can retry', async () => {
-    const items = [queued(99)];
+  test('a failed id stays marked so the free slot moves to the next queued item', async () => {
+    uploadOptions.autoStartLimit = 1;
+    controlQueuedItemMock.mockImplementationOnce(async () => ({
+      success: false,
+      error: 'ITEM_NOT_FOUND',
+    }));
 
-    await fillAutoStartSlots(items, 'fail', { viewType: 'torrents' });
+    const items = [queued(9), queued(10)];
 
-    expect(processedQueueIdsRef.current.has(99)).toBe(false);
-    expect(removeByIdsMock).not.toHaveBeenCalled();
+    const first = await fillAutoStartSlots(items, 'key', { viewType: 'torrents' });
+    expect(first.started).toBe(0);
+    expect(processedQueueIdsRef.current.has(9)).toBe(true);
+
+    const second = await fillAutoStartSlots(items, 'key', { viewType: 'torrents' });
+    expect(second.started).toBe(1);
+    expect(controlQueuedItemMock).toHaveBeenLastCalledWith('key', 10, 'start', 'torrents');
+    expect(removeByIdsMock).toHaveBeenCalledWith('torrents', [10]);
   });
 });
 

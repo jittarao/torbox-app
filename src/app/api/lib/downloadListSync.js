@@ -786,15 +786,27 @@ export function applySinglePageShallowMerge(partial) {
 }
 
 /**
- * Patch authoritative cache with partial page-0 data. Never removes IDs (multi-page catalogs).
+ * Patch authoritative cache with partial page-0 data. Regular mylist IDs are never removed
+ * (they may have moved to a later page), but the queued list is complete on every shallow
+ * fetch, so queued rows that left the queue (started/deleted) must be dropped.
  * @param {object[]} authoritative
  * @param {object[]} partial
  */
 export function applyShallowPatch(authoritative, partial) {
   const byId = new Map((authoritative || []).map((item) => [item.id, item]));
+  const incomingIds = new Set();
+
   for (const item of partial || []) {
+    incomingIds.add(item.id);
     byId.set(item.id, item);
   }
+
+  for (const item of authoritative || []) {
+    if (item?.status === 'queued' && !incomingIds.has(item.id)) {
+      byId.delete(item.id);
+    }
+  }
+
   return sortByAddedDesc([...byId.values()]);
 }
 

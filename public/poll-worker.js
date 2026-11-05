@@ -178,9 +178,9 @@ async function runAutoStartCycle() {
       const ok = await startQueuedTorrent(id);
       if (ok) {
         startedIds.push(id);
-      } else {
-        autoStart.processedIds.delete(id);
       }
+      // On failure keep the marker so the next cycle retries a later queued id instead
+      // of re-trying this one forever when only one slot is free. TTL expires the marker.
 
       if (i < plan.toStart.length - 1) {
         await sleep(autoStart.betweenStartsMs);

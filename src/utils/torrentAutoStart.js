@@ -84,9 +84,9 @@ export async function fillAutoStartSlots(items, apiKey, { viewType = 'torrents' 
     if (result?.success) {
       started += 1;
       startedIds.push(id);
-    } else {
-      processedQueueIdsRef.current.delete(id);
     }
+    // On failure keep the marker so the next poll retries a later queued id instead of
+    // re-trying this one forever when only one slot is free. The marker expires via TTL.
 
     if (i < plan.toStart.length - 1) {
       await sleep(BETWEEN_STARTS_MS);
