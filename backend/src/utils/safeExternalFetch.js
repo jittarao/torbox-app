@@ -117,16 +117,33 @@ async function readBodyLimited(response, maxBytes) {
   return new TextDecoder('utf-8').decode(merged);
 }
 
+function headerMap(headers) {
+  const out = {};
+  if (!headers) return out;
+  if (typeof headers.forEach === 'function') {
+    headers.forEach((value, key) => {
+      out[String(key).toLowerCase()] = value;
+    });
+    return out;
+  }
+  for (const [key, value] of Object.entries(headers)) {
+    if (typeof value === 'function') continue;
+    if (value != null) out[String(key).toLowerCase()] = String(value);
+  }
+  return out;
+}
+
 /**
  * SSRF-safe HTTP(S) fetch with timeout, redirect re-validation, and body size limit.
  *
- * @returns {{ ok: boolean, status: number, url: string, text: string, json?: any }}
+ * @returns {{ ok: boolean, status: number, url: string, text: string, headers: Record<string,string>, json?: any, parseError?: any }}
  */
 export async function safeExternalFetch(
   inputUrl,
   {
     timeoutMs = DEFAULT_TIMEOUT_MS,
     maxBytes = DEFAULT_MAX_BYTES,
+    maxRedirects = MAX_REDIRECTS,
     headers = {},
     method = 'GET',
     lookup,
@@ -137,6 +154,7 @@ export async function safeExternalFetch(
   const doFetch = fetchImpl || fetch;
   let currentUrl = await validateAndResolve(inputUrl, deps);
   let redirects = 0;
+  const redirectLimit = Number.isFinite(maxRedirects) ? maxRedirects : MAX_REDIRECTS;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -173,7 +191,7 @@ export async function safeExternalFetch(
           });
         }
         redirects += 1;
-        if (redirects > MAX_REDIRECTS) {
+        if (redirects > redirectLimit) {
           throw Object.assign(new Error('Too many redirects'), { code: 'TOO_MANY_REDIRECTS' });
         }
         const next = new URL(location, currentUrl);
@@ -195,6 +213,7 @@ export async function safeExternalFetch(
         status: response.status,
         url: currentUrl.toString(),
         text,
+        headers: headerMap(response.headers),
         json,
         parseError,
       };
