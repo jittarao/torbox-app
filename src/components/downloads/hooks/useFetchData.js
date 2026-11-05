@@ -2,6 +2,8 @@ import { useEffect, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePollingPauseStore, selectIsPaused } from '@/store/pollingPauseStore';
 import { useTorboxDownloadsStore } from '@/store/torboxDownloadsStore';
+import { useDownloadTagsStore } from '@/store/downloadTagsStore';
+import { useTagsStore } from '@/store/tagsStore';
 import { hasCachedDataForView } from '@/store/torboxDownloadsSelectors';
 import {
   fetchDownloadType,
@@ -150,6 +152,12 @@ export function useFetchData(apiKey, type = 'torrents') {
       return fetchDownloadsForView(apiKey, type, {
         skipLoading: true,
         manualRefresh: true,
+      }).then(async (items) => {
+        if (apiKey) {
+          await useDownloadTagsStore.getState().fetchDownloadTags(apiKey, { force: true, sync: true });
+          await useTagsStore.getState().loadTags(apiKey, { force: true });
+        }
+        return items;
       });
     };
   }, [type, apiKey, markRateLimited]);
