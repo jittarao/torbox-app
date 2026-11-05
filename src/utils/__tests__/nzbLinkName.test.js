@@ -13,19 +13,22 @@ const NZBGEEK = 'https://api.nzbgeek.info/api?t=get&id=123456789&apikey=qwertyui
 
 describe('parseContentDispositionFilename', () => {
   test('prefers RFC 5987 filename* over a quoted filename', () => {
-    const header =
-      "attachment; filename=\"fallback.nzb\"; filename*=UTF-8''Movie%20Name.nzb";
+    const header = 'attachment; filename="fallback.nzb"; filename*=UTF-8\'\'Movie%20Name.nzb';
     expect(parseContentDispositionFilename(header)).toBe('Movie Name.nzb');
   });
 
   test('decodes UTF-8 percent-encoding', () => {
-    expect(parseContentDispositionFilename("attachment; filename*=utf-8''%E3%83%86%E3%82%B9%E3%83%88.nzb")).toBe(
-      'テスト.nzb'
-    );
+    expect(
+      parseContentDispositionFilename(
+        "attachment; filename*=utf-8''%E3%83%86%E3%82%B9%E3%83%88.nzb"
+      )
+    ).toBe('テスト.nzb');
   });
 
   test('reads a quoted filename', () => {
-    expect(parseContentDispositionFilename('attachment; filename="My File.nzb"')).toBe('My File.nzb');
+    expect(parseContentDispositionFilename('attachment; filename="My File.nzb"')).toBe(
+      'My File.nzb'
+    );
   });
 
   test('uses the next filename when an earlier one is unsafe', () => {
@@ -35,15 +38,23 @@ describe('parseContentDispositionFilename', () => {
   });
 
   test('does not concatenate duplicate filename parameters', () => {
-    expect(
-      parseContentDispositionFilename('attachment; filename="a.nzb"; filename="b.nzb"')
-    ).toBe('a.nzb');
+    expect(parseContentDispositionFilename('attachment; filename="a.nzb"; filename="b.nzb"')).toBe(
+      'a.nzb'
+    );
   });
 
   test('drops an invalid header', () => {
     expect(parseContentDispositionFilename('attachment; filename=""')).toBeNull();
     expect(parseContentDispositionFilename('attachment')).toBeNull();
     expect(parseContentDispositionFilename('')).toBeNull();
+  });
+
+  test('falls back to filename when filename* is malformed', () => {
+    expect(
+      parseContentDispositionFilename(
+        'attachment; filename="good.nzb"; filename*=UTF-8\'\'%E0%A4%A'
+      )
+    ).toBe('good.nzb');
   });
 });
 

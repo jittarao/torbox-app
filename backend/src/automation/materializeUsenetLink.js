@@ -1,7 +1,7 @@
 import logger from '../utils/logger.js';
 import { saveUploadFile, deleteUploadFile } from '../utils/fileStorage.js';
 import { fetchNzbLink, looksLikeNzb } from '../utils/fetchNzbLink.js';
-import { resolveUsenetUploadNames } from '../../../src/utils/nzbLinkName.js';
+import { resolveUsenetUploadNames } from '../utils/nzbLinkName.js';
 
 function safeHost(url) {
   try {

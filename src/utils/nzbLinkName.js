@@ -11,8 +11,7 @@
  * The result is a single basename. Query strings and API keys are never kept.
  */
 
-const PLACEHOLDER_SLOT =
-  /^(unknown|httpsapi)$|^nzb-[0-9a-f]{8}$| - NZB Download$/i;
+const PLACEHOLDER_SLOT = /^(unknown|httpsapi)$|^nzb-[0-9a-f]{8}$| - NZB Download$/i;
 
 function unquote(value) {
   const text = String(value ?? '').trim();
@@ -29,7 +28,8 @@ function decodeRfc5987(value) {
   try {
     return decodeURIComponent(encoded.replace(/\+/g, '%20'));
   } catch {
-    return encoded;
+    // Malformed percent-encoding: skip so a plain filename= can win.
+    return null;
   }
 }
 
@@ -80,7 +80,9 @@ export function parseContentDispositionFilename(header) {
   const plains = params.filter((param) => param.name === 'filename');
 
   for (const param of stars) {
-    const safe = sanitizeDownloadBasename(decodeRfc5987(param.value));
+    const decoded = decodeRfc5987(param.value);
+    if (decoded == null) continue;
+    const safe = sanitizeDownloadBasename(decoded);
     if (safe) return safe;
   }
   for (const param of plains) {
@@ -97,7 +99,9 @@ export function parseContentDispositionFilename(header) {
  */
 export function sanitizeDownloadBasename(raw) {
   if (raw == null) return null;
-  let value = String(raw).replace(/^\uFEFF/, '').trim();
+  let value = String(raw)
+    .replace(/^\uFEFF/, '')
+    .trim();
   if (!value) return null;
 
   value = value.split('?')[0].split('#')[0];

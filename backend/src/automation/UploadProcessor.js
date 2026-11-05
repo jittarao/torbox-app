@@ -4,7 +4,7 @@ import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 import { getUploadFilePath, fileExists, validateFilePathOwnership } from '../utils/fileStorage.js';
 import { materializeUsenetLinkUpload } from './materializeUsenetLink.js';
-import { ensureNzbFilename } from '../../../src/utils/nzbLinkName.js';
+import { ensureNzbFilename } from '../utils/nzbLinkName.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import {
   getUploadResourceId,
@@ -764,7 +764,10 @@ class UploadProcessor {
       if (!authId) {
         throw new Error('authId is required for file uploads');
       }
-      const multipartName = type === 'usenet' ? ensureNzbFilename(upload.nzbFilename || name) : name;
+      // Only force .nzb onto names from NZB prefetch. User-uploaded files
+      // (e.g. download.rar) keep their real extension.
+      const multipartName =
+        type === 'usenet' && upload.nzbFilename ? ensureNzbFilename(upload.nzbFilename) : name;
       formData = await this.buildFileFormData(file_path, multipartName, authId);
     } else {
       formData = new FormData();
@@ -1700,7 +1703,6 @@ class UploadProcessor {
 
       if (type === 'usenet' && upload.upload_type === 'link') {
         upload = await materializeUsenetLinkUpload(upload, userDb, {
-          fetchImpl: this.nzbFetchImpl,
           adjustQuotaCounters: (authId, countDelta, bytesDelta) => {
             this.masterDatabase?.adjustUploadQuotaCounters?.(authId, countDelta, bytesDelta);
           },

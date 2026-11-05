@@ -1,24 +1,13 @@
 /**
- * Download an NZB link, following a short redirect chain, and return the
+ * Download an NZB link through the SSRF-safe fetch helper and return the
  * final response. Callers name the bytes with `resolveUsenetUploadNames`.
  */
+
+import { safeExternalFetch } from './safeExternalFetch.js';
 
 const DEFAULT_MAX_BYTES = 32 * 1024 * 1024;
 const DEFAULT_MAX_REDIRECTS = 5;
 const DEFAULT_TIMEOUT_MS = 20000;
-
-function assertHttpUrl(value) {
-  let parsed;
-  try {
-    parsed = new URL(value);
-  } catch {
-    throw new Error('NZB link is not a valid URL');
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error('NZB link must use http or https');
-  }
-  return parsed.href;
-}
 
 /**
  * @param {Buffer|Uint8Array|string} body
@@ -38,70 +27,61 @@ export function looksLikeNzb(body, contentType) {
 
 /**
  * @param {string} url
- * @param {{ fetchImpl?: typeof fetch, maxBytes?: number, maxRedirects?: number, timeoutMs?: number }} [options]
+ * @param {{
+ *   fetchImpl?: typeof fetch,
+ *   lookup?: Function,
+ *   maxBytes?: number,
+ *   maxRedirects?: number,
+ *   timeoutMs?: number,
+ * }} [options]
  */
 export async function fetchNzbLink(url, options = {}) {
-  const fetchImpl = options.fetchImpl || globalThis.fetch;
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
   const maxRedirects = options.maxRedirects ?? DEFAULT_MAX_REDIRECTS;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  let current = assertHttpUrl(url);
-  const seen = new Set();
-
-  for (let redirects = 0; redirects <= maxRedirects; redirects++) {
-    if (seen.has(current)) {
-      throw new Error('NZB redirect loop');
-    }
-    seen.add(current);
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    let response;
-    try {
-      response = await fetchImpl(current, {
-        method: 'GET',
-        redirect: 'manual',
-        signal: controller.signal,
-        headers: {
-          Accept: 'application/x-nzb, application/xml, text/xml, */*',
-          'User-Agent': 'TorBoxManager',
-        },
+  let result;
+  try {
+    result = await safeExternalFetch(url, {
+      timeoutMs,
+      maxBytes,
+      maxRedirects,
+      fetchImpl: options.fetchImpl,
+      lookup: options.lookup,
+      headers: {
+        Accept: 'application/x-nzb, application/xml, text/xml, */*',
+      },
+    });
+  } catch (error) {
+    if (error?.code === 'INVALID_URL' || error?.code === 'SSRF_BLOCKED') {
+      throw Object.assign(new Error(error.message || 'NZB link is not a valid URL'), {
+        code: error.code,
+        cause: error,
       });
-    } finally {
-      clearTimeout(timer);
     }
-
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get('location');
-      if (!location) {
-        throw new Error('NZB redirect missing location');
-      }
-      current = assertHttpUrl(new URL(location, current).href);
-      continue;
+    if (error?.code === 'TOO_MANY_REDIRECTS') {
+      throw Object.assign(new Error('Too many NZB redirects'), {
+        code: error.code,
+        cause: error,
+      });
     }
-
-    if (!response.ok) {
-      throw new Error(`NZB fetch failed with status ${response.status}`);
+    if (error?.code === 'PAYLOAD_TOO_LARGE') {
+      throw Object.assign(new Error('NZB response is too large'), {
+        code: error.code,
+        cause: error,
+      });
     }
-
-    const advertised = Number(response.headers.get('content-length') || 0);
-    if (Number.isFinite(advertised) && advertised > maxBytes) {
-      throw new Error('NZB response is too large');
-    }
-
-    const body = Buffer.from(await response.arrayBuffer());
-    if (body.length > maxBytes) {
-      throw new Error('NZB response is too large');
-    }
-
-    return {
-      finalUrl: current,
-      contentDisposition: response.headers.get('content-disposition'),
-      contentType: response.headers.get('content-type'),
-      body,
-    };
+    throw error;
   }
 
-  throw new Error('Too many NZB redirects');
+  if (!result.ok) {
+    throw new Error(`NZB fetch failed with status ${result.status}`);
+  }
+
+  return {
+    finalUrl: result.url,
+    contentDisposition: result.headers?.['content-disposition'] || null,
+    contentType: result.headers?.['content-type'] || null,
+    body: Buffer.from(result.text ?? '', 'utf8'),
+  };
 }
