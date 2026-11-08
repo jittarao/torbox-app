@@ -121,9 +121,13 @@ export const useAutomationRulesStore = create((set, get) => ({
     const response = await fetch('/api/automation/rules/export', {
       headers: { 'x-api-key': apiKey },
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || `Export failed: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Export failed: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Export failed');
     }
     return data.data;
   },
@@ -138,9 +142,13 @@ export const useAutomationRulesStore = create((set, get) => ({
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
       body: JSON.stringify({ data: payload }),
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || `Import failed: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Import failed: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Import failed');
     }
 
     const importedRules = data.importedRules || [];

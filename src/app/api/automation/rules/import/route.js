@@ -34,22 +34,27 @@ export async function POST(request) {
       headers: backendProxyHeaders(apiKey, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ data: body?.data }),
     });
-    const data = await response.json().catch(() => ({}));
-
     if (response.ok) {
+      const data = await response.json();
       return NextResponse.json(data);
-    }
-    // Validation messages describe the user's file, not server internals: pass them through.
-    if (response.status === 400) {
-      return NextResponse.json(
-        { success: false, error: data.error || 'Invalid automation rules file', code: data.code },
-        { status: 400 }
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      // Validation messages describe the user's file, not server internals: pass them through.
+      if (response.status === 400) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: errorData.error || 'Invalid automation rules file',
+            code: errorData.code,
+          },
+          { status: 400 }
+        );
+      }
+      return backendProxyErrorResponse(
+        { status: response.status, data: errorData },
+        'Error importing automation rules to backend'
       );
     }
-    return backendProxyErrorResponse(
-      { status: response.status, data },
-      'Error importing automation rules to backend'
-    );
   } catch (error) {
     logRouteError('Error importing automation rules to backend', error);
     return NextResponse.json({ success: false, error: sanitizeError(error) }, { status: 500 });
