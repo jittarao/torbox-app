@@ -36,6 +36,7 @@ import { useDownloadProtectionActions } from './useDownloadProtectionActions';
 import { useStopSeeding } from './useStopSeeding';
 import { useProtectedDownloadsStore } from '@/store/protectedDownloadsStore';
 import { useDownloadTagsStore } from '@/store/downloadTagsStore';
+import { useTagsStore } from '@/store/tagsStore';
 import { getItemFileCount, resolveItemFiles } from '@/utils/downloadEntityFiles';
 
 export const FILTERS_SIDEBAR_EXPANDED = '14rem';
@@ -142,6 +143,7 @@ export function useDownloadsPageState(apiKey) {
 
   const handleSseTagsChanged = useCallback(() => {
     if (apiKey) {
+      useTagsStore.getState().loadTags(apiKey, { force: true });
       useDownloadTagsStore.getState().fetchDownloadTags(apiKey, { force: true });
     }
   }, [apiKey]);
