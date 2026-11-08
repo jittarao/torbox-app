@@ -17,6 +17,12 @@ import RuleFilter from './helpers/RuleFilter.js';
 import RuleMigrationHelper from './helpers/RuleMigrationHelper.js';
 import { normalizeIntervalTriggersOnRules } from './helpers/normalizeIntervalTriggers.js';
 import {
+  collectReferencedTagIds,
+  findUnresolvedTagIds,
+  parseRulesImport,
+  toPortableRule,
+} from './helpers/ruleTransfer.js';
+import {
   INITIAL_POLL_INTERVAL_MINUTES,
   DEFAULT_RETRY_MAX_RETRIES,
   DEFAULT_RETRY_INITIAL_DELAY_MS,
@@ -1288,6 +1294,89 @@ class AutomationEngine {
     }
 
     return savedRules;
+  }
+
+  /**
+   * Import rules from an export file, appending to existing rules.
+   * Skips rules whose name matches an existing rule (or an earlier rule in the file), rules
+   * that fail validation, and rules referencing tags missing from the file.
+   * @param {unknown} payload - Parsed export file
+   * @returns {Promise<{ importedRules: Array, skipped: Array<{ index: number, name: string|null, reason: string, message?: string }>, createdTagCount: number }>}
+   */
+  async importAutomationRules(payload) {
+    const { rules: rawRules, tagNamesById } = parseRulesImport(payload);
+    const existingRules = await this.ruleRepository.getRules();
+    const seenNames = new Set(
+      existingRules.map((rule) =>
+        String(rule.name || '')
+          .trim()
+          .toLowerCase()
+      )
+    );
+
+    const toImport = [];
+    const skipped = [];
+    const referencedTags = new Map();
+
+    rawRules.forEach((raw, index) => {
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        skipped.push({ index, name: null, reason: 'invalid', message: 'Rule must be an object' });
+        return;
+      }
+      const [rule] = normalizeIntervalTriggersOnRules([
+        toPortableRule(this.migrateRuleToGroups(raw)),
+      ]);
+      const name = typeof rule.name === 'string' ? rule.name.trim() : '';
+      const nameKey = name.toLowerCase();
+
+      if (name && seenNames.has(nameKey)) {
+        skipped.push({ index, name, reason: 'duplicate' });
+        return;
+      }
+      const validation = this.validateRule({ ...rule, name });
+      if (!validation.valid) {
+        skipped.push({
+          index,
+          name: name || null,
+          reason: 'invalid',
+          message: validation.errors.join('; '),
+        });
+        return;
+      }
+      const unresolved = findUnresolvedTagIds(rule, tagNamesById);
+      if (unresolved.length > 0) {
+        skipped.push({
+          index,
+          name,
+          reason: 'missing_tags',
+          message: `Unknown tag ids: ${unresolved.join(', ')}`,
+        });
+        return;
+      }
+
+      for (const id of collectReferencedTagIds(rule)) {
+        referencedTags.set(id, tagNamesById.get(id));
+      }
+      seenNames.add(nameKey);
+      toImport.push({ ...rule, name });
+    });
+
+    if (toImport.length === 0) {
+      return { importedRules: [], skipped, createdTagCount: 0 };
+    }
+
+    const { savedRules, createdTagCount } = await this.ruleRepository.importRules(
+      toImport,
+      referencedTags
+    );
+
+    this.invalidateRuleCache();
+    cache.invalidateActiveRules(this.authId);
+    if (toImport.some((rule) => rule.enabled)) {
+      await this.resetNextPollAt();
+    }
+
+    return { importedRules: savedRules, skipped, createdTagCount };
   }
 
   /**

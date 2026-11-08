@@ -7,7 +7,10 @@ import PresetRulesSection from './components/PresetRulesSection';
 import EmptyState from './components/EmptyState';
 import RuleLogsModal from './components/RuleLogsModal';
 import ExecutionResult from './components/ExecutionResult';
+import Toast from '@/components/shared/Toast';
+import RuleTransferActions from './components/RuleTransferActions';
 import { useAutomationRulesPage } from './useAutomationRulesPage';
+import { useRuleTransfer } from './useRuleTransfer';
 
 export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
   const {
@@ -47,6 +50,8 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
     viewingRule,
   } = useAutomationRulesPage(apiKeyProp);
 
+  const transfer = useRuleTransfer({ apiKey, t });
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
@@ -66,14 +71,29 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
             ({activeRules.length} rule{activeRules.length === 1 ? '' : 's'} active)
           </span>
         </div>
-        {!isAddingRule && rules.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setIsAddingRule(true)}
-            className="shrink-0 inline-flex items-center gap-1 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
-          >
-            + {t('addRule')}
-          </button>
+        {!isAddingRule && (isBackendMode || rules.length > 0) && (
+          <div className="flex flex-wrap items-center gap-4">
+            {isBackendMode && (
+              <RuleTransferActions
+                canExport={rules.length > 0}
+                busy={transfer.busy}
+                fileInputRef={transfer.fileInputRef}
+                onExport={transfer.handleExport}
+                onImportClick={transfer.openImportPicker}
+                onImportFile={transfer.handleImportFile}
+                t={t}
+              />
+            )}
+            {rules.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsAddingRule(true)}
+                className="shrink-0 inline-flex items-center gap-1 text-sm text-accent dark:text-accent-dark hover:text-accent/80 dark:hover:text-accent-dark/80 transition-colors"
+              >
+                + {t('addRule')}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -144,6 +164,14 @@ export default function AutomationRules({ apiKey: apiKeyProp = '' }) {
         t={t}
         commonT={commonT}
       />
+
+      {transfer.toast && (
+        <Toast
+          message={transfer.toast.message}
+          type={transfer.toast.type}
+          onClose={transfer.clearToast}
+        />
+      )}
     </div>
   );
 }
