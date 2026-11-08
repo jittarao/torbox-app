@@ -1,6 +1,7 @@
 import logger from '../../utils/logger.js';
 import RuleMigrationHelper from './RuleMigrationHelper.js';
 import { normalizeAssetTypes } from './ruleCapabilities.js';
+import { remapRuleTagIds } from './ruleTransfer.js';
 
 /**
  * Repository for automation rule database operations
@@ -453,6 +454,67 @@ class RuleRepository {
     doSave();
     await this.syncActiveFlagToMaster();
     return savedRules;
+  }
+
+  /**
+   * Append imported rules without touching existing rows. Referenced tags are matched to this
+   * user's tags by case-insensitive name (created when missing) and rule tag ids are remapped,
+   * all in one transaction.
+   * @param {Array} rules - Validated portable rules whose tag ids refer to the export file
+   * @param {Map<number, string>} tagNamesById - Export tag id -> name, for tags these rules use
+   * @returns {Promise<{ savedRules: Array, createdTagCount: number }>}
+   */
+  async importRules(rules, tagNamesById) {
+    const userDb = await this.getUserDb();
+    const findTag = userDb.prepare('SELECT id FROM tags WHERE LOWER(name) = LOWER(?)');
+    const insertTag = userDb.prepare('INSERT INTO tags (name) VALUES (?)');
+    const insertRule = userDb.prepare(
+      `INSERT INTO automation_rules
+         (name, enabled, trigger_config, conditions, action_config, metadata, asset_types, cooldown_minutes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0)`
+    );
+    const selectRule = userDb.prepare('SELECT * FROM automation_rules WHERE id = ?');
+
+    const savedRules = [];
+    let createdTagCount = 0;
+
+    const doImport = userDb.transaction(() => {
+      const idMap = new Map();
+      for (const [sourceId, name] of tagNamesById) {
+        const existing = findTag.get(name);
+        if (existing) {
+          idMap.set(sourceId, existing.id);
+        } else {
+          idMap.set(sourceId, Number(insertTag.run(name).lastInsertRowid));
+          createdTagCount += 1;
+        }
+      }
+
+      const now = Date.now();
+      for (const rule of rules) {
+        const remapped = remapRuleTagIds(rule, idMap);
+        const result = insertRule.run(
+          remapped.name,
+          remapped.enabled ? 1 : 0,
+          JSON.stringify(remapped.trigger),
+          JSON.stringify({
+            logicOperator: remapped.logicOperator || 'and',
+            groups: remapped.groups,
+          }),
+          JSON.stringify(remapped.action),
+          JSON.stringify({ createdAt: now, importedAt: now }),
+          JSON.stringify(normalizeAssetTypes(remapped.assetTypes || ['torrent']))
+        );
+        const saved = selectRule.get(Number(result.lastInsertRowid));
+        if (saved) {
+          savedRules.push(RuleMigrationHelper.migrateRuleToGroups(this.mapRuleFromDb(saved)));
+        }
+      }
+    });
+
+    doImport();
+    await this.syncActiveFlagToMaster();
+    return { savedRules, createdTagCount };
   }
 
   /**
