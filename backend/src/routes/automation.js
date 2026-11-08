@@ -2,6 +2,7 @@ import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import RuleRepository from '../automation/helpers/RuleRepository.js';
+import { buildRulesExport } from '../automation/helpers/ruleTransfer.js';
 import AutomationEngine from '../automation/AutomationEngine.js';
 import { isTagActionType, notifyTagsChanged } from '../utils/userEvents.js';
 import { reactivateUserForManualAutomation } from '../config/automationInactivity.js';
@@ -155,6 +156,87 @@ export function setupAutomationRoutes(app, backend) {
         }
         logger.error('Error saving automation rules', error, {
           endpoint: '/api/automation/rules',
+          method: 'POST',
+          authId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      }
+    }
+  );
+
+  // GET /api/automation/rules/export - Portable rules file (direct DB, no engine)
+  app.get(
+    '/api/automation/rules/export',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      const authId = req.validatedAuthId;
+      const userDatabaseManager = backend.userDatabaseManager;
+      if (!userDatabaseManager) {
+        return res.status(503).json({ success: false, error: 'Service initializing' });
+      }
+      try {
+        const userDbConnection = await userDatabaseManager.getUserDatabase(authId);
+        if (!userDbConnection?.db) {
+          return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        const repo = new RuleRepository(authId, () => Promise.resolve(userDbConnection.db));
+        const rules = await repo.getRules();
+        const tags = userDbConnection.db.prepare('SELECT id, name FROM tags').all();
+        res.json({ success: true, data: buildRulesExport(rules, tags) });
+      } catch (error) {
+        logger.error('Error exporting automation rules', error, {
+          endpoint: '/api/automation/rules/export',
+          method: 'GET',
+          authId,
+        });
+        res.status(500).json(serverErrorPayload(error));
+      } finally {
+        userDatabaseManager.releaseConnection(authId);
+      }
+    }
+  );
+
+  // POST /api/automation/rules/import - Append rules from an export file (engine on demand)
+  app.post(
+    '/api/automation/rules/import',
+    backend.requireRegisteredUser,
+    userRateLimiter,
+    async (req, res) => {
+      const authId = req.validatedAuthId;
+      try {
+        const engine = await getEngineForRequest(backend, authId);
+        if (!engine) {
+          return sendEngineUnavailableResponse(res, backend, authId);
+        }
+        const { importedRules, skipped, createdTagCount } = await engine.importAutomationRules(
+          req.body?.data
+        );
+        if (importedRules.length > 0) {
+          invalidateSchedulerEngine(pollingScheduler, authId);
+          if (pollingScheduler) {
+            await pollingScheduler.refreshPollers();
+          }
+        }
+        if (createdTagCount > 0) {
+          notifyTagsChanged(backend, authId);
+        }
+        res.json({ success: true, importedRules, skipped, createdTagCount });
+      } catch (error) {
+        if (error?.isValidationError) {
+          logger.warn('Automation rules import rejected', {
+            endpoint: '/api/automation/rules/import',
+            authId,
+            message: error.message,
+          });
+          return res.status(400).json({
+            success: false,
+            error: error.message,
+            code: 'INVALID_RULES_EXPORT',
+          });
+        }
+        logger.error('Error importing automation rules', error, {
+          endpoint: '/api/automation/rules/import',
           method: 'POST',
           authId,
         });
