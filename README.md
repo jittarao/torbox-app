@@ -30,6 +30,7 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
   - Complex condition logic (AND/OR operators)
   - Preset rules for common scenarios
   - Rule execution logs and history
+  - Export rules to a file and import them again (for example after changing your TorBox API key)
 - **Self-Hosted Backend**: Optional 24/7 automation with persistent storage
   - Multi-user architecture with per-user database isolation
   - Run automation rules continuously in the background
