@@ -409,6 +409,25 @@
     "title": "Automation Rules",
     "torrentMatched": "torrent matched",
     "torrentsMatched": "torrents matched",
+    "transfer": {
+      "export": "Export",
+      "exportFailed": "Export failed: {error}",
+      "exportSuccess": "Exported {count, plural, one {# rule} other {# rules}}",
+      "exportTitle": "Download your rules as a file you can import later, for example after changing your API key",
+      "exporting": "Exporting…",
+      "fileErrors": {
+        "notJson": "That file is not valid JSON",
+        "tooLarge": "That file is larger than 1 MB",
+        "wrongFormat": "That file is not a TorBox Manager automation rules export"
+      },
+      "import": "Import",
+      "importFailed": "Import failed: {error}",
+      "importNothing": "No rules imported: {skipped, plural, one {# rule was} other {# rules were}} skipped (same name already exists, invalid, or missing tags)",
+      "importPartial": "Imported {imported, plural, one {# rule} other {# rules}}; skipped {skipped} (same name already exists, invalid, or missing tags)",
+      "importSuccess": "Imported {imported, plural, one {# rule} other {# rules}}",
+      "importTitle": "Add rules from an exported file. Existing rules are kept.",
+      "importing": "Importing…"
+    },
     "triggers": "triggers",
     "update": "Update Rule",
     "viewLogs": "View Logs"

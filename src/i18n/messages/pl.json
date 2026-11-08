@@ -362,6 +362,25 @@
     "title": "Reguły automatyzacji",
     "torrentMatched": "torrent dopasowany",
     "torrentsMatched": "torrenty dopasowane",
+    "transfer": {
+      "export": "Eksportuj",
+      "exportFailed": "Eksport nie powiódł się: {error}",
+      "exportSuccess": "{count, plural, one {Wyeksportowano # regułę} few {Wyeksportowano # reguły} many {Wyeksportowano # reguł} other {Wyeksportowano # reguły}}",
+      "exportTitle": "Pobierz swoje reguły jako plik, który możesz później zaimportować, na przykład po zmianie klucza API",
+      "exporting": "Eksportowanie…",
+      "fileErrors": {
+        "notJson": "Ten plik nie jest prawidłowym JSON-em",
+        "tooLarge": "Ten plik jest większy niż 1 MB",
+        "wrongFormat": "Ten plik nie jest eksportem reguł automatyzacji TorBox Manager"
+      },
+      "import": "Importuj",
+      "importFailed": "Import nie powiódł się: {error}",
+      "importNothing": "Nie zaimportowano żadnych reguł: pominięto {skipped, plural, one {# regułę} few {# reguły} many {# reguł} other {# reguły}} (nazwa już istnieje, reguła jest nieprawidłowa lub brakuje tagów)",
+      "importPartial": "Zaimportowano {imported, plural, one {# regułę} few {# reguły} many {# reguł} other {# reguły}}; pominięto {skipped} (nazwa już istnieje, reguła jest nieprawidłowa lub brakuje tagów)",
+      "importSuccess": "Zaimportowano {imported, plural, one {# regułę} few {# reguły} many {# reguł} other {# reguły}}",
+      "importTitle": "Dodaj reguły z wyeksportowanego pliku. Istniejące reguły zostaną zachowane.",
+      "importing": "Importowanie…"
+    },
     "triggers": "uruchomienia",
     "update": "Zaktualizuj regułę",
     "viewLogs": "Pokaż logi"

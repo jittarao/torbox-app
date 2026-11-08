@@ -358,6 +358,25 @@
     "title": "Automatisierungsregeln",
     "torrentMatched": "Torrent passt",
     "torrentsMatched": "Torrents passen",
+    "transfer": {
+      "export": "Exportieren",
+      "exportFailed": "Export fehlgeschlagen: {error}",
+      "exportSuccess": "{count, plural, one {# Regel exportiert} other {# Regeln exportiert}}",
+      "exportTitle": "Laden Sie Ihre Regeln als Datei herunter, die Sie später importieren können, zum Beispiel nach einem Wechsel Ihres API-Schlüssels",
+      "exporting": "Wird exportiert…",
+      "fileErrors": {
+        "notJson": "Diese Datei ist kein gültiges JSON",
+        "tooLarge": "Diese Datei ist größer als 1 MB",
+        "wrongFormat": "Diese Datei ist kein Export von Automatisierungsregeln aus dem TorBox Manager"
+      },
+      "import": "Importieren",
+      "importFailed": "Import fehlgeschlagen: {error}",
+      "importNothing": "Keine Regeln importiert: {skipped, plural, one {# Regel wurde} other {# Regeln wurden}} übersprungen (Name bereits vorhanden, ungültig oder fehlende Schlagwörter)",
+      "importPartial": "{imported, plural, one {# Regel} other {# Regeln}} importiert; {skipped} übersprungen (Name bereits vorhanden, ungültig oder fehlende Schlagwörter)",
+      "importSuccess": "{imported, plural, one {# Regel} other {# Regeln}} importiert",
+      "importTitle": "Fügen Sie Regeln aus einer exportierten Datei hinzu. Bestehende Regeln bleiben erhalten.",
+      "importing": "Wird importiert…"
+    },
     "triggers": "Auslöser",
     "update": "Regel aktualisieren",
     "viewLogs": "Protokolle anzeigen"

@@ -364,6 +364,25 @@
     "title": "自動化ルール",
     "torrentMatched": "一致したトレント",
     "torrentsMatched": "一致したトレント",
+    "transfer": {
+      "export": "エクスポート",
+      "exportFailed": "エクスポートに失敗しました: {error}",
+      "exportSuccess": "{count, plural, other {# 件のルールをエクスポートしました}}",
+      "exportTitle": "ルールをファイルとしてダウンロードし、後でインポートできます（APIキーの変更後など）",
+      "exporting": "エクスポート中…",
+      "fileErrors": {
+        "notJson": "このファイルは有効なJSONではありません",
+        "tooLarge": "このファイルは1MBを超えています",
+        "wrongFormat": "このファイルはTorBox Managerの自動化ルールのエクスポートではありません"
+      },
+      "import": "インポート",
+      "importFailed": "インポートに失敗しました: {error}",
+      "importNothing": "ルールはインポートされませんでした: {skipped, plural, other {# 件}}をスキップしました（同名が存在、無効、またはタグが見つかりません）",
+      "importPartial": "{imported, plural, other {# 件のルールをインポートしました}}。{skipped} 件をスキップしました（同名が存在、無効、またはタグが見つかりません）",
+      "importSuccess": "{imported, plural, other {# 件のルールをインポートしました}}",
+      "importTitle": "エクスポートしたファイルからルールを追加します。既存のルールは保持されます。",
+      "importing": "インポート中…"
+    },
     "triggers": "トリガー",
     "update": "ルールを更新",
     "viewLogs": "ログを表示"

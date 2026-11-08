@@ -112,4 +112,46 @@ export const useAutomationRulesStore = create((set, get) => ({
       throw err; // Re-throw so caller can handle the error
     }
   },
+
+  // Fetch a portable export of the current rules (backend only)
+  exportRules: async (apiKey) => {
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+    const response = await fetch('/api/automation/rules/export', {
+      headers: { 'x-api-key': apiKey },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || `Export failed: ${response.status}`);
+    }
+    return data.data;
+  },
+
+  // Append rules from an export file (backend only); existing rules are never replaced
+  importRules: async (apiKey, payload) => {
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+    const response = await fetch('/api/automation/rules/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({ data: payload }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || `Import failed: ${response.status}`);
+    }
+
+    const importedRules = data.importedRules || [];
+    if (importedRules.length > 0 && get().currentApiKey === apiKey) {
+      // Backend lists rules newest first; imported rows are the newest
+      set({ rules: [...importedRules, ...get().rules] });
+    }
+    return {
+      importedCount: importedRules.length,
+      skipped: data.skipped || [],
+      createdTagCount: data.createdTagCount || 0,
+    };
+  },
 }));
