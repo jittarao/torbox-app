@@ -32,7 +32,9 @@ export default function ActionBarSearch({ itemTypePlural }) {
         search={search}
         onSearchChange={setSearch}
         itemTypePlural={itemTypePlural}
-        className="min-w-0 w-full basis-full sm:basis-auto sm:w-44 sm:flex-none md:w-52 lg:w-60"
+        className="min-w-0 w-full basis-full sm:basis-auto sm:w-44 sm:flex-none md:w-52 lg:w-60
+          sm:focus-within:w-72 md:focus-within:w-80 lg:focus-within:w-96
+          transition-[width] duration-300 ease-out motion-reduce:transition-none"
       />
 
       {viewMode === 'card' && (
