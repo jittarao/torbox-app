@@ -7,24 +7,29 @@ import { useDownloadsFilterContext } from '@/components/downloads/DownloadsFilte
 import { useDownloadsUIContext } from '@/components/downloads/DownloadsUIContext';
 import Dropdown from '@/components/shared/Dropdown';
 import { useTranslations } from 'next-intl';
+import { RELEVANCE_SORT_FIELD } from '@/components/downloads/utils/downloadsSort';
 import SearchBar from './SearchBar';
 
 export default function ActionBarSearch({ itemTypePlural }) {
   const { activeColumns } = useDownloadsDataContext();
-  const { search, setSearch, sortField, sortDirection, handleSort } = useDownloadsFilterContext();
+  const { search, setSearch, sortField, sortDirection, canSortByRelevance, handleSort } =
+    useDownloadsFilterContext();
   const { displayViewMode: viewMode } = useDownloadsUIContext();
   const t = useTranslations('Columns');
+  const searchBarT = useTranslations('SearchBar');
+  const isRelevanceSort = sortField === RELEVANCE_SORT_FIELD;
 
-  const sortOptions = useMemo(
-    () =>
-      activeColumns.map((column) => ({
-        label: COLUMNS[column].displayName
-          ? COLUMNS[column].displayName
-          : t(`${COLUMNS[column].key}`),
-        value: column,
-      })),
-    [activeColumns, t]
-  );
+  const sortOptions = useMemo(() => {
+    const columnOptions = activeColumns.map((column) => ({
+      label: COLUMNS[column].displayName
+        ? COLUMNS[column].displayName
+        : t(`${COLUMNS[column].key}`),
+      value: column,
+    }));
+    return canSortByRelevance
+      ? [{ label: t('relevance'), value: RELEVANCE_SORT_FIELD }, ...columnOptions]
+      : columnOptions;
+  }, [activeColumns, canSortByRelevance, t]);
 
   return (
     <>
@@ -44,17 +49,35 @@ export default function ActionBarSearch({ itemTypePlural }) {
             value={sortField}
             onChange={(value) => handleSort(value)}
             className="min-w-[8.5rem] max-w-[11rem] sm:min-w-[150px]"
-            sortDir={sortDirection}
+            sortDir={isRelevanceSort ? undefined : sortDirection}
           />
-          <button
-            type="button"
-            onClick={() => handleSort(sortField)}
-            className="shrink-0 rounded-md border border-border px-2 py-1.5 text-sm text-primary-text/70 transition-colors hover:bg-surface-alt-hover hover:text-accent dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:bg-surface-alt-hover-dark dark:hover:text-accent-dark"
-            aria-label={sortDirection === 'desc' ? 'Sort descending' : 'Sort ascending'}
-          >
-            {sortDirection === 'desc' ? '↓' : '↑'}
-          </button>
+          {!isRelevanceSort && (
+            <button
+              type="button"
+              onClick={() => handleSort(sortField)}
+              className="shrink-0 rounded-md border border-border px-2 py-1.5 text-sm text-primary-text/70 transition-colors hover:bg-surface-alt-hover hover:text-accent dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:bg-surface-alt-hover-dark dark:hover:text-accent-dark"
+              aria-label={sortDirection === 'desc' ? 'Sort descending' : 'Sort ascending'}
+            >
+              {sortDirection === 'desc' ? '↓' : '↑'}
+            </button>
+          )}
         </div>
+      )}
+
+      {viewMode !== 'card' && canSortByRelevance && (
+        <button
+          type="button"
+          onClick={() => handleSort(RELEVANCE_SORT_FIELD)}
+          aria-pressed={isRelevanceSort}
+          title={searchBarT('sortByRelevance')}
+          className={`shrink-0 rounded-md border px-2 py-1.5 text-sm transition-colors ${
+            isRelevanceSort
+              ? 'border-accent/50 text-accent dark:border-accent-dark/50 dark:text-accent-dark'
+              : 'border-border text-primary-text/70 hover:bg-surface-alt-hover hover:text-accent dark:border-border-dark dark:text-primary-text-dark/70 dark:hover:bg-surface-alt-hover-dark dark:hover:text-accent-dark'
+          }`}
+        >
+          {t('relevance')}
+        </button>
       )}
     </>
   );

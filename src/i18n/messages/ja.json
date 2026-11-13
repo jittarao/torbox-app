@@ -442,6 +442,7 @@
     "private": "プライベートトラッカー",
     "progress": "進行状況",
     "ratio": "比率",
+    "relevance": "関連度",
     "seeds": "シード",
     "size": "サイズ",
     "tags": "タグ",
@@ -1427,7 +1428,9 @@
     "searchDownloadsHelpIntro": "ダウンロードのタイトルとファイル名を検索します。",
     "searchDownloadsHelpOr": "複数の単語 — いずれかの単語が含まれていれば一致（例: 1080p bluray）",
     "searchDownloadsHelpPhrase": "引用符 — 完全一致のフレーズ（例: \"season 1\"）",
+    "searchDownloadsHelpRanking": "結果は関連度順に並びます。入力した単語により多く一致するタイトルが先に表示され、ほとんどの結果に含まれる単語(例:「the」)は低く評価されます。並び順はいつでも変更できます。",
     "searchExamples": "検索例",
+    "sortByRelevance": "関連度で並べ替え",
     "streamFilters": "ストリームフィルター",
     "validation": {
       "addonsLoading": "アドオンを読み込み中… しばらくしてからもう一度お試しください。",

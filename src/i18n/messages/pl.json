@@ -438,6 +438,7 @@
     "private": "Prywatny tracker",
     "progress": "Postęp",
     "ratio": "Współczynnik",
+    "relevance": "Trafność",
     "seeds": "Seedy",
     "size": "Rozmiar",
     "tags": "Tagi",
@@ -1408,7 +1409,9 @@
     "searchDownloadsHelpIntro": "Wyszukuje tytuły pobierań i nazwy plików.",
     "searchDownloadsHelpOr": "Wiele słów — pasuje, jeśli pojawi się którekolwiek (np. 1080p bluray)",
     "searchDownloadsHelpPhrase": "Cudzysłowy — dopasowuje dokładną frazę (np. \"season 1\")",
+    "searchDownloadsHelpRanking": "Wyniki są sortowane według trafności: tytuły pasujące do większej liczby wpisanych słów są wyświetlane jako pierwsze, a słowa występujące w większości wyników (np. „the”) mają mniejszą wagę. W każdej chwili można wybrać inne sortowanie.",
     "searchExamples": "Przykłady wyszukiwania",
+    "sortByRelevance": "Sortuj według trafności",
     "streamFilters": "Filtry streamów",
     "validation": {
       "addonsLoading": "Ładowanie addonów… spróbuj ponownie za chwilę.",

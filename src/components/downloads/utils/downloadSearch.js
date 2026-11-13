@@ -329,3 +329,266 @@ export function getFilesVisibleForDownloadSearch(item, query, filesByEntityKey =
   if (itemNameMatchesDownloadSearch(item, parsed)) return files;
   return matchingFiles;
 }
+
+/** True when the query has include terms to rank by (exclude-only queries do not). */
+export function downloadSearchHasRankableTerms(query) {
+  if (isEmptyDownloadSearchQuery(query)) return false;
+  return !!getParsedDownloadSearch(query)?.include.length;
+}
+
+/**
+ * Relevance, highest first: query terms found in the title, terms found only in file names,
+ * every word adjacent and in query order in the title, then match quality (exact vs prefix
+ * tokens, title starts with a term, share of the title the terms cover).
+ * Term scores are scaled by how distinctive each loose word is among the results.
+ */
+const TITLE_TERM_SCORE = 100;
+const FILE_ONLY_TERM_SCORE = 50;
+const ADJACENT_WORDS_SCORE = 20;
+const EXACTNESS_SCORE = 6;
+const LEADING_MATCH_SCORE = 2;
+const TITLE_COVERAGE_SCORE = 2;
+
+/**
+ * Weight floor for a loose word found in (almost) every result, e.g. "the". It still counts:
+ * one extra title match (≥ 10) outweighs any quality-only difference (< 10).
+ */
+const MIN_COMMON_WORD_WEIGHT = 0.1;
+
+/**
+ * `explicit` terms (quoted phrases, `+`-joined words) always weigh 1; loose words are
+ * weighted by rarity among the results.
+ * @typedef {{ value: string, substring: boolean, explicit: boolean }} RelevanceTerm
+ */
+
+/**
+ * Per-term title quality (0 = not in the title), file-only hits, and title bonuses.
+ * Independent of term weights, so it is cached per item.
+ * @typedef {{ title: number[], fileOnly: boolean[], leading: boolean[], adjacent: boolean, coverage: number }} RelevanceMatch
+ */
+
+/** @type {WeakMap<ParsedDownloadSearch, RelevanceTerm[]>} */
+const relevanceTermsCache = new WeakMap();
+
+/**
+ * Distinct include terms in query order. Every word of an OR group counts on its own,
+ * so `foo bar` ranks titles with both words above titles with one.
+ * @param {ParsedDownloadSearch} parsed
+ * @returns {RelevanceTerm[]}
+ */
+function getRelevanceTerms(parsed) {
+  const cached = relevanceTermsCache.get(parsed);
+  if (cached) return cached;
+
+  /** @type {RelevanceTerm[]} */
+  const terms = [];
+  /** @type {Map<string, RelevanceTerm>} */
+  const byValue = new Map();
+  const add = (value, explicit) => {
+    if (!value) return;
+    const existing = byValue.get(value);
+    if (existing) {
+      existing.explicit ||= explicit;
+      return;
+    }
+    const term = {
+      value,
+      substring: value.includes(' ') || SUBSTRING_TERM_PATTERN.test(value),
+      explicit,
+    };
+    byValue.set(value, term);
+    terms.push(term);
+  };
+
+  for (const term of parsed.include) {
+    if (term.type === 'phrase') {
+      add(term.value, true);
+    } else {
+      for (const alternative of term.alternatives) {
+        for (const word of alternative) add(word, alternative.length > 1);
+      }
+    }
+  }
+
+  relevanceTermsCache.set(parsed, terms);
+  return terms;
+}
+
+/** @param {RelevanceTerm} term @param {string} text lowercased @param {string[]} tokens */
+function relevanceTermMatches(term, text, tokens) {
+  if (term.substring) return text.includes(term.value);
+  return tokens.some((token) => tokenMatchesSearchTerm(token, term.value));
+}
+
+/** @param {string[]} tokens @param {string[]} words */
+function tokensContainAdjacentWords(tokens, words) {
+  for (let start = 0; start + words.length <= tokens.length; start++) {
+    let k = 0;
+    while (k < words.length && tokenMatchesSearchTerm(tokens[start + k], words[k])) k++;
+    if (k === words.length) return true;
+  }
+  return false;
+}
+
+/**
+ * @param {string} title
+ * @param {RelevanceTerm[]} terms
+ * @param {RelevanceMatch} match filled in place
+ */
+function matchTitleRelevance(title, terms, match) {
+  const text = (title || '').toLowerCase();
+  const tokens = tokenizeSearchHaystack(text);
+  const coveredTokens = new Set();
+
+  for (let t = 0; t < terms.length; t++) {
+    const term = terms[t];
+    let best = 0;
+    if (term.substring) {
+      const index = text.indexOf(term.value);
+      if (index !== -1) {
+        best = 1;
+        if (index === 0) match.leading[t] = true;
+      }
+    } else {
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (!tokenMatchesSearchTerm(token, term.value)) continue;
+        coveredTokens.add(i);
+        if (i === 0) match.leading[t] = true;
+        // Exact token = 1; prefix scales with how much of the token the term covers.
+        const quality = 0.5 + (0.5 * term.value.length) / token.length;
+        if (quality > best) best = quality;
+      }
+    }
+    match.title[t] = best;
+  }
+
+  const words = terms.filter((term) => !term.substring).map((term) => term.value);
+  match.adjacent =
+    words.length > 1 &&
+    terms.every((term, t) => term.substring || match.title[t] > 0) &&
+    tokensContainAdjacentWords(tokens, words);
+  match.coverage = tokens.length ? coveredTokens.size / tokens.length : 0;
+}
+
+/**
+ * @param {object} item
+ * @param {RelevanceTerm[]} terms
+ * @param {object[]} files
+ * @returns {RelevanceMatch}
+ */
+function computeRelevanceMatch(item, terms, files) {
+  /** @type {RelevanceMatch} */
+  const match = {
+    title: new Array(terms.length).fill(0),
+    fileOnly: new Array(terms.length).fill(false),
+    leading: new Array(terms.length).fill(false),
+    adjacent: false,
+    coverage: 0,
+  };
+  matchTitleRelevance(item.name, terms, match);
+
+  let missing = match.title.filter((quality) => quality === 0).length;
+  for (let f = 0; missing > 0 && f < files.length; f++) {
+    const text = (files[f].short_name || files[f].name || '').toLowerCase();
+    if (!text) continue;
+    const tokens = tokenizeSearchHaystack(text);
+    for (let t = 0; t < terms.length; t++) {
+      if (match.title[t] > 0 || match.fileOnly[t]) continue;
+      if (!relevanceTermMatches(terms[t], text, tokens)) continue;
+      match.fileOnly[t] = true;
+      missing--;
+    }
+  }
+
+  return match;
+}
+
+/** @type {WeakMap<object, { query: string, files: object[], match: RelevanceMatch }>} */
+const relevanceMatchCache = new WeakMap();
+
+/** @returns {RelevanceMatch|null} */
+function getRelevanceMatch(item, query, terms, filesByEntityKey) {
+  if (!item) return null;
+  const files = resolveItemFiles(item, filesByEntityKey);
+
+  // Poll merges keep unchanged rows (and their file arrays) by reference, so re-sorts reuse matches.
+  const cached = relevanceMatchCache.get(item);
+  if (cached && cached.query === query && cached.files === files) return cached.match;
+
+  const match = computeRelevanceMatch(item, terms, files);
+  relevanceMatchCache.set(item, { query, files, match });
+  return match;
+}
+
+/**
+ * Inverse document frequency over the results, relative to the rarest loose word in the
+ * query, so a query of equally common words keeps every weight at 1.
+ * @param {RelevanceTerm[]} terms
+ * @param {(RelevanceMatch|null)[]} matches
+ */
+function relevanceTermWeights(terms, matches) {
+  const resultCount = matches.length;
+  const idf = terms.map((term, t) => {
+    if (term.explicit) return null;
+    let df = 0;
+    for (const match of matches) {
+      if (match && (match.title[t] > 0 || match.fileOnly[t])) df++;
+    }
+    return df > 0 ? Math.log((resultCount + 1) / (df + 1)) : null;
+  });
+
+  const maxIdf = Math.max(0, ...idf.filter((value) => value !== null));
+  return idf.map((value) =>
+    value === null || maxIdf === 0 ? 1 : Math.max(MIN_COMMON_WORD_WEIGHT, value / maxIdf)
+  );
+}
+
+/** @param {RelevanceMatch} match @param {number[]} weights */
+function scoreRelevanceMatch(match, weights) {
+  let titleWeight = 0;
+  let weightedExactness = 0;
+  let fileOnlyWeight = 0;
+  let leadingWeight = 0;
+
+  for (let t = 0; t < weights.length; t++) {
+    const weight = weights[t];
+    if (match.title[t] > 0) {
+      titleWeight += weight;
+      weightedExactness += weight * match.title[t];
+    } else if (match.fileOnly[t]) {
+      fileOnlyWeight += weight;
+    }
+    if (match.leading[t] && weight > leadingWeight) leadingWeight = weight;
+  }
+
+  let score = TITLE_TERM_SCORE * titleWeight + FILE_ONLY_TERM_SCORE * fileOnlyWeight;
+  if (titleWeight > 0) {
+    score +=
+      (match.adjacent ? ADJACENT_WORDS_SCORE : 0) +
+      (EXACTNESS_SCORE * weightedExactness) / titleWeight +
+      LEADING_MATCH_SCORE * leadingWeight +
+      TITLE_COVERAGE_SCORE * match.coverage;
+  }
+  return score;
+}
+
+/**
+ * Relevance of each item among `items` for the query (higher is better; all 0 when the query
+ * has nothing to rank). Scores depend on the whole set: loose words found in most of the
+ * results weigh less. Used to sort search results; filtering still goes through
+ * itemMatchesDownloadSearch.
+ * @param {Array<{ name?: string, files?: Array<{ name?: string, short_name?: string }> }|null|undefined>} items
+ * @param {string} query
+ * @param {Record<string, object[]>} [filesByEntityKey]
+ * @returns {number[]}
+ */
+export function scoreDownloadSearchResults(items, query, filesByEntityKey = null) {
+  if (!items?.length) return [];
+  if (!downloadSearchHasRankableTerms(query)) return items.map(() => 0);
+
+  const terms = getRelevanceTerms(getParsedDownloadSearch(query));
+  const matches = items.map((item) => getRelevanceMatch(item, query, terms, filesByEntityKey));
+  const weights = relevanceTermWeights(terms, matches);
+  return matches.map((match) => (match ? scoreRelevanceMatch(match, weights) : 0));
+}

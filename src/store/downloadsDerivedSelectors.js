@@ -13,7 +13,14 @@ import {
   itemMatchesAllViewFilters,
 } from '@/components/downloads/filters/filterHelpers';
 import { isAllCombineMode } from '@/components/downloads/filters/sidebarCombineMode';
-import { itemMatchesDownloadSearch } from '@/components/downloads/utils/downloadSearch';
+import {
+  itemMatchesDownloadSearch,
+  scoreDownloadSearchResults,
+} from '@/components/downloads/utils/downloadSearch';
+import {
+  RELEVANCE_SORT_FIELD,
+  DEFAULT_DOWNLOADS_SORT,
+} from '@/components/downloads/utils/downloadsSort';
 import { extractSourceHost } from '@/components/downloads/filters/sourceDisplay';
 import { buildDownloadHistoryLookup } from '@/components/downloads/utils/tbmDownloadEnrichment';
 import { getDownloadSelectionId } from '@/utils/downloadSelectionId';
@@ -141,14 +148,44 @@ function compareRows(a, b, sortField) {
 }
 
 /**
+ * Best search match first; ties (and queries with nothing to rank) fall back to newest first.
+ * Scores are computed once per sort over the whole result set (word rarity depends on it).
+ */
+function sortIdsByRelevance(ids, entities, search, filesByEntityKey) {
+  const items = ids.map((id) => entities[id]);
+  const itemScores = scoreDownloadSearchResults(items, search, filesByEntityKey);
+  const scores = new Map();
+  for (let i = 0; i < ids.length; i++) scores.set(ids[i], itemScores[i]);
+
+  return ids.toSorted((idA, idB) => {
+    const diff = scores.get(idB) - scores.get(idA);
+    if (diff !== 0) return diff;
+    const a = entities[idA];
+    const b = entities[idB];
+    if (!a || !b) return 0;
+    return -compareRows(a, b, DEFAULT_DOWNLOADS_SORT.sortField);
+  });
+}
+
+/**
  * @param {string[]} ids
  * @param {Record<string, object>} entities
  * @param {string} sortField
  * @param {'asc'|'desc'} sortDirection
+ * @param {{ search?: string, filesByEntityKey?: Record<string, object[]>|null }} [relevanceContext] used when sorting by relevance
  * @returns {string[]}
  */
-export function sortIds(ids, entities, sortField, sortDirection) {
+export function sortIds(
+  ids,
+  entities,
+  sortField,
+  sortDirection,
+  { search = '', filesByEntityKey = null } = {}
+) {
   if (!ids?.length) return [];
+  if (sortField === RELEVANCE_SORT_FIELD) {
+    return sortIdsByRelevance(ids, entities, search, filesByEntityKey);
+  }
 
   const sorted = ids.toSorted((idA, idB) => {
     const a = entities[idA];
@@ -349,8 +386,9 @@ export function selectVisibleSortedIds(
   return sortIds(
     filtered,
     entities,
-    criteria.sortField || 'created_at',
-    criteria.sortDirection || 'desc'
+    criteria.sortField || DEFAULT_DOWNLOADS_SORT.sortField,
+    criteria.sortDirection || DEFAULT_DOWNLOADS_SORT.sortDirection,
+    { search: criteria.search, filesByEntityKey }
   );
 }
 
@@ -373,8 +411,9 @@ export function selectVisibleSortedFromMap(
   return sortIds(
     filtered,
     entities,
-    criteria.sortField || 'created_at',
-    criteria.sortDirection || 'desc'
+    criteria.sortField || DEFAULT_DOWNLOADS_SORT.sortField,
+    criteria.sortDirection || DEFAULT_DOWNLOADS_SORT.sortDirection,
+    { search: criteria.search, filesByEntityKey }
   );
 }
 

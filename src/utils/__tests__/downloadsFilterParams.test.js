@@ -5,7 +5,10 @@ import {
   parseStatusFilterParam,
   serializeStatusFilterParam,
   shouldWriteAppliedFiltersInCriteriaPatch,
+  writeSearchToParams,
+  writeSortToParams,
 } from '@/hooks/useDownloadsFilterParams';
+import { resolveDownloadsSort } from '@/components/downloads/utils/downloadsSort';
 import { LOGIC_OPERATORS } from '@/components/downloads/AutomationRules/constants';
 
 describe('downloadsFilterParams search URL encoding', () => {
@@ -125,5 +128,69 @@ describe('downloadsFilterParams status URL encoding', () => {
   test('serializeStatusFilterParam clears for all', () => {
     expect(serializeStatusFilterParam('all')).toBeNull();
     expect(serializeStatusFilterParam(null)).toBeNull();
+  });
+});
+
+describe('downloads sort URL encoding', () => {
+  const write = (initial, sortField, sortDirection) => {
+    const params = new URLSearchParams(initial);
+    writeSortToParams(params, sortField, sortDirection);
+    return params.toString();
+  };
+
+  test('omits the default sort outside a search', () => {
+    expect(write('', 'created_at', 'desc')).toBe('');
+    expect(write('', 'created_at', 'asc')).toBe('dir=asc');
+    expect(write('', 'size', 'desc')).toBe('sort=size');
+  });
+
+  test('keeps an explicit default sort while searching', () => {
+    expect(write('q=foo', 'created_at', 'desc')).toBe('q=foo&sort=created_at');
+  });
+
+  test('relevance clears the sort params', () => {
+    expect(write('q=foo&sort=size&dir=asc', 'relevance')).toBe('q=foo');
+  });
+
+  test('clearing the search drops a redundant default sort', () => {
+    const params = new URLSearchParams('q=foo&sort=created_at');
+    writeSearchToParams(params, '');
+    expect(params.toString()).toBe('');
+
+    const kept = new URLSearchParams('q=foo&sort=size');
+    writeSearchToParams(kept, '');
+    expect(kept.toString()).toBe('sort=size');
+  });
+});
+
+describe('resolveDownloadsSort', () => {
+  const base = { sortField: 'created_at', sortDirection: 'desc' };
+
+  test('searches without an explicit sort rank by relevance', () => {
+    expect(resolveDownloadsSort({ ...base, hasExplicitSort: false, search: 'foo bar' })).toEqual({
+      sortField: 'relevance',
+      sortDirection: 'desc',
+    });
+  });
+
+  test('explicit sorts win over relevance', () => {
+    expect(
+      resolveDownloadsSort({
+        sortField: 'size',
+        sortDirection: 'asc',
+        hasExplicitSort: true,
+        search: 'foo',
+      })
+    ).toEqual({ sortField: 'size', sortDirection: 'asc' });
+  });
+
+  test('no search or exclude-only search uses the default sort', () => {
+    expect(resolveDownloadsSort({ ...base, hasExplicitSort: false, search: '' })).toEqual(base);
+    expect(resolveDownloadsSort({ ...base, hasExplicitSort: false, search: '-sample' })).toEqual(
+      base
+    );
+    expect(
+      resolveDownloadsSort({ sortField: 'relevance', hasExplicitSort: true, search: '' })
+    ).toEqual(base);
   });
 });

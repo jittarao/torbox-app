@@ -488,6 +488,7 @@
     "private": "Is Private Tracker",
     "progress": "Progress",
     "ratio": "Ratio",
+    "relevance": "Relevance",
     "seeds": "Seeds",
     "size": "Size",
     "tags": "Tags",
@@ -1523,7 +1524,9 @@
     "searchDownloadsHelpIntro": "Matches download titles and file names.",
     "searchDownloadsHelpOr": "Several words — matches if any word appears (e.g. 1080p bluray)",
     "searchDownloadsHelpPhrase": "Quotes — matches the exact phrase (e.g. \"season 1\")",
+    "searchDownloadsHelpRanking": "Results are sorted by relevance: titles matching more of your words come first, and words found in most results (like \"the\") count less. Pick another sort any time.",
     "searchExamples": "Search Examples",
+    "sortByRelevance": "Sort by relevance",
     "streamFilters": "Stream filters",
     "validation": {
       "addonsLoading": "Loading your addons… try again in a moment.",

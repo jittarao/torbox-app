@@ -35,6 +35,11 @@ import {
 } from '@/components/downloads/filters/sidebarFilterSync';
 import { COMBINE_MODES } from '@/components/downloads/filters/sidebarCombineMode';
 import { computeRangeSelection } from '@/components/downloads/FiltersSidebar/sidebarRangeSelect';
+import { downloadSearchHasRankableTerms } from '@/components/downloads/utils/downloadSearch';
+import {
+  RELEVANCE_SORT_FIELD,
+  resolveDownloadsSort,
+} from '@/components/downloads/utils/downloadsSort';
 
 export function useDownloadsFilters({
   apiKey,
@@ -60,8 +65,9 @@ export function useDownloadsFilters({
     setAppliedFilters,
     patchFilterCriteria,
     clearAllFilterCriteria,
-    sortField,
-    sortDirection,
+    sortField: urlSortField,
+    sortDirection: urlSortDirection,
+    hasExplicitSort,
     setSort,
     viewIds: urlViewIds,
     viewId: urlViewId,
@@ -80,6 +86,32 @@ export function useDownloadsFilters({
   const debouncedSearch = useDebouncedValue(searchInput, 250);
   const urlSearchDebounceRef = useRef(null);
 
+  const canSortByRelevance = downloadSearchHasRankableTerms(debouncedSearch);
+  const { sortField, sortDirection } = resolveDownloadsSort({
+    sortField: urlSortField,
+    sortDirection: urlSortDirection,
+    hasExplicitSort,
+    search: debouncedSearch,
+  });
+
+  /** URL search + sort as of the last render, read when the debounced search write fires. */
+  const urlSearchSortRef = useRef({
+    search: urlSearch,
+    sortField: urlSortField,
+    sortDirection: urlSortDirection,
+    hasExplicitSort,
+  });
+  useEffect(() => {
+    urlSearchSortRef.current = {
+      search: urlSearch,
+      sortField: urlSortField,
+      sortDirection: urlSortDirection,
+      hasExplicitSort,
+    };
+  }, [urlSearch, urlSortField, urlSortDirection, hasExplicitSort]);
+  /** Sort the user had before starting a search; restored when the search is cleared. */
+  const preSearchSortRef = useRef(null);
+
   useEffect(
     () => () => {
       if (urlSearchDebounceRef.current) clearTimeout(urlSearchDebounceRef.current);
@@ -92,10 +124,35 @@ export function useDownloadsFilters({
       setSearchInput(value);
       if (urlSearchDebounceRef.current) clearTimeout(urlSearchDebounceRef.current);
       urlSearchDebounceRef.current = setTimeout(() => {
+        const current = urlSearchSortRef.current;
+        const wasSearching = downloadSearchHasRankableTerms(current.search);
+        const isSearching = downloadSearchHasRankableTerms(value);
+
+        // Starting a search ranks by relevance, even over a sort picked beforehand.
+        if (!wasSearching && isSearching) {
+          preSearchSortRef.current = current.hasExplicitSort
+            ? { sortField: current.sortField, sortDirection: current.sortDirection }
+            : null;
+          if (current.hasExplicitSort) {
+            patchFilterCriteria({ search: value, sortField: RELEVANCE_SORT_FIELD });
+            return;
+          }
+        }
+
+        // Clearing it restores that sort, unless the user picked another one meanwhile.
+        if (wasSearching && !isSearching) {
+          const previous = preSearchSortRef.current;
+          preSearchSortRef.current = null;
+          if (previous && !current.hasExplicitSort) {
+            patchFilterCriteria({ search: value, ...previous });
+            return;
+          }
+        }
+
         setUrlSearch(value);
       }, 250);
     },
-    [setUrlSearch]
+    [setUrlSearch, patchFilterCriteria]
   );
 
   const [columnFilters, setColumnFilters] = useState(() => cloneFilters(EMPTY_FILTERS));
@@ -763,7 +820,9 @@ export function useDownloadsFilters({
 
   const handleSort = useCallback(
     (field) => {
-      if (sortField === field) {
+      if (field === RELEVANCE_SORT_FIELD) {
+        setSort(RELEVANCE_SORT_FIELD);
+      } else if (sortField === field) {
         setSort(field, sortDirection === 'asc' ? 'desc' : 'asc');
       } else {
         setSort(field, 'asc');
@@ -809,6 +868,7 @@ export function useDownloadsFilters({
     setStatusFilter,
     sortField,
     sortDirection,
+    canSortByRelevance,
     handleSort,
     setSort,
     views,

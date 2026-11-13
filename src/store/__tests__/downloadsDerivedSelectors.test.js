@@ -54,6 +54,59 @@ describe('downloadsDerivedSelectors', () => {
     expect(sorted[1]).toBe(entityKey('torrents', 1));
   });
 
+  describe('relevance sort', () => {
+    const searchEntities = {
+      [entityKey('torrents', 10)]: {
+        id: 10,
+        assetType: 'torrents',
+        name: 'Foo.Only.2020',
+        created_at: '2020-02-03',
+      },
+      [entityKey('torrents', 11)]: {
+        id: 11,
+        assetType: 'torrents',
+        name: 'Foo.Bar.2019',
+        created_at: '2020-02-01',
+      },
+      [entityKey('torrents', 12)]: {
+        id: 12,
+        assetType: 'torrents',
+        name: 'Bar.Only.2021',
+        created_at: '2020-02-02',
+      },
+    };
+    const searchIds = Object.keys(searchEntities);
+
+    test('ranks items matching more words first, then newest first', () => {
+      const sorted = sortIds(searchIds, searchEntities, 'relevance', 'desc', {
+        search: 'foo bar',
+      });
+      expect(sorted).toEqual([
+        entityKey('torrents', 11),
+        entityKey('torrents', 10),
+        entityKey('torrents', 12),
+      ]);
+    });
+
+    test('falls back to newest first without rankable terms', () => {
+      const sorted = sortIds(searchIds, searchEntities, 'relevance', 'desc', { search: '' });
+      expect(sorted).toEqual([
+        entityKey('torrents', 10),
+        entityKey('torrents', 12),
+        entityKey('torrents', 11),
+      ]);
+    });
+
+    test('selectVisibleSortedIds passes the search to the relevance sort', () => {
+      const visible = selectVisibleSortedIds(
+        { entities: searchEntities, order: { torrents: searchIds } },
+        'torrents',
+        { search: 'foo bar', statusFilter: 'all', sortField: 'relevance' }
+      );
+      expect(visible[0]).toBe(entityKey('torrents', 11));
+    });
+  });
+
   test('filterIds matches search on name', () => {
     const filtered = filterIds(ids, entities, {
       search: 'beta',

@@ -40,6 +40,9 @@ export default function SearchBar({ search, onSearchChange, itemTypePlural, clas
         <p className="text-primary-text/70 dark:text-primary-text-dark/70">
           {t('searchDownloadsHelpCombine')}
         </p>
+        <p className="text-primary-text/70 dark:text-primary-text-dark/70">
+          {t('searchDownloadsHelpRanking')}
+        </p>
       </div>
     ),
     [t]

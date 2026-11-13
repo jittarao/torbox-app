@@ -432,6 +432,7 @@
     "peers": "Pairs",
     "private": "Tracker Privé",
     "progress": "Progression",
+    "relevance": "Pertinence",
     "seeds": "Graines",
     "size": "Taille",
     "tags": "Étiquettes",
@@ -1387,7 +1388,9 @@
     "searchDownloadsHelpIntro": "Recherche dans les titres de téléchargement et les noms de fichiers.",
     "searchDownloadsHelpOr": "Plusieurs mots — correspond si l'un des mots apparaît (ex. 1080p bluray)",
     "searchDownloadsHelpPhrase": "Guillemets — correspond à la phrase exacte (ex. \"season 1\")",
+    "searchDownloadsHelpRanking": "Les résultats sont triés par pertinence : les titres correspondant au plus grand nombre de vos mots apparaissent en premier, et les mots présents dans la plupart des résultats (ex. « the ») comptent moins. Vous pouvez choisir un autre tri à tout moment.",
     "searchExamples": "Exemples de recherche",
+    "sortByRelevance": "Trier par pertinence",
     "streamFilters": "Filtres de flux",
     "validation": {
       "addonsLoading": "Chargement de vos addons… réessayez dans un instant.",
