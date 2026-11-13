@@ -26,6 +26,11 @@ import {
   notifyDownloadsFilterSearchParams,
   subscribeDownloadsFilterSearchParams,
 } from '@/hooks/downloadsFilterParamsUrl';
+import { downloadSearchHasRankableTerms } from '@/components/downloads/utils/downloadSearch';
+import {
+  DEFAULT_DOWNLOADS_SORT as DEFAULT_SORT,
+  RELEVANCE_SORT_FIELD,
+} from '@/components/downloads/utils/downloadsSort';
 
 export {
   parseStatusFilterParam,
@@ -55,8 +60,6 @@ export const DOWNLOADS_FILTER_PARAM_KEYS = [
   COMBINE_MODE_PARAM_KEYS.sources,
 ];
 
-const DEFAULT_SORT = { sortField: 'created_at', sortDirection: 'desc' };
-
 const filterStorage = {
   maxLength: MAX_FILTERS_PARAM_LENGTH,
   overflowKey: FILTERS_OVERFLOW_KEY,
@@ -75,6 +78,8 @@ function filtersFromSearchParams(searchParams) {
     statusFilter: parseStatusFilterParam(searchParams.get('status')),
     sortField,
     sortDirection,
+    /** False when the URL has no sort, so searches fall back to relevance. */
+    hasExplicitSort: searchParams.has('sort') || searchParams.has('dir'),
     viewIds,
     viewId: viewIds?.[0] ?? null,
     viewsOp: parseSectionCombineModeFromParams(searchParams, 'views'),
@@ -95,10 +100,19 @@ export function downloadsSearchParamFromValue(value) {
 }
 
 /** @param {URLSearchParams} params */
-function writeSearchToParams(params, value) {
+export function writeSearchToParams(params, value) {
   const encoded = downloadsSearchParamFromValue(value);
   if (encoded) params.set('q', encoded);
   else params.delete('q');
+
+  // Outside a search an explicit default sort is redundant; drop it to keep URLs canonical.
+  if (
+    !downloadSearchHasRankableTerms(encoded) &&
+    params.get('sort') === DEFAULT_SORT.sortField &&
+    !params.has('dir')
+  ) {
+    params.delete('sort');
+  }
 }
 
 /** @param {URLSearchParams} params */
@@ -125,9 +139,19 @@ export function shouldWriteAppliedFiltersInCriteriaPatch(patch) {
   return true;
 }
 
-/** @param {URLSearchParams} params */
-function writeSortToParams(params, sortField, sortDirection = 'asc') {
-  if (sortField && sortField !== DEFAULT_SORT.sortField) {
+/**
+ * Write `q` before calling this: while searching, an absent sort means relevance, so an
+ * explicit pick of the default sort must stay in the URL.
+ * @param {URLSearchParams} params
+ */
+export function writeSortToParams(params, sortField, sortDirection = 'asc') {
+  if (!sortField || sortField === RELEVANCE_SORT_FIELD) {
+    params.delete('sort');
+    params.delete('dir');
+    return;
+  }
+  const keepDefaultField = downloadSearchHasRankableTerms(params.get('q'));
+  if (keepDefaultField || sortField !== DEFAULT_SORT.sortField) {
     params.set('sort', sortField);
   } else {
     params.delete('sort');

@@ -8,6 +8,8 @@ import {
   MAX_AUTO_EXPAND_MATCHING_FILES,
   getParsedDownloadSearch,
   MAX_PARSED_SEARCH_CACHE,
+  downloadSearchHasRankableTerms,
+  scoreDownloadSearchResults,
 } from '../downloadSearch.js';
 
 describe('parseDownloadSearchQuery', () => {
@@ -243,5 +245,143 @@ describe('getParsedDownloadSearch', () => {
       getParsedDownloadSearch(`__cache-test-query-${i}__`);
     }
     expect(getParsedDownloadSearch('__cache-test-query-0__')).not.toBe(first);
+  });
+});
+
+describe('downloadSearchHasRankableTerms', () => {
+  test('false for empty and exclude-only queries', () => {
+    expect(downloadSearchHasRankableTerms('')).toBe(false);
+    expect(downloadSearchHasRankableTerms('   ')).toBe(false);
+    expect(downloadSearchHasRankableTerms('-sample')).toBe(false);
+  });
+
+  test('true when the query has include terms', () => {
+    expect(downloadSearchHasRankableTerms('foo')).toBe(true);
+    expect(downloadSearchHasRankableTerms('"foo bar" -sample')).toBe(true);
+  });
+});
+
+describe('scoreDownloadSearchResults', () => {
+  /** Score each item among `items` (names or `{ name, files }`). */
+  const scores = (items, query, filesByEntityKey) =>
+    scoreDownloadSearchResults(
+      items.map((item) => (typeof item === 'string' ? { name: item } : item)),
+      query,
+      filesByEntityKey
+    );
+  /** Names in relevance order. */
+  const rank = (names, query) => {
+    const itemScores = scores(names, query);
+    return names
+      .map((name, i) => ({ name, score: itemScores[i] }))
+      .toSorted((a, b) => b.score - a.score)
+      .map((entry) => entry.name);
+  };
+
+  test('zero without rankable terms', () => {
+    expect(scores(['Foo Bar'], '')).toEqual([0]);
+    expect(scores(['Foo Bar'], '-baz')).toEqual([0]);
+    expect(scores([], 'foo')).toEqual([]);
+  });
+
+  test('titles matching more words rank higher', () => {
+    expect(rank(['Foo.Baz.2020', 'Foo.Bar.2020'], 'foo bar')[0]).toBe('Foo.Bar.2020');
+    expect(rank(['Foo.Baz', 'Foo.Baz.Qux'], 'foo baz qux')[0]).toBe('Foo.Baz.Qux');
+  });
+
+  test('title matches outrank file-only matches', () => {
+    const [titleHit, fileHit] = scores(
+      ['Bar Collection', { name: 'Collection', files: [{ name: 'bar.mkv' }] }],
+      'bar'
+    );
+    expect(titleHit).toBeGreaterThan(fileHit);
+    expect(fileHit).toBeGreaterThan(0);
+  });
+
+  test('file names fill in words missing from the title', () => {
+    const files = [{ name: 'Foo.S01E01.mkv' }, { short_name: 'Bar.Extras.mkv' }];
+    const [withFiles, titleOnly] = scores(
+      [{ name: 'Foo Season 1', files }, { name: 'Foo Season 1' }],
+      'foo bar'
+    );
+    expect(withFiles).toBeGreaterThan(titleOnly);
+  });
+
+  test('more matched words beat a better match on fewer words', () => {
+    // Prefix matches on both words still beat an exact, leading match on one.
+    expect(rank(['Foo', 'Release.Foobar.Barbaz'], 'foo bar')[0]).toBe('Release.Foobar.Barbaz');
+  });
+
+  test('words adjacent and in order rank higher', () => {
+    expect(rank(['Office.Party.The.Movie', 'The.Office.US.S01'], 'the office')[0]).toBe(
+      'The.Office.US.S01'
+    );
+  });
+
+  test('exact tokens outrank prefix matches', () => {
+    expect(rank(['Matrixx.Reloaded', 'Matrix.Reloaded'], 'matrix')[0]).toBe('Matrix.Reloaded');
+  });
+
+  test('titles the terms cover more of rank higher', () => {
+    expect(rank(['Matrix.1999.1080p.BluRay.x264-GROUP', 'Matrix'], 'matrix')[0]).toBe('Matrix');
+  });
+
+  test('phrases and substring terms score as one term each', () => {
+    expect(rank(['The Matrix 2003', 'The Matrix 1999'], '"the matrix" 1999')[0]).toBe(
+      'The Matrix 1999'
+    );
+    expect(scores(['Movie.x264-GROUP'], 'x264-group')[0]).toBeGreaterThan(0);
+  });
+
+  test('reads file names from the side cache', () => {
+    const item = { id: 1, assetType: 'torrents', name: 'Pack', files: [] };
+    const [withCache] = scores([item], 'bar', { 'torrents:1': [{ name: 'bar.mkv' }] });
+    const [withoutCache] = scores([item], 'bar');
+    expect(withCache).toBeGreaterThan(withoutCache);
+  });
+
+  describe('common words', () => {
+    const library = [
+      'The.Thing.1982',
+      'Office.Space.1999',
+      'The.Matrix.1999',
+      'The.Godfather.1972',
+      'The.Office.US.S01',
+    ];
+
+    test('loose words found in most results count less', () => {
+      expect(rank(library, 'the office')).toEqual([
+        'The.Office.US.S01',
+        'Office.Space.1999',
+        'The.Thing.1982',
+        'The.Matrix.1999',
+        'The.Godfather.1972',
+      ]);
+    });
+
+    test('a common word still counts when the rare word ties', () => {
+      const [withThe, withoutThe] = scores(
+        ['The.Office.Complete', 'Office.Space.1999', 'The.Thing', 'The.Matrix'],
+        'the office'
+      );
+      expect(withThe).toBeGreaterThan(withoutThe);
+    });
+
+    test('equally common words keep full weight', () => {
+      expect(rank(['Foo.Baz', 'Bar.Qux', 'Foo.Bar'], 'foo bar')[0]).toBe('Foo.Bar');
+    });
+
+    test('quoted words keep full weight', () => {
+      const thing = library.indexOf('The.Thing.1982');
+      expect(scores(library, 'the office')[thing]).toBeLessThan(50);
+      expect(scores(library, '"the" office')[thing]).toBeGreaterThan(100);
+    });
+
+    test('plus-joined words keep full weight', () => {
+      const results = ['The.Office', 'The.Thing', 'The.Matrix', 'The.Godfather'];
+      const thing = results.indexOf('The.Thing');
+      expect(scores(results, 'the office thing')[thing]).toBeLessThan(200);
+      expect(scores(results, 'the+office thing')[thing]).toBeGreaterThan(200);
+    });
   });
 });

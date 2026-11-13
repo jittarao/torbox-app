@@ -190,6 +190,7 @@ export function useDownloadsProviderValues({
       setStatusFilter: filterData.setStatusFilter,
       sortField: filterData.sortField,
       sortDirection: filterData.sortDirection,
+      canSortByRelevance: filterData.canSortByRelevance,
       handleSort: filterData.handleSort,
     }),
     [
@@ -210,6 +211,7 @@ export function useDownloadsProviderValues({
       filterData.setStatusFilter,
       filterData.sortField,
       filterData.sortDirection,
+      filterData.canSortByRelevance,
       filterData.handleSort,
     ]
   );
