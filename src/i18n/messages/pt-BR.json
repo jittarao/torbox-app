@@ -1,0 +1,1833 @@
+{
+  "ActionButtons": {
+    "archive": "Arquivar",
+    "archiveConfirm": {
+      "archiving": "Arquivando…",
+      "cancel": "Cancelar",
+      "confirm": "Arquivar",
+      "message": "Arquivar {count} torrent(s)? Eles aparecerão em Downloads arquivados e serão removidos da sua lista ativa.",
+      "title": "Confirmar arquivamento"
+    },
+    "archiveTitle": "Arquivar os torrents selecionados no TBM e remover do TorBox",
+    "assignTags": "Tags",
+    "assignTagsTitle": "Atribuir tags aos downloads selecionados",
+    "bulkAirlockFailed": "Falha ao atualizar o Airlock",
+    "bulkAirlockLimitReached": "Limite de armazenamento do Airlock atingido. Remova alguns downloads do Airlock ou melhore seu plano.",
+    "bulkAirlockLock": "Bloquear",
+    "bulkAirlockLockTitle": "Bloquear downloads selecionados (Airlock)",
+    "bulkAirlockLocked": "{count} downloads bloqueados",
+    "bulkAirlockLocking": "Bloqueando…",
+    "bulkAirlockPartial": "Airlock atualizado em {success} downloads, {failed} com falha",
+    "bulkAirlockUnlock": "Desbloquear",
+    "bulkAirlockUnlockTitle": "Desbloquear downloads selecionados (Airlock)",
+    "bulkAirlockUnlocked": "{count} downloads desbloqueados",
+    "bulkAirlockUnlocking": "Desbloqueando…",
+    "bulkForceStartPartial": "{success} torrents iniciados à força, {failed} com falha",
+    "bulkForceStarted": "{count} torrents iniciados à força",
+    "bulkProtect": "Proteger",
+    "bulkProtectTitle": "Proteger downloads selecionados de ações destrutivas",
+    "bulkRetryPartial": "{success} downloads reenfileirados, {failed} com falha",
+    "bulkRetryStarted": "{count} downloads reenfileirados",
+    "bulkSeedingPartial": "Seeding interrompido em {success} torrents, {failed} com falha",
+    "bulkSeedingStopped": "Seeding interrompido em {count} torrents",
+    "bulkUnprotect": "Desproteger",
+    "bulkUnprotectTitle": "Permitir ações destrutivas nos downloads selecionados",
+    "bulkUploadFailed": "Falha ao enviar itens",
+    "bulkUploadPartial": "{success} itens enviados, {failed} com falha",
+    "bulkUploadSuccess": "{count} itens enviados para {provider} com sucesso",
+    "clear": "Limpar",
+    "clearTitle": "Limpar seleção",
+    "delete": "Excluir",
+    "deleteConfirm": {
+      "cancel": "Cancelar",
+      "confirm": "Excluir",
+      "deleting": "Excluindo…",
+      "deletingProgress": "Excluindo {current}/{total}…",
+      "includeParentDownloads": "Excluir downloads pai",
+      "includeParentDownloadsTooltip": "Quando arquivos dentro de downloads estiverem selecionados, marcar esta opção excluirá o download inteiro.",
+      "message": "Tem certeza de que deseja excluir {count} {type}? Esta ação não pode ser desfeita.",
+      "title": "Confirmar exclusão"
+    },
+    "deleteProtectedTitle": "Downloads protegidos não podem ser excluídos",
+    "downloadLinks": "Baixar",
+    "downloadLinksMobile": "Baixar",
+    "downloadLinksTitle": "Obter links de download da seleção",
+    "exportSelected": "Exportar",
+    "exportSelectedTitle": "Exportar torrents selecionados",
+    "exporting": "Exportando…",
+    "fetchingLinks": "Carregando…",
+    "forceStart": "Iniciar",
+    "forceStartTitle": "Forçar início dos torrents na fila",
+    "forceStarting": "Iniciando…",
+    "retry": {
+      "label": "Tentar novamente",
+      "title": "Tentar novamente os downloads selecionados"
+    },
+    "retrying": "Tentando novamente…",
+    "stopSeeding": "Parar seed",
+    "stopSeedingTitle": "Parar o seeding dos torrents selecionados",
+    "stoppingSeeding": "Parando…",
+    "toolbarLabel": "Ações da seleção",
+    "uploadToCloud": "Enviar para a nuvem",
+    "uploading": "Enviando…"
+  },
+  "ApiKeyInput": {
+    "hide": "Ocultar chave de API",
+    "label": "Chave de API",
+    "manageKeys": "Gerenciar chaves",
+    "placeholder": "Digite a chave de API do TorBox",
+    "show": "Mostrar chave de API"
+  },
+  "ApiKeyManager": {
+    "active": "Ativa",
+    "add": "Adicionar",
+    "addKey": "Adicionar chave",
+    "addNewKey": "Adicionar nova chave de API",
+    "addNewKeyHint": "Os rótulos ajudam a distinguir as contas rapidamente.",
+    "apiKey": "Chave de API",
+    "apiKeyPlaceholder": "Digite sua chave de API",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "deleteKey": "Excluir chave",
+    "keyLabel": "Rótulo da chave",
+    "keyLabelPlaceholder": "ex.: Pessoal, Família",
+    "keysCount": "{count, plural, =0 {Nenhuma chave} one {# chave} other {# chaves}}",
+    "managerPinned": "Desative “Manter aberto” para fechar",
+    "noKeys": "Nenhuma chave salva",
+    "noKeysHint": "Armazene perfis para alternar rapidamente entre contas do TorBox.",
+    "savedKeys": "Chaves de API salvas",
+    "toggleOpen": "Manter aberto"
+  },
+  "ArchivedDownloads": {
+    "actions": {
+      "addToTorBox": "Adicionar ao TorBox",
+      "copyMagnet": "Copiar magnet",
+      "remove": "Remover",
+      "selectItem": "Selecionar download arquivado"
+    },
+    "columns": {
+      "actions": "Ações",
+      "archivedAt": "Arquivado em",
+      "itemId": "ID do item",
+      "itemName": "Nome do item",
+      "itemType": "Tipo do item"
+    },
+    "emptyState": {
+      "description": "Crie uma regra de automação para arquivar downloads automaticamente. Quando um download for arquivado, ele aparecerá aqui para você restaurar, copiar ou excluir.",
+      "howItWorks": "Como funciona:",
+      "noSearchResults": "Nenhum download arquivado corresponde à sua busca.",
+      "step1": "Adicione uma regra com a ação “Arquivar download”",
+      "step2": "Quando a regra dispara, os downloads correspondentes são arquivados",
+      "step3": "Eles aparecem aqui para você restaurar, copiar ou excluir",
+      "title": "Nenhum download arquivado"
+    },
+    "title": "Downloads arquivados",
+    "toast": {
+      "magnetCopied": "Link magnet copiado para a área de transferência",
+      "removeError": "Falha ao remover dos Arquivados",
+      "removed": "Removido dos Arquivados",
+      "restoreError": "Falha ao adicionar ao TorBox",
+      "restored": "Adicionado ao TorBox"
+    }
+  },
+  "AutomationRules": {
+    "action": "Ação",
+    "actionFailed": "ação falhou",
+    "actionPerformed": "ação executada",
+    "actions": {
+      "addAirlock": "Adicionar ao Airlock",
+      "addAirlockDescription": "Bloqueia o download no Airlock do TorBox",
+      "addTag": "Adicionar tag",
+      "addTagDescription": "Adiciona uma ou mais tags ao download",
+      "archive": "Arquivar download",
+      "archiveDescription": "Move o download para os downloads arquivados sem excluir os arquivos",
+      "delete": "Excluir download",
+      "deleteDescription": "Exclui permanentemente o download e seus arquivos",
+      "forceStart": "Forçar início do download",
+      "forceStartDescription": "Força o download a iniciar",
+      "removeAirlock": "Remover do Airlock",
+      "removeAirlockDescription": "Desbloqueia o download no Airlock do TorBox",
+      "removeTag": "Remover tag",
+      "removeTagDescription": "Remove uma ou mais tags do download",
+      "selectTags": "Selecionar tags",
+      "stopSeeding": "Parar seeding",
+      "stopSeedingDescription": "Para o seeding do torrent, mas o mantém na lista de downloads"
+    },
+    "actionsFailed": "ações falharam",
+    "actionsPerformed": "ações executadas",
+    "add": "Adicionar regra",
+    "addCondition": "Adicionar condição",
+    "addConditionToGroup": "Adicionar condição ao grupo",
+    "addRule": "Adicionar regra",
+    "assetTypes": {
+      "hint": "Condições e ações se limitam ao que cada tipo selecionado oferece suporte.",
+      "label": "Tipo",
+      "webdl": "WebDL"
+    },
+    "booleanOperators": {
+      "isFalse": "É falso",
+      "isTrue": "É verdadeiro"
+    },
+    "booleanValues": {
+      "false": "Falso",
+      "true": "Verdadeiro"
+    },
+    "cancel": "Cancelar",
+    "checkEvery": "Verificar a cada",
+    "clearLogs": "Limpar registros",
+    "close": "Fechar",
+    "condition": "Condição",
+    "conditionGroups": {
+      "downloading": "Baixando",
+      "lifecycle": "Ciclo de vida",
+      "metadata": "Metadados",
+      "stalled": "Parado"
+    },
+    "conditions": {
+      "age": "Idade",
+      "ageDescription": "Tempo desde que o download foi adicionado (em horas)",
+      "allowZip": "Permitir ZIP",
+      "allowZipDescription": "Se o torrent permite extração de arquivos ZIP",
+      "availability": "Disponibilidade",
+      "availabilityDescription": "Proporção de partes disponíveis em relação ao total de partes (0,0–1,0)",
+      "avgDownloadSpeed": "Velocidade média de download",
+      "avgDownloadSpeedDescription": "Velocidade média de download em MB/s nas horas especificadas",
+      "avgUploadSpeed": "Velocidade média de envio",
+      "avgUploadSpeedDescription": "Velocidade média de envio em MB/s nas horas especificadas",
+      "cached": "Em cache",
+      "cachedDescription": "Se o torrent está em cache no servidor",
+      "calculatedOver": "calculado em",
+      "downloadSpeed": "Velocidade atual de download",
+      "downloadSpeedDescription": "Velocidade atual de download (MB/s)",
+      "downloadStalledTime": "Tempo de download parado",
+      "downloadStalledTimeDescription": "Tempo desde que a atividade de download parou (em minutos)",
+      "etaDescription": "Tempo estimado até a conclusão do download (em minutos)",
+      "expiresAt": "Expira em",
+      "expiresAtDescription": "Horas restantes até o torrent expirar; o valor informado é comparado em horas",
+      "fileCount": "Nº de arquivos",
+      "fileCountDescription": "Número de arquivos no torrent",
+      "fileSize": "Tamanho do arquivo",
+      "fileSizeDescription": "Tamanho total de todos os arquivos do torrent (em GB)",
+      "hours": "Horas",
+      "isActive": "Está ativo",
+      "isActiveDescription": "Se o torrent está ativo no momento (baixando ou em seeding)",
+      "isAirlocked": "Está no Airlock",
+      "isAirlockedDescription": "Se o download está bloqueado no Airlock do TorBox",
+      "lastDownloadActivity": "Última atividade de download",
+      "lastDownloadActivityDescription": "Minutos desde a última atividade de download; o valor informado é comparado em minutos",
+      "lastUploadActivity": "Última atividade de envio",
+      "lastUploadActivityDescription": "Minutos desde a última atividade de envio; o valor informado é comparado em minutos",
+      "longTermSeeding": "Seeding de longo prazo",
+      "longTermSeedingDescription": "Se o torrent está em seeding há muito tempo",
+      "name": "Nome",
+      "nameDescription": "Nome do torrent (aceita busca por texto)",
+      "namePlaceholder": "Digite o texto para buscar…",
+      "originalUrl": "URL de origem",
+      "originalUrlDescription": "URL original usada para criar o download (aceita busca por texto)",
+      "originalUrlPlaceholder": "Digite a URL para buscar…",
+      "peersDescription": "Número de peers conectados no momento",
+      "private": "Privado",
+      "privateDescription": "Se o torrent vem de um tracker privado",
+      "progress": "Progresso",
+      "progressDescription": "Percentual de progresso do download (0–100)",
+      "seedingEnabled": "Seeding ativado",
+      "seedingEnabledDescription": "Se o seeding está ativado para este torrent",
+      "seedingRatio": "Ratio de seeding",
+      "seedingRatioDescription": "Proporção entre dados enviados e baixados",
+      "seedingTime": "Tempo de seeding",
+      "seedingTimeDescription": "Tempo total em seeding (em horas)",
+      "seedsDescription": "Número de seeders disponíveis no momento",
+      "stalledTime": "Tempo parado",
+      "statusDescription": "Status atual do torrent (baixando, em seeding, concluído etc.)",
+      "statusPlaceholder": "Selecione os status…",
+      "tagsDescription": "Filtrar por tags atribuídas aos downloads",
+      "tagsPlaceholder": "Selecione as tags…",
+      "totalDownloaded": "Total baixado",
+      "totalDownloadedDescription": "Quantidade total de dados baixados (em MB)",
+      "totalUploaded": "Total enviado",
+      "totalUploadedDescription": "Quantidade total de dados enviados (em GB)",
+      "trackerDescription": "URL ou nome do tracker (aceita busca por texto)",
+      "trackerPlaceholder": "Digite a URL ou o nome do tracker…",
+      "uploadSpeed": "Velocidade atual de envio",
+      "uploadSpeedDescription": "Velocidade atual de envio (MB/s)",
+      "uploadStalledTime": "Tempo de envio parado",
+      "uploadStalledTimeDescription": "Tempo desde que a atividade de envio parou (em minutos)",
+      "value": "Valor"
+    },
+    "delete": "Excluir",
+    "details": "Detalhes",
+    "emptyState": {
+      "backendRequired": "Backend necessário para automação 24 horas",
+      "backendRequiredDescription": "Conecte o backend do TorBox Manager para que as regras sejam salvas e avaliadas automaticamente. Sem ele, as regras não podem rodar em segundo plano.",
+      "createFirstRule": "Crie sua primeira regra",
+      "description": "Crie regras para parar o seeding, arquivar, excluir, marcar com tags ou forçar o início de downloads automaticamente quando as condições forem atendidas.",
+      "howItWorks": "Como funciona:",
+      "step1": "Defina condições (ratio, status, tags e muito mais) e escolha uma ação",
+      "step2": "Com o backend conectado, as regras rodam em um cronograma 24 horas por dia",
+      "step3": "Veja os registros de execução ou rode uma regra manualmente pelo cartão dela",
+      "title": "Nenhuma regra de automação ainda"
+    },
+    "enabledAt": "ativada",
+    "error": "Erro",
+    "executions": "execuções",
+    "failed": "Falhou",
+    "itemsAffected": "Itens afetados",
+    "lastRanAt": "Última execução",
+    "lastTriggered": "último disparo",
+    "logicOperators": {
+      "and": "E",
+      "andGroups": "TODOS os grupos (E)",
+      "or": "OU",
+      "orGroups": "QUALQUER grupo (OU)"
+    },
+    "mobileTitle": "Regras",
+    "multiSelectOperators": {
+      "isAnyOf": "É qualquer um de",
+      "isNoneOf": "Não é nenhum de"
+    },
+    "neverExecuted": "nunca executada",
+    "neverTriggered": "nunca disparada",
+    "noConditionsInGroup": "Nenhuma condição neste grupo. Clique em “+ Condição” para adicionar.",
+    "noLogs": "Nenhum registro disponível",
+    "noRules": "Nenhuma regra de automação",
+    "operators": {
+      "eq": "é igual a",
+      "gt": "é maior que",
+      "gte": "é maior ou igual a",
+      "lt": "é menor que",
+      "lte": "é menor ou igual a"
+    },
+    "presets": {
+      "deleteInactive": "Excluir downloads inativos",
+      "deleteIncomplete": "Excluir torrents incompletos",
+      "deleteQueued": "Excluir downloads na fila (6+ horas)",
+      "deleteStalled": "Excluir downloads parados (1+ hora)",
+      "deleteUnavailable": "Excluir torrents indisponíveis",
+      "stopSeedingLowRatio": "Parar seeding com ratio baixo",
+      "title": "Predefinições rápidas"
+    },
+    "removeCondition": "Remover condição",
+    "removeGroup": "Remover grupo",
+    "ruleEvaluatedNoActions": "A regra foi avaliada, mas nenhuma ação foi executada.",
+    "ruleExecuted": "Regra executada",
+    "ruleLogs": "Registros da regra",
+    "ruleName": "Nome da regra",
+    "ruleNamePlaceholder": "Digite o nome da regra",
+    "ruleRateLimited": "Regra limitada por requisições",
+    "ruleRateLimitedDescription": "A execução da regra foi limitada por requisições.",
+    "runRule": "Executar regra",
+    "running": "Executando…",
+    "searchConditionOptionsNoMatches": "Nenhuma opção correspondente",
+    "searchConditionOptionsPlaceholder": "Buscar…",
+    "section": {
+      "hide": "Ocultar regras",
+      "show": "Mostrar regras"
+    },
+    "stringOperators": {
+      "contains": "Contém",
+      "endsWith": "Termina com",
+      "equals": "É igual a",
+      "notContains": "Não contém",
+      "notEquals": "Não é igual a",
+      "startsWith": "Começa com"
+    },
+    "success": "Sucesso",
+    "tagOperators": {
+      "isAllOf": "É todas de",
+      "isAnyOf": "É qualquer uma de",
+      "isNoneOf": "Não é nenhuma de",
+      "isNotSet": "Não definida",
+      "isSet": "Definida"
+    },
+    "timeOperators": {
+      "eq": "é",
+      "gt": "mais de",
+      "gte": "pelo menos",
+      "lt": "menos de",
+      "lte": "no máximo"
+    },
+    "timestampOperators": {
+      "eq": "exatamente",
+      "gt": "mais de",
+      "gte": "pelo menos",
+      "lt": "menos de",
+      "lte": "no máximo"
+    },
+    "title": "Regras de automação",
+    "torrentMatched": "torrent correspondente",
+    "torrentsMatched": "torrents correspondentes",
+    "transfer": {
+      "export": "Exportar",
+      "exportFailed": "Falha na exportação: {error}",
+      "exportSuccess": "{count, plural, one {# regra exportada} other {# regras exportadas}}",
+      "exportTitle": "Baixe suas regras como um arquivo para importar depois, por exemplo após trocar sua chave de API",
+      "exporting": "Exportando…",
+      "fileErrors": {
+        "notJson": "Esse arquivo não é um JSON válido",
+        "tooLarge": "Esse arquivo tem mais de 1 MB",
+        "wrongFormat": "Esse arquivo não é uma exportação de regras de automação do TorBox Manager"
+      },
+      "import": "Importar",
+      "importFailed": "Falha na importação: {error}",
+      "importNothing": "Nenhuma regra importada: {skipped, plural, one {# regra foi ignorada} other {# regras foram ignoradas}} (já existe uma regra com o mesmo nome, é inválida ou faltam tags)",
+      "importPartial": "{imported, plural, one {# regra importada} other {# regras importadas}}; {skipped} ignorada(s) (já existe uma regra com o mesmo nome, é inválida ou faltam tags)",
+      "importSuccess": "{imported, plural, one {# regra importada} other {# regras importadas}}",
+      "importTitle": "Adicione regras a partir de um arquivo exportado. As regras existentes são mantidas.",
+      "importing": "Importando…"
+    },
+    "triggers": "disparos",
+    "update": "Atualizar regra",
+    "viewLogs": "Ver registros"
+  },
+  "CardList": {
+    "noItems": "Nenhum download",
+    "toast": {
+      "copyLink": "Link copiado para a área de transferência",
+      "copyLinkFailed": "Falha ao copiar o link"
+    }
+  },
+  "CloudUpload": {
+    "activeJobs": "Tarefas ativas",
+    "cancel": "Cancelar",
+    "complete": "Concluído",
+    "connect": "Conectar",
+    "connected": "Conectado",
+    "connectedProviders": "Provedores conectados",
+    "disconnect": "Desconectar",
+    "manageConnections": "Gerenciar conexões",
+    "noActiveJobs": "Nenhuma tarefa ativa",
+    "notConnected": "Não conectado",
+    "title": "Gerenciador de armazenamento em nuvem",
+    "toast": {
+      "connectionError": "Falha ao conectar ao provedor",
+      "connectionSuccess": "Conectado ao provedor com sucesso",
+      "disconnectionError": "Falha ao desconectar do provedor",
+      "disconnectionSuccess": "Desconectado do provedor com sucesso",
+      "jobCancelError": "Falha ao cancelar a tarefa",
+      "jobCancelled": "Tarefa cancelada com sucesso"
+    }
+  },
+  "ColumnManager": {
+    "manageColumns": "Gerenciar colunas",
+    "reorderColumns": "Reordenar colunas"
+  },
+  "Columns": {
+    "actions": "Ações",
+    "airlocked": "No Airlock",
+    "airlocked_filter": "Está no Airlock",
+    "asset_type": "Tipo",
+    "cached_at": "Data em cache",
+    "created_at": "Adicionado em",
+    "download_progress": "Progresso",
+    "download_speed": "Vel. de download",
+    "expires_at": "Expira em",
+    "file_count": "Nº de arquivos",
+    "is_downloaded": "Baixado",
+    "is_protected": "Protegido",
+    "is_protected_filter": "Está protegido",
+    "name": "Nome",
+    "original_url": "URL de origem",
+    "private": "Tracker privado",
+    "progress": "Progresso",
+    "relevance": "Relevância",
+    "size": "Tamanho",
+    "total_downloaded": "Total baixado",
+    "total_uploaded": "Total enviado",
+    "updated_at": "Atualizado em",
+    "upload_speed": "Vel. de envio"
+  },
+  "Common": {
+    "airlocked": "No Airlock",
+    "hours": "horas",
+    "itemTypes": {
+      "All": "Todos",
+      "File": "Arquivo",
+      "Files": "Arquivos",
+      "Webdl": "WebDL",
+      "all": "todos",
+      "file": "arquivo",
+      "files": "arquivos",
+      "webdl": "WebDL"
+    },
+    "loading": "Carregando…",
+    "minutes": "minutos",
+    "next": "Próximo",
+    "notAirlocked": "Fora do Airlock",
+    "notProtected": "Não protegido",
+    "of": "de",
+    "previous": "Anterior",
+    "protected": "Protegido",
+    "selectAll": "Selecionar tudo",
+    "selectRow": "Selecionar {name}",
+    "showing": "Exibindo",
+    "time": {
+      "ago": " atrás",
+      "complete": "Concluído",
+      "in": "em ",
+      "m": "min",
+      "mo": "m",
+      "unknown": "Desconhecido",
+      "y": "a"
+    }
+  },
+  "CustomViews": {
+    "addFilter": "Adicionar filtro",
+    "addFilterToGroup": "Adicionar filtro ao grupo",
+    "addGroup": "Adicionar grupo",
+    "assetTypeDescription": "Filtrar por tipo de download (torrent, Usenet ou WebDL)",
+    "betweenGroups": "Entre grupos:",
+    "cancel": "Cancelar",
+    "columnGroups": {
+      "downloading": "Baixando",
+      "lifecycle": "Ciclo de vida",
+      "metadata": "Metadados",
+      "timestamps": "Tempo"
+    },
+    "createView": "Criar visualização",
+    "creating": "Criando…",
+    "enterValuePlaceholder": "Digite o valor…",
+    "includeColumns": "Incluir colunas",
+    "includeSearch": "Incluir busca",
+    "includeSearchHint": "Busca: “{query}” (corresponde a títulos e nomes de arquivos)",
+    "includeSort": "Incluir ordenação",
+    "isDownloadedDescription": "Se os arquivos deste download já foram salvos no seu dispositivo",
+    "isProtectedDescription": "Se o download está protegido contra expiração automática",
+    "noFilters": "Nenhum filtro. Clique em “+ Filtro” em um grupo para criar.",
+    "noFiltersInGroup": "Nenhum filtro neste grupo. Clique em “+ Filtro” para adicionar.",
+    "previewApplied": "Prévia aplicada à lista abaixo. Salve quando estiver pronto ou continue ajustando os filtros.",
+    "previewFilters": "Prévia",
+    "previewHint": "Aplica filtros à lista de downloads sem salvar.",
+    "previewMatchCount": "{count, plural, =0 {Nenhum download corresponde} one {# download corresponde} other {# downloads correspondem}}",
+    "previewMatchCountOfTotal": "{matched} de {total} nesta aba",
+    "removeGroup": "Remover grupo",
+    "save": "Salvar",
+    "saveAsNew": "Salvar como nova",
+    "saving": "Salvando…",
+    "searchFilterOptionsNoMatches": "Nenhuma opção correspondente",
+    "searchFilterOptionsPlaceholder": "Buscar…",
+    "selectPlaceholder": "Selecione…",
+    "selectTagsPlaceholder": "Selecione as tags…",
+    "updateView": "Atualizar visualização",
+    "updating": "Atualizando…",
+    "viewEditorDescriptionCreate": "Dê um nome à sua visualização e defina filtros para alternar rapidamente entre listas de downloads.",
+    "viewEditorDescriptionEdit": "Atualize os filtros e, opcionalmente, inclua ordenação, colunas ou busca nesta visualização.",
+    "viewEditorDescriptionFilter": "Monte filtros para aplicar à sua lista ou salve-os como uma visualização reutilizável.",
+    "viewEditorFiltersSection": "Regras de filtro",
+    "viewEditorNameLabel": "Nome da visualização",
+    "viewEditorSaveOptions": "Também incluir na visualização",
+    "viewNamePlaceholder": "Nome da visualização…"
+  },
+  "Desktop": {
+    "advancedDescription": "Detalhes de conexão e opções para instâncias auto-hospedadas do TorBox Manager.",
+    "advancedTitle": "Avançado",
+    "appVersion": "Versão",
+    "bridgeOutdated": "Esta versão do site é mais antiga do que o app desktop espera. Atualize o app no navegador ou recarregue após publicar uma versão web mais recente.",
+    "browserUnavailable": "Instale e abra o TorBox Manager como app desktop para alterar estas configurações.",
+    "browserUnavailableTitle": "App desktop necessário",
+    "clearCredentials": "Remover chave salva",
+    "clearCredentialsFailed": "Não foi possível remover a chave de API salva",
+    "clearCredentialsSuccess": "Chave de API removida deste dispositivo",
+    "credentialLastUpdated": "Salva por último em {date}",
+    "credentialNotStored": "Não salva neste dispositivo",
+    "credentialNotStoredShort": "Não salva",
+    "credentialStored": "Salva com segurança neste dispositivo",
+    "credentialStoredDetail": "Envios em segundo plano e o monitor de pasta podem usar sua chave salva enquanto o app estiver fechado.",
+    "credentialStoredShort": "Salva",
+    "credentialSyncAction": "Salvar chave de API neste dispositivo",
+    "credentialSyncFailed": "Não foi possível salvar sua chave de API neste dispositivo",
+    "credentialSyncHelp": "Salve sua chave de API do TorBox nas configurações do app desktop para que os envios em segundo plano e o monitor de pasta possam rodar enquanto o app estiver fechado. A chave nunca é exibida novamente após ser salva.",
+    "credentialSyncNoKey": "Adicione sua chave de API do TorBox no app antes de salvá-la neste dispositivo",
+    "credentialSyncSuccess": "Chave de API salva com segurança neste dispositivo",
+    "credentialSyncTitle": "Sessão no dispositivo",
+    "credentialSyncUpdateAction": "Atualizar chave salva",
+    "description": "Configure inicialização, notificações e o monitor de pasta.",
+    "desktopAppActive": "App desktop",
+    "folderWatcher": {
+      "actionDelete": "Excluir o arquivo .torrent",
+      "actionDeleteShort": "Excluir após o envio",
+      "actionMoveToCustom": "Mover para outra pasta",
+      "actionMoveToCustomShort": "Mover para pasta personalizada",
+      "actionMoveToUploaded": "Mover para uma subpasta uploaded/",
+      "actionMoveToUploadedShort": "Mover para a subpasta uploaded/",
+      "actionsHelp": "As alterações são salvas automaticamente. Use Iniciar e Parar no cartão de status para controlar o monitor.",
+      "activeRulesCount": "{count, plural, one {# monitorando} other {# monitorando}}",
+      "addRule": "Adicionar regra de monitoramento",
+      "changeFolderWhileRunningConfirm": "Esta regra será desativada e salva; depois você poderá escolher uma nova pasta.",
+      "changeFolderWhileRunningProceed": "Parar e trocar de pasta",
+      "changeFolderWhileRunningTitle": "Trocar a pasta monitorada?",
+      "chooseFolder": "Escolher pasta",
+      "chooseMoveFolder": "Escolher pasta de destino",
+      "clearFolder": "Limpar",
+      "credentialRequired": "Salve sua chave de API neste dispositivo nas configurações Gerais antes de usar o monitor de pasta.",
+      "customMovePathRequired": "Escolha uma pasta de destino para moveToCustom",
+      "description": "Envia automaticamente novos arquivos .torrent de uma ou mais pastas, mesmo com o app em segundo plano.",
+      "disableWatcher": "Desativar monitor",
+      "emptyStateDescription": "Cada regra monitora uma pasta com suas próprias opções de envio. Adicione sua primeira regra para escolher uma pasta e configurar o que acontece após o envio.",
+      "emptyStateTitle": "Nenhuma regra de monitoramento ainda",
+      "enableWatcher": "Ativar monitor",
+      "enabledRulesCount": "{count, plural, one {# ativa} other {# ativas}}",
+      "enabledToggleHelp": "Quando ativada, esta regra monitora sua pasta e é retomada automaticamente na próxima vez que você abrir o app.",
+      "enabledToggleLabel": "Ativar esta regra",
+      "maxRulesReached": "Você pode configurar até {maxRules} regras de monitoramento.",
+      "noFolderSelected": "Nenhuma pasta selecionada",
+      "noRules": "Nenhuma regra de monitoramento ainda. Adicione uma regra para escolher uma pasta e configurar seu comportamento.",
+      "optionAddOnlyIfCached": "Adicionar somente se estiver em cache",
+      "optionAllowZip": "Permitir download em ZIP",
+      "optionAsQueued": "Adicionar na fila",
+      "optionSeed": "Fazer seed do torrent após adicionar",
+      "overlappingWatchPaths": "As pastas monitoradas não podem se sobrepor nem ficar aninhadas umas dentro das outras.",
+      "pickFolderFailed": "Falha ao escolher a pasta",
+      "postUploadAction": "Após o envio bem-sucedido",
+      "queueDepth": "Profundidade da fila",
+      "removeRule": "Remover regra",
+      "removeRuleWhileActive": "Pare o monitor antes de remover uma regra ativa",
+      "ruleNoFolder": "Nenhuma pasta selecionada",
+      "ruleSetupHint": "Escolha uma pasta para começar a configurar esta regra",
+      "ruleStatusActive": "Monitorando esta pasta",
+      "ruleStatusDisabled": "Desativada",
+      "ruleStatusEnabled": "Ativada, sem monitorar",
+      "ruleTitle": "Regra {index}",
+      "rulesDescription": "Cada regra monitora uma pasta com suas próprias opções de envio. Até {maxRules} regras.",
+      "rulesTitle": "Regras de monitoramento",
+      "saveFailed": "Falha ao salvar as configurações do monitor de pasta",
+      "saveSettings": "Salvar configurações do monitor",
+      "saveSuccess": "Configurações do monitor de pasta salvas",
+      "scanConfirmBody": "Isto enviará todos os arquivos .torrent que já estão na pasta monitorada. Só continue se você pretende enviar esses arquivos em lote.",
+      "scanConfirmCancel": "Cancelar",
+      "scanConfirmProceed": "Verificar e ativar",
+      "scanConfirmTitle": "Verificar arquivos .torrent existentes?",
+      "scanExisting": "Verificar arquivos existentes ao ativar",
+      "scanExistingHelp": "Quando ativado, os arquivos .torrent existentes na pasta monitorada são enviados na próxima vez que o monitor iniciar.",
+      "startFailed": "Falha ao iniciar o monitor de pasta",
+      "startSuccess": "Monitor de pasta iniciado",
+      "startWatcher": "Iniciar monitor",
+      "statusRunning": "Em execução",
+      "statusRunningHint": "Monitorando novos arquivos .torrent e enviando-os em segundo plano.",
+      "statusStopped": "Parado",
+      "statusStoppedHint": "Adicione uma regra, escolha pastas e inicie o monitor para enviar torrents automaticamente.",
+      "statusTitle": "Status do monitor",
+      "stopFailed": "Falha ao parar o monitor de pasta",
+      "stopSuccess": "Monitor de pasta parado",
+      "stopWatcher": "Parar monitor",
+      "subsections": {
+        "behavior": "Após o envio",
+        "behaviorDescription": "O que acontece com cada arquivo .torrent depois de enviado com sucesso.",
+        "options": "Opções de torrent",
+        "optionsDescription": "Opções padrão aplicadas quando o monitor de pasta envia torrents.",
+        "setup": "Pasta monitorada",
+        "setupDescription": "Escolha a pasta que esta regra monitora em busca de novos arquivos .torrent."
+      },
+      "title": "Monitor de pasta",
+      "unsavedChanges": "Você tem alterações não salvas no monitor. Salve antes de iniciar o monitor.",
+      "updateDesktopApp": "Atualize o app desktop para ativar o monitoramento de pastas",
+      "uploadedPreview": "Os arquivos serão movidos para {path}",
+      "uploadsToday": "Envios hoje",
+      "watchFolder": "Pasta monitorada",
+      "watchFolderRequired": "Escolha uma pasta monitorada primeiro"
+    },
+    "initFailedTitle": "Não foi possível conectar ao app desktop",
+    "initRetry": "Tentar novamente",
+    "instanceUrlCancel": "Cancelar",
+    "instanceUrlChangeAction": "Alterar URL da instância",
+    "instanceUrlCurrent": "Instância conectada",
+    "instanceUrlHelp": "Use uma URL de instância auto-hospedada do TorBox Manager em vez da instância hospedada padrão. HTTPS é obrigatório para hosts públicos; HTTP é permitido para endereços locais ou de rede privada (por exemplo, http://192.168.1.10:3000).",
+    "instanceUrlSave": "Salvar URL",
+    "instanceUrlSaveFailed": "Não foi possível salvar a URL da instância",
+    "instanceUrlSaved": "URL da instância salva. Reinicie o app desktop para conectar.",
+    "instanceUrlTitle": "URL de instância personalizada",
+    "launchAtLogin": {
+      "description": "Inicie o app automaticamente ao entrar no computador.",
+      "disabledSuccess": "Abrir ao iniciar o sistema desativado",
+      "enabledSuccess": "Abrir ao iniciar o sistema ativado",
+      "help": "Útil se você depende do monitor de pasta ou de outros recursos em segundo plano.",
+      "label": "Abrir ao iniciar o sistema",
+      "osMismatch": "A configuração do sistema pode estar fora de sincronia. Alterne novamente para corrigir.",
+      "requiresApproval": "O macOS precisa da sua aprovação antes de o app poder iniciar no login. Abra Ajustes do Sistema → Geral → Itens de Login e permita o app.",
+      "saveFailed": "Falha ao atualizar a opção de abrir ao iniciar",
+      "startHiddenHelp": "Quando ativado junto com abrir ao iniciar, o app fica na barra de menus até você abri-lo.",
+      "startHiddenLabel": "Iniciar oculto ao entrar",
+      "startHiddenSaveFailed": "Falha ao atualizar a preferência de iniciar oculto",
+      "title": "Inicialização",
+      "updateDesktopApp": "Atualize o app desktop para ativar a opção de abrir ao iniciar"
+    },
+    "nativeNotifications": {
+      "description": "Mostre notificações do sistema para envios do monitor de pasta e alertas da conta TorBox.",
+      "enabledHelp": "Chave geral para notificações nativas do desktop.",
+      "enabledLabel": "Ativar notificações nativas",
+      "saveFailed": "Falha ao salvar as configurações de notificação",
+      "saveSuccess": "Configurações de notificação salvas",
+      "testAction": "Enviar notificação de teste",
+      "testFailed": "Não foi possível exibir uma notificação de teste",
+      "testSuccess": "Notificação de teste enviada",
+      "title": "Notificações",
+      "torboxHelp": "Avise quando novas notificações da conta TorBox chegarem com o app em segundo plano.",
+      "torboxLabel": "Notificar sobre notificações do TorBox",
+      "updateDesktopApp": "Atualize o app desktop para ativar as notificações nativas",
+      "uploadFailureHelp": "Avise quando o envio de um torrent monitorado falhar.",
+      "uploadFailureLabel": "Notificar em caso de falha no envio",
+      "uploadSuccessHelp": "Avise quando o envio de um torrent monitorado for bem-sucedido.",
+      "uploadSuccessLabel": "Notificar quando o envio for bem-sucedido"
+    },
+    "platform": "Plataforma",
+    "restartRequired": "Reinicie o app desktop após alterar a URL da instância.",
+    "tabs": {
+      "ariaLabel": "Seções de configurações",
+      "general": "Geral",
+      "generalDescription": "Opções de inicialização, bandeja, acesso e conexão",
+      "notifications": "Notificações",
+      "notificationsDescription": "Notificações nativas do sistema para envios e alertas do TorBox",
+      "watcher": "Monitor de pasta",
+      "watcherActive": "Em execução",
+      "watcherDescription": "Envios automáticos de torrents a partir de uma pasta monitorada"
+    },
+    "title": "Configurações",
+    "tray": {
+      "backgroundPresenceDockHelp": "⌘W e o botão fechar minimizam a janela. O app permanece aberto no Dock ou na barra de tarefas até você sair pelo menu do app, pelo Dock ou pela bandeja.",
+      "backgroundPresenceDockLabel": "Manter no Dock ou na barra de tarefas",
+      "backgroundPresenceLegend": "Quando a janela é fechada ou minimizada",
+      "backgroundPresenceTrayHelp": "⌘W e o botão fechar ocultam a janela na barra de menus ou na bandeja do sistema. O app continua rodando em segundo plano até você escolher Sair.",
+      "backgroundPresenceTrayLabel": "Manter na barra de menus ou na bandeja do sistema",
+      "description": "Escolha onde o app fica quando você fecha ou minimiza a janela.",
+      "quitHint": "O app só é encerrado completamente quando você escolhe Sair no menu do app, no Dock ou na bandeja.",
+      "saveFailed": "Falha ao salvar as configurações da bandeja",
+      "saveSuccess": "Configurações da bandeja salvas",
+      "startHiddenHelp": "Quando combinado com abrir ao iniciar, o app inicia na bandeja sem abrir uma janela.",
+      "startHiddenLabel": "Iniciar oculto",
+      "title": "Bandeja e segundo plano",
+      "updateDesktopApp": "Atualize o app desktop para ativar os recursos da bandeja"
+    },
+    "updateDesktopApp": "Atualize o app desktop para usar este recurso",
+    "updater": {
+      "checkAction": "Verificar atualizações",
+      "checkFailed": "Não foi possível verificar atualizações",
+      "currentVersion": "Versão instalada",
+      "description": "Verifique se há uma versão mais recente do app desktop.",
+      "installAction": "Instalar atualização e reiniciar",
+      "installFailed": "Não foi possível instalar a atualização",
+      "title": "Atualizações do desktop",
+      "unavailable": "As atualizações do desktop ainda não estão habilitadas nesta versão.",
+      "upToDate": "O app está atualizado",
+      "updateAvailable": "A versão {version} está disponível",
+      "updateReady": "Atualização {version} pronta"
+    }
+  },
+  "DownloadPanel": {
+    "actions": {
+      "copied": "Copiado",
+      "copy": "Copiar",
+      "copyAll": "Copiar todos os links",
+      "copyLink": "Copiar link",
+      "copyLinkWithIndex": "Copiar link {index} de {total}",
+      "done": "Concluído",
+      "downloadFile": "Baixar arquivo",
+      "downloadFileWithIndex": "Abrir download {index} de {total}",
+      "open": "Abrir"
+    },
+    "aria": {
+      "collapse": "Recolher painel de downloads",
+      "dismiss": "Fechar painel de downloads",
+      "expand": "Expandir painel de downloads"
+    },
+    "badge": {
+      "ready": "{count, plural, one {# link pronto} other {# links prontos}}"
+    },
+    "hint": {
+      "expiry": "Os links expiram em 4 horas"
+    },
+    "status": {
+      "fetching": "Buscando {current} de {total}",
+      "fetchingWithPercent": "Buscando {current} de {total} · {percent}%",
+      "generated": "Gerado",
+      "generating": "Gerando links…",
+      "generatingMore": "Gerando mais links…"
+    },
+    "title": {
+      "multiple": "Links de download",
+      "single": "Link de download"
+    },
+    "toast": {
+      "bulkAllFailed": "Não foi possível gerar nenhum dos {total} links de download",
+      "bulkPartialFailure": "{failed} de {total} links de download não puderam ser gerados",
+      "copyAllFailed": "Falha ao copiar os links",
+      "copyFailed": "Falha ao copiar o link",
+      "linkCopied": "Link copiado para a área de transferência!",
+      "linksCopied": "Links copiados para a área de transferência!"
+    }
+  },
+  "DownloadsFilters": {
+    "activeConditions": "{count, plural, one {# filtro ativo} other {# filtros ativos}}",
+    "activeSearch": "busca “{query}”",
+    "activeSource": "Origem: {name}",
+    "activeSources": "{count, plural, one {# origem} other {# origens}}",
+    "activeView": "Visualização: {name}",
+    "activeViews": "{count, plural, one {# visualização} other {# visualizações}}",
+    "applyFilters": "Aplicar filtros",
+    "clearAll": "Limpar tudo",
+    "clearSources": "Limpar",
+    "clearTags": "Limpar",
+    "clearTrackers": "Limpar",
+    "clearViews": "Limpar",
+    "close": "Fechar",
+    "collapseSection": "Recolher {section}",
+    "collapseSidebar": "Recolher barra lateral de filtros",
+    "combineAll": "Todos",
+    "combineAny": "Qualquer",
+    "combineModeAll": "Corresponder a todos os {section} selecionados",
+    "combineModeAny": "Corresponder a qualquer {section} selecionado",
+    "combineToggleLabel": "Modo de combinação para {section}",
+    "confirmDeleteTag": "Excluir a tag “{name}”? Ela será removida de todos os downloads.",
+    "confirmDeleteView": "Excluir a visualização “{name}”?",
+    "createTagFailed": "Falha ao criar a tag: {error}",
+    "deleteTagFailed": "Falha ao excluir a tag: {error}",
+    "deleteViewFailed": "Falha ao excluir a visualização: {error}",
+    "dragToReorderView": "Arraste para reordenar",
+    "editFilters": "Editar",
+    "expandSection": "Expandir {section}",
+    "expandSidebar": "Expandir barra lateral de filtros",
+    "manageTags": "Gerenciar tags",
+    "menuApply": "Aplicar",
+    "menuClear": "Limpar",
+    "menuDelete": "Excluir",
+    "menuEdit": "Editar",
+    "menuRename": "Renomear",
+    "modalTitle": "Editar filtros",
+    "modalTitleCreate": "Criar visualização",
+    "modalTitleEdit": "Editar visualização",
+    "modalTitleEditNamed": "Editar “{name}”",
+    "newFilter": "Novo filtro",
+    "newTag": "Nova tag",
+    "newTagPrompt": "Nome da tag",
+    "newView": "Nova visualização",
+    "noSourceMatches": "Nenhuma origem corresponde a “{query}”.",
+    "noSources": "Ainda não há origens na sua lista.",
+    "noTagMatches": "Nenhuma tag corresponde a “{query}”.",
+    "noTags": "Ainda não há tags.",
+    "noTrackerMatches": "Nenhum tracker corresponde a “{query}”.",
+    "noTrackers": "Ainda não há trackers na sua lista.",
+    "noViewMatches": "Nenhuma visualização corresponde a “{query}”.",
+    "noViews": "Ainda não há visualizações salvas.",
+    "reorderViews": "Reordenar visualizações",
+    "reorderViewsActive": "Reordenação concluída",
+    "reorderViewsDisabledSearch": "Limpe a busca para reordenar as visualizações",
+    "reorderViewsDone": "Concluído",
+    "reorderViewsFailed": "Falha ao reordenar as visualizações: {error}",
+    "reorderViewsHint": "Arraste as visualizações para reordenar",
+    "sidebarLabel": "Filtros",
+    "sidebarSearchPlaceholder": "Buscar…",
+    "sourcesSection": "Origem",
+    "sourcesSelected": "{count, plural, one {# selecionada} other {# selecionadas}}",
+    "tagAssignmentDescriptionAddMulti": "Selecione tags abaixo para adicioná-las a todos os {count} downloads. As tags existentes são mantidas.",
+    "tagAssignmentDescriptionAddSingle": "Selecione tags abaixo para adicioná-las. As tags que já estão neste download permanecem.",
+    "tagAssignmentDescriptionRemoveMulti": "Selecione tags abaixo para remover dos downloads selecionados.",
+    "tagAssignmentDescriptionRemoveSingle": "Selecione tags abaixo para remover deste download.",
+    "tagAssignmentModeAdd": "Adicionar",
+    "tagAssignmentModeLabel": "Adicionar ou remover tags",
+    "tagAssignmentModeRemove": "Remover",
+    "tagAssignmentNoAssignedTags": "Nenhuma tag nesta seleção",
+    "tagAssignmentNoAssignedTagsHint": "Mude para Adicionar para criar ou atribuir tags.",
+    "tagAssignmentSelectLabel": "Escolher tags",
+    "tagAssignmentSelectedCount": "{count, plural, one {# tag selecionada} other {# tags selecionadas}}",
+    "tagAssignmentSubmitAdd": "Adicionar tags",
+    "tagAssignmentSubmitRemove": "Remover tags",
+    "tagAssignmentSubmittingAdd": "Adicionando…",
+    "tagAssignmentSubmittingRemove": "Removendo…",
+    "tagAssignmentTitle": "Gerenciar tags",
+    "tagManagerDescription": "Crie, renomeie ou remova tags usadas para filtrar e organizar downloads.",
+    "tagManagerEmptyHint": "Adicione uma tag acima para começar a agrupar downloads.",
+    "tagManagerNoResults": "Nenhuma tag corresponde a “{query}”",
+    "tagManagerSearchPlaceholder": "Buscar tags…",
+    "tagsSelected": "{count, plural, one {# selecionada} other {# selecionadas}}",
+    "toggleFilterOff": "Clique para limpar",
+    "toggleFilterOn": "Clique para aplicar",
+    "trackersSelected": "{count, plural, one {# selecionado} other {# selecionados}}",
+    "viewCreated": "Visualização “{name}” criada",
+    "viewUpdated": "Visualização “{name}” atualizada",
+    "viewsSection": "Visualizações",
+    "viewsSelected": "{count, plural, one {# selecionada} other {# selecionadas}}"
+  },
+  "ErrorBoundary": {
+    "reloadPage": "Recarregar página",
+    "sectionMessage": "Esta seção encontrou um problema. Tente novamente ou use o menu para abrir outra página.",
+    "title": "Algo deu errado",
+    "tryAgain": "Tentar novamente"
+  },
+  "FetchStatus": {
+    "autoRefreshBackgroundHint": "Atualização mais lenta enquanto esta aba estiver em segundo plano.",
+    "autoRefreshInactive": "A atualização automática volta quando você retorna a esta aba.",
+    "autoRefreshMediaHint": "Atualização mais lenta durante a reprodução de mídia.",
+    "autoRefreshSlowHint": "Atualização mais lenta enquanto esta aba estiver em segundo plano.",
+    "autoRefreshWatchHint": "Verificando periodicamente novos torrents na fila (início automático ativado).",
+    "autoStartWorkerHint": "O início automático está processando torrents na fila em segundo plano enquanto esta aba permanece aberta.",
+    "dismiss": "Dispensar",
+    "lastUpdated": "Atualizado {ago}.",
+    "nextRefreshBackground": "Atualização em segundo plano em {seconds}s",
+    "nextRefreshIn": "Próxima atualização em {seconds}s",
+    "nextRefreshMedia": "Atualização durante a reprodução em {seconds}s",
+    "nextRefreshSlow": "Atualização em segundo plano em {seconds}s",
+    "nextRefreshWatch": "Verificação da fila em {seconds}s",
+    "refreshDelayedRateLimit": "Atualização adiada — muitas requisições.",
+    "refreshNow": "Atualizar agora",
+    "refreshPaused": "A atualização automática fica mais lenta durante a reprodução de mídia.",
+    "refreshing": "Atualizando…",
+    "refreshingSoon": "Atualizando em breve…",
+    "retry": "Tentar novamente",
+    "updatedHoursAgo": "há {hours}h",
+    "updatedJustNow": "agora mesmo",
+    "updatedMinutesAgo": "há {minutes}min"
+  },
+  "FileActions": {
+    "copyLink": "Copiar link",
+    "download": "Baixar arquivo",
+    "play": "Reproduzir",
+    "streaming": "Abrindo stream…"
+  },
+  "Header": {
+    "logo": "Logo do TorBox Manager",
+    "menu": {
+      "archived": "Arquivados",
+      "automation": "Regras de automação",
+      "collapseSidebar": "Recolher barra lateral",
+      "expandSidebar": "Expandir barra lateral",
+      "language": "Idioma",
+      "linkHistory": "Histórico de links",
+      "more": "Mais",
+      "notifications": "Notificações",
+      "preferences": "Preferências",
+      "referrals": "Indicações",
+      "rss": "Feeds RSS",
+      "search": "Busca",
+      "sectionManager": "Gerenciador",
+      "settings": "Configurações",
+      "systemStatus": "Status do sistema",
+      "toggle": "Alternar menu",
+      "tools": "Ferramentas",
+      "uploads": "Envios",
+      "user": "Usuário"
+    },
+    "theme": {
+      "toggle": "Alternar tema"
+    }
+  },
+  "Index": {
+    "description": "Gerenciador de torrents e Debrid",
+    "search": "Busca",
+    "searchPlaceholder": "Buscar torrents…"
+  },
+  "ItemActionButtons": {
+    "delete": {
+      "label": "Excluir",
+      "title": "Excluir"
+    },
+    "download": {
+      "label": "Baixar",
+      "title": "Baixar"
+    },
+    "export": {
+      "label": "Exportar",
+      "title": "Exportar torrent"
+    },
+    "files": {
+      "count": "{count} arquivos",
+      "hide": "Ocultar arquivos",
+      "label": "Arquivos",
+      "show": "Mostrar arquivos"
+    },
+    "retry": {
+      "label": "Tentar novamente",
+      "title": "Tentar novamente o download"
+    },
+    "start": {
+      "label": "Iniciar",
+      "title": "Forçar início"
+    },
+    "stop": {
+      "label": "Parar",
+      "title": "Parar seeding"
+    }
+  },
+  "ItemActions": {
+    "toast": {
+      "airlockFailed": "Falha ao atualizar o Airlock: {error}",
+      "airlockLimitReached": "Limite de armazenamento do Airlock atingido. Remova alguns downloads do Airlock ou melhore seu plano para adicionar mais.",
+      "airlockLocked": "Download bloqueado",
+      "airlockUnlocked": "Download desbloqueado",
+      "archiveAllFailed": "Falha ao arquivar itens",
+      "archiveAllSuccess": "Todos os itens foram arquivados com sucesso",
+      "archiveError": "Erro ao arquivar: {error}",
+      "archiveNoHash": "Não é possível arquivar: o hash do torrent não está disponível",
+      "archivePartialSuccess": "{count} de {total} itens arquivados",
+      "archiveSuccess": "Arquivado com sucesso",
+      "deleteAllFailed": "Falha ao excluir itens",
+      "deleteAllSuccess": "Todos os itens foram excluídos com sucesso",
+      "deleteError": "Erro ao excluir: {error}",
+      "deletePartialSuccess": "{count} de {total} itens excluídos",
+      "deleteSuccess": "Excluído com sucesso",
+      "downloadFailed": "Falha ao iniciar o download",
+      "downloadStarted": "Download iniciado com sucesso",
+      "exportTorrentFailed": "Falha ao exportar o arquivo torrent",
+      "exportTorrentSuccess": "Arquivo torrent exportado com sucesso",
+      "noFiles": "Nenhum arquivo disponível para download",
+      "protectError": "Falha ao proteger o download: {error}",
+      "protectSuccess": "{count, plural, one {# download protegido} other {# downloads protegidos}}",
+      "protectedBlocked": "Ação bloqueada: o download está protegido",
+      "protectedSkipped": "{count, plural, one {# item ignorado (protegido)} other {# itens ignorados (protegidos)}}",
+      "retryFailed": "Falha ao tentar novamente o download",
+      "retrySourceUnavailable": "Não é possível tentar novamente: o link de origem não está disponível",
+      "retrySuccess": "Reenfileirado para download",
+      "seedingStopFailed": "Falha ao parar o seeding do torrent",
+      "seedingStopped": "Seeding do torrent parado com sucesso",
+      "unprotectError": "Falha ao desproteger o download: {error}",
+      "unprotectSuccess": "{count, plural, one {# download desprotegido} other {# downloads desprotegidos}}"
+    }
+  },
+  "ItemUploader": {
+    "button": {
+      "torrents": "Adicionar torrent",
+      "usenet": "Adicionar NZB",
+      "webdl": "Adicionar WebDL"
+    },
+    "dropzone": {
+      "torrents": "Solte os arquivos .torrent aqui",
+      "usenet": "Solte os arquivos NZB aqui"
+    },
+    "errors": {
+      "accessDenied": "Acesso negado. Verifique sua chave de API e o status da conta.",
+      "activeLimit": "Você atingiu o limite máximo de downloads ativos. Aguarde alguns terminarem.",
+      "authFailed": "Falha na autenticação. Verifique sua chave de API.",
+      "downloadTooLarge": "O download é grande demais para seu plano atual. Faça upgrade da sua conta.",
+      "invalidNzb": "O arquivo ou link NZB informado é inválido. Verifique o arquivo e tente novamente.",
+      "monthlyLimit": "Você atingiu seu limite mensal de downloads. Faça upgrade da sua conta.",
+      "networkError": "Não foi possível conectar aos servidores do TorBox. Verifique sua conexão com a internet e tente novamente.",
+      "serverOverloaded": "Os servidores do TorBox estão temporariamente sobrecarregados. Tente novamente em alguns minutos.",
+      "serverTimeout": "Os servidores do TorBox estão demorando demais para responder. Tente novamente em alguns minutos.",
+      "serverUnavailable": "Os servidores do TorBox estão temporariamente indisponíveis. Tente novamente em alguns minutos.",
+      "temporaryIssue": "Provavelmente é um problema temporário nos servidores do TorBox. Tente novamente em alguns minutos.",
+      "tooManyRequests": "Muitas requisições aos servidores do TorBox. Aguarde um momento e tente novamente.",
+      "uploadFailed": "Falha ao adicionar"
+    },
+    "help": {
+      "checkApiKey": "Verifique se sua chave de API está correta e tem permissões suficientes",
+      "downloadSlots": "Verifique se sua conta tem slots de download disponíveis",
+      "nzbTips": "Dicas para envio de NZB",
+      "serverErrors": "Se você vir erros de servidor, aguarde alguns minutos e tente novamente",
+      "uploadLimit": "Envie no máximo 10 arquivos NZB por vez para evitar erros de servidor",
+      "validLinks": "Certifique-se de que seus links NZB são válidos e acessíveis"
+    },
+    "options": {
+      "hide": "Ocultar opções",
+      "show": "Opções"
+    },
+    "placeholder": {
+      "torrents": "Cole os links magnet aqui (um por linha)",
+      "usenet": "Cole os links NZB aqui (um por linha)",
+      "webdl": "Cole os links de download aqui (um por linha)",
+      "webdlPassword": "Senha (se necessário)"
+    },
+    "rateLimit": {
+      "details": "Você tem {count} itens na fila. O TorBox limita a criação de envios a {perHour} por hora por tipo. Lotes grandes são processados automaticamente.",
+      "info": "Aviso de limite de requisições"
+    },
+    "section": {
+      "hide": "Ocultar",
+      "show": "Mostrar"
+    },
+    "status": {
+      "allCompleted": "Todos os {count} itens foram concluídos com sucesso",
+      "clearItems": "Limpar itens",
+      "completed": "{count} de {total} itens concluídos",
+      "processing": "Processando {count} de {total} itens…"
+    },
+    "title": {
+      "default": "Adicionar",
+      "torrents": "Adicionar torrents",
+      "usenet": "Adicionar arquivos NZB",
+      "webdl": "Adicionar WebDL"
+    }
+  },
+  "LandingPage": {
+    "apiKeyInput": {
+      "description": "Cole sua chave de API para começar. Obtenha sua chave em",
+      "title": "Conecte sua conta TorBox"
+    },
+    "features": {
+      "automation": {
+        "description": "Crie regras inteligentes para gerenciar seus downloads automaticamente.",
+        "title": "Regras de automação"
+      },
+      "batchUpload": {
+        "description": "Adicione vários torrents, arquivos NZB, magnets e links de hosters de uma só vez.",
+        "title": "Adicionar em lote"
+      },
+      "search": {
+        "description": "Busque em vários sites de torrent e Usenet em um só lugar.",
+        "title": "Busca inteligente"
+      }
+    },
+    "footer": {
+      "description": "O TorBox Manager é open source. Veja o projeto no"
+    },
+    "subtitle": "A interface para power users do TorBox: envios em lote, busca inteligente, regras de automação e um painel personalizável."
+  },
+  "LinkHistory": {
+    "actions": {
+      "copy": "Copiar",
+      "copySelected": "Copiar ({count})",
+      "copySelectedTitle": "Copiar os links selecionados para a área de transferência",
+      "deleteSelected": "Excluir ({count})",
+      "deleteSelectedTitle": "Excluir os links selecionados",
+      "deletingSelected": "Excluindo",
+      "download": "Baixar",
+      "remove": "Remover",
+      "selectItem": "Selecionar link"
+    },
+    "columns": {
+      "actions": "Ações",
+      "expiresAt": "Expira em",
+      "fileName": "Nome do arquivo",
+      "generatedAt": "Gerado em",
+      "itemId": "ID do item",
+      "itemName": "Nome do item"
+    },
+    "emptyState": {
+      "description": "Quando você gerar um link de download para qualquer torrent, Usenet ou WebDL, ele aparecerá aqui.",
+      "important": "Importante:",
+      "step1": "Gere links de download na página principal de downloads",
+      "step2": "Você pode copiar, baixar novamente ou remover links do seu histórico",
+      "step3": "Todos os links de download expiram em 4 horas",
+      "title": "Nenhum link de download"
+    },
+    "expired": "Expirado",
+    "searchLabel": "Buscar no histórico de links",
+    "status": {
+      "failed": "Falhou"
+    },
+    "title": "Histórico de links",
+    "toast": {
+      "linkCopied": "Link copiado para a área de transferência!",
+      "linksCopied": "{count, plural, one {# link copiado para a área de transferência!} other {# links copiados para a área de transferência!}}"
+    }
+  },
+  "MoreOptionsDropdown": {
+    "archive": "Arquivar",
+    "copyFullMagnet": "Copiar magnet completo",
+    "copyHash": "Copiar hash",
+    "copyId": "Copiar ID",
+    "copyShortMagnet": "Copiar magnet curto",
+    "copySourceUrl": "Copiar URL de origem",
+    "exportTorrent": "Exportar .torrent",
+    "label": "Mais",
+    "lockDownload": "Bloquear",
+    "protectDownload": "Proteger",
+    "reannounce": "Reanunciar",
+    "retry": "Tentar novamente",
+    "title": "Mais opções",
+    "toast": {
+      "clipboardError": "Falha ao copiar para a área de transferência",
+      "exportMagnetFailed": "Falha ao exportar o link magnet",
+      "exportMagnetSuccess": "Link magnet exportado com sucesso",
+      "exportTorrentFailed": "Falha ao exportar o arquivo torrent",
+      "exportTorrentSuccess": "Arquivo torrent exportado com sucesso",
+      "fullMagnetCopied": "Link magnet completo copiado para a área de transferência",
+      "hashCopied": "Hash copiado para a área de transferência",
+      "hashNotAvailable": "Hash não disponível",
+      "idCopied": "ID copiado para a área de transferência",
+      "magnetError": "Falha ao obter o link magnet",
+      "reannounceFailed": "Falha ao reanunciar o torrent",
+      "reannounceSuccess": "Torrent reanunciado com sucesso",
+      "shortMagnetCopied": "Link magnet curto copiado para a área de transferência",
+      "sourceUrlCopied": "URL de origem copiada para a área de transferência",
+      "sourceUrlNotAvailable": "URL de origem não disponível",
+      "uploadFailed": "Falha ao iniciar o envio",
+      "uploadStarted": "Envio iniciado com sucesso"
+    },
+    "unlockDownload": "Desbloquear",
+    "unprotectDownload": "Desproteger",
+    "uploadToCloud": "Enviar para a nuvem"
+  },
+  "Navigation": {
+    "home": "Início",
+    "search": "Busca",
+    "settings": "Configurações"
+  },
+  "Notifications": {
+    "clear": "Limpar",
+    "clearAll": "Limpar tudo",
+    "loading": "Carregando notificações…",
+    "markAllAsRead": "Marcar todas como lidas",
+    "markAsRead": "Marcar como lida",
+    "noNotifications": "Nenhuma notificação",
+    "notifications": "Notificações",
+    "testNotification": "Notificação de teste"
+  },
+  "OpenIn": {
+    "choosePlayer": "Escolha um player",
+    "close": "Fechar",
+    "errors": {
+      "playerNotInstalled": "Não foi possível abrir o {player}. Ele pode não estar instalado, ou seu navegador não consegue iniciá-lo.",
+      "streamFailed": "Falha ao preparar o stream"
+    },
+    "fileMeta": {
+      "audio": "Áudio",
+      "from": "De",
+      "video": "Vídeo"
+    },
+    "players": {
+      "web": "Player web",
+      "webHint": "Reprodução no navegador com seleção de faixas"
+    },
+    "preparingStream": "Preparando o stream…",
+    "title": "Abrir em"
+  },
+  "Referral": {
+    "apply": {
+      "alreadyHasReferrer": "Sua conta já tem um código de indicação.",
+      "applying": "Aplicando…",
+      "button": "Aplicar à minha conta",
+      "cancel": "Cancelar",
+      "confirm": "Aplicar código",
+      "confirmBody": "Isto vincula o código de indicação do TorBox Manager à sua conta TorBox antes de você assinar.",
+      "confirmBullet1": "O bônus se aplica somente à sua primeira assinatura paga.",
+      "confirmBullet2": "Você ganha 7 dias extras por mês comprado (por exemplo, 12 meses = 84 dias).",
+      "confirmBullet3": "Se sua conta já tem uma indicação, ela não pode ser alterada aqui.",
+      "confirmTitle": "Aplicar código de indicação?",
+      "error": "Não foi possível aplicar o código de indicação. Tente o link de assinatura.",
+      "needApiKey": "Adicione sua chave de API do TorBox primeiro.",
+      "success": "Código de indicação aplicado à sua conta TorBox."
+    },
+    "callout": {
+      "apply": "Aplicar código",
+      "compactMessage": "Dias de bônus na sua primeira assinatura — aplique nosso código de indicação e depois assine no TorBox.",
+      "dismiss": "Dispensar por 30 dias",
+      "rssHint": "Faça upgrade para Pro no TorBox e ganhe dias de bônus na sua primeira assinatura com nossa indicação.",
+      "slimMessage": "Ganhe 7 dias extras por mês na sua primeira assinatura do TorBox ao usar nossa indicação antes de pagar.",
+      "subscribe": "Assinar"
+    },
+    "copied": "Copiado!",
+    "copyAll": "Copiar tudo",
+    "copyCode": "Copiar código",
+    "copyLink": "Copiar link",
+    "description": "Ganhe 7 dias extras para cada mês na sua primeira assinatura paga do TorBox.",
+    "developerNote": "Este é o código de indicação do desenvolvedor.",
+    "disclaimer": {
+      "firstPurchase": "O bônus de indicação se aplica somente à sua primeira compra paga.",
+      "giftCards": "Cartões-presente e vouchers não são válidos.",
+      "supportsDevelopment": "Usar este código também apoia o desenvolvimento do TorBox Manager."
+    },
+    "error": "Erro ao copiar para a área de transferência",
+    "examples": {
+      "oneMonth": "1 mês → +7 dias",
+      "threeMonths": "3 meses → +21 dias",
+      "twelveMonths": "12 meses → +84 dias"
+    },
+    "landingDescription": "Novo no TorBox? Use nosso link de indicação ao assinar e ganhe dias de bônus na sua primeira compra.",
+    "panel": {
+      "helpLink": "Como funcionam as indicações",
+      "heroSubtitle": "7 dias de bônus para cada mês que você comprar (para você e para quem indicou).",
+      "heroTitle": "Dias extras na sua primeira assinatura",
+      "openSubscription": "Abrir assinatura do TorBox"
+    },
+    "referral": "Indicação",
+    "referralCode": "Código de indicação",
+    "referralLink": "Link de indicação",
+    "settings": {
+      "resetSnooze": "Mostrar lembretes novamente",
+      "snoozeReminders": "Adiar lembretes por 30 dias"
+    },
+    "signUp": "Criar conta no TorBox",
+    "steps": {
+      "popupNote": "Se você usar o link em vez de Aplicar, confirme o popup no TorBox antes de comprar.",
+      "step1": "Aplique o código à sua conta TorBox (pelo botão acima ou colando na página de assinatura).",
+      "step2": "Entre em torbox.app se solicitado e confirme o popup de indicação na página de assinatura.",
+      "step3": "Conclua sua primeira compra paga; os dias de bônus são adicionados automaticamente.",
+      "title": "Como funciona"
+    },
+    "title": "Ganhe tempo Premium grátis",
+    "upgradeCard": {
+      "description": "Aplique nosso código de indicação e conclua sua primeira assinatura paga no TorBox para receber 7 dias extras por mês comprado.",
+      "title": "Faça upgrade com dias de bônus"
+    },
+    "visitLink": "Visitar link"
+  },
+  "RssFeeds": {
+    "actions": "Ações",
+    "active": "Ativo",
+    "addError": "Falha ao adicionar o feed RSS",
+    "addFeed": "Adicionar feed RSS",
+    "addSuccess": "Feed RSS adicionado com sucesso",
+    "cancel": "Cancelar",
+    "checkingSubscription": "Verificando assinatura…",
+    "confirmDelete": {
+      "cancel": "Cancelar",
+      "confirm": "Excluir",
+      "message": "Tem certeza de que deseja excluir este feed RSS? Esta ação não pode ser desfeita.",
+      "title": "Excluir feed RSS"
+    },
+    "delete": "Excluir",
+    "deleteError": "Falha ao excluir o feed RSS",
+    "deleteSuccess": "Feed RSS excluído com sucesso",
+    "disable": "Desativar",
+    "disableError": "Falha ao desativar o feed RSS",
+    "disableSuccess": "Feed RSS desativado com sucesso",
+    "disabled": "Desativado",
+    "doRegex": "Regex de download (opcional)",
+    "doRegexPlaceholder": "Baixar itens que correspondam a esta regex",
+    "dontOlderThan": "Ignorar mais antigos que (dias)",
+    "dontOlderThanPlaceholder": "Ignorar itens mais antigos que X dias",
+    "dontRegex": "Regex de ignorar (opcional)",
+    "dontRegexPlaceholder": "Ignorar itens que correspondam a esta regex",
+    "downloadType": "Tipo de download",
+    "downloadTypePlaceholder": "Selecione o tipo de download",
+    "editError": "Falha ao atualizar o feed RSS",
+    "editFeed": "Editar feed RSS",
+    "editSuccess": "Feed RSS atualizado com sucesso",
+    "enable": "Ativar",
+    "enableError": "Falha ao ativar o feed RSS",
+    "enableSuccess": "Feed RSS ativado com sucesso",
+    "enabled": "Ativado",
+    "error": "Erro ao carregar os feeds RSS",
+    "feedName": "Nome do feed",
+    "feedNamePlaceholder": "Digite o nome do feed",
+    "feedUrl": "URL do feed",
+    "feedUrlPlaceholder": "Digite a URL do feed RSS",
+    "inactive": "Inativo",
+    "itemCount": "Itens",
+    "items": "Itens",
+    "lastCheck": "Última verificação",
+    "loading": "Carregando feeds RSS…",
+    "never": "Nunca",
+    "noFeeds": "Nenhum feed RSS configurado",
+    "options": {
+      "auto": "Automático",
+      "dontSeed": "Não fazer seed",
+      "seed": "Fazer seed",
+      "webdl": "WebDL"
+    },
+    "pageDescription": "Gerencie feeds RSS e navegue pelos itens",
+    "pageTitle": "Gerenciamento de RSS",
+    "passCheck": "Ignorar verificação de cache",
+    "passCheckDescription": "Pula a verificação de cache para este feed",
+    "proSubscriptionRequired": "Assinatura Pro necessária",
+    "proUserRequired": "Você precisa ser usuário Pro para usar feeds RSS.",
+    "refresh": "Atualizar",
+    "refreshing": "Atualizando",
+    "save": "Salvar",
+    "scanInterval": "Intervalo de verificação (minutos)",
+    "scanIntervalPlaceholder": "Com que frequência verificar este feed",
+    "tabs": {
+      "feeds": "Gerenciamento de feeds",
+      "items": "Gerenciamento de itens"
+    },
+    "title": "Feeds RSS",
+    "torrentSeeding": "Seeding de torrents",
+    "torrentSeedingPlaceholder": "Selecione a preferência de seeding",
+    "validation": {
+      "nameRequired": "O nome do feed é obrigatório",
+      "urlInvalid": "Digite uma URL de feed RSS válida",
+      "urlRequired": "A URL do feed é obrigatória"
+    }
+  },
+  "RssItems": {
+    "allTypes": "Todos os tipos",
+    "category": "Categoria",
+    "date": "Data",
+    "download": "Baixar",
+    "error": "Erro ao carregar os itens",
+    "loading": "Carregando itens…",
+    "newestFirst": "Mais recentes primeiro",
+    "noDescription": "Nenhuma descrição disponível",
+    "noItems": "Nenhum item encontrado",
+    "noMatchingItems": "Nenhum item corresponde aos seus critérios de busca",
+    "oldestFirst": "Mais antigos primeiro",
+    "published": "Publicado",
+    "refresh": "Atualizar",
+    "search": "Busca",
+    "searchPlaceholder": "Buscar itens…",
+    "selectFeed": "Selecionar feed RSS",
+    "selectFeedPlaceholder": "Escolha um feed para ver os itens",
+    "size": "Tamanho",
+    "sortBy": "Ordenar por",
+    "sortOrder": "Ordem",
+    "title": "Itens RSS",
+    "toast": {
+      "downloadFailed": "Falha ao iniciar o download",
+      "downloadStarted": "Download iniciado com sucesso",
+      "noLink": "Nenhum link de download disponível"
+    },
+    "type": "Tipo",
+    "unknown": "Desconhecido",
+    "webdl": "WebDL"
+  },
+  "SearchBar": {
+    "clearFilters": "Limpar filtros",
+    "clearHistory": "Limpar",
+    "clearSearch": "Limpar busca",
+    "examples": {
+      "anime": "Anime do AniList",
+      "episode": "Episódio de série",
+      "movie": "Filme do IMDb"
+    },
+    "filters": {
+      "any": "Qualquer",
+      "language": "Idioma",
+      "maxSize": "Tamanho máx.",
+      "minSize": "Tamanho mín.",
+      "resolution": "Resolução"
+    },
+    "placeholderDownloads": "Buscar {itemType}…",
+    "placeholderDownloadsShort": "Buscar…",
+    "placeholderSearch": "Título, ID do IMDb (tt…), ou prefixo:id (ex.: anilist:16498)",
+    "recentSearches": "Buscas recentes",
+    "removeSearch": "Remover das buscas recentes",
+    "search": "Busca",
+    "searchDownloadsAria": "Buscar {itemType} ou nomes de arquivos",
+    "searchDownloadsHelpAnd": "Mais — corresponde somente quando todas as palavras aparecem (ex.: matrix+1999)",
+    "searchDownloadsHelpAria": "Como a busca funciona",
+    "searchDownloadsHelpCombine": "Combine termos — todas as partes devem corresponder (ex.: “The Matrix” 1080p -sample)",
+    "searchDownloadsHelpExclude": "Menos — oculta correspondências que contenham aquele texto (ex.: -sample)",
+    "searchDownloadsHelpIntro": "Corresponde a títulos de downloads e nomes de arquivos.",
+    "searchDownloadsHelpOr": "Várias palavras — corresponde se qualquer palavra aparecer (ex.: 1080p bluray)",
+    "searchDownloadsHelpPhrase": "Aspas — corresponde à frase exata (ex.: “season 1”)",
+    "searchDownloadsHelpRanking": "Resultados ordenados por relevância: mais palavras correspondentes primeiro; palavras comuns (como \"the\") contam menos. Troque a ordenação quando quiser.",
+    "searchExamples": "Exemplos de busca",
+    "sortByRelevance": "Ordenar por relevância",
+    "streamFilters": "Filtros de stream",
+    "validation": {
+      "addonsLoading": "Carregando seus addons… tente novamente em instantes.",
+      "empty": "Digite um título ou ID de mídia para buscar.",
+      "invalid": "Use um título de filme/série, ID do IMDb (tt…), ID de episódio (tt…:S:E) ou prefixo:id compatível com seus addons.",
+      "noAddons": "Instale e ative pelo menos um addon de stream do Stremio acima.",
+      "noMatchingAddons": "Nenhum addon ativado oferece suporte a este ID de mídia.",
+      "unknownPrefix": "Esse prefixo de ID não é compatível com os addons instalados."
+    }
+  },
+  "SearchPage": {
+    "backendRequired": "A busca requer o backend do TorBox Manager. Ative o backend para instalar addons do Stremio e buscar por título ou ID de mídia.",
+    "subtitle": "Busque streams nos seus addons do Stremio por título ou ID de mídia e adicione torrents ou NZBs ao TorBox.",
+    "title": "Busca de streams"
+  },
+  "SearchResults": {
+    "actions": {
+      "addToTorBox": "Adicionar ao TorBox",
+      "added": "Adicionado",
+      "adding": "Adicionando…",
+      "copyLink": "Copiar link",
+      "copyMagnet": "Copiar magnet",
+      "download": "Baixar",
+      "unavailable": "Indisponível"
+    },
+    "addonStatus": {
+      "empty": "vazio",
+      "error": "erro",
+      "pending": "carregando"
+    },
+    "cachedOnly": "Somente em cache",
+    "density": {
+      "compact": "Compacto",
+      "full": "Completo",
+      "group": "Densidade dos resultados"
+    },
+    "filteredEmpty": "Nenhum stream corresponde aos seus filtros",
+    "filteredEmptyHint": "Limpe ou ajuste os filtros de resolução, codec, tamanho ou addon para ver resultados.",
+    "filters": {
+      "allAddons": "Todos os addons"
+    },
+    "metadata": {
+      "cached": "Em cache",
+      "sources": "{count} fontes"
+    },
+    "noResults": "Nenhum stream encontrado",
+    "noResultsHint": "Tente outro ID de mídia, ative mais addons ou atualize os manifestos dos addons.",
+    "results": "{count} resultados",
+    "sort": {
+      "default": "Melhor correspondência",
+      "resolution": "Resolução",
+      "size": "Maior tamanho",
+      "title": "Título"
+    },
+    "toast": {
+      "addFailed": "Falha ao adicionar: {error}",
+      "copyFailed": "Não foi possível copiar para a área de transferência",
+      "linkAdded": "Stream adicionado. Verifique seus downloads do TorBox em instantes",
+      "linkCopied": "Link copiado para a área de transferência",
+      "magnetCopied": "Link magnet copiado para a área de transferência",
+      "nzbAdded": "NZB adicionado ao TorBox com sucesso",
+      "nzbCopied": "Link NZB copiado para a área de transferência",
+      "torrentAdded": "Torrent adicionado ao TorBox com sucesso",
+      "uploadSuccess": "{count} {type} adicionado com sucesso",
+      "uploadSuccessPlural": "{count} {type} adicionados com sucesso"
+    },
+    "typeFilterToggle": "Alternar resultados de {type}"
+  },
+  "SpeedChart": {
+    "chart": {
+      "hide": "Ocultar gráfico",
+      "show": "Mostrar gráfico"
+    },
+    "labels": {
+      "upload": "Envio"
+    },
+    "timeRange": "Intervalo de tempo",
+    "timeRanges": {
+      "10m": "Últimos 10min",
+      "1h": "Última 1h",
+      "1m": "Último 1min",
+      "3h": "Últimas 3h",
+      "6h": "Últimas 6h",
+      "all": "Tudo"
+    },
+    "title": {
+      "default": "Rede",
+      "full": "Atividade de rede"
+    }
+  },
+  "StatusSection": {
+    "selectedFiles": "{fileCount} arquivos selecionados ({size})",
+    "selectedItems": "{itemCount} {type} selecionados ({size})",
+    "selectedItemsFiles": "{itemCount} {type} e {fileCount} {fileType} selecionados ({size})"
+  },
+  "Statuses": {
+    "checking_resume_data": "Verificando",
+    "completed": "Concluído",
+    "downloading": "Baixando",
+    "failed": "Falhou",
+    "inactive": "Inativo",
+    "queued": "Na fila",
+    "stalled": "Parado",
+    "unknown": "Desconhecido",
+    "uploading": "Enviando"
+  },
+  "StremioAddons": {
+    "add": "Adicionar addon",
+    "confirmRemove": "Remover o addon “{name}”?",
+    "empty": "Nenhum addon instalado ainda. Cole a URL do manifesto de um addon do Stremio para começar.",
+    "enabled": "Ativado",
+    "errors": {
+      "addFailed": "Falha ao adicionar o addon",
+      "updateFailed": "Falha ao atualizar o addon"
+    },
+    "help": "Cole a URL completa do manifesto configurado (terminando em /manifest.json).",
+    "hidePrefixes": "Ocultar prefixos",
+    "hideTypes": "Ocultar tipos",
+    "moveDown": "Mover para baixo",
+    "moveUp": "Mover para cima",
+    "prefixCount": "{count} prefixos de ID",
+    "refresh": "Atualizar",
+    "remove": "Remover",
+    "subtitle": "{count, plural, =0 {Nenhum addon} one {# addon} other {# addons}}",
+    "summary": "{total, plural, =0 {Nenhum addon instalado} one {# addon · {enabled} ativo} other {# addons · {enabled} ativos}}",
+    "title": "Addons do Stremio"
+  },
+  "SystemStatus": {
+    "error": "Erro",
+    "fullStatusPage": "Status completo",
+    "hoursAgo": "há {hours} horas",
+    "justNow": "Agora mesmo",
+    "lastCheck": "Última verificação",
+    "minutesAgo": "há {minutes} minutos",
+    "never": "Nunca",
+    "refreshStatus": "Clique para atualizar",
+    "rows": {
+      "app": {
+        "label": "Este app"
+      },
+      "backend": {
+        "label": "Backend auto-hospedado"
+      },
+      "connection": {
+        "label": "Sua chave de API"
+      },
+      "platform": {
+        "label": "Plataforma TorBox"
+      },
+      "status": {
+        "checking": "Verificando…",
+        "invalidKey": "Chave de API inválida",
+        "issue": "Problema detectado",
+        "notConfigured": "Não configurado",
+        "operational": "Operacional",
+        "unavailable": "Indisponível"
+      }
+    },
+    "status": {
+      "apiUnhealthy": "Problema de conexão",
+      "apiUnhealthyDescription": "Não foi possível acessar o TorBox com sua chave de API",
+      "backendUnhealthy": "Problema no backend",
+      "backendUnhealthyDescription": "O backend auto-hospedado não está respondendo",
+      "healthy": "Todos os sistemas operacionais",
+      "healthyDescription": "O TorBox está no ar e sua chave de API é válida",
+      "invalidKey": "Chave de API inválida",
+      "invalidKeyDescription": "Sua chave de API foi rejeitada. Atualize-a nas configurações",
+      "noApiKey": "Sem chave de API",
+      "noApiKeyDescription": "Entre com sua chave de API do TorBox para verificar sua conexão",
+      "platformUnhealthy": "Problema na plataforma TorBox",
+      "platformUnhealthyDescription": "Os serviços do TorBox podem estar fora do ar. Veja a página de status para detalhes",
+      "unknown": "Status desconhecido",
+      "unknownDescription": "Não foi possível determinar o status do sistema"
+    },
+    "uptime": {
+      "barLabel": "Histórico de disponibilidade de {label}, {percent}% operacional",
+      "collecting": "Coletando dados…",
+      "daysAgo": "há {days}d",
+      "historyNote": "Barra da plataforma: verificações deste navegador (~1 min). O histórico oficial do TorBox está na página de status.",
+      "percent": "{percent}% de disponibilidade",
+      "segment": {
+        "degraded": "Resposta lenta",
+        "down": "Fora do ar",
+        "empty": "Ainda sem dados",
+        "nodata": "Não verificado",
+        "unknown": "Desconhecido",
+        "up": "Operacional"
+      }
+    }
+  },
+  "TableBody": {
+    "downloadsTable": "Lista de downloads",
+    "noDownloads": "Nenhum download",
+    "showMoreFiles": "Mostrar mais {count} arquivos",
+    "toast": {
+      "copyLink": "Link copiado para a área de transferência",
+      "copyLinkFailed": "Falha ao copiar o link"
+    }
+  },
+  "TmdbKey": {
+    "confirmRemove": "Remover sua chave de API do TMDB salva?",
+    "docsLink": "Obter uma chave de API do TMDB",
+    "errors": {
+      "removeFailed": "Falha ao remover a chave de API do TMDB",
+      "saveFailed": "Falha ao salvar a chave de API do TMDB"
+    },
+    "help": "Sua chave é criptografada e armazenada no servidor. Ela é usada apenas para consultar títulos de filmes e séries na busca de streams.",
+    "keyTypeHint": "Use a Chave de API (v3) ou o Token de Acesso de Leitura (v4) das suas configurações do TMDB.",
+    "loading": "Carregando…",
+    "placeholder": "Chave de API do TMDB (v3) ou token de acesso de leitura",
+    "placeholderReplace": "Digite uma nova chave de API do TMDB para substituir",
+    "remove": "Remover",
+    "save": "Salvar",
+    "statusConfigured": "Configurada — busca por título ativada",
+    "statusNotConfigured": "Não configurada — cole uma chave de API do TMDB para buscar por título",
+    "title": "Chave de API do TMDB",
+    "update": "Atualizar"
+  },
+  "TmdbSearch": {
+    "back": "Voltar",
+    "cancel": "Cancelar",
+    "configureKeyHint": "Adicione uma chave de API do TMDB acima para buscar por título de filme ou série.",
+    "episode": "Episódio",
+    "episodeCount": "{count, plural, one {# episódio} other {# episódios}}",
+    "errors": {
+      "apiKeyMissing": "A chave de API do TorBox está faltando",
+      "seasonLoadFailed": "Falha ao carregar os episódios desta temporada",
+      "tvLoadFailed": "Falha ao carregar as temporadas desta série"
+    },
+    "invalidKeyHint": "Sua chave de API do TMDB parece inválida. Atualize-a acima e tente novamente.",
+    "noEpisodes": "Nenhum episódio disponível para esta temporada",
+    "noResults": "Nenhum título correspondente encontrado",
+    "noSeasons": "Nenhuma temporada disponível para esta série",
+    "pickEpisode": "Escolha um episódio de {title}",
+    "searchEpisode": "Buscar streams",
+    "searchFailed": "A busca por título falhou. Tente novamente.",
+    "season": "Temporada",
+    "titleSuggestions": "Títulos",
+    "typeMovie": "Filme"
+  },
+  "TorrentOptions": {
+    "allowZip": {
+      "description": "Para torrents com mais de 100 arquivos",
+      "label": "Permitir ZIP"
+    },
+    "autoStart": {
+      "label": "Ativar início automático",
+      "limit": "Limite de torrents ativos:",
+      "title": "Processar torrents na fila",
+      "tooltip": "Inicia automaticamente os torrents na fila até o limite de ativos enquanto esta aba permanecer aberta (inclusive quando ociosa ou em segundo plano). Fechar ou descartar a aba interrompe o início automático."
+    },
+    "instantQueue": {
+      "description": "Pular a fila de espera",
+      "label": "Fila instantânea"
+    },
+    "seedingPreference": {
+      "always": "Sempre fazer seed",
+      "auto": "Automático (padrão)",
+      "label": "Preferência de seeding",
+      "never": "Nunca fazer seed"
+    },
+    "title": "Opções globais de envio"
+  },
+  "UploadManager": {
+    "cachedCreateAria": "Em cache",
+    "cachedCreateTooltip": "O TorBox atendeu isto a partir do cache compartilhado."
+  },
+  "UploadProgress": {
+    "approachingRateLimit": "Perto do limite de criações:",
+    "approachingRateLimitDetails": "{perHour}/60 criações por hora",
+    "estimatedCompletion": "Conclusão estimada:",
+    "pleaseWait": "Aguarde…",
+    "preparingUploads": "Preparando envios…",
+    "rateLimit": "Limite de requisições:",
+    "rateLimitActive": "Limite de requisições ativo:",
+    "remaining": "({remaining} restantes)",
+    "uploading": "Enviando {current} de {total}",
+    "waitingBeforeNext": "Aguardando {time} antes do próximo envio"
+  },
+  "UploadStatistics": {
+    "approachingRateLimit": "Perto do limite",
+    "budgetLive": "Cota sem cache em tempo real",
+    "budgetUncached": "Criações sem cache (última hora)",
+    "connectionPausedWaiting": "{count, plural, one {# aguardando — TorBox indisponível} other {# aguardando — TorBox indisponível}}",
+    "deferredCount": "{count, plural, one {# aguardando} other {# aguardando}}",
+    "deferredSummary": "{count, plural, one {# envio aguardando — retoma {time}} other {# envios aguardando — retoma {time}}}",
+    "deferredTypeSummary": "{label}: {count, plural, one {# envio aguardando — retoma {time}} other {# envios aguardando — retoma {time}}}",
+    "externalRateLimitWaiting": "{count, plural, one {# aguardando — limite do TorBox} other {# aguardando — limite do TorBox}}",
+    "firstSlotOpens": "Primeira vaga disponível {time}",
+    "noQuotaActivity": "Nenhuma atividade recente na cota de criações do TorBox",
+    "noUncached": "Nenhuma criação de envio na última hora",
+    "quotaUnknown": "Cota desconhecida",
+    "rateLimitReached": "Limite de requisições atingido",
+    "rateLimitedWaiting": "{count, plural, one {# aguardando — limite por hora} other {# aguardando — limite por hora}}",
+    "remainingQuota": "{remaining} de {limit} restantes",
+    "resumesIn": "Retoma {time}",
+    "resumesProcessing": "Retoma o processamento {time}",
+    "soon": "em breve",
+    "title": "Cota de criações do TorBox",
+    "transientPausedWaiting": "{count, plural, one {# aguardando — TorBox ainda processando} other {# aguardando — TorBox ainda processando}}",
+    "typeUncached": "/ {limit} criações"
+  },
+  "Usage": {
+    "danger": {
+      "message": "Você usou {used} do piso de {limit} do seu plano ({percent}%) nos últimos 30 dias. Reduza o uso em breve para evitar avisos ou restrições.",
+      "title": "Uso de largura de banda muito alto"
+    },
+    "learnMore": "Como funcionam os limites de uso do TorBox",
+    "viewUsage": "Ver gráfico de uso",
+    "warning": {
+      "message": "Você usou {used} do piso de {limit} do seu plano ({percent}%) nos últimos 30 dias. Permanecer nessa faixa pode atrair o monitoramento de abuso do TorBox.",
+      "title": "Uso de largura de banda alto"
+    }
+  },
+  "User": {
+    "airlock": {
+      "helpLink": "Saiba mais sobre o Airlock do TorBox",
+      "helpTooltip": "Armazenamento permanente para sua conta TorBox. Arquivos no Airlock não são removidos após 30 dias de inatividade.",
+      "loadError": "Falha ao carregar o uso do Airlock",
+      "of": "de",
+      "percentUsed": "{percent}% usado",
+      "retry": "Tentar novamente",
+      "title": "Dados no Airlock"
+    },
+    "bandwidth": {
+      "empty": "Nenhum dado de largura de banda para este período",
+      "grouping": "Agrupamento",
+      "groupingOptions": {
+        "day": "Diário",
+        "hour": "Por hora",
+        "month": "Mensal",
+        "week": "Semanal"
+      },
+      "loadError": "Falha ao carregar as estatísticas de largura de banda",
+      "retry": "Tentar novamente",
+      "title": "Largura de banda (últimos 30 dias)"
+    },
+    "copyLink": "Copiar link",
+    "copyLinkFailed": "Falha ao copiar o link",
+    "description": "Gerencie sua conta e veja suas estatísticas",
+    "errors": {
+      "loadError": "Erro ao carregar o perfil",
+      "reloadPage": "Recarregar página",
+      "renderError": "Ocorreu um erro ao renderizar o perfil"
+    },
+    "noData": "Nenhum dado disponível",
+    "plans": {
+      "unknown": "Desconhecido"
+    },
+    "profile": {
+      "accountStatus": "Status da conta",
+      "basicInfo": "Informações básicas",
+      "createdAt": "Criado em",
+      "downloadBreakdown": "Detalhamento de downloads",
+      "email": "E-mail",
+      "lastLogin": "Última atualização",
+      "plan": "Plano",
+      "planExpiry": "Expiração do plano",
+      "referralCode": "Código de indicação",
+      "title": "Perfil do usuário",
+      "torrentDownloads": "Downloads de torrents",
+      "totalDownloads": "Total de downloads",
+      "totalSize": "Total baixado",
+      "totalUploaded": "Total enviado",
+      "usage": "Estatísticas de uso",
+      "usenetDownloads": "Downloads de Usenet",
+      "userId": "ID do usuário",
+      "webDownloads": "Downloads WebDL"
+    },
+    "referralLink": "Link de indicação",
+    "retry": "Tentar novamente",
+    "status": {
+      "active": "Ativo",
+      "expired": "Expirado"
+    },
+    "title": "Perfil do usuário"
+  },
+  "VideoPlayer": {
+    "audioTracks": "Faixas de áudio",
+    "close": "Fechar",
+    "defaultTrack": "Padrão",
+    "enterFullscreen": "Entrar em tela cheia",
+    "error": "Falha ao carregar o stream",
+    "errorHint": "Tente novamente ou verifique sua conexão.",
+    "exitFullscreen": "Sair da tela cheia",
+    "infoChannelsValue": "{channels} canais ({layout})",
+    "infoDuration": "Duração",
+    "infoFileName": "Nome do arquivo",
+    "infoFileSize": "Tamanho do arquivo",
+    "infoFrameRate": "Taxa de quadros",
+    "infoImdbId": "ID do IMDb",
+    "infoKeywords": "Palavras-chave",
+    "infoLanguages": "Idiomas",
+    "infoMediaDetails": "Detalhes",
+    "infoNotAvailable": "N/D",
+    "infoPixelFormat": "Formato de pixel",
+    "infoResolution": "Resolução",
+    "infoRuntime": "Tempo de execução",
+    "infoSectionAudio": "Áudio ({count})",
+    "infoSectionSubtitles": "Legendas ({count})",
+    "infoTechnicalDetails": "Técnico",
+    "infoTotalChunks": "Total de chunks",
+    "infoTrack": "Faixa {number}",
+    "infoType": "Tipo",
+    "infoUnknown": "Desconhecido",
+    "infoVideoCodec": "Codec de vídeo",
+    "loading": "Carregando stream…",
+    "moreOptions": "Mais opções",
+    "mute": "Silenciar",
+    "pause": "Pausar",
+    "play": "Reproduzir",
+    "playbackProgress": "Buscar posição de reprodução",
+    "playbackSpeed": "Velocidade de reprodução",
+    "retry": "Tentar novamente",
+    "seekBack10": "Retroceder 10 segundos",
+    "seekBack30": "Retroceder 30 segundos",
+    "seekForward10": "Avançar 10 segundos",
+    "seekForward30": "Avançar 30 segundos",
+    "seekedBack": "Voltar {seconds}s",
+    "seekedForward": "Avançar {seconds}s",
+    "settings": "Configurações",
+    "skipIntro": "Pular abertura",
+    "subtitleTracks": "Faixas de legenda",
+    "subtitlesOff": "Desligado",
+    "title": "Player de vídeo",
+    "unmute": "Ativar som",
+    "videoInfo": "Informações do vídeo"
+  },
+  "ViewControls": {
+    "cardView": "Visualização em cartões",
+    "collapseAllFiles": "Recolher todos os arquivos",
+    "enterFullscreen": "Entrar em tela cheia",
+    "exitFullscreen": "Sair da tela cheia",
+    "expandAllFiles": "Expandir todos os arquivos",
+    "hideSensitive": "Ocultar conteúdo sensível",
+    "showSensitive": "Mostrar conteúdo sensível",
+    "tableView": "Visualização em tabela",
+    "toolbarLabel": "Opções de visualização dos downloads",
+    "viewModeGroup": "Modo de visualização"
+  }
+}
