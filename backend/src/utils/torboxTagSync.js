@@ -1,289 +1,196 @@
 import ApiClient from '../api/ApiClient.js';
-import { fetchAllMyListPages } from '../api/mylistPagination.js';
-import { parseTorboxRateLimitHeaders } from '../config/torboxRateLimitHeaders.js';
+import { createHash } from 'node:crypto';
 import logger from './logger.js';
+import { parseTorboxRateLimitHeaders } from '../config/torboxRateLimitHeaders.js';
 
 const TYPES = [
   { list: '/api/torrents/mylist', edit: '/api/torrents/edittorrent', idField: 'torrent_id' },
-  { list: '/api/usenet/mylist', edit: '/api/usenet/editusenetdownload', idField: 'usenet_download_id' },
+  {
+    list: '/api/usenet/mylist',
+    edit: '/api/usenet/editusenetdownload',
+    idField: 'usenet_download_id',
+  },
   { list: '/api/webdl/mylist', edit: '/api/webdl/editwebdownload', idField: 'webdl_id' },
 ];
+const queues = new Map();
 
-const recentSyncs = new Map();
-const SYNC_INTERVAL_MS = 60_000;
-const MANUAL_SYNC_MIN_INTERVAL_MS = 10_000;
-const RATE_LIMIT_FALLBACK_MS = 120_000;
-const ERROR_RETRY_MS = 60_000;
-
-export function tagSyncRetryDelayMs(error, now = Date.now()) {
-  if (error?.response?.status !== 429) return ERROR_RETRY_MS;
-  const headers = parseTorboxRateLimitHeaders(error.response.headers, now);
-  const retryAfterMs = headers.retryAfterSeconds ? headers.retryAfterSeconds * 1000 : 0;
-  const resetMs = headers.resetAtMs ? headers.resetAtMs - now : 0;
-  return Math.max(RATE_LIMIT_FALLBACK_MS, retryAfterMs, resetMs);
-}
-
-function rememberSyncResult(authId, delayMs, { rateLimited = false, canForce = true } = {}) {
-  recentSyncs.set(authId, {
-    nextAt: Date.now() + delayMs,
-    promise: Promise.resolve(),
-    rateLimited,
-    canForce,
-    pending: false,
-    attemptedAt: Date.now(),
-  });
-}
-
-export function shouldSkipTagSync(previous, force, now = Date.now()) {
-  if (!previous) return false;
-  if (previous.pending) return true;
-  if (now >= previous.nextAt) return false;
-  if (!force || !previous.canForce) return true;
-  return now - previous.attemptedAt < MANUAL_SYNC_MIN_INTERVAL_MS;
-}
-
-function apiKeyFromRequest(req) {
-  return req.headers['x-api-key'] || req.headers.authorization?.replace(/^Bearer\s+/i, '') || null;
-}
-
-function tagNames(tags) {
-  if (!Array.isArray(tags)) return [];
+export function tagNames(tags) {
   const names = new Map();
-  for (const value of tags) {
-    if (typeof value !== 'string') continue;
+  for (const tag of Array.isArray(tags) ? tags : []) {
+    const value = typeof tag === 'string' ? tag : tag?.name;
+    if (typeof value !== 'string' || !value.trim()) continue;
     const name = value.trim();
-    if (name && !names.has(name.toLowerCase())) names.set(name.toLowerCase(), name);
+    if (!names.has(name.toLowerCase())) names.set(name.toLowerCase(), name);
   }
   return [...names.values()];
 }
 
-export async function listDownloads(client) {
-  const downloads = [];
-  const tagListClient = {
-    get: async (...args) => {
-      const response = await client.client.get(...args);
-      if (response.data?.success === false) {
-        throw new Error(response.data.detail || response.data.error || 'TorBox list request failed');
-      }
-      return response;
-    },
-  };
-  for (const type of TYPES) {
-    let items;
-    try {
-      ({ items } = await fetchAllMyListPages({
-        client: tagListClient,
-        endpoint: type.list,
-        bypassCache: true,
-        timeout: 20_000,
-      }));
-    } catch (error) {
-      error.tagSyncEndpoint = type.list;
-      throw error;
-    }
-    for (const item of items) downloads.push({ ...item, _tagSyncType: type });
+function checkResponse(response) {
+  if (response.data?.success === false) {
+    const error = new Error('TorBox rejected the tag request');
+    error.code = response.data.error;
+    throw error;
   }
-  return downloads;
+  return response.data?.data;
 }
 
 export async function editTags(client, item, names) {
   const type = item._tagSyncType;
-  const id = item.id;
-  try {
-    const body = {
-      [type.idField]: id,
-      tags: names,
-      alternative_hashes: item.alternative_hashes || [],
-      airlocked: item.airlocked === true,
-    };
-    // TorBox's own WebDL UI omits name for tag-only edits. Sending an empty or
-    // one-character name fails validation and inventing one changes T3 paths.
-    if (typeof item.name === 'string' && item.name.trim().length >= 2) {
-      body.name = item.name;
-    }
-    const response = await client.client.put(type.edit, body);
-    if (response.data?.success === false) {
-      throw new Error(response.data.detail || response.data.error || 'TorBox refused the tag update');
-    }
-  } catch (error) {
-    error.tagSyncEndpoint = type.edit;
-    error.downloadId = id;
-    throw error;
+  const body = { [type.idField]: item.id, tags: tagNames(names) };
+  // Preserve the current values. Missing fields must not become destructive defaults.
+  if (item.alternative_hashes != null || item.alternativeHashes != null) {
+    body.alternative_hashes = item.alternative_hashes ?? item.alternativeHashes;
   }
-  item.tags = names;
+  if (item.airlocked != null) {
+    body.airlocked = item.airlocked === true || item.airlocked === 1 || item.airlocked === 'true';
+  }
+  if (typeof item.name === 'string' && item.name.trim().length >= 2) body.name = item.name;
+  await client.handleApiCall(
+    async () => {
+      checkResponse(await client.client.put(type.edit, body, { timeout: 15_000 }));
+    },
+    { endpoint: type.edit, operation: 'updating tags' }
+  );
 }
 
-function logTagSyncFailure(message, authId, error) {
-  const upstreamCode = error?.response?.data?.error;
-  const code = error.code || upstreamCode;
-  logger.warn(message, {
-    authId,
-    endpoint: error.tagSyncEndpoint || 'local',
-    status: error?.response?.status,
-    code: typeof code === 'string' && /^[A-Z0-9_]+$/.test(code)
-      ? code
-      : undefined,
-    downloadId: error.downloadId,
-    error: error.tagSyncEndpoint && !error.response
-      ? 'TorBox rejected the tag request'
-      : error.message,
-  });
-}
-
-export function importAssignments(db, downloads, initialized, options = {}) {
-  const { skipIds = new Set(), pendingUpdates = [], pendingDeletes = [] } = options;
-  const findTag = db.prepare('SELECT id FROM tags WHERE LOWER(name) = LOWER(?)');
-  const insertTag = db.prepare('INSERT INTO tags (name, remote_seen) VALUES (?, 1)');
-  const markSeen = db.prepare('UPDATE tags SET remote_seen = 1 WHERE id = ?');
-  const clearItem = db.prepare('DELETE FROM download_tags WHERE download_id = ?');
-  const insertAssignment = db.prepare('INSERT OR IGNORE INTO download_tags (tag_id, download_id) VALUES (?, ?)');
-  const transaction = db.transaction(() => {
-    for (const item of downloads) {
-      if (item.id == null) continue;
-      if (skipIds.has(String(item.id))) continue;
-      clearItem.run(String(item.id));
-      for (const name of tagNames(item.tags)) {
-        const tagId = findTag.get(name)?.id || insertTag.run(name).lastInsertRowid;
-        markSeen.run(tagId);
-        insertAssignment.run(tagId, String(item.id));
-      }
-    }
-    db.prepare(`DELETE FROM tags WHERE remote_seen = 1 AND NOT EXISTS (
-      SELECT 1 FROM download_tags WHERE tag_id = tags.id
-    )`).run();
-    for (const row of pendingUpdates) {
-      db.prepare(`INSERT INTO torbox_tag_sync_pending (download_id, last_name)
-        VALUES (?, ?) ON CONFLICT(download_id) DO UPDATE SET last_name = excluded.last_name`).run(
-        row.downloadId,
-        row.lastName
-      );
-    }
-    for (const id of pendingDeletes) {
-      db.prepare('DELETE FROM torbox_tag_sync_pending WHERE download_id = ?').run(id);
-    }
-    if (!initialized) db.prepare('INSERT INTO torbox_tag_sync_state (id) VALUES (1)').run();
-  });
-  transaction();
-}
-
-async function syncNow(db, apiKey) {
-  const client = new ApiClient(apiKey);
-  const downloads = await listDownloads(client);
-  const initialized = Boolean(db.prepare('SELECT id FROM torbox_tag_sync_state WHERE id = 1').get());
-
-  const pending = new Map(db.prepare('SELECT download_id, last_name FROM torbox_tag_sync_pending')
-    .all().map((row) => [row.download_id, row.last_name]));
-  const skipIds = new Set();
-  const pendingUpdates = [];
-  const pendingDeletes = [];
-
-  // Preserve existing TBM assignments once. Downloads TorBox cannot edit are
-  // recorded separately so they do not block sync for the rest of the library.
-  if (!initialized || pending.size > 0) {
-    const local = db.prepare(`
-      SELECT dt.download_id, t.name FROM download_tags dt
-      JOIN tags t ON t.id = dt.tag_id
-    `).all();
-    const byId = new Map();
-    for (const row of local) {
-      const names = byId.get(row.download_id) || [];
-      names.push(row.name);
-      byId.set(row.download_id, names);
-    }
-    for (const item of downloads) {
-      const id = String(item.id);
-      const wasPending = pending.has(id);
-      if (initialized && !wasPending) continue;
-      const merged = tagNames([...tagNames(item.tags), ...(byId.get(String(item.id)) || [])]);
-      if (merged.length !== tagNames(item.tags).length) {
+export async function pushDownloadTags(client, id, names, removedNames = []) {
+  // Local mappings predate asset types, so probe only this ID across the three types.
+  // A queued/archived item absent from mylist stays local and can be retried later.
+  for (const type of TYPES) {
+    const data = await client.handleApiCall(
+      async () => {
         try {
-          await editTags(client, item, merged);
+          return checkResponse(
+            await client.client.get(type.list, {
+              params: { id, bypass_cache: true },
+              timeout: 20_000,
+            })
+          );
         } catch (error) {
-          if (error.code !== 'NAME_TOO_SHORT' && error.response?.data?.error !== 'NAME_TOO_SHORT') {
-            throw error;
-          }
-          logger.warn('TorBox tag sync deferred for a download TorBox cannot edit', {
-            endpoint: item._tagSyncType.edit,
-            downloadId: item.id,
-            code: 'NAME_TOO_SHORT',
-          });
-          skipIds.add(id);
-          pendingUpdates.push({ downloadId: id, lastName: item.name });
-          continue;
+          if (error.response?.status === 404 || error.code === 'DOWNLOAD_NOT_FOUND') return null;
+          throw error;
         }
+      },
+      { endpoint: type.list, operation: 'fetching download for tag edit', semaphore: 'fetch' }
+    );
+    const items = Array.isArray(data) ? data : data ? [data] : [];
+    for (const item of items) {
+      if (String(item.id) !== String(id)) continue;
+      const removed = new Set(removedNames.map((name) => name.toLowerCase()));
+      const next = tagNames([
+        ...tagNames(item.tags).filter((name) => !removed.has(name.toLowerCase())),
+        ...names,
+      ]);
+      if (JSON.stringify(tagNames(item.tags)) !== JSON.stringify(next)) {
+        await editTags(client, { ...item, _tagSyncType: type }, next);
       }
-      if (wasPending) pendingDeletes.push(id);
+      return;
     }
   }
-
-  importAssignments(db, downloads, initialized, { skipIds, pendingUpdates, pendingDeletes });
-  return downloads;
+  throw new Error('Download unavailable for tag editing; local tags retained');
 }
 
-export function invalidateTorboxTagSync(authId) {
-  recentSyncs.delete(authId);
+export function tagSyncClient(req) {
+  const key = req.headers['x-api-key'] || req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  return key ? new ApiClient(key, { authId: req.validatedAuthId }) : null;
 }
 
-export async function syncTorboxTags(req, db) {
-  const apiKey = apiKeyFromRequest(req);
-  if (!apiKey) return;
-  const authId = req.validatedAuthId;
-  const previous = recentSyncs.get(authId);
-  const force = req.query?.sync === 'true';
-  if (shouldSkipTagSync(previous, force)) return previous.promise;
+export function captureTagNames(db, ids) {
+  const select = db.prepare(`SELECT t.name FROM download_tags dt
+    JOIN tags t ON t.id = dt.tag_id WHERE dt.download_id = ? ORDER BY t.name`);
+  return new Map(ids.map((id) => [String(id), select.all(String(id)).map((row) => row.name)]));
+}
 
-  const state = { nextAt: Infinity, promise: null, rateLimited: false, pending: true, attemptedAt: Date.now() };
-  const promise = syncNow(db, apiKey)
-    .then(() => {
-      if (recentSyncs.get(authId) === state) rememberSyncResult(authId, SYNC_INTERVAL_MS);
-    })
-    .catch((error) => {
-      const rateLimited = error?.response?.status === 429;
-      logTagSyncFailure('TorBox tag sync failed; serving saved tags', authId, error);
-      if (recentSyncs.get(authId) === state) {
-        rememberSyncResult(authId, tagSyncRetryDelayMs(error), { rateLimited, canForce: false });
+// Capture local state synchronously after the local transaction. No background task
+// holds a database handle. The durable ID set includes removals (even the last tag),
+// so explicit Sync now can retry failures after a restart or a queued item starts.
+export function queueTagPush(db, client, downloadIds, previousNames = new Map()) {
+  if (!client?.apiKey) return Promise.resolve();
+  const key = createHash('sha256').update(client.apiKey).digest('hex');
+  let queue = queues.get(key);
+  if (!queue) {
+    queue = { pending: new Map(), promise: null, failed: 0, completed: 0 };
+    queues.set(key, queue);
+  }
+  const currentNames = captureTagNames(db, downloadIds);
+  const selectPending = db.prepare(
+    'SELECT removed_names FROM torbox_tag_sync_pending WHERE download_id = ?'
+  );
+  const remember = db.prepare(`INSERT INTO torbox_tag_sync_pending (download_id, removed_names)
+    VALUES (?, ?) ON CONFLICT(download_id) DO UPDATE SET removed_names = excluded.removed_names`);
+  for (const [id, names] of currentNames) {
+    const local = new Set(names.map((name) => name.toLowerCase()));
+    const removedNames = tagNames([
+      ...JSON.parse(selectPending.get(id)?.removed_names || '[]'),
+      ...(previousNames.get(id) || []),
+    ]).filter((name) => !local.has(name.toLowerCase()));
+    remember.run(id, JSON.stringify(removedNames));
+    queue.pending.set(id, { names, removedNames });
+  }
+  if (!queue.promise) {
+    queue.failed = 0;
+    queue.completed = 0;
+    queue.promise = Promise.resolve().then(async () => {
+      try {
+        while (queue.pending.size) {
+          const [id, { names, removedNames }] = queue.pending.entries().next().value;
+          queue.pending.delete(id);
+          try {
+            if (Date.now() < (queue.retryAt || 0)) {
+              queue.failed += queue.pending.size + 1;
+              queue.pending.clear();
+              break;
+            }
+            await pushDownloadTags(client, id, names, removedNames);
+            queue.completed++;
+          } catch (error) {
+            queue.failed++;
+            logger.warn('TorBox tag push failed; local tags retained. Use Sync now to retry.', {
+              authId: client.authId,
+              downloadId: id,
+              code: error.code,
+              status: error.response?.status,
+            });
+            if (error.response?.status === 429) {
+              const headers = parseTorboxRateLimitHeaders(error.response.headers);
+              queue.retryAt = Math.max(
+                Date.now() + 120_000,
+                Date.now() + (headers.retryAfterSeconds || 0) * 1000,
+                headers.resetAtMs || 0
+              );
+            }
+            if (error.response?.status === 429 || error.isConnectionError) {
+              queue.failed += queue.pending.size;
+              queue.pending.clear();
+            }
+          }
+        }
+      } finally {
+        queue.promise = null;
       }
     });
-  state.promise = promise;
-  recentSyncs.set(authId, state);
-  await promise;
+  }
+  return queue.promise;
 }
 
-export async function changeTorboxTags(req, db, change) {
-  const apiKey = apiKeyFromRequest(req);
-  if (!apiKey) return;
-  const authId = req.validatedAuthId;
-  const previous = recentSyncs.get(authId);
-  await previous?.promise;
-  const current = recentSyncs.get(authId);
-  if (current?.rateLimited && Date.now() < current.nextAt) {
-    const syncError = new Error('TorBox rate limit reached. Please try again later.');
-    syncError.isTorboxTagSyncError = true;
-    throw syncError;
-  }
-  try {
-    const client = new ApiClient(apiKey);
-    const downloads = await listDownloads(client);
-    const targets = change.targets(downloads);
-    for (const item of targets) {
-      const current = tagNames(item.tags);
-      const next = tagNames(change.update(current));
-      if (JSON.stringify(current) !== JSON.stringify(next)) await editTags(client, item, next);
-    }
-    rememberSyncResult(authId, SYNC_INTERVAL_MS);
-  } catch (error) {
-    logTagSyncFailure('TorBox tag edit failed', authId, error);
-    if (error?.response?.status === 429) {
-      rememberSyncResult(authId, tagSyncRetryDelayMs(error), { rateLimited: true, canForce: false });
-    } else {
-      invalidateTorboxTagSync(authId);
-    }
-    const syncError = new Error(error?.response?.status === 429
-      ? 'TorBox rate limit reached. Please try again later.'
-      : error?.code === 'NAME_TOO_SHORT' || error?.response?.data?.error === 'NAME_TOO_SHORT'
-        ? 'TorBox rejected the tag edit because this download has a short name.'
-      : 'Could not update tags on TorBox. Refresh and retry.');
-    syncError.isTorboxTagSyncError = true;
-    throw syncError;
-  }
+export function syncTorboxTags(req, db) {
+  const ids = db
+    .prepare(
+      `SELECT download_id FROM download_tags
+    UNION SELECT download_id FROM torbox_tag_sync_pending`
+    )
+    .all()
+    .map((row) => row.download_id);
+  return queueTagPush(db, tagSyncClient(req), ids);
+}
+
+export function tagSyncStatus(req) {
+  const client = tagSyncClient(req);
+  const key = client && createHash('sha256').update(client.apiKey).digest('hex');
+  const queue = queues.get(key);
+  return {
+    running: Boolean(queue?.promise),
+    completed: queue?.completed || 0,
+    failed: queue?.failed || 0,
+  };
 }

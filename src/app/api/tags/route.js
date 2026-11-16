@@ -36,7 +36,6 @@ export async function GET(request) {
 
     const response = await backendHttpGet(url, {
       headers: backendProxyHeaders(apiKey),
-      timeoutMs: 90_000,
     });
 
     if (response.ok) {

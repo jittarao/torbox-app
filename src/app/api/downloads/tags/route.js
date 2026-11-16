@@ -34,13 +34,9 @@ export async function GET(request) {
 
     const url = new URL(`${BACKEND_URL}/api/downloads/tags`);
     url.searchParams.set('authId', authId);
-    if (new URL(request.url).searchParams.get('sync') === 'true') {
-      url.searchParams.set('sync', 'true');
-    }
 
     const response = await backendHttpGet(url, {
       headers: backendProxyHeaders(apiKey),
-      timeoutMs: 90_000,
     });
 
     if (response.ok) {

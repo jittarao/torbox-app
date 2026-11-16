@@ -1,3 +1,4 @@
+import { captureTagNames, queueTagPush } from '../utils/torboxTagSync.js';
 import { getTorrentStatus as getTorrentStatusUtil } from '../utils/torrentStatus.js';
 import logger from '../utils/logger.js';
 import { DownloadProtectionService } from '../services/DownloadProtectionService.js';
@@ -1621,6 +1622,7 @@ class RuleEvaluator {
     transaction();
 
     const applied = rowsInserted > 0;
+    if (applied) queueTagPush(this.db, this.apiClient, [downloadId]);
 
     logger.debug('Tags added to download', {
       downloadId,
@@ -1659,6 +1661,7 @@ class RuleEvaluator {
       this.validateTagIds(action.tagIds);
     }
 
+    const previousNames = captureTagNames(this.db, [downloadId]);
     let rowsRemoved = 0;
     const transaction = this.db.transaction(() => {
       const tagPlaceholders = action.tagIds.map(() => '?').join(',');
@@ -1677,6 +1680,7 @@ class RuleEvaluator {
     transaction();
 
     const applied = rowsRemoved > 0;
+    if (applied) queueTagPush(this.db, this.apiClient, [downloadId], previousNames);
 
     logger.debug('Tags removed from download', {
       downloadId,

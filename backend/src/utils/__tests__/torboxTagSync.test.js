@@ -1,167 +1,269 @@
+import { up as removals } from '../../database/migrations/user/028_torbox_tag_push_removals.js';
 import { describe, expect, test } from 'bun:test';
 import { Database } from 'bun:sqlite';
 import { up as createTags } from '../../database/migrations/user/007_tags_schema.js';
 import { up as createAssignments } from '../../database/migrations/user/008_download_tags_schema.js';
-import { up as createSyncState } from '../../database/migrations/user/026_torbox_tag_sync.js';
 import { up as createPending } from '../../database/migrations/user/027_torbox_tag_sync_pending.js';
-import { editTags, importAssignments, listDownloads, shouldSkipTagSync, tagSyncRetryDelayMs } from '../torboxTagSync.js';
+import { editTags, tagNames, pushDownloadTags, queueTagPush } from '../torboxTagSync.js';
+import RuleEvaluator from '../../automation/RuleEvaluator.js';
 
-function database() {
+export function database() {
   const db = new Database(':memory:');
-  db.exec('PRAGMA foreign_keys = ON');
   createTags(db);
   createAssignments(db);
-  createSyncState(db);
   createPending(db);
+  removals(db);
   return db;
 }
-
-describe('TorBox tag import', () => {
-  test('imports remote tags and removes an externally deleted tag without deleting a download', () => {
-    const db = database();
-    try {
-      importAssignments(db, [{ id: 7, tags: ['Movies', 'Keep'] }], false);
-      expect(db.prepare('SELECT name FROM tags ORDER BY name').all().map((row) => row.name)).toEqual(['Keep', 'Movies']);
-
-      importAssignments(db, [{ id: 7, tags: ['Keep'] }], true);
-      expect(db.prepare('SELECT name FROM tags ORDER BY name').all().map((row) => row.name)).toEqual(['Keep']);
-      expect(db.prepare('SELECT t.name FROM download_tags dt JOIN tags t ON t.id = dt.tag_id WHERE dt.download_id = ?').all('7').map((row) => row.name)).toEqual(['Keep']);
-    } finally {
-      db.close();
-    }
-  });
-
-  test('keeps a new, unassigned TBM tag until it is assigned', () => {
-    const db = database();
-    try {
-      db.prepare('INSERT INTO tags (name) VALUES (?)').run('Later');
-      importAssignments(db, [{ id: 8, tags: [] }], false);
-      expect(db.prepare('SELECT name FROM tags').all().map((row) => row.name)).toEqual(['Later']);
-    } finally {
-      db.close();
-    }
-  });
-
-  test('preserves a local assignment when TorBox rejects a tag edit', () => {
-    const db = database();
-    try {
-      const tagId = db.prepare('INSERT INTO tags (name) VALUES (?)').run('Local').lastInsertRowid;
-      db.prepare('INSERT INTO download_tags (tag_id, download_id) VALUES (?, ?)').run(tagId, '8');
-      importAssignments(db, [{ id: 8, tags: [] }], false, {
-        skipIds: new Set(['8']),
-        pendingUpdates: [{ downloadId: '8', lastName: 'A' }],
-      });
-      expect(db.prepare('SELECT tag_id FROM download_tags WHERE download_id = ?').all('8')).toHaveLength(1);
-      expect(db.prepare('SELECT last_name FROM torbox_tag_sync_pending WHERE download_id = ?').get('8').last_name).toBe('A');
-
-      importAssignments(db, [{ id: 8, tags: ['Local'] }], true, { pendingDeletes: ['8'] });
-      expect(db.prepare('SELECT download_id FROM torbox_tag_sync_pending').all()).toEqual([]);
-      expect(db.prepare('SELECT tag_id FROM download_tags WHERE download_id = ?').all('8')).toHaveLength(1);
-    } finally {
-      db.close();
-    }
-  });
-});
-
-test('tag edit preserves the other TorBox item fields', async () => {
+let sequence = 0;
+function client(items = {}) {
   const calls = [];
-  const client = { client: { put: async (endpoint, body) => {
-    calls.push({ endpoint, body });
-    return { data: { success: true } };
-  } } };
-  const item = {
-    id: 9,
-    name: 'Original name',
-    tags: ['Old'],
-    alternative_hashes: ['0123456789abcdef0123456789abcdef'],
-    airlocked: true,
-    _tagSyncType: {
-      edit: '/api/torrents/edittorrent',
-      idField: 'torrent_id',
+  return {
+    apiKey: `test-${++sequence}`,
+    authId: 'test',
+    calls,
+    handleApiCall: async (fn, options) => {
+      calls.push(options);
+      return fn();
+    },
+    client: {
+      get: async (endpoint, config) => {
+        calls.push({ endpoint, config });
+        return { data: { success: true, data: items[endpoint]?.[config.params.id] || null } };
+      },
+      put: async (endpoint, body) => {
+        calls.push({ endpoint, body });
+        return { data: { success: true } };
+      },
     },
   };
+}
+function assign(db, id, name) {
+  const tagId = db.prepare('INSERT INTO tags (name) VALUES (?)').run(name).lastInsertRowid;
+  db.prepare('INSERT INTO download_tags (tag_id, download_id) VALUES (?, ?)').run(
+    tagId,
+    String(id)
+  );
+  return Number(tagId);
+}
 
-  await editTags(client, item, ['New']);
-  expect(calls).toEqual([{ endpoint: '/api/torrents/edittorrent', body: {
-    torrent_id: 9,
-    name: 'Original name',
-    tags: ['New'],
-    alternative_hashes: ['0123456789abcdef0123456789abcdef'],
-    airlocked: true,
-  } }]);
-  expect(item.tags).toEqual(['New']);
+test('normalizes strings and mylist tag objects without losing names', () => {
+  expect(tagNames([' Local ', { id: 1, name: 'Remote' }, { name: 'local' }, null])).toEqual([
+    'Local',
+    'Remote',
+  ]);
 });
 
-test.each(['A', undefined])('WebDL tag edit omits invalid name %p and preserves other fields', async (name) => {
-  const calls = [];
-  const client = { client: { put: async (endpoint, body) => {
-    calls.push({ endpoint, body });
-    return { data: { success: true } };
-  } } };
-  const item = {
-    id: 8,
-    name,
-    tags: [],
-    alternative_hashes: ['0123456789abcdef0123456789abcdef'],
-    airlocked: false,
-    _tagSyncType: { edit: '/api/webdl/editwebdownload', idField: 'webdl_id' },
-  };
-  await editTags(client, item, ['Local']);
-  expect(calls).toEqual([{ endpoint: '/api/webdl/editwebdownload', body: {
-    webdl_id: 8,
-    tags: ['Local'],
-    alternative_hashes: ['0123456789abcdef0123456789abcdef'],
-    airlocked: false,
-  } }]);
-  expect(item.name).toBe(name);
-  expect(item.tags).toEqual(['Local']);
-});
-
-test('429 cooldown honors TorBox retry headers and has a fallback', () => {
-  const now = 1_000_000;
-  expect(tagSyncRetryDelayMs({ response: { status: 429, headers: {} } }, now)).toBe(120_000);
-  expect(tagSyncRetryDelayMs({ response: { status: 429, headers: { 'retry-after': '180' } } }, now)).toBe(180_000);
-  expect(tagSyncRetryDelayMs({ response: { status: 429, headers: { 'x-ratelimit-reset': '240' } } }, now)).toBe(240_000);
-  expect(tagSyncRetryDelayMs(new Error('temporary'), now)).toBe(60_000);
-});
-
-test('list failure identifies the TorBox endpoint without an API request in the test', async () => {
-  const client = { client: { get: async (endpoint) => {
-    if (endpoint === '/api/usenet/mylist') {
-      const error = new Error('Request failed with status code 500');
-      error.response = { status: 500 };
-      throw error;
+describe('safe edit payloads', () => {
+  test.each([true, 1, 'true', false, 0, 'false'])(
+    'preserves airlock %p and hashes',
+    async (airlocked) => {
+      const api = client();
+      await editTags(
+        api,
+        {
+          id: 9,
+          name: 'Original name',
+          airlocked,
+          alternative_hashes: ['abc'],
+          _tagSyncType: { edit: '/api/usenet/editusenetdownload', idField: 'usenet_download_id' },
+        },
+        ['New']
+      );
+      expect(api.calls.at(-1).body).toEqual({
+        usenet_download_id: 9,
+        name: 'Original name',
+        tags: ['New'],
+        alternative_hashes: ['abc'],
+        airlocked: [true, 1, 'true'].includes(airlocked),
+      });
+      expect(api.calls[0].operation).toBe('updating tags');
     }
-    return { data: { success: true, data: [] } };
-  } } };
+  );
+  test.each(['A', undefined])('omits missing/short name %p and absent fields', async (name) => {
+    const api = client();
+    await editTags(api, { id: 8, name, _tagSyncType: { edit: '/edit', idField: 'webdl_id' } }, [
+      'Local',
+    ]);
+    expect(api.calls.at(-1).body).toEqual({ webdl_id: 8, tags: ['Local'] });
+  });
+});
+
+test('fetches only affected IDs using request controls; handles object mylist response', async () => {
+  const api = client({ '/api/torrents/mylist': { 7: { id: 7, tags: [{ name: 'Remote' }] } } });
+  await pushDownloadTags(api, '7', ['Local']);
+  const gets = api.calls.filter((c) => c.config);
+  expect(gets).toHaveLength(1);
+  expect(gets.every((c) => c.config.params.id === '7' && !('offset' in c.config.params))).toBe(
+    true
+  );
+  expect(api.calls.filter((c) => c.semaphore === 'fetch')).toHaveLength(1);
+  expect(api.calls.find((c) => c.body).body.tags).toEqual(['Remote', 'Local']);
+});
+
+test('queued/archived items and empty tags keep stable local definitions and mappings', async () => {
+  const db = database();
   try {
-    await listDownloads(client);
-    throw new Error('Expected listDownloads to reject');
-  } catch (error) {
-    expect(error.tagSyncEndpoint).toBe('/api/usenet/mylist');
-    expect(error.response.status).toBe(500);
+    const id = assign(db, 7, 'Queued');
+    db.prepare('INSERT INTO tags (name) VALUES (?)').run('Empty');
+    const api = client();
+    await queueTagPush(db, api, [7]);
+    expect(db.prepare('SELECT id FROM tags WHERE name = ?').get('Queued').id).toBe(id);
+    expect(db.prepare('SELECT * FROM tags').all()).toHaveLength(2);
+    expect(db.prepare('SELECT * FROM download_tags').all()).toHaveLength(1);
+    expect(db.prepare('SELECT download_id FROM torbox_tag_sync_pending').all()).toEqual([
+      { download_id: '7' },
+    ]);
+    expect(api.calls.some((c) => c.body)).toBe(false);
+  } finally {
+    db.close();
   }
 });
 
-test('tag sync rejects a TorBox list response marked unsuccessful', async () => {
-  const client = { client: { get: async () => ({
-    data: { success: false, error: 'TEMPORARY_ERROR', data: null },
-  }) } };
+test('automation add and remove push local state and survive subsequent pushes', async () => {
+  const db = database();
   try {
-    await listDownloads(client);
-    throw new Error('Expected listDownloads to reject');
-  } catch (error) {
-    expect(error.message).toBe('TEMPORARY_ERROR');
-    expect(error.tagSyncEndpoint).toBe('/api/torrents/mylist');
+    const id = Number(
+      db.prepare('INSERT INTO tags (name) VALUES (?)').run('Rule tag').lastInsertRowid
+    );
+    const api = client({
+      '/api/torrents/mylist': { 7: { id: 7, name: 'Download', tags: [] } },
+    });
+    const originalPut = api.client.put;
+    api.client.put = async (endpoint, body) => {
+      api.client.get = async () => ({ data: { success: true, data: { id: 7, tags: body.tags } } });
+      return originalPut(endpoint, body);
+    };
+    const evaluator = new RuleEvaluator(db, api);
+    await evaluator.addTagsToDownload({ tagIds: [id] }, { id: 7 });
+    await queueTagPush(db, api, [7]);
+    expect(api.calls.filter((c) => c.body).at(-1).body.tags).toEqual(['Rule tag']);
+    expect(db.prepare('SELECT * FROM download_tags').all()).toHaveLength(1);
+    await evaluator.removeTagsFromDownload({ tagIds: [id] }, { id: 7 });
+    await queueTagPush(db, api, [7]);
+    expect(api.calls.filter((c) => c.body).at(-1).body.tags).toEqual([]);
+    expect(db.prepare('SELECT * FROM download_tags').all()).toHaveLength(0);
+    expect(db.prepare('SELECT * FROM tags').all()).toHaveLength(1);
+  } finally {
+    db.close();
   }
 });
 
-test('manual sync refreshes cached tags but respects retry cooldown and in-flight requests', () => {
-  const now = 100_000;
-  const fresh = { nextAt: now + 60_000, attemptedAt: now - 20_000, canForce: true };
-  expect(shouldSkipTagSync(fresh, false, now)).toBe(true);
-  expect(shouldSkipTagSync(fresh, true, now)).toBe(false);
-  expect(shouldSkipTagSync({ ...fresh, attemptedAt: now - 5_000 }, true, now)).toBe(true);
-  expect(shouldSkipTagSync({ ...fresh, canForce: false }, true, now)).toBe(true);
-  expect(shouldSkipTagSync({ ...fresh, pending: true }, true, now)).toBe(true);
+test('a failed first push does not block other items or erase local tags', async () => {
+  const db = database();
+  try {
+    assign(db, 7, 'First');
+    assign(db, 8, 'Second');
+    const api = client({ '/api/torrents/mylist': { 7: { id: 7 }, 8: { id: 8 } } });
+    const put = api.client.put;
+    api.client.put = async (endpoint, body) => {
+      if (body.torrent_id === 7)
+        throw Object.assign(new Error('short name'), { code: 'NAME_TOO_SHORT' });
+      return put(endpoint, body);
+    };
+    await queueTagPush(db, api, [7, 8]);
+    expect(api.calls.find((c) => c.body)?.body.tags).toEqual(['Second']);
+    expect(db.prepare('SELECT * FROM download_tags').all()).toHaveLength(2);
+  } finally {
+    db.close();
+  }
+});
+
+test('serializes overlapping manual/automation/explicit pushes and ends with newest local state', async () => {
+  const db = database();
+  try {
+    const tag = assign(db, 7, 'Before');
+    const api = client({ '/api/torrents/mylist': { 7: { id: 7 } } });
+    let release, entered;
+    const blocked = new Promise((r) => {
+      release = r;
+    });
+    const started = new Promise((r) => {
+      entered = r;
+    });
+    const put = api.client.put;
+    let first = true;
+    api.client.put = async (...args) => {
+      if (first) {
+        first = false;
+        entered();
+        await blocked;
+      }
+      return put(...args);
+    };
+    const pending = queueTagPush(db, api, [7]);
+    await started;
+    db.prepare('UPDATE tags SET name = ? WHERE id = ?').run('After', tag);
+    const latest = queueTagPush(db, api, [7]);
+    release();
+    await Promise.all([pending, latest]);
+    expect(api.calls.filter((c) => c.body).map((c) => c.body.tags)).toEqual([
+      ['Before'],
+      ['After'],
+    ]);
+  } finally {
+    db.close();
+  }
+});
+
+test('rate limits stop the batch and subsequent pushes honor cooldown', async () => {
+  const db = database();
+  try {
+    assign(db, 7, 'Local');
+    const api = client();
+    let requests = 0;
+    api.client.get = async () => {
+      requests++;
+      throw Object.assign(new Error('rate limited'), {
+        response: { status: 429, headers: { 'retry-after': '180' } },
+      });
+    };
+    await queueTagPush(db, api, [7, 8]);
+    await queueTagPush(db, api, [7]);
+    expect(requests).toBe(1);
+    expect(db.prepare('SELECT * FROM download_tags').all()).toHaveLength(1);
+    expect(db.prepare('SELECT * FROM torbox_tag_sync_pending').all()).toHaveLength(2);
+  } finally {
+    db.close();
+  }
+});
+
+test('background push uses captured names after the request database closes', async () => {
+  const db = database();
+  assign(db, 7, 'Saved');
+  const api = client({ '/api/torrents/mylist': { 7: { id: 7 } } });
+  const job = queueTagPush(db, api, [7]);
+  db.close();
+  await job;
+  expect(api.calls.find((c) => c.body).body.tags).toEqual(['Saved']);
+});
+
+test('failed removal remains durable and retries preserve unrelated remote tags', async () => {
+  const db = database();
+  try {
+    const id = assign(db, 7, 'Remove');
+    const previous = new Map([['7', ['Remove']]]);
+    db.prepare('DELETE FROM download_tags WHERE tag_id = ?').run(id);
+    const api = client({
+      '/api/torrents/mylist': { 7: { id: 7, tags: [{ name: 'Remote only' }, { name: 'Remove' }] } },
+    });
+    const put = api.client.put;
+    api.client.put = async () => {
+      throw new Error('temporary');
+    };
+    await queueTagPush(db, api, [7], previous);
+    expect(
+      JSON.parse(
+        db.prepare('SELECT removed_names FROM torbox_tag_sync_pending').get().removed_names
+      )
+    ).toEqual(['Remove']);
+    api.client.put = put;
+    // A new queue/client represents a restarted worker reading only durable state.
+    api.apiKey = `restarted-${api.apiKey}`;
+    await queueTagPush(db, api, [7]);
+    expect(api.calls.filter((c) => c.body).at(-1).body.tags).toEqual(['Remote only']);
+    expect(db.prepare('SELECT * FROM download_tags').all()).toHaveLength(0);
+  } finally {
+    db.close();
+  }
 });

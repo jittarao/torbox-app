@@ -2,7 +2,7 @@ import { validateNumericId } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import { notifyTagsChanged } from '../utils/userEvents.js';
-import { changeTorboxTags, syncTorboxTags } from '../utils/torboxTagSync.js';
+import { captureTagNames, queueTagPush, tagSyncClient } from '../utils/torboxTagSync.js';
 
 /**
  * Download tags routes
@@ -27,7 +27,6 @@ export function setupDownloadTagsRoutes(app, backend) {
         }
 
         const userDb = await backend.userDatabaseManager.getUserDatabase(authId);
-        await syncTorboxTags(req, userDb.db);
 
         const query = `
           SELECT 
@@ -195,24 +194,7 @@ export function setupDownloadTagsRoutes(app, backend) {
           }
         }
 
-        const selectedNames = tag_ids.map((id) =>
-          userDb.db.prepare('SELECT name FROM tags WHERE id = ?').get(id).name
-        );
-        const requestedIds = new Set(download_ids.map(String));
-        await changeTorboxTags(req, userDb.db, {
-          targets: (items) => {
-            const matches = items.filter((item) => requestedIds.has(String(item.id)));
-            if (matches.length !== requestedIds.size) {
-              throw new Error('One or more downloads are not available for TorBox tag editing');
-            }
-            return matches;
-          },
-          update: (current) => operation === 'replace'
-            ? selectedNames
-            : operation === 'remove'
-              ? current.filter((name) => !selectedNames.some((selected) => selected.toLowerCase() === name.toLowerCase()))
-              : [...current, ...selectedNames],
-        });
+        const previousNames = captureTagNames(userDb.db, download_ids);
 
         // Use transaction for atomicity
         const transaction = userDb.db.transaction(() => {
@@ -268,6 +250,7 @@ export function setupDownloadTagsRoutes(app, backend) {
         });
 
         transaction();
+        queueTagPush(userDb.db, tagSyncClient(req), download_ids, previousNames);
 
         notifyTagsChanged(backend, authId);
 
@@ -276,9 +259,6 @@ export function setupDownloadTagsRoutes(app, backend) {
           message: `Tags ${operation === 'add' ? 'added' : operation === 'remove' ? 'removed' : 'replaced'} successfully`,
         });
       } catch (error) {
-        if (error.isTorboxTagSyncError) {
-          return res.status(502).json({ success: false, error: error.message });
-        }
         if (error.message?.includes('not found in registry')) {
           return res.status(401).json({
             success: false,

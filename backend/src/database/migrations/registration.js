@@ -43,6 +43,8 @@ import * as user025_tmdb_credentials_schema from './user/025_tmdb_credentials_sc
 import * as user026_torbox_tag_sync from './user/026_torbox_tag_sync.js';
 import * as user027_torbox_tag_sync_pending from './user/027_torbox_tag_sync_pending.js';
 
+import * as user028_torbox_tag_push_removals from './user/028_torbox_tag_push_removals.js';
+
 /** Keeps migration exports reachable for static analysis (see MigrationRunner). */
 export const MIGRATION_MODULE_BINDINGS = [
   master000_migrations_table,
@@ -84,4 +86,5 @@ export const MIGRATION_MODULE_BINDINGS = [
   user025_tmdb_credentials_schema,
   user026_torbox_tag_sync,
   user027_torbox_tag_sync_pending,
+  user028_torbox_tag_push_removals,
 ];

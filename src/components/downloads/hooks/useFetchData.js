@@ -154,7 +154,7 @@ export function useFetchData(apiKey, type = 'torrents') {
         manualRefresh: true,
       }).then(async (items) => {
         if (apiKey) {
-          await useDownloadTagsStore.getState().fetchDownloadTags(apiKey, { force: true, sync: true });
+          await useDownloadTagsStore.getState().fetchDownloadTags(apiKey, { force: true });
           await useTagsStore.getState().loadTags(apiKey, { force: true });
         }
         return items;
