@@ -48,6 +48,7 @@ function TagAssignmentModalBody({ downloadIds = EMPTY_ARRAY, apiKey, onClose, on
   const { assignTags, getDownloadTags, fetchDownloadTags, tagMappings } = useDownloadTags(apiKey);
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [mode, setMode] = useState('add');
 
   useEffect(() => {
@@ -78,12 +79,14 @@ function TagAssignmentModalBody({ downloadIds = EMPTY_ARRAY, apiKey, onClose, on
     if (!downloadCount || !selectedTagIds.length) return;
 
     setIsAssigning(true);
+    setSubmitError('');
     try {
       await assignTags(downloadIds, selectedTagIds, mode);
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error(`Error ${mode === 'add' ? 'assigning' : 'removing'} tags:`, error);
+      setSubmitError(error.message || 'Failed to update tags');
     } finally {
       setIsAssigning(false);
     }
@@ -224,6 +227,7 @@ function TagAssignmentModalBody({ downloadIds = EMPTY_ARRAY, apiKey, onClose, on
 
       {/* Footer */}
       <div className="shrink-0 border-t border-border/50 px-4 py-3 sm:px-5 sm:py-4 dark:border-border-dark/50">
+        {submitError && <p role="alert" className="mb-2 text-sm text-red-600 dark:text-red-400">{submitError}</p>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"

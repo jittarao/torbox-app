@@ -11,6 +11,7 @@ A modern, power-user focused alternative to the default TorBox UI. Built with Ne
 - **Multi-Format Support**: Manage torrents, Usenet (NZB), and web downloads all in one interface
 - **Efficient list sync**: Hybrid server-side cache — full paginated sync when a type has ≥1000 regular downloads; smaller libraries use complete page-0 polls every 15s without periodic full rescans
 - **TorBox Airlock**: Lock or unlock downloads, filter by airlock state, and automate with rules
+- **Tag sync**: Local tags stay authoritative. Manual and automation changes push in the background using targeted TorBox item requests. In Manage Tags, **Sync now** explicitly pushes existing assignments and retries previously changed downloads, including tag removals. Unavailable queued/archived downloads retain their local tags for a later retry. Tag reads never fetch TorBox lists; remote tags are not imported. Pushes preserve unrelated remote tags and retain removal intent for retries. Background work resumes through Sync now after a restart.
 - **File Selection**: Selectively download individual files from torrents
 - **Download History**: Track and manage your download links with expiration tracking
 - **Archived Downloads**: View and manage your archived download items

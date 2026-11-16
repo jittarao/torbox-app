@@ -192,6 +192,7 @@ export const useDownloadTagsStore = create((set, get) => ({
       const data = await response.json();
       if (data.success) {
         await get().fetchDownloadTags(apiKey, { force: true });
+        await useTagsStore.getState().loadTags(apiKey, { force: true });
         return true;
       }
 
@@ -200,6 +201,8 @@ export const useDownloadTagsStore = create((set, get) => ({
     } catch (err) {
       console.error('Error assigning tags:', err);
       set({ tagMappings: previousMappings, error: err.message });
+      await get().fetchDownloadTags(apiKey, { force: true });
+      await useTagsStore.getState().loadTags(apiKey, { force: true });
       throw err;
     }
   },

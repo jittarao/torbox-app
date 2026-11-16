@@ -84,7 +84,10 @@ export async function PUT(request, { params }) {
       return NextResponse.json(data);
     } else {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Backend responded with status: ${response.status}`);
+      return NextResponse.json(
+        { success: false, error: errorData.error || `Backend responded with status: ${response.status}` },
+        { status: response.status }
+      );
     }
   } catch (error) {
     console.error('Error updating tag in backend:', error);
@@ -121,7 +124,10 @@ export async function DELETE(request, { params }) {
       return NextResponse.json(data);
     } else {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Backend responded with status: ${response.status}`);
+      return NextResponse.json(
+        { success: false, error: errorData.error || `Backend responded with status: ${response.status}` },
+        { status: response.status }
+      );
     }
   } catch (error) {
     console.error('Error deleting tag from backend:', error);

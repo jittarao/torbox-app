@@ -191,13 +191,53 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
   const t = useTranslations('DownloadsFilters');
   const tActions = useTranslations('CustomViews');
   const tCommon = useTranslations('Common');
-  const { tags, loading, createTag, updateTag, deleteTag } = useTags(apiKey);
+  const { tags, loading, error, createTag, updateTag, deleteTag } = useTags(apiKey);
 
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [newTagName, setNewTagName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [syncStatus, setSyncStatus] = useState(null);
+  const [syncError, setSyncError] = useState(false);
+
+  const syncTags = async () => {
+    setSyncStatus({ running: true });
+    setSyncError(false);
+    try {
+      const response = await fetch('/api/tags/sync', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey },
+      });
+      if (!response.ok) throw new Error('Tag sync failed');
+      setSyncStatus(await response.json());
+    } catch {
+      setSyncStatus(null);
+      setSyncError(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !syncStatus?.running) return;
+    let cancelled = false;
+    const timer = setInterval(async () => {
+      try {
+        const response = await fetch('/api/tags/sync', { headers: { 'x-api-key': apiKey } });
+        if (!response.ok) throw new Error('Tag sync status failed');
+        const status = await response.json();
+        if (!cancelled) setSyncStatus(status);
+      } catch {
+        if (!cancelled) {
+          setSyncStatus(null);
+          setSyncError(true);
+        }
+      }
+    }, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [isOpen, apiKey, syncStatus?.running]);
 
   const createInputRef = useRef(null);
 
@@ -409,7 +449,32 @@ export default function TagManager({ isOpen, onClose, apiKey }) {
           )}
         </div>
 
+        <div className="px-4 pt-3 sm:px-5">
+          <button
+            type="button"
+            className="ui-btn-ghost"
+            onClick={syncTags}
+            disabled={syncStatus?.running}
+          >
+            {t(syncStatus?.running ? 'tagSyncRunning' : 'tagSyncNow')}
+          </button>
+          <p
+            className="mt-1 text-sm text-primary-text/60 dark:text-primary-text-dark/60"
+            role="status"
+          >
+            {syncError || syncStatus?.failed
+              ? t('tagSyncFailed')
+              : syncStatus && !syncStatus.running
+                ? t('tagSyncComplete')
+                : t('tagSyncHint')}
+          </p>
+        </div>
         {/* Tag list */}
+        {error && (
+          <p role="alert" className="px-4 pt-2 text-sm text-red-600 dark:text-red-400 sm:px-5">
+            {error}
+          </p>
+        )}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5">
           {loading && tags.length === 0 ? (
             <ul className="space-y-2" aria-busy="true" aria-label={tCommon('loading')}>

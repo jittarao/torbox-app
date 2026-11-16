@@ -83,6 +83,21 @@ export function useDownloadsListData(activeType, apiKey, isBackendAvailable, fil
   }, [apiKey, isBackendAvailable, downloadTagsHasLoaded, downloadTagsLoading, fetchDownloadTags]);
 
   useEffect(() => {
+    if (!isBackendAvailable || !apiKey) return undefined;
+    const refreshTags = () => {
+      if (document.visibilityState !== 'visible') return;
+      loadTags({ force: true });
+      fetchDownloadTags({ force: true });
+    };
+    window.addEventListener('focus', refreshTags);
+    const timer = window.setInterval(refreshTags, 60_000);
+    return () => {
+      window.removeEventListener('focus', refreshTags);
+      window.clearInterval(timer);
+    };
+  }, [apiKey, isBackendAvailable, loadTags, fetchDownloadTags]);
+
+  useEffect(() => {
     if (isBackendAvailable && apiKey && !protectedHasLoaded && !protectedLoading) {
       fetchProtectedDownloads();
     }

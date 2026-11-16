@@ -2,12 +2,41 @@ import { validateNumericIdMiddleware } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import { notifyTagsChanged } from '../utils/userEvents.js';
+import {
+  queueTagPush,
+  captureTagNames,
+  tagSyncClient,
+  syncTorboxTags,
+  tagSyncStatus,
+} from '../utils/torboxTagSync.js';
 
 /**
  * Tags routes
  */
 export function setupTagsRoutes(app, backend) {
   const { userRateLimiter } = backend;
+
+  // Explicit opt-in push; return before any upstream work to avoid proxy timeouts.
+  app.post('/api/tags/sync', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
+    try {
+      if (!backend.userDatabaseManager) {
+        return res.status(503).json({ success: false, error: 'Service is initializing' });
+      }
+      if (!tagSyncClient(req)) {
+        return res.status(401).json({ success: false, error: 'API key is required to sync tags' });
+      }
+      const userDb = await backend.userDatabaseManager.getUserDatabase(req.validatedAuthId);
+      syncTorboxTags(req, userDb.db);
+      res.status(202).json({ success: true, ...tagSyncStatus(req) });
+    } catch (error) {
+      res.status(500).json(serverErrorPayload(error));
+    } finally {
+      backend.userDatabaseManager?.releaseConnection(req.validatedAuthId);
+    }
+  });
+  app.get('/api/tags/sync', backend.requireRegisteredUser, userRateLimiter, (req, res) => {
+    res.json({ success: true, ...tagSyncStatus(req) });
+  });
 
   // GET /api/tags - List all tags with usage counts
   app.get('/api/tags', backend.requireRegisteredUser, userRateLimiter, async (req, res) => {
@@ -236,7 +265,7 @@ export function setupTagsRoutes(app, backend) {
         const existing = userDb.db
           .prepare(
             `
-          SELECT id FROM tags WHERE id = ?
+          SELECT id, name FROM tags WHERE id = ?
         `
           )
           .get(tagId);
@@ -264,6 +293,12 @@ export function setupTagsRoutes(app, backend) {
           });
         }
 
+        const affectedIds = userDb.db
+          .prepare('SELECT download_id FROM download_tags WHERE tag_id = ?')
+          .all(tagId)
+          .map((row) => row.download_id);
+        const previousNames = captureTagNames(userDb.db, affectedIds);
+
         userDb.db
           .prepare(
             `
@@ -284,6 +319,7 @@ export function setupTagsRoutes(app, backend) {
           )
           .get(tagId);
 
+        queueTagPush(userDb.db, tagSyncClient(req), affectedIds, previousNames);
         notifyTagsChanged(backend, authId);
 
         res.json({ success: true, tag });
@@ -327,7 +363,7 @@ export function setupTagsRoutes(app, backend) {
         const existing = userDb.db
           .prepare(
             `
-          SELECT id FROM tags WHERE id = ?
+          SELECT id, name FROM tags WHERE id = ?
         `
           )
           .get(tagId);
@@ -339,6 +375,12 @@ export function setupTagsRoutes(app, backend) {
           });
         }
 
+        const affectedIds = userDb.db
+          .prepare('SELECT download_id FROM download_tags WHERE tag_id = ?')
+          .all(tagId)
+          .map((row) => row.download_id);
+        const previousNames = captureTagNames(userDb.db, affectedIds);
+
         // Delete (cascade will remove download_tags associations)
         userDb.db
           .prepare(
@@ -348,6 +390,7 @@ export function setupTagsRoutes(app, backend) {
           )
           .run(tagId);
 
+        queueTagPush(userDb.db, tagSyncClient(req), affectedIds, previousNames);
         notifyTagsChanged(backend, authId);
 
         res.json({ success: true, message: 'Tag deleted successfully' });

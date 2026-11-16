@@ -2,6 +2,7 @@ import { validateNumericId } from '../middleware/validation.js';
 import logger from '../utils/logger.js';
 import { serverErrorPayload } from '../utils/httpErrors.js';
 import { notifyTagsChanged } from '../utils/userEvents.js';
+import { captureTagNames, queueTagPush, tagSyncClient } from '../utils/torboxTagSync.js';
 
 /**
  * Download tags routes
@@ -193,6 +194,8 @@ export function setupDownloadTagsRoutes(app, backend) {
           }
         }
 
+        const previousNames = captureTagNames(userDb.db, download_ids);
+
         // Use transaction for atomicity
         const transaction = userDb.db.transaction(() => {
           if (operation === 'replace') {
@@ -247,6 +250,7 @@ export function setupDownloadTagsRoutes(app, backend) {
         });
 
         transaction();
+        queueTagPush(userDb.db, tagSyncClient(req), download_ids, previousNames);
 
         notifyTagsChanged(backend, authId);
 
