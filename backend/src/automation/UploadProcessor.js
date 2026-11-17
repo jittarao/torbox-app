@@ -3,6 +3,8 @@ import ApiClient from '../api/ApiClient.js';
 import { decrypt } from '../utils/crypto.js';
 import logger from '../utils/logger.js';
 import { getUploadFilePath, fileExists, validateFilePathOwnership } from '../utils/fileStorage.js';
+import { materializeUsenetLinkUpload } from './materializeUsenetLink.js';
+import { ensureNzbFilename } from '../utils/nzbLinkName.js';
 import { isClosedDatabaseError } from '../utils/dbErrors.js';
 import {
   getUploadResourceId,
@@ -762,7 +764,11 @@ class UploadProcessor {
       if (!authId) {
         throw new Error('authId is required for file uploads');
       }
-      formData = await this.buildFileFormData(file_path, name, authId);
+      // Only force .nzb onto names from NZB prefetch. User-uploaded files
+      // (e.g. download.rar) keep their real extension.
+      const multipartName =
+        type === 'usenet' && upload.nzbFilename ? ensureNzbFilename(upload.nzbFilename) : name;
+      formData = await this.buildFileFormData(file_path, multipartName, authId);
     } else {
       formData = new FormData();
       if (upload_type === 'magnet') {
@@ -1693,6 +1699,14 @@ class UploadProcessor {
           quiet: true,
         });
         return uploadProcessResult(false, true);
+      }
+
+      if (type === 'usenet' && upload.upload_type === 'link') {
+        upload = await materializeUsenetLinkUpload(upload, userDb, {
+          adjustQuotaCounters: (authId, countDelta, bytesDelta) => {
+            this.masterDatabase?.adjustUploadQuotaCounters?.(authId, countDelta, bytesDelta);
+          },
+        });
       }
 
       // Build FormData
